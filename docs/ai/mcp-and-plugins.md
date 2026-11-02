@@ -2,12 +2,13 @@
 
 MCP 是**開發期工具**，由 [`.codex/config.toml`](../../.codex/config.toml) 管理；LINE Bot 的 Cloud Run Runtime 仍獨立使用 Go SDK。根 `AGENTS.md` 僅描述何時使用工具，**不能安裝、登入或代管 MCP 憑證**。
 
-## 4 個 MCP 與安全預設
+## 5 個 MCP 與安全預設
 
 | MCP 名稱 | 官方實作 | 啟用狀態 | 何時使用 |
 |---|---|---|---|
 | `gopls` | [gopls MCP](https://go.dev/gopls/features/mcp)；`gopls mcp` | 開啟（需安裝） | Go symbols、definitions、references、型別／錯誤診斷、重構前分析 |
-| `context7` | [upstash/context7](https://github.com/upstash/context7)；`https://mcp.context7.com/mcp` | 開啟（遠端） | 新／舊 SDK 版本、安裝和程式 API 用法，仍需核對官方資料 |
+| `context7` | [upstash/context7](https://github.com/upstash/context7)；`https://mcp.context7.com/mcp` | 開啟（遠端） | 第三方 SDK 版本、安裝和程式 API 用法，仍需核對官方資料 |
+| `openaiDeveloperDocs` | [OpenAI Docs MCP](https://developers.openai.com/learn/docs-mcp)；`https://developers.openai.com/mcp` | 開啟（遠端、唯讀） | 官方 OpenAI API、SDK、Responses API、Codex、Skills、MCP 和 Plugins 文件 |
 | `github_readonly` | [github/github-mcp-server](https://github.com/github/github-mcp-server)；`https://api.githubcopilot.com/mcp/` | 停用（未認證） | 依授權讀取 PR、Issue、commit、workflow 等，不寫入 |
 | `firestore_toolbox` | [googleapis/mcp-toolbox](https://github.com/googleapis/mcp-toolbox)；Firestore prebuilt | 停用（未配置 staging ADC） | 在**隔離測試專案**審查 Firestore collections、documents、rules |
 
@@ -32,12 +33,14 @@ MCP 是**開發期工具**，由 [`.codex/config.toml`](../../.codex/config.toml
 ## 設定與驗證
 
 1. Cloud setup 在非互動情境安裝 `gopls v0.24.0` 至 `$HOME/.local/bin/gopls`，專案 config 用絕對 HOME 路徑執行 `gopls mcp`。
-2. 本地執行 `go run ./cmd/codexcheck` 確認四個 MCP、五個 Agents 與 setup shell 語法。
+2. 本地執行 `go run ./cmd/codexcheck` 確認五個 MCP、五個 Agents 與 setup shell 語法。
 3. 若可使用 Codex CLI，在可信 repo 內執行 `codex mcp list`，檢查已啟用 server 與認證狀態。
-4. 在 Codex Cloud 設定網路允許必要主機，Publish／Republish 後於**新工作階段**再驗證 MCP 可用性；本專案尚未代你發布雲端環境。
+4. 在 Codex Cloud 設定網路允許必要主機（包括 `developers.openai.com`），Publish／Republish 後於**新工作階段**再驗證 MCP 可用性；本專案尚未代你發布雲端環境。
 
 官方索引：[Codex Config Reference](https://learn.chatgpt.com/docs/config-file/config-reference)、[Codex Cloud Environments](https://learn.chatgpt.com/docs/environments/cloud-environments)、[GitHub MCP Read-only](https://github.com/github/github-mcp-server/blob/main/docs/server-configuration.md)、[Firestore Toolbox](https://mcp-toolbox.dev/integrations/firestore/prebuilt-configs/firestore/)。
 
 ## Plugin 關係
 
 此專案目前不強制安裝 Codex Plugins，並避免重複裝載同一個外部 MCP。外部 `skills-lock.json` 仍是來源／hash 清單，不表示已安裝技能。Plugin 安裝、連線與 OAuth 需由使用者操作和授權；Cloud Run runtime 不使用這些 Plugin。
+
+OpenAI Docs MCP 不需要專案 API Key，也不負責執行 OpenAI API 請求。CI 的 TOML 檢查不等於遠端連線成功；Republish 後需在新 Codex Cloud 工作階段實際搜尋官方文件。
