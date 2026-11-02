@@ -52,7 +52,9 @@ func NewQueue(client *sdk.Client, queueName, workerURL, audience, invokerEmail s
 	}
 	return &Queue{
 		name: queueName, worker: workerURL, audience: audience, email: invokerEmail,
-		create: client.CreateTask,
+		create: func(ctx context.Context, req *cloudtaskspb.CreateTaskRequest) (*cloudtaskspb.Task, error) {
+			return client.CreateTask(ctx, req)
+		},
 	}, nil
 }
 
