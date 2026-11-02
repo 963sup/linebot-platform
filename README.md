@@ -95,6 +95,13 @@ Google Tasks、Calendar 的授權詳見 [Workspace OAuth 與 API](docs/sdk/works
 - `Dockerfile.worker` 與 `cloudbuild.worker.yaml` 僅是建置範本，不自動部署。仍需隔離 Staging 的 Firestore TTL、Cloud Scheduler、IAM、Cloud Tasks、私有 Cloud Run 實際驗證。
 - [事件狀態機](docs/architecture/event-processing.md)／[Staging 操作要求](docs/operations/durable-worker.md) 說明可靠性和安全限制。
 
+## Stage 5：零先驗與 Staging 驗收工具
+
+- 新增 [六項 Codex 零先驗情境](docs/ai/zero-context-scenarios.toml)，由 `codexcheck` 驗證模組與來源路由；**不代表已實際執行六個新工作階段**。
+- Firestore Emulator Transaction 測試使用 `integration` Build Tag，必須設定本機 `FIRESTORE_EMULATOR_HOST` 並執行 `make acceptance-emulator`。未設定時直接拒絕通過，而非把跳過的測試算成成功。
+- [Stage-5 Reviewer Evidence Gate](docs/operations/stage5-acceptance.md) 要求目前 PR HEAD、獨立 Staging 環境、OIDC／IAM／TTL／LINE 測試及 Codex 新工作階段的可審查證據。範例全部預設 `blocked`。
+- CI 可以驗證工具本身，但**真實 Emulator 執行、Cloud Staging 與 Codex 全新會話驗收仍待獨立完成**；不會自動取得雲端權限或部署。
+
 ## Codex Cloud 開發環境
 
 - [`.codex/config.toml`](.codex/config.toml) 配置 gopls／Context7／OpenAI Docs MCP，並保留停用中的唯讀 GitHub MCP／Firestore Toolbox。Codex Cloud agent-phase 需允許 `developers.openai.com`，在 Republish 後的新工作階段驗證連線。

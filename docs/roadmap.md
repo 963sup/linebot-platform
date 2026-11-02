@@ -38,6 +38,17 @@
 - [ ] 實際部署、定期 Cloud Scheduler、Firestore Emulator 與獨立 Staging 故障恢復驗收。
 - [ ] 經授權的 staging SDK 整合測試及 Codex 零先驗需求驗收。
 
+## Stage 5 — Zero-context / Emulator / Staging acceptance
+
+- [x] 新增六項 Codex 零先驗任務清單、模組／路徑驗證及審查準則。
+- [x] 新增需明確設定本機端點的 Firestore Emulator Transaction／去重／併發 Claim／終態／TTL 整合測試與執行入口。
+- [x] 新增綁定 PR HEAD 的 fail-closed Staging Reviewer Evidence Gate、預設 blocked 的範例與 CI 防誤報驗證。
+- [x] 同步驗收文件、Git 忽略規則、Makefile、CI 與安全規範。
+- [ ] 在本機 Emulator 環境**實際執行**並保留 Transaction／併發驗收證據（CI 的單元測試不能取代）。
+- [ ] 在經授權隔離 Staging 完成 Firestore IAM/TTL、Cloud Tasks OIDC、Cloud Scheduler、LINE Sandbox 的端到端驗證。
+- [ ] 在六個**全新 Codex 工作階段**逐一驗收自然語言功能開發與來源／SDK／Method／測試證據。
+- [ ] Stage-5 Reviewer Evidence Gate／安全審查與人工核准全部通過後，才可考慮合併或部署。
+
 ## P2 — LINE webhook 與持久工作
 
 - [x] LINE Channel Secret 配置／使用官方 SDK 驗章（同步 MVP）。
