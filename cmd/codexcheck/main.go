@@ -180,6 +180,9 @@ func validate(root string) error {
 	if err := validateCatalog(root); err != nil {
 		return fmt.Errorf("SDK catalog: %w", err)
 	}
+	if err := validateScenarios(root); err != nil {
+		return fmt.Errorf("Codex fresh-session scenarios: %w", err)
+	}
 	setup := filepath.Join(root, "scripts", "setup-codex-cloud.sh")
 	cmd := exec.Command("bash", "-n", setup)
 	if output, err := cmd.CombinedOutput(); err != nil {
