@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "environment": "staging",
+  "project_id": "linebot-acceptance-staging",
+  "commit_sha": "REPLACE_WITH_PR_HEAD_SHA",
+  "reviewer": "",
+  "checked_at": "2026-11-03T00:00:00Z",
+  "checks": {
+    "ci_go": {
+      "status": "blocked",
+      "reference": ""
+    },
+    "firestore_emulator": {
+      "status": "blocked",
+      "reference": ""
+    },
+    "line_redelivery": {
+      "status": "blocked",
+      "reference": ""
+    },
+    "cloud_tasks_oidc": {
+      "status": "blocked",
+      "reference": ""
+    },
+    "private_worker_iam": {
+      "status": "blocked",
+      "reference": ""
+    },
+    "firestore_ttl": {
+      "status": "blocked",
+      "reference": ""
+    },
+    "scheduled_reconcile": {
+      "status": "blocked",
+      "reference": ""
+    },
+    "unknown_outcome": {
+      "status": "blocked",
+      "reference": ""
+    },
+    "privacy_logging": {
+      "status": "blocked",
+      "reference": ""
+    },
+    "codex_line_rich_menu": {
+      "status": "blocked",
+      "reference": ""
+    },
+    "codex_google_tasks": {
+      "status": "blocked",
+      "reference": ""
+    },
+    "codex_google_calendar": {
+      "status": "blocked",
+      "reference": ""
+    },
+    "codex_ai_reply": {
+      "status": "blocked",
+      "reference": ""
+    },
+    "codex_durable_redelivery": {
+      "status": "blocked",
+      "reference": ""
+    },
+    "codex_sdk_upgrade": {
+      "status": "blocked",
+      "reference": ""
+    }
+  }
+}
