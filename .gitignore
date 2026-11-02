@@ -1,0 +1,31 @@
+# Secrets and local overrides
+.env
+.env.*
+!.env.example
+*.pem
+*.p12
+*.pfx
+credentials.json
+service-account*.json
+
+# Go build and test outputs
+bin/
+dist/
+coverage.out
+*.test
+*.prof
+*.pprof
+
+# Terraform state and local values
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+crash.log
+
+# Editor and OS
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*.local.json
