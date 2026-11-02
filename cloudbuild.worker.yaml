@@ -1,0 +1,32 @@
+# Builds a private worker image only. No deployment, queue, IAM or trigger.
+substitutions:
+  _REGION: 'asia-east1'
+  _AR_REPOSITORY: 'linebot-platform'
+  _IMAGE_NAME: 'worker'
+steps:
+  - id: 'verify-go'
+    name: 'golang:1.27.3'
+    entrypoint: 'bash'
+    args:
+      - '-ceu'
+      - |
+        go mod download
+        go mod verify
+        go vet ./...
+        go test -race -count=1 ./...
+        go build ./...
+  - id: 'build-worker-image'
+    name: 'gcr.io/cloud-builders/docker'
+    waitFor: ['verify-go']
+    args:
+      - 'build'
+      - '--file'
+      - 'Dockerfile.worker'
+      - '--tag'
+      - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPOSITORY}/${_IMAGE_NAME}:$BUILD_ID'
+      - '.'
+images:
+  - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPOSITORY}/${_IMAGE_NAME}:$BUILD_ID'
+options:
+  logging: CLOUD_LOGGING_ONLY
+timeout: '1800s'
