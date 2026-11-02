@@ -1,0 +1,13 @@
+# Documentation example only: runtime currently reads environment variables.
+http:
+  port: 8080
+line:
+  webhook_path: /webhook/line
+  configured_by:
+    - LINE_CHANNEL_SECRET
+    - LINE_CHANNEL_ACCESS_TOKEN
+features:
+  ai: false
+  cloud_tasks: false
+  cloud_storage: false
+  firestore: false

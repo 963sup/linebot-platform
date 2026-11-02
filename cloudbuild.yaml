@@ -1,0 +1,46 @@
+# Cloud Build build/publish template; no Cloud Run deployment.
+# Before executing: create Artifact Registry, configure least-privileged build SA
+# and grant its Cloud Logging + Artifact Registry permissions. No triggers are installed here.
+substitutions:
+  _REGION: 'asia-east1'
+  _AR_REPOSITORY: 'linebot-platform'
+  _IMAGE_NAME: 'webhook'
+
+steps:
+  - id: 'verify-go'
+    name: 'golang:1.27.3'
+    entrypoint: 'bash'
+    args:
+      - '-ceu'
+      - |
+        go mod download
+        go mod verify
+        unformatted="$$(gofmt -l cmd/ internal/ tests/)"
+        if [ -n "$$unformatted" ]; then
+          printf 'Unformatted Go files:\n%s\n' "$$unformatted"
+          exit 1
+        fi
+        go vet ./...
+        go test -race -count=1 ./...
+        go build ./...
+
+  - id: 'build-webhook-image'
+    name: 'gcr.io/cloud-builders/docker'
+    waitFor: ['verify-go']
+    args:
+      - 'build'
+      - '--file'
+      - 'Dockerfile'
+      - '--tag'
+      - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPOSITORY}/${_IMAGE_NAME}:$BUILD_ID'
+      - '.'
+
+# Cloud Build pushes this image to Artifact Registry only after a successful build.
+# An image appearing here does NOT deploy or open a Cloud Run endpoint.
+images:
+  - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPOSITORY}/${_IMAGE_NAME}:$BUILD_ID'
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+
+timeout: '1800s'

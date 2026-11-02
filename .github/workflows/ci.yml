@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  go:
+    name: Go verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: '1.27.3'
+          cache: false
+      - name: Resolve approved Go SDK dependencies
+        run: |
+          go mod tidy
+          go mod download
+      - name: Verify dependency lockfiles are committed
+        run: git diff --exit-code -- go.mod go.sum
+      - name: Format, vet, race tests and build
+        run: make check
+      - name: Preserve resolved go.mod and go.sum for review
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: resolved-go-dependencies
+          path: |
+            go.mod
+            go.sum
+          if-no-files-found: warn
+          retention-days: 7

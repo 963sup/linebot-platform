@@ -1,0 +1,9 @@
+{
+  "go.useLanguageServer": true,
+  "editor.formatOnSave": true,
+  "[go]": {
+    "editor.defaultFormatter": "golang.go",
+    "editor.formatOnSave": true
+  },
+  "files.trimTrailingWhitespace": true
+}

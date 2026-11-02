@@ -1,0 +1,16 @@
+name: Feature request
+description: 提出 LINE Messaging API 或相關功能建議
+title: "feat: "
+body:
+  - type: textarea
+    id: requirement
+    attributes:
+      label: 目標
+    validations:
+      required: true
+  - type: textarea
+    id: criteria
+    attributes:
+      label: 驗收條件與帳號資格
+    validations:
+      required: true

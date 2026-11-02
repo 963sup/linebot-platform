@@ -1,0 +1,25 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Go: bootstrap dependencies",
+      "type": "shell",
+      "command": "make bootstrap",
+      "problemMatcher": []
+    },
+    {
+      "label": "Go: check",
+      "type": "shell",
+      "command": "make check",
+      "group": "test",
+      "problemMatcher": ["$go"]
+    },
+    {
+      "label": "Go: run webhook",
+      "type": "shell",
+      "command": "make run-webhook",
+      "isBackground": true,
+      "problemMatcher": []
+    }
+  ]
+}

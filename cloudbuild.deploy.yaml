@@ -1,0 +1,50 @@
+# MANUAL, STAGING-ONLY template. No trigger, permission, or resource is created
+# by committing this file. Cloud Build trigger approval + IAM are configured separately.
+# Must use an existing private Cloud Run staging service and an immutable image digest.
+substitutions:
+  _APPROVE_STAGING: 'false'
+  _REGION: 'asia-east1'
+  _SERVICE: 'linebot-webhook-staging'
+  _IMAGE_URI: ''
+
+steps:
+  - id: 'preflight-staging'
+    name: 'gcr.io/google.com/cloudsdktool/google-cloud-cli:stable'
+    entrypoint: 'bash'
+    args:
+      - '-ceu'
+      - |
+        if [ '${_APPROVE_STAGING}' != 'true' ]; then
+          echo 'Staging deployment disabled. Require explicit _APPROVE_STAGING=true.' >&2
+          exit 2
+        fi
+        case '${_SERVICE}' in
+          *-staging) ;;
+          *) echo 'Only *-staging services are permitted by this template.' >&2; exit 2 ;;
+        esac
+        case '${_IMAGE_URI}' in
+          '${_REGION}-docker.pkg.dev/$PROJECT_ID/'*'@sha256:'*) ;;
+          *) echo 'Specify an Artifact Registry image in this project, pinned by @sha256:.' >&2; exit 2 ;;
+        esac
+        # Refuse to create a new service by accident; configure IAM and runtime separately.
+        gcloud artifacts docker images describe '${_IMAGE_URI}' --project='$PROJECT_ID' --quiet >/dev/null
+        gcloud run services describe '${_SERVICE}' --region='${_REGION}' --project='$PROJECT_ID' --quiet >/dev/null
+
+  - id: 'deploy-existing-staging'
+    name: 'gcr.io/google.com/cloudsdktool/google-cloud-cli:stable'
+    waitFor: ['preflight-staging']
+    entrypoint: 'gcloud'
+    args:
+      - 'run'
+      - 'deploy'
+      - '${_SERVICE}'
+      - '--image=${_IMAGE_URI}'
+      - '--region=${_REGION}'
+      - '--project=$PROJECT_ID'
+      - '--no-allow-unauthenticated'
+      - '--quiet'
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+
+timeout: '900s'
