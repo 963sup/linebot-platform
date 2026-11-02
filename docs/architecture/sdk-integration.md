@@ -1,6 +1,6 @@
 # SDK Integration & Codex Zero-Context Development
 
-This design extends the existing Go modular monolith and Hexagonal Architecture. It is not a new SDK framework. Current runtime support is limited to LINE Messaging API; the other service SDKs remain declared until real clients, adapters and tests exist.
+This design extends the existing Go modular monolith and Hexagonal Architecture. It is not a new SDK framework. Webhook/CLI runtime still only uses LINE Messaging API; other service SDKs have native Client Factories but are not yet enabled as business integrations.
 
 ## Source of truth and workflow
 
@@ -14,7 +14,7 @@ This design extends the existing Go modular monolith and Hexagonal Architecture.
 | Official provider documentation | API semantics, permissions, quotas and changes |
 | `cmd/codexcheck`, tests and CI | Mechanically enforced repository constraints |
 
-The catalog intentionally contains no pinned version fields, no credentials and no exhaustive method inventory. `declared` only indicates a dependency in `go.mod`—not initialized clients or live API access. `integrated` indicates source-level use; it is **not** a production readiness certificate.
+The catalog intentionally contains no pinned version fields, no credentials and no exhaustive method inventory. `declared` is dependency-only; `client_ready` requires native Factory source but does not imply credentials or business integration; `integrated` requires both Factory and Adapter source (as with LINE). None of these statuses is a production-readiness certificate.
 
 ## Development sequence
 
@@ -45,7 +45,16 @@ The webhook entrypoint now calls `bootstrap.NewWebhookRuntime` to compose only t
 - `internal/adapter/outbound/line`: SDK v8.23.0's `WithContext` mutates `MessagingApiAPI.ctx`, so the adapter creates a **per-call shallow copy** before calling `WithContext`. This works for the pinned client structure, prevents shared mutation under parallel requests, and must be revalidated on any SDK upgrade. The HTTP timeout is retained as an upper bound. Reply and Push use the native `WithHttpInfo` endpoints to obtain HTTP status for safe classification.
 - `internal/bootstrap/config.go`: optional `LINE_API_TIMEOUT` defaults to 8s, accepts 1s–12s to remain within the current synchronous webhook HTTP server's 15s write deadline.
 
-**No new providers have been activated.** Google Cloud, Workspace, OpenAI and Gemini are still listed as `declared` in the SDK Catalog. Background queue, durable deduplication and production-grade webhook behavior remain out of scope.
+**No additional service has been enabled in application runtime.** Provider factories are `client_ready` but not auto-initialized by Webhook or CLI. Durable deduplication and production-grade webhook behavior remain out of scope.
+
+## Phase 3: native provider Client Factories (PR #8)
+
+- `internal/infrastructure/google/api` exports `NewTasks`, `NewCalendar`, `NewSheets`, `NewDrive`, returning official `*Service` types. Each requires a caller-provided **user-authorized HTTP client**, rather than silently impersonating a user via Cloud Run ADC. OAuth consent, token storage/rotation and per-user identity isolation are future work; see [Google Workspace OAuth](../sdk/workspace-oauth.md).
+- `internal/infrastructure/openai` requires explicit API Key and caller-owned HTTP client, and returns `openai.Client` with the native SDK Responses API and retry behavior.
+- `internal/infrastructure/google/genai` separates Gemini Developer API key authentication from Vertex AI ADC/workload identity. Vertex does not inject an unauthenticated custom HTTP client.
+- `internal/infrastructure/google/cloud/{firestore,cloudtasks,secretmanager,storage}` returns native clients accepting ADC/client options and caller-owned `Close()`. No resources are provisioned by construction.
+- Google Tasks is `google.golang.org/api/tasks/v1`, included in the existing `google.golang.org/api`; Google Cloud Tasks is the separately pinned background queue SDK.
+- All new provider modules are `client_ready`, **not integrated**. Business Ports/Adapters, authorized staging and full OAuth flows remain pending.
 
 ## Security and reliability constraints
 
@@ -60,7 +69,7 @@ The webhook entrypoint now calls `bootstrap.NewWebhookRuntime` to compose only t
 
 1. **Discovery foundation (PR #8, completed slice)**: catalog, one shared skill, automated catalog validation, architecture guard, synchronized docs. No new live SDK calls.
 2. **Typed client infrastructure (PR #8, completed LINE slice)**: typed factory injection, owned transport, configuration, logging metadata, safe error semantics and request-context isolation; reusable base for future providers. Verify CI and authorized staging separately.
-3. **Provider integrations**: Google Cloud, Google Workspace, OpenAI and Gemini clients and adapters in small independent slices; mark catalog entries integrated only after evidence.
+3. **Native provider factories (PR #8)**: Google Cloud, Google Workspace (including Tasks and Calendar), OpenAI and Gemini native Client Factories have offline tests. Business Adapters and authorized runtime activation remain pending.
 4. **Durable event handling**: Firestore inbox/outbox, Cloud Tasks worker, idempotency and uncertain send outcomes.
 5. **Staging acceptance**: run real SDK contract tests with authorized test identities, validate Codex zero-context tasks in a fresh environment, observe and document any gaps.
 

@@ -13,9 +13,10 @@
 | Reply Text | `application/usecases/conversation` 與 LINE adapter | 使用 LINE Messaging API SDK |
 | Reply Flex | 同上 | 傳入 `flex` 或 `卡片` 時回覆簡單 bubble |
 | Push Text／Flex | `cmd/ops` | 僅 CLI `push --send` 會實際呼叫 API，且需要接收者與 retry key |
-| Firestore、Storage、Cloud Tasks、Secret Manager | `go.mod` 依賴與預留目錄 | SDK 版本已聲明；尚未連接 |
-| Sheets、Drive、Calendar | `go.mod` 依賴與預留目錄 | SDK 已聲明；未啟用 |
-| OpenAI、Google Gen AI、garr | `go.mod` 依賴與預留目錄 | SDK 已聲明；未啟用 |
+| Firestore、Storage、Cloud Tasks、Secret Manager | `internal/infrastructure/google/cloud/` | 原生 Client Factory 已建立；尚未接入業務／正式環境 |
+| Sheets、Drive、Calendar、Google Tasks（待辦） | `internal/infrastructure/google/api/` | 原生 Client Factory 已建立；個人資料仍需使用者 OAuth 授權 |
+| OpenAI、Google Gen AI | `internal/infrastructure/openai/`、`internal/infrastructure/google/genai/` | 原生 Client Factory 已建立；尚未接入業務／啟用 |
+| `garr` | `go.mod` | 選用工具，仍未啟用 |
 | LINE 官方文件來源 | [line-developers-docs-source](https://github.com/line/line-developers-docs-source) | 僅供查閱，不是 SDK |
 
 請閱讀 [架構](docs/architecture/overview.md)、[SDK 整合設計](docs/architecture/sdk-integration.md)、[SDK Catalog](docs/sdk/catalog.toml)、[技術與版本](docs/versions.md)、[功能矩陣](docs/line/feature-matrix.md)。
@@ -56,7 +57,7 @@ CLI 發送會先輸出可重用的 UUID retry key。若發生 timeout 或結果�
 - `domain/`：業務不變量、aggregates、valueobjects；本階段保留擴充空間。
 - `application/`：Messaging Port、驗證、Reply／Push、基本文字回覆 usecase。
 - `adapter/`：LINE webhook 和 outbound Messaging API SDK；健康檢查。
-- `infrastructure/`：LINE Client Factory；其餘 SDK 待按需接線。
+- `infrastructure/`：LINE 受管理 HTTP Runtime，以及其他 Provider 的原生 Client Factory（`client_ready`）；後者尚未接入業務。
 - `bootstrap/`：設定、組裝、啟動與 shutdown。
 - `cmd/webhook`、`cmd/ops`：實際可執行程式；`cmd/worker` 尚待實作。
 
@@ -75,6 +76,15 @@ CLI 發送會先輸出可重用的 UUID retry key。若發生 timeout 或結果�
 - `internal/infrastructure/httpclient` 採用獨立連線池與 Timeout 設定，`observability` 只記錄安全 HTTP metadata，`resilience` 分類失敗但**不做未經審核的自動重試**。
 - `LINE_API_TIMEOUT` 預設 `8s`，可調範圍 `1s` 到 `12s`。LINE v8.23.0 的 `WithContext` 會改動 Client，因此 Adapter 以每次呼叫的獨立副本帶入 Context，避免並行請求共用可變狀態。
 - 增加模擬 HTTP 契約、取消、並發及錯誤去敏測試。這些改善**不包含** Firestore Inbox/Outbox、Cloud Tasks Worker 或正式環境驗收。
+
+## Provider Client Factories（階段 3）
+
+- **Google Workspace**：Google Tasks、Calendar、Sheets、Drive 已有原生 `*Service` Factory，無須新增 Go Module。Google Tasks 是待辦清單，不是 Sheets 工作表，也不是 Google Cloud Tasks 佇列。
+- **Google Cloud**：Firestore、Cloud Tasks（背景佇列）、Secret Manager、Storage 已有原生 Client Factory；啟用時需提供適當 ADC／Workload Identity、Project、IAM，並關閉擁有的 Client。
+- **AI**：OpenAI、Gemini Developer API、Vertex AI 已建立分別驗證認證模式的原生 Client Factory；建構時不自動發送付費 API 請求。
+- SDK Catalog 新增 `client_ready`，意為原生 Factory 存在但**不代表**已接入業務 Adapter、取得使用者 OAuth 或完成 Staging／Production 驗證。
+
+Google Tasks、Calendar 的授權詳見 [Workspace OAuth 與 API](docs/sdk/workspace-oauth.md)。
 
 ## Codex Cloud 開發環境
 

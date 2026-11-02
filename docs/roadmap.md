@@ -28,9 +28,11 @@
 ## SDK Runtime — 分階段實施
 
 - [x] LINE Typed Client Factory 接受受管理 HTTP Client，加入 Timeout、獨立 Transport、生命週期關閉、出站安全 Telemetry、錯誤分類、Context 隔離及離線契約測試。
-- [ ] 其他服務按實際需求套用此共用建構機制（不強迫不同 SDK 使用同一 Interface）。
-- [ ] Firestore、Cloud Tasks、Secret Manager、Storage 的 Client 與 Adapter（僅啟用有實際需求者）。
-- [ ] OpenAI、Gemini、Drive、Sheets、Calendar 的受管理 Client 和契約測試。
+- [x] 依實際 SDK 特性建立原生 Typed Client Factory，區分 HTTP／gRPC、API Key／Vertex ADC／Workspace 使用者 OAuth。
+- [x] Firestore、Cloud Tasks（背景工作）、Secret Manager、Storage 的 Typed Client Factory 與配置驗證。
+- [ ] Firestore、Cloud Tasks、Storage 的業務 Adapter、IAM 驗證及實際工作流程。
+- [x] OpenAI、Gemini／Vertex、Drive、Sheets、Calendar、Google Tasks（待辦）的原生 Client Factory 與離線契約測試。
+- [ ] 各 Provider 業務 Adapter、使用者 OAuth 同意與 Token 隔離；目前只有 LINE 實際接入 Webhook／CLI。
 - [ ] 持久事件、去重、Inbox/Outbox、Worker 與發送結果未知處理。
 - [ ] 經授權的 staging SDK 整合測試及 Codex 零先驗需求驗收。
 
