@@ -62,7 +62,14 @@ CLI 發送會先輸出可重用的 UUID retry key。若發生 timeout 或結果�
 
 **重要：目前同步回覆並未持久化 incoming event。** 在 LINE webhook 重送、批次處理部分成功、容器重啟時，仍可能造成重複發送；未完成 Firestore inbox/outbox + Cloud Tasks + 冪等策略前，不能稱為正式環境可靠 Bot。
 
-## 開發與安全## Cloud Build（未啟用）
+## 開發與安全## Codex Cloud 開發環境
+
+- [`.codex/config.toml`](.codex/config.toml) 配置 gopls／Context7，並保留停用中的唯讀 GitHub MCP／Firestore Toolbox。
+- [五個專用 Agents](docs/ai/agents.md) 負責 DDD、LINE SDK、Cloud Platform、Go Review 和官方文件查證。
+- `bash scripts/setup-codex-cloud.sh` 是可加入 Codex Cloud **Install script** 的非互動式環境準備腳本（下載 Go modules、安裝固定版 gopls）。
+- 詳見 [Codex Cloud 建置步驟](docs/ai/codex-cloud.md)，其中的環境發布與 MCP 授權**尚未執行**。
+
+## Cloud Build（未啟用）
 
 根目錄新增 `cloudbuild.yaml`（Go 驗證、Docker build、Artifact Registry push）與 `cloudbuild.deploy.yaml`（僅供明確核准的**既有 staging** 服務部署）。兩份配置**不會因為提交 GitHub 而自動執行**；目前未建立 Cloud Build Trigger、Cloud Run 服務，也未授權付費雲端操作。`.gcloudignore` 排除本機／敏感上傳內容，`.gitattributes` 固定文字換行規則。操作前先閱讀 [部署配置與限制](docs/operations/deployment.md)。
 

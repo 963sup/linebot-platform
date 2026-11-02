@@ -25,6 +25,8 @@ jobs:
         with:
           go-version: '1.27.3'
           cache: false
+      - name: Validate Codex project settings and cloud setup
+        run: python3 scripts/validate-codex-config.py
       - name: Resolve approved Go SDK dependencies
         run: |
           go mod tidy
@@ -35,7 +37,7 @@ jobs:
         run: make check
       - name: Preserve resolved go.mod and go.sum for review
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: resolved-go-dependencies
           path: |
