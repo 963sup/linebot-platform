@@ -12,7 +12,7 @@ require (
 	github.com/openai/openai-go/v3 v3.91.1
 	go.linecorp.com/garr v0.1.1
 	google.golang.org/api v0.310.0
-	google.golang.org/genai v1.76.0
+	google.golang.org/genai v1.77.0
 )
 
 require (
