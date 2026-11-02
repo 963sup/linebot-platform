@@ -1,4 +1,4 @@
-.PHONY: bootstrap check fmt-check vet test build run-webhook run-worker run-ops
+.PHONY: bootstrap check fmt-check vet test build run-webhook run-worker run-ops acceptance-emulator
 
 bootstrap:
 	go mod tidy
@@ -26,3 +26,7 @@ run-ops:
 
 run-worker:
 	go run ./cmd/worker
+
+# Requires an explicitly running local Firestore emulator.
+acceptance-emulator:
+	bash scripts/run-stage5-offline.sh

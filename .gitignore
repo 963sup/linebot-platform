@@ -8,6 +8,11 @@
 credentials.json
 service-account*.json
 
+# Reviewer evidence is local; do not commit account or staging data.
+/staging-evidence.json
+/staging-evidence.local.json
+/docs/acceptance/*-review.json
+
 # Go build and test outputs
 bin/
 dist/
