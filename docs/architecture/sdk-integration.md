@@ -45,7 +45,7 @@ The webhook entrypoint now calls `bootstrap.NewWebhookRuntime` to compose only t
 - `internal/adapter/outbound/line`: SDK v8.23.0's `WithContext` mutates `MessagingApiAPI.ctx`, so the adapter creates a **per-call shallow copy** before calling `WithContext`. This works for the pinned client structure, prevents shared mutation under parallel requests, and must be revalidated on any SDK upgrade. The HTTP timeout is retained as an upper bound. Reply and Push use the native `WithHttpInfo` endpoints to obtain HTTP status for safe classification.
 - `internal/bootstrap/config.go`: optional `LINE_API_TIMEOUT` defaults to 8s, accepts 1s–12s to remain within the current synchronous webhook HTTP server's 15s write deadline.
 
-**No additional service has been enabled in application runtime.** Provider factories are `client_ready` but not auto-initialized by Webhook or CLI. Durable deduplication and production-grade webhook behavior remain out of scope.
+**No additional service is enabled by default.** The optional `LINE_EVENT_MODE=durable` path can construct Firestore and Cloud Tasks providers only when fully configured; the default synchronous Webhook and Push CLI do not instantiate them. The durable path is **not production-ready** without authorized IAM/OIDC, TTL, scheduler and staging validation.
 
 ## Phase 3: native provider Client Factories (PR #8)
 
@@ -54,7 +54,16 @@ The webhook entrypoint now calls `bootstrap.NewWebhookRuntime` to compose only t
 - `internal/infrastructure/google/genai` separates Gemini Developer API key authentication from Vertex AI ADC/workload identity. Vertex does not inject an unauthenticated custom HTTP client.
 - `internal/infrastructure/google/cloud/{firestore,cloudtasks,secretmanager,storage}` returns native clients accepting ADC/client options and caller-owned `Close()`. No resources are provisioned by construction.
 - Google Tasks is `google.golang.org/api/tasks/v1`, included in the existing `google.golang.org/api`; Google Cloud Tasks is the separately pinned background queue SDK.
-- All new provider modules are `client_ready`, **not integrated**. Business Ports/Adapters, authorized staging and full OAuth flows remain pending.
+- Workspace, OpenAI, Gemini, Storage and Secret Manager remain `client_ready`. Firestore and Cloud Tasks now have explicit outbound Adapters for the optional Stage-4 event pipeline and are listed `integrated` in the Catalog, **not** deployed or staging-verified. OAuth user integrations remain pending.
+
+## Phase 4: gated durable LINE webhook and private worker (PR #8)
+
+- `internal/application/usecases/ingestion` defines provider-neutral atomic receipt, SHA-256 event keys, duplicate handling, single-use send claim, terminal `sent`/`expired`/`unknown` outcomes, and recovery orchestration.
+- `internal/adapter/outbound/google/cloud/firestore` stores the Inbox and Outbox in one transaction. The original user message is not persisted; the short-lived Reply Token is temporarily stored, cleared at terminal state and subject to separately configured Firestore TTL.
+- `internal/adapter/outbound/google/cloud/cloudtasks` enqueues only opaque event keys using an OIDC service account. Because Cloud Tasks retains completed task names for up to 24 hours, task names use an event key plus a deterministic **10-second scheduling bucket**, while Firestore Claim provides the actual send-side idempotency guard.
+- `cmd/webhook` defaults to `LINE_EVENT_MODE=sync`. The `durable` mode is a fail-closed opt-in that verifies the LINE raw signature and destination, persists before acknowledgement, and schedules tasks. `cmd/worker` hosts OIDC-authenticated `/tasks/line-reply` and `/tasks/dispatch` endpoints. Worker and scheduled reconcilers must additionally be protected by Cloud Run IAM and private ingress, configured only in an authorized environment.
+- Cloud Scheduler cadence may exceed the conservative 45-second LINE Reply window. Expired events are marked `expired`; this is not guaranteed reply delivery or end-to-end exactly-once semantics. Bounded recovery queries still require high-volume pagination/indexing, telemetry, and authorized emulator/staging validation.
+- See [event processing](event-processing.md), [staging constraints](../operations/durable-worker.md), and [Firestore retention](../../deploy/firestore/README.md). No GCP resource was deployed or provisioned in this PR.
 
 ## Security and reliability constraints
 
@@ -70,7 +79,7 @@ The webhook entrypoint now calls `bootstrap.NewWebhookRuntime` to compose only t
 1. **Discovery foundation (PR #8, completed slice)**: catalog, one shared skill, automated catalog validation, architecture guard, synchronized docs. No new live SDK calls.
 2. **Typed client infrastructure (PR #8, completed LINE slice)**: typed factory injection, owned transport, configuration, logging metadata, safe error semantics and request-context isolation; reusable base for future providers. Verify CI and authorized staging separately.
 3. **Native provider factories (PR #8)**: Google Cloud, Google Workspace (including Tasks and Calendar), OpenAI and Gemini native Client Factories have offline tests. Business Adapters and authorized runtime activation remain pending.
-4. **Durable event handling**: Firestore inbox/outbox, Cloud Tasks worker, idempotency and uncertain send outcomes.
+4. **Durable event handling (PR #8, code implemented)**: Firestore inbox/outbox, Cloud Tasks worker, single-use Claim, unknown outcomes and bounded reconciliation. Authorized IAM/OIDC/TTL/scheduler setup and staging proof remain pending.
 5. **Staging acceptance**: run real SDK contract tests with authorized test identities, validate Codex zero-context tasks in a fresh environment, observe and document any gaps.
 
 ## Definition of done

@@ -18,7 +18,7 @@
 
 ## SDK-Aware Codex Foundation — 開發知識與驗證
 
-- [x] 建立直接依賴 Catalog，對齊全部 11 個 `go.mod` 直接依賴。
+- [x] 建立直接依賴 Catalog，對齊本階段全部 12 個 `go.mod` 直接依賴（新增的直接分類為既有 gRPC 模組）。
 - [x] 建立通用 `sdk-integration` Skill 與查證參考，沿用原有五個 Codex Agents。
 - [x] 擴充 `cmd/codexcheck` 驗證 Catalog、架構邊界及測試，並由既有 CI 執行。
 - [x] 同步 README、Skills、架構、版本與開發文件。
