@@ -30,19 +30,23 @@
 - [x] LINE Typed Client Factory 接受受管理 HTTP Client，加入 Timeout、獨立 Transport、生命週期關閉、出站安全 Telemetry、錯誤分類、Context 隔離及離線契約測試。
 - [x] 依實際 SDK 特性建立原生 Typed Client Factory，區分 HTTP／gRPC、API Key／Vertex ADC／Workspace 使用者 OAuth。
 - [x] Firestore、Cloud Tasks（背景工作）、Secret Manager、Storage 的 Typed Client Factory 與配置驗證。
-- [ ] Firestore、Cloud Tasks、Storage 的業務 Adapter、IAM 驗證及實際工作流程。
+- [x] Firestore Inbox/Outbox 交易 Adapter、Cloud Tasks OIDC 派送 Adapter、可選 Durable Webhook、私有 Worker／定期 Reconcile 程式碼。
+- [ ] Google Cloud Staging IAM／Firestore TTL／Cloud Scheduler／高吞吐與實際 LINE 回覆驗證，Storage 業務 Adapter 另行實作。
 - [x] OpenAI、Gemini／Vertex、Drive、Sheets、Calendar、Google Tasks（待辦）的原生 Client Factory 與離線契約測試。
 - [ ] 各 Provider 業務 Adapter、使用者 OAuth 同意與 Token 隔離；目前只有 LINE 實際接入 Webhook／CLI。
-- [ ] 持久事件、去重、Inbox/Outbox、Worker 與發送結果未知處理。
+- [x] 原子 Inbox/Outbox、事件 Key 去重、Worker 單次 Claim、unknown/expired 終態和 Reconcile 程式碼。
+- [ ] 實際部署、定期 Cloud Scheduler、Firestore Emulator 與獨立 Staging 故障恢復驗收。
 - [ ] 經授權的 staging SDK 整合測試及 Codex 零先驗需求驗收。
 
 ## P2 — LINE webhook 與持久工作
 
 - [x] LINE Channel Secret 配置／使用官方 SDK 驗章（同步 MVP）。
-- [ ] 事件型別轉換、去重、Inbox/Outbox、Cloud Tasks／worker。
+- [x] 文字事件轉換、跨執行個體去重、Inbox/Outbox、Cloud Tasks／Worker 可選程式碼。
+- [ ] Unsend、Edit、其他事件類型與高吞吐回復策略。
 - [x] 基礎 Reply／Push／Flex Message adapter 及可測試 usecase。
-- [ ] 錯誤分類、發送結果未知的持久追蹤與跨執行個體去重。
-- [ ] emulator／fake 驗證。
+- [x] 發送前持久化單次 Claim，結果未知標示 unknown，不進行盲目重試；保留跨執行個體事件 Fingerprint 去重。
+- [x] 應用 Fake Store／Queue、Webhook 驗章與重送、OIDC Worker Handler、Cloud Tasks Payload 離線測試程式碼。
+- [ ] Firestore Emulator／GCP Staging 的實際跨服務驗證。
 
 ## P3 — 全公開 API、AI 與雲端
 
