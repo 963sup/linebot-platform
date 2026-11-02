@@ -1,6 +1,6 @@
 # 版本與依賴策略
 
-Go module 已加入；已宣告以下固定 SDK 版本。本地執行環境無法連接 Go module proxy，故由 GitHub Actions 在 Go 1.27.3 上執行 `go mod tidy`／`go mod download`，將真實的 `go.mod`、`go.sum` 複製進此 PR。這表示 SDK 依賴圖已解析，不表示未連接的服務已啟用。
+Go module 已加入，`go.mod`／`go.sum` 由 Go 工具鏈與 CI 管理；此表僅為說明用途。**版本唯一真實來源為 `go.mod`**，`docs/sdk/catalog.toml` 僅記錄 SDK 路由及目前接線狀態，不另行維護版本。模組已解析不代表外部服務已啟用。
 
 實作時請先查閱各專案當下 README／release：
 - LINE Go SDK：`github.com/line/line-bot-sdk-go/v8/linebot`，其 README 要求 Go 1.26+。
@@ -23,7 +23,7 @@ Go module 已加入；已宣告以下固定 SDK 版本。本地執行環境無�
 | `github.com/google/uuid` | v1.6.0 | 直接依賴；Push CLI 使用 UUID v4 作為 LINE retry key |
 | `github.com/line/line-bot-sdk-go/v8` | v8.23.0 | Webhook、Reply、Push、Flex 由 SDK 接線 |
 | `github.com/openai/openai-go/v3` | v3.91.1 | 選用、未啟用 |
-| `google.golang.org/genai` | v1.76.0 | 選用、未啟用 |
+| `google.golang.org/genai` | v1.77.0 | 選用、未啟用 |
 | `cloud.google.com/go/firestore` | v1.29.2 | 預先宣告、未啟用 |
 | `cloud.google.com/go/storage` | v1.70.0 | 預先宣告、未啟用 |
 | `cloud.google.com/go/cloudtasks` | v1.21.1 | 預先宣告、未啟用 |

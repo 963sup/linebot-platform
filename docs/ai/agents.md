@@ -10,9 +10,11 @@
 | `line_integrator` | Messaging API Webhook／Reply／Push／Flex、事件安全 | gopls、Context7、LINE 官方來源 | 被委派後可修改相應檔案 |
 | `cloud_platform` | Cloud Run、Firestore、Cloud Tasks、WIF、IAM | Context7，隔離 staging 才允許 Toolbox | 預設只審查；不可自行部署 |
 | `go_reviewer` | Go correctness、Race、CI、PR 安全審查 | gopls、授權 GitHub（唯讀） | 只審查 |
-| `docs_researcher` | SDK 版本、Go module、API 參數、Codex 規格 | Context7、官方來源 | 只查證 |
+| `docs_researcher` | SDK 版本、Go module、API 參數、Codex 規格 | SDK Catalog、gopls、Context7、OpenAI Docs、官方來源 | 只查證 |
 
 Codex 內建 `worker`、`explorer` 可處理一般任務，不再額外建立通用 agent。主 Agent 負責拆分任務、避免併發編輯同一檔案、整合與最後驗證。只有實際互不依賴的工作才並行委派；建議最多三個子 Agent。
+
+SDK 功能開發以 [sdk-integration Skill](../../.agents/skills/sdk-integration/SKILL.md) 的按需查證流程為準，不另增第六個 Agent；Catalog 的能力標籤只是搜尋提示。
 
 ## 使用範例
 

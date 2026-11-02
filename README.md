@@ -18,7 +18,7 @@
 | OpenAI、Google Gen AI、garr | `go.mod` 依賴與預留目錄 | SDK 已聲明；未啟用 |
 | LINE 官方文件來源 | [line-developers-docs-source](https://github.com/line/line-developers-docs-source) | 僅供查閱，不是 SDK |
 
-請閱讀 [架構](docs/architecture/overview.md)、[技術與版本](docs/versions.md)、[功能矩陣](docs/line/feature-matrix.md)。
+請閱讀 [架構](docs/architecture/overview.md)、[SDK 整合設計](docs/architecture/sdk-integration.md)、[SDK Catalog](docs/sdk/catalog.toml)、[技術與版本](docs/versions.md)、[功能矩陣](docs/line/feature-matrix.md)。
 
 本專案直接使用 [`github.com/google/uuid`](https://github.com/google/uuid) 的 UUID v4 產生器建立 LINE Push retry key，並驗證手動指定的 retry key；不再自行實作 UUID 編碼。
 
@@ -61,6 +61,13 @@ CLI 發送會先輸出可重用的 UUID retry key。若發生 timeout 或結果�
 - `cmd/webhook`、`cmd/ops`：實際可執行程式；`cmd/worker` 尚待實作。
 
 **重要：目前同步回覆並未持久化 incoming event。** 在 LINE webhook 重送、批次處理部分成功、容器重啟時，仍可能造成重複發送；未完成 Firestore inbox/outbox + Cloud Tasks + 冪等策略前，不能稱為正式環境可靠 Bot。
+
+## Codex SDK 自動辨識（開發基礎）
+
+- [docs/sdk/catalog.toml](docs/sdk/catalog.toml) 將 `go.mod` 中的全部直接依賴對應到 Provider、用途、import package 與預定的 Factory／Adapter；`go.mod` 仍是唯一版本來源。
+- [sdk-integration Skill](.agents/skills/sdk-integration/SKILL.md) 指導 Codex 按需查詢 SDK 原始碼、gopls、官方文件，再依 Hexagonal Architecture 實作與測試。
+- `go run ./cmd/codexcheck` 驗證 Catalog 與直接依賴一致、程式配置有效；CI 已納入這項檢查。這不代表其他 SDK 已初始化或取得 API 權限。
+- 發現新的 SDK 功能時，只需按需擴充既有 Adapter／Factory；無須建立萬用動態 SDK Client。完整流程見 [SDK 整合架構](docs/architecture/sdk-integration.md)。
 
 ## Codex Cloud 開發環境
 
