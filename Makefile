@@ -7,7 +7,7 @@ bootstrap:
 check: fmt-check vet test build
 
 fmt-check:
-	@files="$(gofmt -l cmd/ internal/ tests/)"; if [ -n "$files" ]; then printf 'Go files require gofmt:\n%s\n' "$files"; gofmt -d $files; exit 1; fi
+	@if [ -n "`gofmt -l cmd/ internal/ tests/`" ]; then printf "Go files require gofmt:\n"; gofmt -d cmd/ internal/ tests/; exit 1; fi
 
 vet:
 	go vet ./...
