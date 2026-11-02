@@ -14,6 +14,8 @@
 
 Google Tasks、Calendar 的 OAuth 範圍與 Factory 使用方式參閱 [Workspace OAuth 與 API](sdk/workspace-oauth.md)。
 
+Firestore／Cloud Tasks 的持久事件與 OIDC Worker 接線流程參考 [事件處理](architecture/event-processing.md)，隔離 IAM／TTL／排程要求參考 [Durable Worker](operations/durable-worker.md)。
+
 所有 `go.mod` 直接依賴的用途及預定接線路徑可查閱 [SDK Catalog](sdk/catalog.toml)。Catalog 不鎖定版本、不代表 API 已啟用，API 參數與權限仍應以實際模組程式碼和官方文件查證。Codex 工作流程請參考 [SDK Integration 設計](architecture/sdk-integration.md)。
 
 ## 採用原則
