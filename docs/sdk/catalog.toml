@@ -117,3 +117,12 @@ status = "declared"
 imports = ["go.linecorp.com/garr/retry"]
 capabilities = ["retry", "circuit-breaker"]
 reference = "https://github.com/line/garr"
+
+[[modules]]
+module = "google.golang.org/grpc"
+provider = "grpc"
+kind = "utility"
+status = "integrated"
+imports = ["google.golang.org/grpc/codes", "google.golang.org/grpc/status"]
+capabilities = ["cloud-api-status", "not-found", "already-exists"]
+reference = "https://pkg.go.dev/google.golang.org/grpc"

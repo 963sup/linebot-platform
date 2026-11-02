@@ -14,7 +14,7 @@ import (
 
 const (
 	testQueue = "projects/test-project/locations/asia-east1/queues/line-queue"
-	testKey = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+	testKey   = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 )
 
 func TestQueueConfiguration(t *testing.T) {
@@ -35,7 +35,8 @@ func TestEnqueueStableIdAndOIDC(t *testing.T) {
 		worker: "https://worker.example.test/tasks/line-reply",
 		audience: "https://worker.example.test",
 		email: "tasks-invoker@example.iam.gserviceaccount.com",
-		create: func(_ context.Context, req *cloudtaskspb.CreateTaskRequest) (*cloudtaskspb.Task, error) {
+	}
+	q.create = func(_ context.Context, req *cloudtaskspb.CreateTaskRequest) (*cloudtaskspb.Task, error) {
 			calls++
 			if req.Parent != testQueue || req.Task.Name != testQueue+"/tasks/"+testKey {
 				t.Fatal("incorrect deterministic task name")
@@ -55,7 +56,6 @@ func TestEnqueueStableIdAndOIDC(t *testing.T) {
 				t.Fatal("task body must contain only the opaque key")
 			}
 			return nil, status.Error(codes.AlreadyExists, "duplicate")
-		},
 	}
 	if err := q.Enqueue(context.Background(), testKey); err != nil {
 		t.Fatal(err)
