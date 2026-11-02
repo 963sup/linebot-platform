@@ -1,5 +1,20 @@
 # Codex 專案設定
 
-`AGENTS.md` 負責儲存庫規範，`.agents/skills/` 是工作流程。MCP 與 plugins 屬開發工具整合，不等於 Cloud Run runtime SDK。
+**正式專案配置**：[`.codex/config.toml`](config.toml)，並非早期的 `config.toml.example`。
 
-`config.toml.example` 僅是未啟用的範本；先使用使用者既有的 GitHub connector。未經審查的外部 MCP 不應被默認設為可寫入的工具。參見 [MCP / plugins 規劃](../docs/ai/mcp-and-plugins.md)。
+| 內容 | 路徑 | 用途 |
+|---|---|---|
+| Agents | [`.codex/agents/`](agents/) | 五個專用角色（每個一個 TOML） |
+| MCP | [`config.toml`](config.toml) | gopls、Context7、GitHub 唯讀、Firestore Toolbox |
+| Cloud setup | [`scripts/setup-codex-cloud.sh`](../scripts/setup-codex-cloud.sh) | 非互動式下載 Go modules、安裝固定版 gopls |
+| 規範 | [`AGENTS.md`](../AGENTS.md) | 判斷什麼任務用哪個 MCP／Agent，不負責安裝 |
+| Skills | [`.agents/skills/`](../.agents/skills/) | 重複性任務工作流程 |
+
+先閱讀 [Agents 設計](../docs/ai/agents.md)、[MCP 政策](../docs/ai/mcp-and-plugins.md)、[Cloud setup 指引](../docs/ai/codex-cloud.md)。
+
+- 專案級 `config.toml` 只在 Codex **信任此儲存庫** 時載入；不要將 token 寫到 Git。
+- `gopls` 本地 MCP 透過 Cloud install script 安裝，Context7 用已託管的文件 MCP。
+- GitHub MCP、Firestore Toolbox 目前預設停用，**不是已獲得權限或安裝**。
+- Agent 檔案不能自行擴權或代替主 Session 的 sandbox、approval、MCP 授權。
+- Codex 設定驗證已改用純 Go 程式 `go run ./cmd/codexcheck`，不依賴 Python 檔案或 Python 執行環境。
+- 完成 PR 後，Codex Cloud 的管理者仍需在 Cloud UI 測試、Publish／Republish 才可重用此環境。

@@ -7,6 +7,7 @@ require (
 	cloud.google.com/go/firestore v1.29.2
 	cloud.google.com/go/secretmanager v1.23.1
 	cloud.google.com/go/storage v1.70.0
+	github.com/BurntSushi/toml v1.6.0
 	github.com/google/uuid v1.6.0
 	github.com/line/line-bot-sdk-go/v8 v8.23.0
 	github.com/openai/openai-go/v3 v3.91.1

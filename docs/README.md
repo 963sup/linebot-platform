@@ -9,6 +9,8 @@
 - [技術來源與使用分工](sources.md)
 - [LINE 能力矩陣](line/feature-matrix.md)
 - [Codex 開發指南](ai/codex.md)
+- [Codex 專用 Agents](ai/agents.md)
+- [Codex Cloud 安裝與驗證](ai/codex-cloud.md)
 - [Skills](ai/skills.md)
 - [MCP 與 Plugins](ai/mcp-and-plugins.md)
 - [開發路線圖](roadmap.md)

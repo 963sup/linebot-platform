@@ -40,8 +40,20 @@
 - `skills-lock.json` 是從其他儲存庫精選的外部技能來源指紋，不代表已安裝或已驗證，禁止自動執行未審查的腳本。
 - `cloudbuild.deploy.yaml` 僅允許經授權的 staging；在完善可靠性、IAM、Secret Manager 與人工核准之前，不得執行 production 部署。
 
+## Codex Agents 與 MCP 選用（不負責安裝）
+
+- 複雜且互不依賴的任務才委派給 `domain_architect`、`line_integrator`、`cloud_platform`、`go_reviewer` 或 `docs_researcher`；同一檔案不得由多個 Agent 同時改寫，最後由主 Agent 整合、驗證。
+- 修改 Go 程式前，需要追查 definitions、references、型別或診斷時用 **gopls MCP**；若不可用則使用本地 Go 工具。
+- 新版本 SDK／API 使用方式、設定或重大變更需用 **Context7 MCP**，再核對相關官方 Go／LINE／Google／OpenAI 文件；無法查證時明確標示。
+- PR／Issue／commit／CI 狀態需要外部證據時，優先選擇既有已授權 GitHub 工具，必要時才使用 **GitHub MCP（唯讀）**。
+- **Firestore Toolbox** 只在使用者授權的隔離 staging 環境、具最小權限 ADC 時使用，不得存取或修改 production。
+- `AGENTS.md` 只負責路由規則；**不可因指示而自行安裝 MCP、產生 token、執行 OAuth 或修改個人 Codex 設定**。MCP 的啟用與安裝由 `.codex/config.toml`、Codex Cloud Install script 與使用者環境設定處理。
+
+請閱讀 [Agents 職責](docs/ai/agents.md)、[MCP 設定與權限](docs/ai/mcp-and-plugins.md)、[Codex Cloud](docs/ai/codex-cloud.md)。
+
 ## 驗證與交付
 
+- Codex 設定使用 `go run ./cmd/codexcheck` 驗證 TOML、Agents、Cloud Setup Script 與專案不得包含 Python `.py` 檔案；不需要 Python runtime。
 - Go 程式存在後，依序檢查格式、`go vet ./...`、`go test ./...`、`go test -race ./...`、`go build ./...`；若環境不支援，明確記錄原因。
 - 任何與 SDK 的整合都需 unit／contract tests；實際雲端／LINE E2E 需隔離且明確授權。
 - 提交 PR 必須描述變更、實際測試結果、風險、未完成事項；不得聲稱空目錄已完成實作。
