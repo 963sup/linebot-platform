@@ -3,9 +3,10 @@ package line
 import (
 	"context"
 	"errors"
-	"fmt"
+	"net/http"
 
 	"github.com/963sup/linebot-platform/internal/application/ports/outbound"
+	"github.com/963sup/linebot-platform/internal/infrastructure/resilience"
 	"github.com/line/line-bot-sdk-go/v8/linebot/messaging_api"
 )
 
@@ -49,38 +50,61 @@ func convert(messages []outbound.Message) ([]messaging_api.MessageInterface, err
 	return result, nil
 }
 
-func (s *Sender) Reply(ctx context.Context, replyToken string, messages []outbound.Message) error {
+// clientFor applies the request context to a per-call copy. LINE SDK v8.23.0's
+// WithContext mutates the receiver; using it on the shared client would race and
+// mix concurrent requests. Do not mutate s.client after construction.
+func (s *Sender) clientFor(ctx context.Context) (*messaging_api.MessagingApiAPI, error) {
+	if ctx == nil {
+		return nil, errors.New("request context is required")
+	}
 	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	perCall := *s.client
+	return perCall.WithContext(ctx), nil
+}
+
+func httpStatus(response *http.Response) int {
+	if response == nil {
+		return 0
+	}
+	return response.StatusCode
+}
+
+func (s *Sender) Reply(ctx context.Context, replyToken string, messages []outbound.Message) error {
+	client, err := s.clientFor(ctx)
+	if err != nil {
 		return err
 	}
 	mapped, err := convert(messages)
 	if err != nil {
 		return err
 	}
-	_, err = s.client.ReplyMessage(&messaging_api.ReplyMessageRequest{
+	response, _, err := client.ReplyMessageWithHttpInfo(&messaging_api.ReplyMessageRequest{
 		ReplyToken: replyToken,
 		Messages:   mapped,
 	})
 	if err != nil {
-		return fmt.Errorf("LINE reply failed: %w", err)
+		return resilience.Wrap("line", "reply", httpStatus(response), err)
 	}
 	return nil
 }
 
 func (s *Sender) Push(ctx context.Context, recipient string, messages []outbound.Message, retryKey string) error {
-	if err := ctx.Err(); err != nil {
+	client, err := s.clientFor(ctx)
+	if err != nil {
 		return err
 	}
 	mapped, err := convert(messages)
 	if err != nil {
 		return err
 	}
-	_, err = s.client.PushMessage(&messaging_api.PushMessageRequest{
+	response, _, err := client.PushMessageWithHttpInfo(&messaging_api.PushMessageRequest{
 		To:       recipient,
 		Messages: mapped,
 	}, retryKey)
 	if err != nil {
-		return fmt.Errorf("LINE push failed: %w", err)
+		return resilience.Wrap("line", "push", httpStatus(response), err)
 	}
 	return nil
 }
