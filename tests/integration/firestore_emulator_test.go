@@ -61,7 +61,7 @@ func newRecord(t *testing.T, client *sdk.Client, ctx context.Context, id string,
 	job := outbound.EventJob{
 		Key: key, ReplyToken: "fake-emulator-reply", ReplyUntil: deadline.UTC(),
 		CreatedAt: createdAt,
-		Message: outbound.Message{Kind: outbound.KindText, Text: "fixed demo response"},
+		Message:   outbound.Message{Kind: outbound.KindText, Text: "fixed demo response"},
 	}
 	created, err := store.Record(ctx, job)
 	if err != nil || !created {

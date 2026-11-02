@@ -9,7 +9,7 @@ import (
 )
 
 type scenarioCatalog struct {
-	SchemaVersion int            `toml:"schema_version"`
+	SchemaVersion int             `toml:"schema_version"`
 	Scenarios     []codexScenario `toml:"scenarios"`
 }
 
