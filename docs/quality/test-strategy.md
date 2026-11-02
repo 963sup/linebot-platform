@@ -29,6 +29,15 @@ These are **offline contract tests** against the pinned Go SDK and local HTTP se
 - Google Tasks, Google Calendar and Google Cloud Tasks are distinct products with different credentials, scopes and API models.
 - Catalog `client_ready` requires actual native Factory source but does not mean a service is enabled, an Adapter exists or a live API permission was verified.
 
+## Durable Event Processing (Stage 4)
+
+- Application Fake Store／Queue：事件 SHA-256 Fingerprint、單次 Record、重送時重新派送但不覆寫 Reply Token。
+- Worker：Pending 單次 Claim／送出、模糊網路失敗記錄 Unknown、同一 Key 的第二次交付不再呼叫 LINE。
+- HTTP：原始 LINE Webhook 驗章、bot destination、持久化後才回 200、派送失敗時回 503；Cloud Tasks／Scheduler Callback 必須經 OIDC Verifier 驗證。
+- Cloud Tasks Queue：固定 Task ID、OIDC email/audience、只包含 opaque Key 的 JSON Body、AlreadyExists 與其他失敗區分。
+- Bootstrap Config：預設同步模式維持相容，Durable/Worker 的 GCP、LINE、OIDC 欄位缺少時 fail closed。
+- Google SDK 的 Firestore Transaction、Cloud Tasks CreateTask 尚須在隔離 Firestore Emulator 與授權 Staging 進行真實一致性測試。本 PR 的離線測試不能替代 IAM／OIDC／TTL／排程驗證。
+
 ## CI
 
 GitHub Actions 須先下載依賴，再執行：
