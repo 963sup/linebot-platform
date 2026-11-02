@@ -2,7 +2,7 @@
 
 下表保留最初 scaffold 的 123 個目錄；已有實際檔案的目錄會移除 `.gitkeep`，仍為空的目錄則繼續保留 `.gitkeep`。Go／CI／Terraform 等檔案依階段實作，不能因目錄存在就視為功能完成。`valueobjects` 是 Go package 識別名稱；`genai` 對應 Google Gen AI SDK 的實作邊界。
 
-原 scaffold：**123 個目錄**。其後增設 `internal/infrastructure/dependencies/`、`cmd/codexcheck/`、`.codex/agents/`；本次再加入 `docs/sdk/`、`.agents/skills/sdk-integration/` 與其 `references/`，因此目前實際列出 **129 個目錄**。下列清單對齊 Git Tree，目錄存在不代表功能已實作。
+原 scaffold：**123 個目錄**。此階段另外增加 `internal/infrastructure/dependencies/`（選用 SDK 的 Go dependency tracking package），並為 Codex 設定檢查程式新增 `cmd/codexcheck/`，加上 SDK Catalog 與開發 Skill 的 `docs/sdk/`、`.agents/skills/sdk-integration/` 和其 `references/` 目錄，目前實際共有 **128 個目錄**；以下列出當前全部目錄。
 
 ```text
 .agents
@@ -17,7 +17,6 @@
 .agents/skills/sdk-integration
 .agents/skills/sdk-integration/references
 .codex
-.codex/agents
 .github
 .github/ISSUE_TEMPLATE
 .github/workflows
