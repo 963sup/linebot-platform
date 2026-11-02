@@ -39,7 +39,7 @@ func TestLoggingDoesNotExposeSecretsOrURLs(t *testing.T) {
 			t.Fatalf("sensitive value %q leaked to log", secret)
 		}
 	}
-	if WrapHTTP("line", nil)(base) != base {
-		t.Fatal("nil logger should not wrap transport")
+	if _, ok := WrapHTTP("line", nil)(base).(fakeTransport); !ok {
+		t.Fatal("nil logger should preserve the original RoundTripper")
 	}
 }
