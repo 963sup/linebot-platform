@@ -2,7 +2,7 @@
 
 使用 Go、DDD（Domain-Driven Design）與 Hexagonal Architecture 的 LINE Messaging API 平台；規劃部署在 Google Cloud Run，並保留 Google Cloud、Workspace、OpenAI 與 Google Gen AI 整合介面。
 
-> **狀態：開發用 MVP，非 production-ready。** 已加入 HTTP 健康檢查、LINE SDK 驗簽 webhook、文字 Reply、簡單 Flex Message Reply，以及命令列 Push。尚無 Firestore inbox/outbox、Cloud Tasks 或跨執行個體去重；沒有部署任何雲端資源，也沒有真實 LINE 帳號測試。
+> **狀態：開發用 MVP，非 production-ready。** 預設仍為同步 LINE Webhook／Reply／Push 示範。另有需明確啟用的 Firestore Inbox/Outbox、Cloud Tasks OIDC Worker 與 Reconcile 程式碼；**未建立或部署任何 GCP 資源、IAM、TTL、排程，也未實測真實 LINE／GCP 帳號**。
 
 ## 已實作的功能
 
@@ -13,7 +13,8 @@
 | Reply Text | `application/usecases/conversation` 與 LINE adapter | 使用 LINE Messaging API SDK |
 | Reply Flex | 同上 | 傳入 `flex` 或 `卡片` 時回覆簡單 bubble |
 | Push Text／Flex | `cmd/ops` | 僅 CLI `push --send` 會實際呼叫 API，且需要接收者與 retry key |
-| Firestore、Storage、Cloud Tasks、Secret Manager | `internal/infrastructure/google/cloud/` | 原生 Client Factory 已建立；尚未接入業務／正式環境 |
+| Firestore、Cloud Tasks（背景佇列） | `internal/adapter/outbound/google/cloud/` | 具備選用 Durable Inbox/Outbox 與派送 Adapter，尚未部署 |
+| Storage、Secret Manager | `internal/infrastructure/google/cloud/` | 原生 Client Factory，未接入業務 |
 | Sheets、Drive、Calendar、Google Tasks（待辦） | `internal/infrastructure/google/api/` | 原生 Client Factory 已建立；個人資料仍需使用者 OAuth 授權 |
 | OpenAI、Google Gen AI | `internal/infrastructure/openai/`、`internal/infrastructure/google/genai/` | 原生 Client Factory 已建立；尚未接入業務／啟用 |
 | `garr` | `go.mod` | 選用工具，仍未啟用 |
@@ -55,13 +56,13 @@ CLI 發送會先輸出可重用的 UUID retry key。若發生 timeout 或結果�
 ## 架構與限制
 
 - `domain/`：業務不變量、aggregates、valueobjects；本階段保留擴充空間。
-- `application/`：Messaging Port、驗證、Reply／Push、基本文字回覆 usecase。
-- `adapter/`：LINE webhook 和 outbound Messaging API SDK；健康檢查。
+- `application/`：Messaging Port、Reply／Push、文字回覆，以及持久 Ingestion／Worker Use Case。
+- `adapter/`：同步與持久 Webhook、具 OIDC 驗證的 Worker、Firestore、Cloud Tasks、LINE 發送。
 - `infrastructure/`：LINE 受管理 HTTP Runtime，以及其他 Provider 的原生 Client Factory（`client_ready`）；後者尚未接入業務。
 - `bootstrap/`：設定、組裝、啟動與 shutdown。
-- `cmd/webhook`、`cmd/ops`：實際可執行程式；`cmd/worker` 尚待實作。
+- `cmd/webhook`、`cmd/worker`、`cmd/ops`：已具可編譯入口；Worker 尚未部署。
 
-**重要：目前同步回覆並未持久化 incoming event。** 在 LINE webhook 重送、批次處理部分成功、容器重啟時，仍可能造成重複發送；未完成 Firestore inbox/outbox + Cloud Tasks + 冪等策略前，不能稱為正式環境可靠 Bot。
+**重要：預設 `LINE_EVENT_MODE=sync` 不持久化事件。** Durable 模式目前僅有程式碼與離線測試，缺少真實 Staging、unsend／edit、正式 IAM 與人工故障修復驗證；不能宣稱 production-ready 或端到端 exactly-once。
 
 ## Codex SDK 自動辨識（開發基礎）
 
@@ -85,6 +86,14 @@ CLI 發送會先輸出可重用的 UUID retry key。若發生 timeout 或結果�
 - SDK Catalog 新增 `client_ready`，意為原生 Factory 存在但**不代表**已接入業務 Adapter、取得使用者 OAuth 或完成 Staging／Production 驗證。
 
 Google Tasks、Calendar 的授權詳見 [Workspace OAuth 與 API](docs/sdk/workspace-oauth.md)。
+
+## 持久 Webhook 與私有 Worker（階段 4）
+
+- 預設 `LINE_EVENT_MODE=sync` 保留原開發模式。**只有**設定 `LINE_EVENT_MODE=durable` 並具備完整 GCP／LINE／OIDC 設定，才建立 Firestore 與 Cloud Tasks Client。
+- Webhook 驗章及 bot destination，Firestore Transaction 同時建立 Inbox/Outbox 並以 SHA-256 Event Key 去重；Cloud Tasks 以固定 Task ID 和 Google OIDC 將不敏感 Key 交給私有 Worker。
+- `cmd/worker` 的 `/tasks/line-reply`、`/tasks/dispatch` 必須通過 OIDC 驗證。Worker 執行單次 Claim（`pending -> sending -> sent/expired/unknown`），避免模糊發送結果後盲目重試。
+- `Dockerfile.worker` 與 `cloudbuild.worker.yaml` 僅是建置範本，不自動部署。仍需隔離 Staging 的 Firestore TTL、Cloud Scheduler、IAM、Cloud Tasks、私有 Cloud Run 實際驗證。
+- [事件狀態機](docs/architecture/event-processing.md)／[Staging 操作要求](docs/operations/durable-worker.md) 說明可靠性和安全限制。
 
 ## Codex Cloud 開發環境
 
