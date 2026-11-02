@@ -22,6 +22,12 @@ Reference: [verification and evidence contract](references/verification.md).
 - `cloud.google.com/go/cloudtasks/apiv2` is a background job queue, not Google Tasks. Use ADC/IAM for Cloud Tasks and a caller-owned, authorized per-user OAuth HTTP client with narrow scopes for Google Tasks/Calendar. Read `docs/sdk/workspace-oauth.md` when applicable.
 - `client_ready` native SDK factories do not enable accounts, obtain user consent or trigger billable calls automatically.
 
+## Stage-5 evidence requirements
+
+- Use `docs/ai/zero-context-scenarios.toml` for fresh Codex sessions. The Codex validator verifies scenario routing; it does **not** prove agent quality or API correctness in a new session.
+- A local `FIRESTORE_EMULATOR_HOST` and `make acceptance-emulator` are required to execute actual Firestore SDK transaction integration tests. Missing emulator or skipped tests must never be reported as successful integration.
+- GCP IAM/OIDC/TTL/Scheduler, LINE Sandbox, user OAuth and six fresh sessions require separate authorized evidence. The `cmd/acceptance` reviewer gate deliberately fails by default and must not be bypassed.
+
 ## Non-negotiable boundaries
 
 - `go.mod` is the only source of module versions. Catalog capability tags are discovery hints, not exhaustive API coverage or guarantees of provider permissions.
