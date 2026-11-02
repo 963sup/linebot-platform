@@ -1,0 +1,45 @@
+package contract
+
+import (
+	"context"
+	"errors"
+	"testing"
+
+	cloudtasks "github.com/963sup/linebot-platform/internal/infrastructure/google/cloud/cloudtasks"
+	firestore "github.com/963sup/linebot-platform/internal/infrastructure/google/cloud/firestore"
+	secretmanager "github.com/963sup/linebot-platform/internal/infrastructure/google/cloud/secretmanager"
+	storage "github.com/963sup/linebot-platform/internal/infrastructure/google/cloud/storage"
+)
+
+func TestGoogleCloudFactoriesRejectInvalidContext(t *testing.T) {
+	if _, err := firestore.NewClient(nil, "test-project"); err == nil {
+		t.Fatal("Firestore must reject nil context")
+	}
+	if _, err := firestore.NewClient(context.Background(), ""); err == nil {
+		t.Fatal("Firestore must reject missing project")
+	}
+	if _, err := cloudtasks.NewClient(nil); err == nil {
+		t.Fatal("Cloud Tasks must reject nil context")
+	}
+	if _, err := secretmanager.NewClient(nil); err == nil {
+		t.Fatal("Secret Manager must reject nil context")
+	}
+	if _, err := storage.NewClient(nil); err == nil {
+		t.Fatal("Storage must reject nil context")
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	for name, construct := range map[string]func() error{
+		"firestore": func() error { _, err := firestore.NewClient(ctx, "test-project"); return err },
+		"cloudtasks": func() error { _, err := cloudtasks.NewClient(ctx); return err },
+		"secretmanager": func() error { _, err := secretmanager.NewClient(ctx); return err },
+		"storage": func() error { _, err := storage.NewClient(ctx); return err },
+	} {
+		t.Run(name, func(t *testing.T) {
+			if err := construct(); !errors.Is(err, context.Canceled) {
+				t.Fatalf("expected cancellation from %s factory, got %v", name, err)
+			}
+		})
+	}
+}
