@@ -17,11 +17,11 @@ func completeFixture(now time.Time) evidence {
 		ProjectID: "linebot-acceptance-staging",
 		CommitSHA: dummySHA, Reviewer: "test-reviewer",
 		CheckedAt: now.UTC().Format(time.RFC3339),
-		Checks: make(map[string]checkEvidence),
+		Checks:    make(map[string]checkEvidence),
 	}
 	for _, id := range requiredChecks {
 		e.Checks[id] = checkEvidence{
-			Status: "passed",
+			Status:    "passed",
 			Reference: "https://github.com/963sup/linebot-platform/actions",
 		}
 	}
