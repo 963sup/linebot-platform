@@ -59,7 +59,7 @@ func (s *Sender) Reply(ctx context.Context, replyToken string, messages []outbou
 	}
 	_, err = s.client.ReplyMessage(&messaging_api.ReplyMessageRequest{
 		ReplyToken: replyToken,
-		Messages: mapped,
+		Messages:   mapped,
 	})
 	if err != nil {
 		return fmt.Errorf("LINE reply failed: %w", err)
@@ -76,7 +76,7 @@ func (s *Sender) Push(ctx context.Context, recipient string, messages []outbound
 		return err
 	}
 	_, err = s.client.PushMessage(&messaging_api.PushMessageRequest{
-		To: recipient,
+		To:       recipient,
 		Messages: mapped,
 	}, retryKey)
 	if err != nil {

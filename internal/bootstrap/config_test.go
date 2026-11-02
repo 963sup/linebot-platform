@@ -8,8 +8,8 @@ func env(values map[string]string) func(string) string {
 
 func TestLoadConfig(t *testing.T) {
 	tests := []struct {
-		name    string
-		values  map[string]string
+		name     string
+		values   map[string]string
 		wantPort string
 		wantLive bool
 		wantErr  bool
