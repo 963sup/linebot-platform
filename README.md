@@ -25,7 +25,7 @@
 - Go **1.27.3**（已包含 Go 1.27 的安全修補；依 LINE/OpenAI SDK 當前要求）。
 - `make`、Git。
 - 有效 LINE Channel Secret + Channel Access Token：只有啟用 /webhook/line 與 CLI 發送時才需要。
-- 外部 Go dependencies 需網路下載，`go.sum` 必須在首次整理依賴後提交；請勿手寫 checksum。
+- 外部 Go dependencies 需要網路下載；`go.sum` 已依 GitHub Actions 的 Go module resolution 產生並提交，不可手寫 checksum。
 
 ## 本機使用
 

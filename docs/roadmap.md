@@ -12,7 +12,8 @@
 - [x] `cmd/webhook` 提供 `GET /healthz`、PORT、graceful shutdown。
 - [x] 建立 unit/contract tests、Makefile、Dockerfile、GitHub Actions CI 的實作草案。
 - [x] Go AST 架構邊界檢查。
-- [ ] 在 GitHub runner 取得真實 `go.sum`、確認所有 build/test 通過並提交鎖定檔。
+- [x] GitHub runner 取得真實的 `go.sum` 並提交。
+- [ ] 確認所有 build/test 通過（需檢查最新 CI run）。
 - [ ] PR 經審查合併。
 
 ## P2 — LINE webhook 與持久工作

@@ -17,7 +17,7 @@ func (f *fakeSender) Reply(_ context.Context, _ string, _ []outbound.Message) er
 	return nil
 }
 
-func (f *fakeSender) Push(_ context.Context, _, _ string, _ []outbound.Message, _ string) error {
+func (f *fakeSender) Push(_ context.Context, _ string, _ []outbound.Message, _ string) error {
 	f.pushCalls++
 	return nil
 }

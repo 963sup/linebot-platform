@@ -33,6 +33,6 @@ go run ./cmd/ops push --to "<recipient>" --text "hello"
 
 ## SDK 安裝狀態
 
-`go.mod` 只表示模組版本需求。需在有網路的 Go 1.27.3 環境執行 `go mod tidy`、`go mod download`，並將產生的 `go.sum` 提交。CI 也會將解析結果產出為審查用 artifact。
+`go.mod` 只表示模組版本需求。`go.mod`／`go.sum` 已於 GitHub Actions Go 1.27.3 環境解析並提交。後續升級模組時應在有網路的環境執行 `go mod tidy`、`go mod download`，檢查並提交異動；CI 持續保留依賴解析的審查用 artifact。
 
 Workspace、Cloud Services、OpenAI、Gen AI、garr 已宣告但尚未接線；不能只憑目錄／依賴存在就認定功能完成。

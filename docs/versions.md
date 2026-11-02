@@ -1,6 +1,6 @@
 # 版本與依賴策略
 
-Go module 已加入；已宣告以下固定 SDK 版本。由於本次執行環境無法連接 Go module proxy，**依賴尚未在本機下載，go.sum 必須由 CI / 具有網路的 Go 1.27.3 環境經 go mod tidy 產生後提交**，不可偽造 checksum。
+Go module 已加入；已宣告以下固定 SDK 版本。本地執行環境無法連接 Go module proxy，故由 GitHub Actions 在 Go 1.27.3 上執行 `go mod tidy`／`go mod download`，將真實的 `go.mod`、`go.sum` 複製進此 PR。這表示 SDK 依賴圖已解析，不表示未連接的服務已啟用。
 
 實作時請先查閱各專案當下 README／release：
 - LINE Go SDK：`github.com/line/line-bot-sdk-go/v8/linebot`，其 README 要求 Go 1.26+。

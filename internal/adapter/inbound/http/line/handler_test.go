@@ -24,7 +24,7 @@ func (f *fakeMessaging) Reply(_ context.Context, _ string, messages []outbound.M
 	return nil
 }
 
-func (f *fakeMessaging) Push(_ context.Context, _, _ string, _ []outbound.Message, _ string) error {
+func (f *fakeMessaging) Push(_ context.Context, _ string, _ []outbound.Message, _ string) error {
 	return nil
 }
 

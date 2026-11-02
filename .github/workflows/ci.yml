@@ -29,14 +29,6 @@ jobs:
         run: |
           go mod tidy
           go mod download
-      - name: Print generated lockfiles (bootstrap validation only)
-        run: |
-          echo "GOMOD_BEGIN"
-          cat go.mod
-          echo "GOMOD_END"
-          echo "GOSUM_BEGIN"
-          cat go.sum
-          echo "GOSUM_END"
       - name: Format, vet, race tests and build
         run: make check
       - name: Preserve resolved go.mod and go.sum for review

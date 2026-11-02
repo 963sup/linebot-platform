@@ -15,7 +15,7 @@ func (c *captureSender) Reply(_ context.Context, _ string, messages []outbound.M
 	return nil
 }
 
-func (c *captureSender) Push(_ context.Context, _, _ string, _ []outbound.Message, _ string) error {
+func (c *captureSender) Push(_ context.Context, _ string, _ []outbound.Message, _ string) error {
 	return nil
 }
 
