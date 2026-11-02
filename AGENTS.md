@@ -40,6 +40,14 @@
 - `skills-lock.json` 是從其他儲存庫精選的外部技能來源指紋，不代表已安裝或已驗證，禁止自動執行未審查的腳本。
 - `cloudbuild.deploy.yaml` 僅允許經授權的 staging；在完善可靠性、IAM、Secret Manager 與人工核准之前，不得執行 production 部署。
 
+## SDK 自動辨識與開發路由
+
+- 新增或修改任何 `go.mod` 直接依賴 SDK 時，先讀 [SDK Catalog](docs/sdk/catalog.toml) 和 [SDK 整合架構](docs/architecture/sdk-integration.md)，再按需套用 [sdk-integration Skill](.agents/skills/sdk-integration/SKILL.md)。只讀相關模組，勿預載全部 SDK。
+- `go.mod` 是版本唯一來源；Catalog 用來定位 Provider／Package／Factory／Adapter 與整合狀態，不能當成完整 API 清單或實際授權證明。
+- 優先使用已鎖定模組的 Go 原始碼、`go list`、`go doc` 和 gopls 驗證真實 Symbol，再對照官方文件查核認證、配額、冪等性及限制；不可猜測 API。
+- 修改依賴、Factory 或 Adapter 時，連同 Catalog、架構文件、相關能力矩陣和測試一併同步；執行 `go run ./cmd/codexcheck` 與 `make check`。
+- Application 與 Domain 使用 Go 標準庫及專案自有 Port，不直接 import 外部 SDK；不建立萬用動態 SDK 呼叫器。已宣告、已整合、已經 staging 驗證是不同狀態。
+
 ## Codex Agents 與 MCP 選用（不負責安裝）
 
 - 複雜且互不依賴的任務才委派給 `domain_architect`、`line_integrator`、`cloud_platform`、`go_reviewer` 或 `docs_researcher`；同一檔案不得由多個 Agent 同時改寫，最後由主 Agent 整合、驗證。

@@ -31,7 +31,7 @@ jobs:
           go mod download
       - name: Verify dependency lockfiles are committed
         run: git diff --exit-code -- go.mod go.sum
-      - name: Validate Codex project settings and cloud setup (Go)
+      - name: Validate Codex settings, SDK catalog and cloud setup (Go)
         run: go run ./cmd/codexcheck
       - name: Format, vet, race tests and build
         run: make check

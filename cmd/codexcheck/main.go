@@ -177,6 +177,9 @@ func validate(root string) error {
 	if err := validateAgents(filepath.Join(root, ".codex", "agents")); err != nil {
 		return err
 	}
+	if err := validateCatalog(root); err != nil {
+		return fmt.Errorf("SDK catalog: %w", err)
+	}
 	setup := filepath.Join(root, "scripts", "setup-codex-cloud.sh")
 	cmd := exec.Command("bash", "-n", setup)
 	if output, err := cmd.CombinedOutput(); err != nil {
@@ -195,5 +198,5 @@ func main() {
 		fmt.Fprintln(os.Stderr, "Codex config validation:", err)
 		os.Exit(1)
 	}
-	fmt.Println("Codex config OK: 5 agents, 5 MCP entries; no Python source files")
+	fmt.Println("Codex config OK: 5 agents, 5 MCP entries, SDK catalog; no Python source files")
 }
