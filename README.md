@@ -69,6 +69,13 @@ CLI 發送會先輸出可重用的 UUID retry key。若發生 timeout 或結果�
 - `go run ./cmd/codexcheck` 驗證 Catalog 與直接依賴一致、程式配置有效；CI 已納入這項檢查。這不代表其他 SDK 已初始化或取得 API 權限。
 - 發現新的 SDK 功能時，只需按需擴充既有 Adapter／Factory；無須建立萬用動態 SDK Client。完整流程見 [SDK 整合架構](docs/architecture/sdk-integration.md)。
 
+## Managed LINE SDK Runtime（階段 2）
+
+- Webhook 透過 `bootstrap.NewWebhookRuntime` 組裝 LINE 原生 SDK Client，並管理專屬 HTTP Transport 的生命週期；CLI Push 也使用相同的受管理 HTTP 基礎。
+- `internal/infrastructure/httpclient` 採用獨立連線池與 Timeout 設定，`observability` 只記錄安全 HTTP metadata，`resilience` 分類失敗但**不做未經審核的自動重試**。
+- `LINE_API_TIMEOUT` 預設 `8s`，可調範圍 `1s` 到 `12s`。LINE v8.23.0 的 `WithContext` 會改動 Client，因此 Adapter 以每次呼叫的獨立副本帶入 Context，避免並行請求共用可變狀態。
+- 增加模擬 HTTP 契約、取消、並發及錯誤去敏測試。這些改善**不包含** Firestore Inbox/Outbox、Cloud Tasks Worker 或正式環境驗收。
+
 ## Codex Cloud 開發環境
 
 - [`.codex/config.toml`](.codex/config.toml) 配置 gopls／Context7／OpenAI Docs MCP，並保留停用中的唯讀 GitHub MCP／Firestore Toolbox。Codex Cloud agent-phase 需允許 `developers.openai.com`，在 Republish 後的新工作階段驗證連線。

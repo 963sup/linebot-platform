@@ -34,6 +34,19 @@ Load only the relevant provider's sources; do not eagerly ingest every SDK or du
 
 For LINE, existing `internal/infrastructure/line/client_factory.go` and `internal/adapter/outbound/line/messages.go` are the current reference slice. No other Factory is considered implemented merely because its directory exists.
 
+## Phase 2: implemented SDK runtime foundation
+
+The webhook entrypoint now calls `bootstrap.NewWebhookRuntime` to compose only the LINE provider. It owns a `httpclient.Managed` transport and closes idle connections **after** the inbound HTTP server shuts down. The existing `NewWebhookRouter` signature remains available for compatibility; new long-running entrypoints should use the runtime API for explicit ownership. The Push CLI builds and closes its own managed transport.
+
+- `internal/infrastructure/httpclient`: clones Go's default transport per process/SDK Client, reuses idle connections, applies explicit timeout, and supports optional transport decorators. It does not override TLS defaults or automatically retry.
+- `internal/infrastructure/observability`: logs provider name, numeric status, duration and transport error flag at debug level. It does **not** log URL, headers, body, credentials, user ID or raw SDK errors.
+- `internal/infrastructure/resilience`: categorizes HTTP failure and unknown outcomes without leaking SDK response data in `Error()`, and preserves underlying errors via `Unwrap()` for controlled code inspection. It provides **no global retry loops**.
+- `internal/infrastructure/line`: typed native LINE SDK Client factory with injected HTTP Client; the caller owns HTTP transport resources.
+- `internal/adapter/outbound/line`: SDK v8.23.0's `WithContext` mutates `MessagingApiAPI.ctx`, so the adapter creates a **per-call shallow copy** before calling `WithContext`. This works for the pinned client structure, prevents shared mutation under parallel requests, and must be revalidated on any SDK upgrade. The HTTP timeout is retained as an upper bound. Reply and Push use the native `WithHttpInfo` endpoints to obtain HTTP status for safe classification.
+- `internal/bootstrap/config.go`: optional `LINE_API_TIMEOUT` defaults to 8s, accepts 1s–12s to remain within the current synchronous webhook HTTP server's 15s write deadline.
+
+**No new providers have been activated.** Google Cloud, Workspace, OpenAI and Gemini are still listed as `declared` in the SDK Catalog. Background queue, durable deduplication and production-grade webhook behavior remain out of scope.
+
 ## Security and reliability constraints
 
 - Never commit provider keys or pass production credentials to Codex or CI. Use least-privilege ADC/workload identity, scoped OAuth or SDK-native credentials when a service is actually enabled.
@@ -45,8 +58,8 @@ For LINE, existing `internal/infrastructure/line/client_factory.go` and `interna
 
 ## Phased rollout
 
-1. **Discovery foundation (current PR)**: catalog, one shared skill, automated catalog validation, architecture guard, synchronized docs. No new live SDK calls.
-2. **Typed client infrastructure**: consistent configuration, lifecycle and observability policies; first migrate/verify the existing LINE slice without behavioral regression.
+1. **Discovery foundation (PR #8, completed slice)**: catalog, one shared skill, automated catalog validation, architecture guard, synchronized docs. No new live SDK calls.
+2. **Typed client infrastructure (PR #8, completed LINE slice)**: typed factory injection, owned transport, configuration, logging metadata, safe error semantics and request-context isolation; reusable base for future providers. Verify CI and authorized staging separately.
 3. **Provider integrations**: Google Cloud, Google Workspace, OpenAI and Gemini clients and adapters in small independent slices; mark catalog entries integrated only after evidence.
 4. **Durable event handling**: Firestore inbox/outbox, Cloud Tasks worker, idempotency and uncertain send outcomes.
 5. **Staging acceptance**: run real SDK contract tests with authorized test identities, validate Codex zero-context tasks in a fresh environment, observe and document any gaps.

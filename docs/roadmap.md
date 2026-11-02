@@ -25,9 +25,10 @@
 - [ ] 新分支 PR 審查與 CI 通過後合併 `main`。
 - [ ] 在新的 Codex Cloud 工作階段實測 SDK 查證流程與 MCP 可用性。
 
-## SDK Runtime — 後續小型 PR
+## SDK Runtime — 分階段實施
 
-- [ ] Typed Client Factory / Transport / Observability / Lifecycle，先以 LINE 驗證。
+- [x] LINE Typed Client Factory 接受受管理 HTTP Client，加入 Timeout、獨立 Transport、生命週期關閉、出站安全 Telemetry、錯誤分類、Context 隔離及離線契約測試。
+- [ ] 其他服務按實際需求套用此共用建構機制（不強迫不同 SDK 使用同一 Interface）。
 - [ ] Firestore、Cloud Tasks、Secret Manager、Storage 的 Client 與 Adapter（僅啟用有實際需求者）。
 - [ ] OpenAI、Gemini、Drive、Sheets、Calendar 的受管理 Client 和契約測試。
 - [ ] 持久事件、去重、Inbox/Outbox、Worker 與發送結果未知處理。
