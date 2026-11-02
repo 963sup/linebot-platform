@@ -5,7 +5,7 @@
 實作時請先查閱各專案當下 README／release：
 - LINE Go SDK：`github.com/line/line-bot-sdk-go/v8/linebot`，其 README 要求 Go 1.26+。
 - OpenAI Go SDK：`github.com/openai/openai-go/v3`，其 README 要求 Go 1.26+，並特別列出 HTTP/2 安全修補的最低 patch。
-- Gemini Go SDK：`google.golang.org/genai`。
+- Google Gen AI Go SDK（Gemini 等）：`google.golang.org/genai`；實作路徑 `internal/adapter/outbound/genai/` 與 `internal/infrastructure/google/genai/`。
 - Google Cloud：依服務採 `cloud.google.com/go/<service>`。
 - Google Workspace／Discovery：`google.golang.org/api`。
 - 程序內韌性選配：`go.linecorp.com/garr`。

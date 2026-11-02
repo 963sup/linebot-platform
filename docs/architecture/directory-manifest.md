@@ -1,6 +1,6 @@
 # 目錄配置清單
 
-下表列出本次 scaffold 建立的所有目錄（每一個目錄皆有 `.gitkeep`）。Go／CI／Terraform 等檔案僅在實作時建立，不能因目錄存在而視為功能完成。
+下表列出本次 scaffold 建立的所有目錄（每一個目錄皆有 `.gitkeep`）。Go／CI／Terraform 等檔案僅在實作時建立，不能因目錄存在而視為功能完成。`valueobjects` 是 Go package 識別名稱；`genai` 對應 Google Gen AI SDK 的實作邊界。
 
 總計：**123 個目錄**。
 
@@ -57,7 +57,7 @@ internal/adapter/inbound/http/tasks
 internal/adapter/outbound
 internal/adapter/outbound/audit
 internal/adapter/outbound/clock
-internal/adapter/outbound/gemini
+internal/adapter/outbound/genai
 internal/adapter/outbound/google
 internal/adapter/outbound/google/api
 internal/adapter/outbound/google/api/calendar
@@ -97,9 +97,8 @@ internal/domain/factories
 internal/domain/policies
 internal/domain/repositories
 internal/domain/specifications
-internal/domain/value-objects
+internal/domain/valueobjects
 internal/infrastructure
-internal/infrastructure/gemini
 internal/infrastructure/google
 internal/infrastructure/google/api
 internal/infrastructure/google/api/calendar
@@ -111,6 +110,7 @@ internal/infrastructure/google/cloud/cloudtasks
 internal/infrastructure/google/cloud/firestore
 internal/infrastructure/google/cloud/secretmanager
 internal/infrastructure/google/cloud/storage
+internal/infrastructure/google/genai
 internal/infrastructure/httpclient
 internal/infrastructure/line
 internal/infrastructure/observability

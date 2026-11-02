@@ -14,10 +14,10 @@ LINE Platform
 
 ## 邊界
 
-- **Domain**：業務模型與不變量，不接觸 SDK。
+- **Domain**：業務模型與不變量，不接觸 SDK；Value Objects 預留於 `internal/domain/valueobjects/`。
 - **Application**：執行流程、命令、查詢、ports；只有協調，不含 HTTP 細節。
-- **Adapter**：HTTP/CLI 入站，SDK / Firestore / Cloud Tasks 等出站。
-- **Infrastructure**：外部 client、憑證、transport、觀測與執行設定。
+- **Adapter**：HTTP/CLI 入站，SDK / Firestore / Cloud Tasks 等出站；Gemini provider 使用 `internal/adapter/outbound/genai/`。
+- **Infrastructure**：外部 client、憑證、transport、觀測與執行設定；Google Gen AI SDK client 預留於 `internal/infrastructure/google/genai/`。
 - **Bootstrap**：依賴組裝；cmd 只啟動服務。
 
 ## 可靠性
