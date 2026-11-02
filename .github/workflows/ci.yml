@@ -31,30 +31,13 @@ jobs:
           go mod download
       - name: Verify dependency lockfiles are committed
         run: git diff --exit-code -- go.mod go.sum
-      - name: Validate Codex settings, SDK catalog and cloud setup (Go)
+      - name: Validate Codex settings and SDK scenarios (Go)
         run: go run ./cmd/codexcheck
       - name: Format, vet, race tests and build
         run: make check
-      - name: Compile Firestore Emulator tests without running external services
-        run: go test -tags=integration -run '^
-        run: |
-          bash -n scripts/run-stage5-offline.sh
-          if go run ./cmd/acceptance -evidence docs/acceptance/staging-evidence.example.json; then
-            echo "Stage-5 example must not pass without real review evidence" >&2
-            exit 1
-          fi
-      - name: Preserve resolved go.mod and go.sum for review
-        if: always()
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: resolved-go-dependencies
-          path: |
-            go.mod
-            go.sum
-          if-no-files-found: warn
-          retention-days: 7
- ./tests/integration
-      - name: Stage-5 runner syntax and fail-closed evidence gate
+      - name: Compile Firestore Emulator suite without external calls
+        run: go test -tags=integration -run='^$' ./tests/integration
+      - name: Check Stage-5 runner and fail-closed evidence example
         run: |
           bash -n scripts/run-stage5-offline.sh
           if go run ./cmd/acceptance -evidence docs/acceptance/staging-evidence.example.json; then
