@@ -5,3 +5,5 @@
 - 限制各 client timeout、重試範圍、連線池與 shutdown；不得重試不具冪等保護的發送。
 - Google Cloud 服務優先使用 `google-cloud-go`；Google Workspace 類 API 使用 `google-api-go-client`。
 - 日誌、trace、metrics 禁止攜帶 token、原始使用者內容或多餘個資。
+- 重用 `httpclient.Managed` 的獨立 Transport 與顯式 Close，SDK Factory 接收注入的原生 Client；需要不同認證的 Provider 不強迫共用單一 Client 或 Token。
+- LINE SDK v8.23.0 的 `WithContext` 會修改 Receiver；不可對共享 Client 呼叫它，必須在 Adapter 中隔離每次請求 Context，SDK 升級時重新驗證。

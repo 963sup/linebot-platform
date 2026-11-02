@@ -21,6 +21,17 @@ make run-webhook
 
 目前只支援文字事件，輸入 `flex` 或 `卡片` 時回 Flex bubble，其餘文字回固定說明。Webhook 已驗簽但仍是**無持久去重的同步 MVP**。
 
+## LINE SDK Runtime 與 Timeout
+
+Webhook 使用受管理的 LINE SDK HTTP Client，預設 Timeout 為 `8s`。可以在啟動服務前設定：
+
+```bash
+export LINE_API_TIMEOUT=6s
+make run-webhook
+```
+
+允許 `1s` 至 `12s`，不合法的值會在啟動時拒絕；CLI Push 維持預設 `8s`。HTTP Client 使用獨立的連線池，完成 Shutdown 後關閉其閒置連線。SDK 出站 Debug Log 只有 Provider、Status、Duration、錯誤旗標，不應含 URL、Token 或原始訊息。LINE Context 已改為逐次呼叫隔離，但尚無持久重試與事件去重。
+
 ## Push CLI
 
 ```bash

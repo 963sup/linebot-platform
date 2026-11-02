@@ -47,6 +47,7 @@
 - 優先使用已鎖定模組的 Go 原始碼、`go list`、`go doc` 和 gopls 驗證真實 Symbol，再對照官方文件查核認證、配額、冪等性及限制；不可猜測 API。
 - 修改依賴、Factory 或 Adapter 時，連同 Catalog、架構文件、相關能力矩陣和測試一併同步；執行 `go run ./cmd/codexcheck` 與 `make check`。
 - Application 與 Domain 使用 Go 標準庫及專案自有 Port，不直接 import 外部 SDK；不建立萬用動態 SDK 呼叫器。已宣告、已整合、已經 staging 驗證是不同狀態。
+- SDK Runtime 使用明確的 Factory 與 Bootstrap 所擁有的 HTTP Transport；不要在共享 LINE Client 上直接呼叫會修改 Receiver 的 `WithContext`。錯誤需去敏且保留可供程式辨識的型別，不要預設自動重試。
 
 ## Codex Agents 與 MCP 選用（不負責安裝）
 
