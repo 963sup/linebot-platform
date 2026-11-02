@@ -91,18 +91,27 @@ func TestLINEAPIErrorIsSanitized(t *testing.T) {
 	}
 }
 
+type interceptTransport func(*http.Request) (*http.Response, error)
+
+func (f interceptTransport) RoundTrip(r *http.Request) (*http.Response, error) { return f(r) }
+
 func TestLINEContextCancellation(t *testing.T) {
 	started := make(chan struct{})
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	transport := interceptTransport(func(req *http.Request) (*http.Response, error) {
 		close(started)
-		select {
-		case <-r.Context().Done():
-		case <-time.After(2 * time.Second):
-			t.Error("server request context did not cancel")
-		}
-	}))
-	defer server.Close()
-	s := contractSender(t, server)
+		<-req.Context().Done()
+		return nil, req.Context().Err()
+	})
+	client, err := messaging_api.NewMessagingApiAPI("token",
+		messaging_api.WithHTTPClient(&http.Client{Transport: transport}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	s, err := NewSender(client)
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	done := make(chan error, 1)
@@ -110,13 +119,13 @@ func TestLINEContextCancellation(t *testing.T) {
 	select {
 	case <-started:
 	case <-time.After(2 * time.Second):
-		t.Fatal("request did not reach test server")
+		t.Fatal("SDK request did not reach the configured transport")
 	}
 	cancel()
 	select {
 	case err := <-done:
 		if !errors.Is(err, context.Canceled) {
-			t.Fatalf("expected cancellation, got %v", err)
+			t.Fatalf("expected cancellation through SDK request context, got %v", err)
 		}
 	case <-time.After(2 * time.Second):
 		t.Fatal("SDK request did not honor caller cancellation")
