@@ -30,7 +30,10 @@ Go module 已加入，`go.mod`／`go.sum` 由 Go 工具鏈與 CI 管理；此表
 | `cloud.google.com/go/secretmanager` | v1.23.1 | Client Factory 已建，尚未使用正式憑證 |
 | `google.golang.org/api` | v0.310.0 | Drive、Sheets、Calendar、Tasks 原生 Factory 已建；使用者 OAuth 未實作 |
 | `go.linecorp.com/garr` | v0.1.1 | Worker pool / retry / circuit breaker 選用、未啟用 |
+| `google.golang.org/grpc` | v1.84.0 | Firestore／Cloud Tasks 狀態碼與 gRPC 錯誤處理的直接依賴（原間接依賴升級分類，未新增下載） |
 
 Google Tasks API 使用現有模組的 `google.golang.org/api/tasks/v1`，**沒有新增 Go Module**；Google Cloud Tasks 則使用獨立的 `cloud.google.com/go/cloudtasks`。
+
+本次 Firestore／Cloud Tasks Adapter 直接使用 `google.golang.org/grpc/codes`／`status`，因此 `go mod tidy` 將既有 gRPC module 轉為直接依賴；`go.sum` 不新增未經驗證的 checksum。
 
 Go 版本鎖定為 **1.27.3**。若 `go mod tidy` 因間接依賴調整版本，應以實際可重現建置結果重新審查本表。Google Cloud Client Libraries 的多 module 架構不等於只安裝一個 `google-cloud-go` root module。
