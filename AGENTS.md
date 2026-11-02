@@ -5,7 +5,7 @@
 ## 先確認狀態
 
 - 先讀 `README.md`、`docs/architecture/overview.md`、`docs/roadmap.md` 和相關子目錄規範。
-- 現階段有開發用 Go HTTP / LINE SDK 回覆示範；**尚無 durable inbox/outbox、Cloud Tasks worker 與 production 部署**。請依實際實作情況更新文件，不得把預留目錄當成已完成功能。
+- 現階段有開發用同步 LINE 回覆示範，另有明確啟用才使用的 Firestore Inbox/Outbox、Cloud Tasks OIDC Worker／Reconcile 程式碼；**尚無正式部署、IAM/Firestore TTL／Cloud Scheduler 配置與 Staging 驗收**。請依實際實作情況更新文件，不得把預留目錄當成已完成功能。
 - 以最小可行、可編譯、可測試的垂直切片實作新功能。新增實作時可刪除該目錄的 `.gitkeep`；避免保留冗餘 placeholder。
 - 新 SDK 或 feature 在加入前確認上游官方文件、API 版本、帳號地區資格與安全修補版本。依賴已在 `go.mod` 預先宣告，但未在 runtime 接線的不算已啟用；更新後需執行 `go mod tidy` 並提交真實 `go.sum`。
 - 使用已修補的 Go 1.27.3 工具鏈；CI／Docker 版本須一致，部署前再固定 image digest。
@@ -23,7 +23,7 @@
 ## LINE webhook 與發送
 
 - 必須使用 LINE raw request body 驗證簽章，驗證前不得更改內容。
-- 持久化 inbox 與 outbox 後才可確認事件接收成功；不得在回覆 200 後靠程序內 goroutine 保證處理。
+- 持久模式先以 Firestore Transaction 原子保存 Inbox/Outbox，再安排固定 ID 的 Cloud Task；排程失敗回 503 並由具授權的定期 Reconcile 修復，不得在回覆 200 後靠程序內 goroutine 保證處理。
 - 以 channel 與 event ID 去重；Cloud Tasks 工作須能冪等、可重試、可補償。
 - Reply token 有時效，不得假設任何長時間背景任務完成後仍可 reply。
 - 發送超時可能是「結果未知」；不可在未確認冪等策略時直接重送。
@@ -34,7 +34,7 @@
 
 - 禁止提交真實 `.env`、憑證、LINE Channel Secret、Access Token、AI API Key。
 - 禁止把完整 webhook、token、使用者私訊或個資輸出到 log。
-- 配置使用 ADC／工作負載身分／Secret Manager；權限最小化。
+- 配置使用 ADC／工作負載身分／Secret Manager；權限最小化。私有 Worker 必須具備 Cloud Run IAM、OIDC Audience 與獲授權 Service Account Email 的雙重驗證；不能信任 `X-CloudTasks-*` Header 代替驗證。
 - 外部發送、刪除、付費雲端資源與正式環境部署都須遵循授權；不自行合併 PR 或啟用 production。
 - 不將未審核的外部 skills／MCP 當作可信程式自動執行。
 - `skills-lock.json` 是從其他儲存庫精選的外部技能來源指紋，不代表已安裝或已驗證，禁止自動執行未審查的腳本。
