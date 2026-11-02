@@ -1,6 +1,6 @@
 # linebot-platform
 
-使用 **Go**、**Domain-Driven Design (DDD)** 與 **Hexagonal Architecture（Ports & Adapters）** 建置的 LINE Messaging API 平台，預計運行於 Google Cloud Run，並可選配 OpenAI、Gemini 及 Google API。
+使用 **Go**、**Domain-Driven Design (DDD)** 與 **Hexagonal Architecture（Ports & Adapters）** 建置的 LINE Messaging API 平台，預計運行於 Google Cloud Run，並可選配 OpenAI、Google Gen AI（Gemini）及 Google API。
 
 > **狀態：僅完成規劃與目錄骨架（scaffold）。** 尚無可執行的 Go Bot、LINE webhook、AI 串接、CI 或正式部署。所有 `.gitkeep` 都代表預留位置，**不是已實作功能**。
 
@@ -13,6 +13,9 @@
 - `internal/application`：commands、queries、use cases 與 ports
 - `internal/adapter`：HTTP／CLI 入口與 LINE、AI、Google 等外部介面轉接
 - `internal/infrastructure`：SDK client 初始化、transport、雲端與觀測元件
+- `internal/adapter/outbound/genai`：Google Gen AI 的應用層轉接（待實作）
+- `internal/infrastructure/google/genai`：Google Gen AI Go SDK client 設定（待實作）
+- `internal/domain/valueobjects`：Value Objects 的 Go package 目錄（待實作）
 - `tests/`：架構、契約、整合與端到端測試
 - `.agents/`、`.codex/`、`plugins/`：Codex skills／MCP／plugins 規劃
 
@@ -23,7 +26,7 @@ flowchart LR
   F --> T[Cloud Tasks]
   T --> K[Cloud Run worker]
   K --> L[LINE Messaging API]
-  K --> A[OpenAI / Gemini]
+  K --> A[OpenAI / Google Gen AI]
 ```
 
 以上為**預計架構**，並非目前已上線服務。
@@ -37,7 +40,7 @@ flowchart LR
 | Cloud Run 相關 Google Cloud SDK | [googleapis/google-cloud-go](https://github.com/googleapis/google-cloud-go) | 按服務引入 |
 | Google Workspace / Discovery APIs | [googleapis/google-api-go-client](https://github.com/googleapis/google-api-go-client) | 視需求引入 |
 | OpenAI | [openai/openai-go](https://github.com/openai/openai-go)（`/v3`） | 預計採用 |
-| Gemini | [googleapis/go-genai](https://github.com/googleapis/go-genai) | 預計採用 |
+| Google Gen AI（Gemini） | [googleapis/go-genai](https://github.com/googleapis/go-genai)（`google.golang.org/genai`） | 預計採用 |
 | 程序內韌性工具 | [line/garr](https://github.com/line/garr) | 選配 |
 
 請參閱 [技術依據與相容性](docs/sources.md)、[架構說明](docs/architecture/overview.md)、[完整目錄清單](docs/architecture/directory-manifest.md)、[開發路線圖](docs/roadmap.md)。

@@ -17,7 +17,7 @@
 - `internal/infrastructure` 負責 SDK client、認證、transport、timeout、observability。
 - `internal/bootstrap` 專責依賴組裝；`cmd/` 只負責啟動程序。
 - 不預先為所有構想建立空介面、空 `.go` 檔或用無用途的 abstraction 填滿架構。
-- `value-objects` 是使用者指定的目錄名；實際 Go package 請命名為有效的 `valueobjects`。
+- Value Objects 使用 `internal/domain/valueobjects/`（Go package `valueobjects`），不要使用 `value-objects/`；新增模型時先確認其 Bounded Context。
 
 ## LINE webhook 與發送
 
