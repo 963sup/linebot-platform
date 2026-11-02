@@ -16,6 +16,23 @@
 - [x] 在 GitHub Actions 已成功執行 gofmt、go vet、race tests 與 Go build；後續 PR 仍須檢查自身 CI。
 - [ ] PR 經審查合併。
 
+## SDK-Aware Codex Foundation — 開發知識與驗證
+
+- [x] 建立直接依賴 Catalog，對齊全部 11 個 `go.mod` 直接依賴。
+- [x] 建立通用 `sdk-integration` Skill 與查證參考，沿用原有五個 Codex Agents。
+- [x] 擴充 `cmd/codexcheck` 驗證 Catalog、架構邊界及測試，並由既有 CI 執行。
+- [x] 同步 README、Skills、架構、版本與開發文件。
+- [ ] 新分支 PR 審查與 CI 通過後合併 `main`。
+- [ ] 在新的 Codex Cloud 工作階段實測 SDK 查證流程與 MCP 可用性。
+
+## SDK Runtime — 後續小型 PR
+
+- [ ] Typed Client Factory / Transport / Observability / Lifecycle，先以 LINE 驗證。
+- [ ] Firestore、Cloud Tasks、Secret Manager、Storage 的 Client 與 Adapter（僅啟用有實際需求者）。
+- [ ] OpenAI、Gemini、Drive、Sheets、Calendar 的受管理 Client 和契約測試。
+- [ ] 持久事件、去重、Inbox/Outbox、Worker 與發送結果未知處理。
+- [ ] 經授權的 staging SDK 整合測試及 Codex 零先驗需求驗收。
+
 ## P2 — LINE webhook 與持久工作
 
 - [x] LINE Channel Secret 配置／使用官方 SDK 驗章（同步 MVP）。

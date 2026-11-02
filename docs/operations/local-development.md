@@ -31,6 +31,18 @@ go run ./cmd/ops push --to "<recipient>" --text "hello"
 
 若發送結果不確定，後續重試務必提供同一 `--retry-key`、同一接收者與相同 payload。CLI 會在第一次發送前輸出 UUID；務必妥善保存，不要放在公開日誌或 issue。
 
+## Codex SDK 查證與設定驗證
+
+`docs/sdk/catalog.toml` 記錄所有直接依賴的 SDK 路由與接線狀態；版本以 `go.mod` 為準。新 SDK 功能請使用 `.agents/skills/sdk-integration/SKILL.md`。沒有真實服務憑證也可執行以下檢查：
+
+```bash
+go run ./cmd/codexcheck
+go list -m -json google.golang.org/genai
+go doc google.golang.org/genai.Client
+```
+
+後兩行需要 Go Toolchain 與相應 module 可用，不會對真實 Gemini API 發送請求；遇到無法下載時，不能憑模型記憶猜 API。
+
 ## SDK 安裝狀態
 
 `go.mod` 只表示模組版本需求。`go.mod`／`go.sum` 已於 GitHub Actions Go 1.27.3 環境解析並提交。後續升級模組時應在有網路的環境執行 `go mod tidy`、`go mod download`，檢查並提交異動；CI 持續保留依賴解析的審查用 artifact。

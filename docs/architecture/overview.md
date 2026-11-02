@@ -12,6 +12,8 @@ LINE Platform
   -> LINE Messaging API / OpenAI / Gemini / Google Cloud
 ```
 
+其他 SDK 的 Client Factory、Codex SDK Catalog 與逐步啟用計畫見 [SDK Integration 設計](sdk-integration.md)。Catalog 僅為開發路由資料，非執行期 Registry。
+
 ## 邊界
 
 - **Domain**：業務模型與不變量，不接觸 SDK；Value Objects 預留於 `internal/domain/valueobjects/`。

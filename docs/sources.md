@@ -12,6 +12,8 @@
 | [openai-go](https://github.com/openai/openai-go/blob/main/README.md) | `github.com/openai/openai-go/v3` | OpenAI Responses API 等 AI 功能。 |
 | [go-genai](https://github.com/googleapis/go-genai/blob/main/README.md) | `google.golang.org/genai` | Google Gen AI SDK（Gemini API 等）；adapter 放 `internal/adapter/outbound/genai/`、client 初始化放 `internal/infrastructure/google/genai/`。 |
 
+所有 `go.mod` 直接依賴的用途及預定接線路徑可查閱 [SDK Catalog](sdk/catalog.toml)。Catalog 不鎖定版本、不代表 API 已啟用，API 參數與權限仍應以實際模組程式碼和官方文件查證。Codex 工作流程請參考 [SDK Integration 設計](architecture/sdk-integration.md)。
+
 ## 採用原則
 
 1. **Google Cloud 服務優先使用 google-cloud-go**，不要為同一目的無差別混用 API client。
