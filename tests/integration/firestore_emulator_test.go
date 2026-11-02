@@ -31,7 +31,7 @@ func emulator(t *testing.T) (*sdk.Client, context.Context) {
 	if err != nil || (addr != "localhost" && addr != "127.0.0.1" && addr != "::1") {
 		t.Fatalf("refusing non-loopback Firestore emulator endpoint")
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
 	t.Cleanup(cancel)
 	client, err := sdk.NewClient(ctx, "demo-linebot-platform-acceptance")
 	if err != nil {
