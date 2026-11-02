@@ -79,7 +79,7 @@ func validateConfig(path string) error {
 		c.Agents.MaxConcurrentThreadsPerSession > 3 {
 		return errors.New("multi-agent must be enabled with concurrency between 1 and 3")
 	}
-	expected := []string{"gopls", "context7", "github_readonly", "firestore_toolbox"}
+	expected := []string{"gopls", "context7", "github_readonly", "firestore_toolbox", "openaiDeveloperDocs"}
 	keys := make([]string, 0, len(c.MCPServers))
 	for name, s := range c.MCPServers {
 		keys = append(keys, name)
@@ -100,6 +100,11 @@ func validateConfig(path string) error {
 	context7 := c.MCPServers["context7"]
 	if !context7.Enabled || context7.URL != "https://mcp.context7.com/mcp" {
 		return errors.New("Context7 MCP must use the documented HTTPS endpoint")
+	}
+	docs := c.MCPServers["openaiDeveloperDocs"]
+	if !docs.Enabled || docs.URL != "https://developers.openai.com/mcp" ||
+		docs.BearerTokenEnvVar != "" || docs.Command != "" {
+		return errors.New("OpenAI Docs MCP must use the official HTTPS endpoint without local command or bearer token")
 	}
 	github := c.MCPServers["github_readonly"]
 	if github.Enabled || github.URL != "https://api.githubcopilot.com/mcp/" ||
@@ -190,5 +195,5 @@ func main() {
 		fmt.Fprintln(os.Stderr, "Codex config validation:", err)
 		os.Exit(1)
 	}
-	fmt.Println("Codex config OK: 5 agents, 4 MCP entries; no Python source files")
+	fmt.Println("Codex config OK: 5 agents, 5 MCP entries; no Python source files")
 }
