@@ -14,6 +14,7 @@ import (
 	"github.com/963sup/linebot-platform/internal/application/ports/outbound"
 	"github.com/963sup/linebot-platform/internal/application/usecases/messaging"
 	lineinfra "github.com/963sup/linebot-platform/internal/infrastructure/line"
+	"github.com/963sup/linebot-platform/internal/infrastructure/httpclient"
 )
 
 func uuidv4() (string, error) {
@@ -72,7 +73,12 @@ func run(args []string, getenv func(string) string) error {
 		}
 		*key = parsed.String()
 	}
-	client, err := lineinfra.NewMessagingClient(getenv("LINE_CHANNEL_ACCESS_TOKEN"))
+	managed, err := httpclient.New(httpclient.Config{Timeout: httpclient.DefaultTimeout}, nil)
+	if err != nil {
+		return err
+	}
+	defer managed.Close()
+	client, err := lineinfra.NewMessagingClientWithHTTPClient(getenv("LINE_CHANNEL_ACCESS_TOKEN"), managed.Client)
 	if err != nil {
 		return err
 	}

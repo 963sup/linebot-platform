@@ -4,15 +4,26 @@ import (
 	"errors"
 	"net/http"
 	"strings"
-	"time"
 
+	"github.com/963sup/linebot-platform/internal/infrastructure/httpclient"
 	"github.com/line/line-bot-sdk-go/v8/linebot/messaging_api"
 )
 
+// NewMessagingClient preserves the existing convenience API.
+// Long-running processes should inject a managed HTTP client and close its
+// owned transport after shutdown.
 func NewMessagingClient(token string) (*messaging_api.MessagingApiAPI, error) {
+	return NewMessagingClientWithHTTPClient(token, &http.Client{Timeout: httpclient.DefaultTimeout})
+}
+
+// NewMessagingClientWithHTTPClient returns the native LINE SDK API client.
+// The caller owns the supplied HTTP client and must not mutate it after setup.
+func NewMessagingClientWithHTTPClient(token string, httpClient *http.Client) (*messaging_api.MessagingApiAPI, error) {
 	if strings.TrimSpace(token) == "" {
 		return nil, errors.New("LINE channel access token is required")
 	}
-	client := &http.Client{Timeout: 8 * time.Second}
-	return messaging_api.NewMessagingApiAPI(token, messaging_api.WithHTTPClient(client))
+	if httpClient == nil {
+		return nil, errors.New("LINE HTTP client is required")
+	}
+	return messaging_api.NewMessagingApiAPI(token, messaging_api.WithHTTPClient(httpClient))
 }
