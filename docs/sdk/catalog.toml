@@ -1,7 +1,7 @@
 # Codex SDK routing catalog, not a version lockfile or complete API inventory.
 # The only module-version authority is go.mod.
 # declared = dependency only; client_ready = native factory, no business wiring;
-# integrated = adapter and production runtime wiring (not staging/prod approval).
+# integrated = native Factory plus outbound Adapter source (not staging/prod approval).
 schema_version = 1
 
 [[modules]]

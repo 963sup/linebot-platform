@@ -17,7 +17,6 @@ func TestNewClientValidatesConfigurationWithoutNetwork(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if client.Responses.New == nil {
-		t.Fatal("native Responses API must remain accessible")
-	}
+	// Compile-time proof that the pinned native Responses API is accessible.
+	_ = client.Responses.New
 }
