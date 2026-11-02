@@ -64,7 +64,7 @@ CLI 發送會先輸出可重用的 UUID retry key。若發生 timeout 或結果�
 
 ## Codex Cloud 開發環境
 
-- [`.codex/config.toml`](.codex/config.toml) 配置 gopls／Context7，並保留停用中的唯讀 GitHub MCP／Firestore Toolbox。
+- [`.codex/config.toml`](.codex/config.toml) 配置 gopls／Context7／OpenAI Docs MCP，並保留停用中的唯讀 GitHub MCP／Firestore Toolbox。Codex Cloud agent-phase 需允許 `developers.openai.com`，在 Republish 後的新工作階段驗證連線。
 - [五個專用 Agents](docs/ai/agents.md) 負責 DDD、LINE SDK、Cloud Platform、Go Review 和官方文件查證。
 - `bash scripts/setup-codex-cloud.sh` 是可加入 Codex Cloud **Install script** 的非互動式環境準備腳本（下載 Go modules、安裝固定版 gopls）。
 - 專案配置以 `go run ./cmd/codexcheck` 驗證，無須 Python；詳見 [Codex Cloud 建置步驟](docs/ai/codex-cloud.md)，其中的環境發布與 MCP 授權**尚未執行**。

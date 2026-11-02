@@ -44,7 +44,8 @@
 
 - 複雜且互不依賴的任務才委派給 `domain_architect`、`line_integrator`、`cloud_platform`、`go_reviewer` 或 `docs_researcher`；同一檔案不得由多個 Agent 同時改寫，最後由主 Agent 整合、驗證。
 - 修改 Go 程式前，需要追查 definitions、references、型別或診斷時用 **gopls MCP**；若不可用則使用本地 Go 工具。
-- 新版本 SDK／API 使用方式、設定或重大變更需用 **Context7 MCP**，再核對相關官方 Go／LINE／Google／OpenAI 文件；無法查證時明確標示。
+- OpenAI API、Responses API、OpenAI Go SDK、Codex、Skills、MCP 或 Plugins 的更新與實作優先使用 **openaiDeveloperDocs MCP** 查閱官方文件；不得推測不存在的 API、參數或能力。若 MCP 不可用，改用 OpenAI 官方網站並標示未驗證事項。
+- 其他新版本 SDK／API 使用方式、設定或重大變更使用 **Context7 MCP**，再核對相關官方 Go／LINE／Google 文件；無法查證時明確標示。
 - PR／Issue／commit／CI 狀態需要外部證據時，優先選擇既有已授權 GitHub 工具，必要時才使用 **GitHub MCP（唯讀）**。
 - **Firestore Toolbox** 只在使用者授權的隔離 staging 環境、具最小權限 ADC 時使用，不得存取或修改 production。
 - `AGENTS.md` 只負責路由規則；**不可因指示而自行安裝 MCP、產生 token、執行 OAuth 或修改個人 Codex 設定**。MCP 的啟用與安裝由 `.codex/config.toml`、Codex Cloud Install script 與使用者環境設定處理。
