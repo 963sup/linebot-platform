@@ -62,7 +62,13 @@ CLI 發送會先輸出可重用的 UUID retry key。若發生 timeout 或結果�
 
 **重要：目前同步回覆並未持久化 incoming event。** 在 LINE webhook 重送、批次處理部分成功、容器重啟時，仍可能造成重複發送；未完成 Firestore inbox/outbox + Cloud Tasks + 冪等策略前，不能稱為正式環境可靠 Bot。
 
-## 開發與安全
+## 開發與安全## Cloud Build（未啟用）
+
+根目錄新增 `cloudbuild.yaml`（Go 驗證、Docker build、Artifact Registry push）與 `cloudbuild.deploy.yaml`（僅供明確核准的**既有 staging** 服務部署）。兩份配置**不會因為提交 GitHub 而自動執行**；目前未建立 Cloud Build Trigger、Cloud Run 服務，也未授權付費雲端操作。`.gcloudignore` 排除本機／敏感上傳內容，`.gitattributes` 固定文字換行規則。操作前先閱讀 [部署配置與限制](docs/operations/deployment.md)。
+
+`skills-lock.json` 自 [line-bot-go](https://github.com/963sup/line-bot-go/blob/main/skills-lock.json) 精選 13 個與 Go／Cloud Run／安全／CI 有關的技能；**尚未安裝外部 skills**，詳見 [Codex Skills](docs/ai/skills.md)。
+
+
 
 [AGENTS.md](AGENTS.md) 定義分層與開發規範；[CONTRIBUTING.md](CONTRIBUTING.md) 說明 PR 與驗證方式；[SECURITY.md](SECURITY.md) 說明安全通報。不要提交 API Key、Channel Secret、token、真實訊息或服務帳號金鑰。
 

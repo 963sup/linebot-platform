@@ -37,6 +37,8 @@
 - 配置使用 ADC／工作負載身分／Secret Manager；權限最小化。
 - 外部發送、刪除、付費雲端資源與正式環境部署都須遵循授權；不自行合併 PR 或啟用 production。
 - 不將未審核的外部 skills／MCP 當作可信程式自動執行。
+- `skills-lock.json` 是從其他儲存庫精選的外部技能來源指紋，不代表已安裝或已驗證，禁止自動執行未審查的腳本。
+- `cloudbuild.deploy.yaml` 僅允許經授權的 staging；在完善可靠性、IAM、Secret Manager 與人工核准之前，不得執行 production 部署。
 
 ## 驗證與交付
 

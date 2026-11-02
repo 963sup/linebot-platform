@@ -4,6 +4,7 @@
 - [事件處理現況](architecture/event-processing.md)
 - [本機開發](operations/local-development.md)
 - [測試策略](quality/test-strategy.md)
+- [Cloud Build／Cloud Run 配置雛形](operations/deployment.md)
 - [目錄清單](architecture/directory-manifest.md)
 - [技術來源與使用分工](sources.md)
 - [LINE 能力矩陣](line/feature-matrix.md)
