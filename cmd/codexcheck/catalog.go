@@ -134,7 +134,7 @@ func validateCatalog(root string) error {
 		if m.Kind != "service" && m.Kind != "utility" && m.Kind != "tooling" {
 			return fmt.Errorf("%s: invalid kind %q", m.Module, m.Kind)
 		}
-		if m.Status != "integrated" && m.Status != "declared" {
+		if m.Status != "integrated" && m.Status != "client_ready" && m.Status != "declared" {
 			return fmt.Errorf("%s: invalid status %q", m.Module, m.Status)
 		}
 		parsed, err := url.Parse(m.Reference)
@@ -170,11 +170,11 @@ func validateCatalog(root string) error {
 		if m.Adapter != "" && !validDirectory(m.Adapter, "internal/adapter/outbound") {
 			return fmt.Errorf("%s: invalid outbound adapter directory", m.Module)
 		}
-		if m.Status == "integrated" && m.Kind == "service" {
+		if m.Kind == "service" && (m.Status == "client_ready" || m.Status == "integrated") {
 			if !hasGoSource(root, m.Factory) {
-				return fmt.Errorf("%s: integrated factory has no Go implementation", m.Module)
+				return fmt.Errorf("%s: %s factory has no Go implementation", m.Module, m.Status)
 			}
-			if m.Adapter == "" || !hasGoSource(root, m.Adapter) {
+			if m.Status == "integrated" && (m.Adapter == "" || !hasGoSource(root, m.Adapter)) {
 				return fmt.Errorf("%s: integrated service has no outbound adapter implementation", m.Module)
 			}
 		}

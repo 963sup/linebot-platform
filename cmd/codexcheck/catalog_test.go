@@ -103,3 +103,32 @@ func TestIntegratedServiceRequiresImplementation(t *testing.T) {
 		t.Fatalf("expected missing implementation error, got %v", err)
 	}
 }
+
+func TestClientReadyRequiresFactorySourceNotAdapter(t *testing.T) {
+	root := t.TempDir()
+	writeCatalogFixture(t, root, "example.org/sdk", "example.org/sdk")
+	p := filepath.Join(root, "docs", "sdk", "catalog.toml")
+	data, err := os.ReadFile(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	contents := strings.Replace(string(data),
+		"kind = \"utility\"", "kind = \"service\"\nfactory = \"internal/infrastructure/example\"", 1)
+	contents = strings.Replace(contents, "status = \"integrated\"", "status = \"client_ready\"", 1)
+	if err := os.WriteFile(p, []byte(contents), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := validateCatalog(root); err == nil || !strings.Contains(err.Error(), "factory has no Go implementation") {
+		t.Fatalf("expected missing factory source, got %v", err)
+	}
+	dir := filepath.Join(root, "internal", "infrastructure", "example")
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "client.go"), []byte("package example\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := validateCatalog(root); err != nil {
+		t.Fatalf("client-ready service must not require an unused business adapter: %v", err)
+	}
+}
