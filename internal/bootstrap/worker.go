@@ -9,9 +9,9 @@ import (
 
 	"github.com/963sup/linebot-platform/internal/adapter/inbound/http/health"
 	taskin "github.com/963sup/linebot-platform/internal/adapter/inbound/http/tasks"
-	lineout "github.com/963sup/linebot-platform/internal/adapter/outbound/line"
 	queueout "github.com/963sup/linebot-platform/internal/adapter/outbound/google/cloud/cloudtasks"
 	storeout "github.com/963sup/linebot-platform/internal/adapter/outbound/google/cloud/firestore"
+	lineout "github.com/963sup/linebot-platform/internal/adapter/outbound/line"
 	"github.com/963sup/linebot-platform/internal/application/usecases/ingestion"
 	queueinfra "github.com/963sup/linebot-platform/internal/infrastructure/google/cloud/cloudtasks"
 	storeinfra "github.com/963sup/linebot-platform/internal/infrastructure/google/cloud/firestore"

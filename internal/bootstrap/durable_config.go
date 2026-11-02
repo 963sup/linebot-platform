@@ -13,19 +13,19 @@ import (
 // DurableConfig is only used when LINE_EVENT_MODE=durable. Configuration is
 // explicit and independently validated before any GCP clients are created.
 type DurableConfig struct {
-	ProjectID        string
-	BotDestination   string
-	QueueName        string
-	WorkerURL        string
-	OIDCAudience     string
-	InvokerEmail     string
+	ProjectID      string
+	BotDestination string
+	QueueName      string
+	WorkerURL      string
+	OIDCAudience   string
+	InvokerEmail   string
 }
 
 type WorkerConfig struct {
-	Port             string
-	ChannelToken     string
-	LINEAPITimeout   time.Duration
-	Durable          DurableConfig
+	Port           string
+	ChannelToken   string
+	LINEAPITimeout time.Duration
+	Durable        DurableConfig
 }
 
 func loadPort(getenv func(string) string) (string, error) {
@@ -54,12 +54,12 @@ func loadLINETimeout(getenv func(string) string) (time.Duration, error) {
 
 func loadDurable(getenv func(string) string) (DurableConfig, error) {
 	d := DurableConfig{
-		ProjectID: strings.TrimSpace(getenv("GCP_PROJECT_ID")),
+		ProjectID:      strings.TrimSpace(getenv("GCP_PROJECT_ID")),
 		BotDestination: strings.TrimSpace(getenv("LINE_BOT_DESTINATION")),
-		QueueName: strings.TrimSpace(getenv("TASK_QUEUE_NAME")),
-		WorkerURL: strings.TrimSpace(getenv("TASK_WORKER_URL")),
-		OIDCAudience: strings.TrimSpace(getenv("TASK_OIDC_AUDIENCE")),
-		InvokerEmail: strings.TrimSpace(getenv("TASK_INVOKER_EMAIL")),
+		QueueName:      strings.TrimSpace(getenv("TASK_QUEUE_NAME")),
+		WorkerURL:      strings.TrimSpace(getenv("TASK_WORKER_URL")),
+		OIDCAudience:   strings.TrimSpace(getenv("TASK_OIDC_AUDIENCE")),
+		InvokerEmail:   strings.TrimSpace(getenv("TASK_INVOKER_EMAIL")),
 	}
 	if d.ProjectID == "" || d.BotDestination == "" || d.QueueName == "" || d.WorkerURL == "" ||
 		d.OIDCAudience == "" || d.InvokerEmail == "" {

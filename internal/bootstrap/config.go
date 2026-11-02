@@ -35,11 +35,11 @@ func LoadConfig(getenv func(string) string) (Config, error) {
 		return Config{}, errors.New("LINE_EVENT_MODE must be sync or durable")
 	}
 	cfg := Config{
-		Port: port,
-		ChannelSecret: strings.TrimSpace(getenv("LINE_CHANNEL_SECRET")),
-		ChannelToken: strings.TrimSpace(getenv("LINE_CHANNEL_ACCESS_TOKEN")),
+		Port:           port,
+		ChannelSecret:  strings.TrimSpace(getenv("LINE_CHANNEL_SECRET")),
+		ChannelToken:   strings.TrimSpace(getenv("LINE_CHANNEL_ACCESS_TOKEN")),
 		LINEAPITimeout: timeout,
-		EventMode: mode,
+		EventMode:      mode,
 	}
 	if (cfg.ChannelSecret == "") != (cfg.ChannelToken == "") {
 		return Config{}, errors.New("LINE_CHANNEL_SECRET and LINE_CHANNEL_ACCESS_TOKEN must both be set or both omitted")

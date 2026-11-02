@@ -57,12 +57,21 @@ func (f *fakeStore) Recover(_ context.Context, _ time.Time, _ int) ([]string, er
 	return f.pending, nil
 }
 
-type fakeQueue struct { keys []string; err error }
+type fakeQueue struct {
+	keys []string
+	err  error
+}
+
 func (q *fakeQueue) Enqueue(_ context.Context, key string) error {
 	q.keys = append(q.keys, key)
 	return q.err
 }
-type fakeSender struct { calls int; err error }
+
+type fakeSender struct {
+	calls int
+	err   error
+}
+
 func (f *fakeSender) Reply(_ context.Context, _ string, _ []outbound.Message) error {
 	f.calls++
 	return f.err
@@ -99,8 +108,12 @@ func TestDuplicateReceiptDoesNotOverwriteAndRequeues(t *testing.T) {
 	}
 	i.now = func() time.Time { return time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC) }
 	msg := outbound.Message{Kind: outbound.KindText, Text: "fixed response"}
-	if err := i.Ingest(context.Background(), "channel", "event", "reply-one", msg); err != nil { t.Fatal(err) }
-	if err := i.Ingest(context.Background(), "channel", "event", "reply-two", msg); err != nil { t.Fatal(err) }
+	if err := i.Ingest(context.Background(), "channel", "event", "reply-one", msg); err != nil {
+		t.Fatal(err)
+	}
+	if err := i.Ingest(context.Background(), "channel", "event", "reply-two", msg); err != nil {
+		t.Fatal(err)
+	}
 	if len(store.recorded) != 1 || len(queue.keys) != 2 {
 		t.Fatal("duplicate receipt must persist once and re-enqueue safely")
 	}
@@ -116,12 +129,18 @@ func TestProcessorSendsAtMostOnce(t *testing.T) {
 	now := time.Now().UTC()
 	i.now = func() time.Time { return now }
 	msg := outbound.Message{Kind: outbound.KindText, Text: "fixed response"}
-	if err := i.Ingest(context.Background(), "channel", "event", "reply", msg); err != nil { t.Fatal(err) }
+	if err := i.Ingest(context.Background(), "channel", "event", "reply", msg); err != nil {
+		t.Fatal(err)
+	}
 	p, _ := NewProcessor(store, sender)
 	p.now = func() time.Time { return now }
 	key := queue.keys[0]
-	if err := p.Process(context.Background(), key); err != nil { t.Fatal(err) }
-	if err := p.Process(context.Background(), key); err != nil { t.Fatal(err) }
+	if err := p.Process(context.Background(), key); err != nil {
+		t.Fatal(err)
+	}
+	if err := p.Process(context.Background(), key); err != nil {
+		t.Fatal(err)
+	}
 	if sender.calls != 1 || store.finished != outbound.DeliverySent {
 		t.Fatalf("calls=%d finish=%s", sender.calls, store.finished)
 	}
@@ -132,11 +151,15 @@ func TestUnknownOutcomeDoesNotResend(t *testing.T) {
 	i, _ := NewIngestor(store, queue)
 	now := time.Now()
 	i.now = func() time.Time { return now }
-	if err := i.Ingest(context.Background(), "channel", "event", "reply", outbound.Message{Kind: outbound.KindText, Text: "fixed"}); err != nil { t.Fatal(err) }
+	if err := i.Ingest(context.Background(), "channel", "event", "reply", outbound.Message{Kind: outbound.KindText, Text: "fixed"}); err != nil {
+		t.Fatal(err)
+	}
 	p, _ := NewProcessor(store, sender)
 	p.now = func() time.Time { return now }
 	for j := 0; j < 2; j++ {
-		if err := p.Process(context.Background(), queue.keys[0]); err != nil { t.Fatal(err) }
+		if err := p.Process(context.Background(), queue.keys[0]); err != nil {
+			t.Fatal(err)
+		}
 	}
 	if sender.calls != 1 || store.finished != outbound.DeliveryUnknown {
 		t.Fatalf("unsafe retry: calls=%d outcome=%s", sender.calls, store.finished)
@@ -145,11 +168,19 @@ func TestUnknownOutcomeDoesNotResend(t *testing.T) {
 
 func TestDispatcherReEnqueuesPending(t *testing.T) {
 	store, queue := newFakeStore(), &fakeQueue{}
-	store.pending = []string{ "0000000000000000000000000000000000000000000000000000000000000000" }
+	store.pending = []string{"0000000000000000000000000000000000000000000000000000000000000000"}
 	d, err := NewDispatcher(store, queue)
-	if err != nil { t.Fatal(err) }
-	if err := d.Dispatch(context.Background()); err != nil { t.Fatal(err) }
-	if len(queue.keys) != 1 { t.Fatal("dispatcher did not enqueue pending event") }
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := d.Dispatch(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if len(queue.keys) != 1 {
+		t.Fatal("dispatcher did not enqueue pending event")
+	}
 	queue.err = errors.New("transient enqueue error")
-	if err := d.Dispatch(context.Background()); err == nil { t.Fatal("expected retryable enqueue error") }
+	if err := d.Dispatch(context.Background()); err == nil {
+		t.Fatal("expected retryable enqueue error")
+	}
 }
