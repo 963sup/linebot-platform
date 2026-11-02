@@ -1,4 +1,4 @@
-// Package cloudtasks provides stable-id Cloud Tasks dispatch to a private
+// Package cloudtasks provides bounded task-name deduplication to a private
 // OIDC-authenticated Cloud Run worker.
 package cloudtasks
 
@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"net/url"
 	"strings"
+	"time"
 
 	sdk "cloud.google.com/go/cloudtasks/apiv2"
 	"cloud.google.com/go/cloudtasks/apiv2/cloudtaskspb"
@@ -19,12 +20,18 @@ import (
 
 type createTask func(context.Context, *cloudtaskspb.CreateTaskRequest) (*cloudtaskspb.Task, error)
 
+// Cloud Tasks reserves completed/deleted task names for up to 24 hours.
+// Use a new deterministic name per time window, not one permanent name for an
+// event. The Firestore single-use Claim remains the actual send idempotency gate.
+const taskDedupeWindow = 10 * time.Second
+
 type Queue struct {
 	name     string
 	worker   string
 	audience string
 	email    string
 	create   createTask
+	now      func() time.Time
 }
 
 // NewQueue configures a native Cloud Tasks client. Only a previously
@@ -55,6 +62,7 @@ func NewQueue(client *sdk.Client, queueName, workerURL, audience, invokerEmail s
 		create: func(ctx context.Context, req *cloudtaskspb.CreateTaskRequest) (*cloudtaskspb.Task, error) {
 			return client.CreateTask(ctx, req)
 		},
+		now: time.Now,
 	}, nil
 }
 
@@ -79,14 +87,22 @@ func (q *Queue) Enqueue(ctx context.Context, key string) error {
 	if !ingestion.ValidKey(key) {
 		return errors.New("invalid task event key")
 	}
+	if err := ctx.Err(); err != nil {
+		return err
+	}
 	payload, err := json.Marshal(struct {
 		Key string `json:"key"`
 	}{Key: key})
 	if err != nil {
 		return err
 	}
+	clock := time.Now
+	if q.now != nil {
+		clock = q.now
+	}
+	bucket := clock().UTC().Unix() / int64(taskDedupeWindow/time.Second)
 	task := &cloudtaskspb.Task{
-		Name: fmt.Sprintf("%s/tasks/%s", q.name, key),
+		Name: fmt.Sprintf("%s/tasks/%s-%d", q.name, key, bucket),
 		MessageType: &cloudtaskspb.Task_HttpRequest{HttpRequest: &cloudtaskspb.HttpRequest{
 			HttpMethod: cloudtaskspb.HttpMethod_POST,
 			Url:        q.worker,
@@ -102,7 +118,7 @@ func (q *Queue) Enqueue(ctx context.Context, key string) error {
 	}
 	_, err = q.create(ctx, &cloudtaskspb.CreateTaskRequest{Parent: q.name, Task: task})
 	if status.Code(err) == codes.AlreadyExists {
-		return nil // deterministic ID: LINE redelivery / scheduled reconcile
+		return nil // duplicate within the same scheduling window
 	}
 	return err // ambiguous RPC results are retried via durable outbox
 }

@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"time"
 	"strings"
 	"testing"
 
@@ -30,17 +32,25 @@ func TestQueueConfiguration(t *testing.T) {
 
 func TestEnqueueStableIdAndOIDC(t *testing.T) {
 	var calls int
+	clock := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
+	var lastTaskName string
 	q := &Queue{
 		name:     testQueue,
 		worker:   "https://worker.example.test/tasks/line-reply",
 		audience: "https://worker.example.test",
 		email:    "tasks-invoker@example.iam.gserviceaccount.com",
+		now:      func() time.Time { return clock },
 	}
 	q.create = func(_ context.Context, req *cloudtaskspb.CreateTaskRequest) (*cloudtaskspb.Task, error) {
 		calls++
-		if req.Parent != testQueue || req.Task.Name != testQueue+"/tasks/"+testKey {
-			t.Fatal("incorrect deterministic task name")
+		want := fmt.Sprintf("%s/tasks/%s-%d", testQueue, testKey, clock.Unix()/int64(taskDedupeWindow/time.Second))
+		if req.Parent != testQueue || req.Task.Name != want {
+			t.Fatalf("incorrect per-window task name: got %s, want %s", req.Task.Name, want)
 		}
+		if calls > 1 && lastTaskName != "" && calls == 2 && req.Task.Name != lastTaskName {
+			t.Fatal("two dispatches in the same time window must deduplicate")
+		}
+		lastTaskName = req.Task.Name
 		request := req.Task.GetHttpRequest()
 		if request.GetHttpMethod() != cloudtaskspb.HttpMethod_POST || request.GetUrl() != "https://worker.example.test/tasks/line-reply" {
 			t.Fatal("worker HTTP request mismatch")
@@ -60,8 +70,15 @@ func TestEnqueueStableIdAndOIDC(t *testing.T) {
 	if err := q.Enqueue(context.Background(), testKey); err != nil {
 		t.Fatal(err)
 	}
-	if calls != 1 {
-		t.Fatal("expected exactly one CreateTask")
+	if err := q.Enqueue(context.Background(), testKey); err != nil {
+		t.Fatal(err)
+	}
+	clock = clock.Add(11 * time.Second)
+	if err := q.Enqueue(context.Background(), testKey); err != nil {
+		t.Fatal(err)
+	}
+	if calls != 3 {
+		t.Fatalf("expected 3 CreateTask calls including the new retry window, got %d", calls)
 	}
 	if err := q.Enqueue(context.Background(), "bad"); err == nil {
 		t.Fatal("malformed task key must be rejected")
