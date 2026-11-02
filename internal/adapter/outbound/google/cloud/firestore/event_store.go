@@ -72,12 +72,12 @@ func (s *Store) Record(ctx context.Context, job outbound.EventJob) (bool, error)
 		}
 		if err := tx.Create(outbox, storedJob{
 			ReplyToken: job.ReplyToken,
-			Message: job.Message,
+			Message:    job.Message,
 			ReplyUntil: job.ReplyUntil,
-			CreatedAt: job.CreatedAt,
-			UpdatedAt: job.CreatedAt,
-			ExpiresAt: job.CreatedAt.Add(outboxRetention),
-			State: "pending",
+			CreatedAt:  job.CreatedAt,
+			UpdatedAt:  job.CreatedAt,
+			ExpiresAt:  job.CreatedAt.Add(outboxRetention),
+			State:      "pending",
 		}); err != nil {
 			return err
 		}

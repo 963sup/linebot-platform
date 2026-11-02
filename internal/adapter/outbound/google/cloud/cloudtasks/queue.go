@@ -87,13 +87,13 @@ func (q *Queue) Enqueue(ctx context.Context, key string) error {
 		Name: fmt.Sprintf("%s/tasks/%s", q.name, key),
 		MessageType: &cloudtaskspb.Task_HttpRequest{HttpRequest: &cloudtaskspb.HttpRequest{
 			HttpMethod: cloudtaskspb.HttpMethod_POST,
-			Url: q.worker,
-			Headers: map[string]string{"Content-Type": "application/json"},
-			Body: payload,
+			Url:        q.worker,
+			Headers:    map[string]string{"Content-Type": "application/json"},
+			Body:       payload,
 			AuthorizationHeader: &cloudtaskspb.HttpRequest_OidcToken{
 				OidcToken: &cloudtaskspb.OidcToken{
 					ServiceAccountEmail: q.email,
-					Audience: q.audience,
+					Audience:            q.audience,
 				},
 			},
 		}},
