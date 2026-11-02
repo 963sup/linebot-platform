@@ -13,7 +13,7 @@
 - [x] 建立 unit/contract tests、Makefile、Dockerfile、GitHub Actions CI 的實作草案。
 - [x] Go AST 架構邊界檢查。
 - [x] GitHub runner 取得真實的 `go.sum` 並提交。
-- [ ] 確認所有 build/test 通過（需檢查最新 CI run）。
+- [x] 在 GitHub Actions 已成功執行 gofmt、go vet、race tests 與 Go build；後續 PR 仍須檢查自身 CI。
 - [ ] PR 經審查合併。
 
 ## P2 — LINE webhook 與持久工作

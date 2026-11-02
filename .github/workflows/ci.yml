@@ -29,6 +29,8 @@ jobs:
         run: |
           go mod tidy
           go mod download
+      - name: Verify dependency lockfiles are committed
+        run: git diff --exit-code -- go.mod go.sum
       - name: Format, vet, race tests and build
         run: make check
       - name: Preserve resolved go.mod and go.sum for review
