@@ -30,4 +30,4 @@ LINE Platform
 - Unsend／edit 會影響記憶、儲存與尚未完成的 AI 回覆。
 - 保留對資料存取、AI 訊息資料、隱私與帳號限制的審核。
 
-這些都是目標規範；目前**尚未有任何運行中的服務**。
+目前已加入可在本機啟動的 Go webhook service，具備 health check、簽章驗證及同步 Text/Flex Reply；CLI 支援需明確授權的 Push。這些**不是**具持久保證的正式 webhook：沒有 inbox/outbox、Cloud Tasks worker、去重或已部署的雲端服務。

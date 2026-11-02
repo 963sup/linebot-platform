@@ -5,9 +5,10 @@
 ## 先確認狀態
 
 - 先讀 `README.md`、`docs/architecture/overview.md`、`docs/roadmap.md` 和相關子目錄規範。
-- 現階段僅有 scaffold／文檔與 `.gitkeep`；尚無可工作的 LINE Bot。
+- 現階段有開發用 Go HTTP / LINE SDK 回覆示範；**尚無 durable inbox/outbox、Cloud Tasks worker 與 production 部署**。請依實際實作情況更新文件，不得把預留目錄當成已完成功能。
 - 以最小可行、可編譯、可測試的垂直切片實作新功能。新增實作時可刪除該目錄的 `.gitkeep`；避免保留冗餘 placeholder。
-- 新 SDK 或 feature 在加入前確認上游官方文件、API 版本、帳號地區資格與安全修補版本。不要使用浮動依賴版本當作部署契約。
+- 新 SDK 或 feature 在加入前確認上游官方文件、API 版本、帳號地區資格與安全修補版本。依賴已在 `go.mod` 預先宣告，但未在 runtime 接線的不算已啟用；更新後需執行 `go mod tidy` 並提交真實 `go.sum`。
+- 使用已修補的 Go 1.27.3 工具鏈；CI／Docker 版本須一致，部署前再固定 image digest。
 
 ## 依賴方向
 

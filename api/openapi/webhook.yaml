@@ -1,0 +1,41 @@
+openapi: 3.1.0
+info:
+  title: linebot-platform bootstrap webhook
+  version: 0.1.0
+  description: Minimal synchronous webhook for development; durable processing is planned.
+paths:
+  /healthz:
+    get:
+      summary: Liveness probe
+      responses:
+        '200':
+          description: Healthy process
+  /webhook/line:
+    post:
+      summary: Verified LINE webhook (synchronous MVP)
+      description: Requires X-Line-Signature and configured LINE channel secrets.
+      parameters:
+        - name: X-Line-Signature
+          in: header
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Request successfully handled
+        '400':
+          description: Invalid webhook payload
+        '401':
+          description: Invalid signature
+        '413':
+          description: Body exceeds 1 MiB
+        '503':
+          description: LINE channel not configured
+        '502':
+          description: Outbound LINE reply failed; redelivery may duplicate previous replies

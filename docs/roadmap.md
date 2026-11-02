@@ -6,18 +6,21 @@
 - [x] 根 README、AGENTS、分層規範、技術來源與 Codex skills。
 - [ ] PR 經審核合併到 main。
 
-## P1 — 可運行 Go 最小切片
+## P1 — 可運行 Go 最小切片（此 PR）
 
-- [ ] 根據 SDK 最新安全修補要求確認 Go 版本，建立 `go.mod`。
-- [ ] `cmd/webhook` 提供 `GET /healthz`、PORT、graceful shutdown。
-- [ ] 單元測試、Makefile、Dockerfile、GitHub Actions CI。
-- [ ] 架構邊界測試。
+- [x] 根據上游 SDK 的最低需求選擇 Go 1.27.3，建立 `go.mod`，宣告 SDK 版本。
+- [x] `cmd/webhook` 提供 `GET /healthz`、PORT、graceful shutdown。
+- [x] 建立 unit/contract tests、Makefile、Dockerfile、GitHub Actions CI 的實作草案。
+- [x] Go AST 架構邊界檢查。
+- [ ] 在 GitHub runner 取得真實 `go.sum`、確認所有 build/test 通過並提交鎖定檔。
+- [ ] PR 經審查合併。
 
 ## P2 — LINE webhook 與持久工作
 
-- [ ] LINE Channel Secret 配置／raw body signature verification。
+- [x] LINE Channel Secret 配置／使用官方 SDK 驗章（同步 MVP）。
 - [ ] 事件型別轉換、去重、Inbox/Outbox、Cloud Tasks／worker。
-- [ ] Reply／Push、error classification、發送結果未知與去重。
+- [x] 基礎 Reply／Push／Flex Message adapter 及可測試 usecase。
+- [ ] 錯誤分類、發送結果未知的持久追蹤與跨執行個體去重。
 - [ ] emulator／fake 驗證。
 
 ## P3 — 全公開 API、AI 與雲端

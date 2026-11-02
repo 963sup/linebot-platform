@@ -1,6 +1,6 @@
 # 技術來源與採用界線
 
-以下為本專案的**官方／上游技術參考**，目前只有規劃，尚未安裝相應 SDK。
+以下為本專案的**官方／上游技術參考**，已在 `go.mod` 宣告各 SDK（文件來源除外），但未在本環境下載或驗證完整依賴樹；只有 LINE Messaging API SDK 實際供 webhook／發送 adapter 使用。
 
 | 來源（README） | Go module 或參考方式 | 本專案預定用途 |
 |---|---|---|
@@ -19,3 +19,5 @@
 3. 所有客戶端實作隔離於 `adapter/outbound` 與 `infrastructure`；domain 不依賴外部 SDK。
 4. 只有當功能被實際使用、測試與審核後才更新 `go.mod` 並引入 dependency。
 5. LINE「全功能」以可用公開 API reference 為追蹤範圍，資格或地區受限的 endpoints 要有 feature gate。
+6. `line-developers-docs-source` 是文件來源，不是 Go SDK，不能加入 `go.mod`。
+7. `go.linecorp.com/garr` 保留在預先宣告的選用模組中，不能用其程序內 queue 代替 Cloud Tasks 的持久排程。

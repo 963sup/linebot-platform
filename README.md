@@ -1,61 +1,67 @@
 # linebot-platform
 
-使用 **Go**、**Domain-Driven Design (DDD)** 與 **Hexagonal Architecture（Ports & Adapters）** 建置的 LINE Messaging API 平台，預計運行於 Google Cloud Run，並可選配 OpenAI、Google Gen AI（Gemini）及 Google API。
+使用 Go、DDD（Domain-Driven Design）與 Hexagonal Architecture 的 LINE Messaging API 平台；規劃部署在 Google Cloud Run，並保留 Google Cloud、Workspace、OpenAI 與 Google Gen AI 整合介面。
 
-> **狀態：僅完成規劃與目錄骨架（scaffold）。** 尚無可執行的 Go Bot、LINE webhook、AI 串接、CI 或正式部署。所有 `.gitkeep` 都代表預留位置，**不是已實作功能**。
+> **狀態：開發用 MVP，非 production-ready。** 已加入 HTTP 健康檢查、LINE SDK 驗簽 webhook、文字 Reply、簡單 Flex Message Reply，以及命令列 Push。尚無 Firestore inbox/outbox、Cloud Tasks 或跨執行個體去重；沒有部署任何雲端資源，也沒有真實 LINE 帳號測試。
 
-## 目標架構
+## 已實作的功能
 
-- `cmd/webhook`：公開 Cloud Run webhook 入口（待實作）
-- `cmd/worker`：Cloud Tasks 驗證後呼叫的私有背景工作服務（待實作）
-- `cmd/ops`：需授權的管理 CLI / Cloud Run Job（待實作）
-- `internal/domain`：業務規則、聚合、值物件與 repository 契約
-- `internal/application`：commands、queries、use cases 與 ports
-- `internal/adapter`：HTTP／CLI 入口與 LINE、AI、Google 等外部介面轉接
-- `internal/infrastructure`：SDK client 初始化、transport、雲端與觀測元件
-- `internal/adapter/outbound/genai`：Google Gen AI 的應用層轉接（待實作）
-- `internal/infrastructure/google/genai`：Google Gen AI Go SDK client 設定（待實作）
-- `internal/domain/valueobjects`：Value Objects 的 Go package 目錄（待實作）
-- `tests/`：架構、契約、整合與端到端測試
-- `.agents/`、`.codex/`、`plugins/`：Codex skills／MCP／plugins 規劃
+| 能力 | 實作位置 | 狀態 |
+|---|---|---|
+| `GET /healthz` | `cmd/webhook`、`adapter/inbound/http/health` | 可在沒有憑證下運行 |
+| `POST /webhook/line` | `adapter/inbound/http/line` | 使用 LINE SDK `webhook.ParseRequest` 驗證簽章並同步處理文字訊息 |
+| Reply Text | `application/usecases/conversation` 與 LINE adapter | 使用 LINE Messaging API SDK |
+| Reply Flex | 同上 | 傳入 `flex` 或 `卡片` 時回覆簡單 bubble |
+| Push Text／Flex | `cmd/ops` | 僅 CLI `push --send` 會實際呼叫 API，且需要接收者與 retry key |
+| Firestore、Storage、Cloud Tasks、Secret Manager | `go.mod` 依賴與預留目錄 | SDK 版本已聲明；尚未連接 |
+| Sheets、Drive、Calendar | `go.mod` 依賴與預留目錄 | SDK 已聲明；未啟用 |
+| OpenAI、Google Gen AI、garr | `go.mod` 依賴與預留目錄 | SDK 已聲明；未啟用 |
+| LINE 官方文件來源 | [line-developers-docs-source](https://github.com/line/line-developers-docs-source) | 僅供查閱，不是 SDK |
 
-```mermaid
-flowchart LR
-  LINE[LINE] --> W[Cloud Run webhook]
-  W --> F[(Firestore inbox / outbox)]
-  F --> T[Cloud Tasks]
-  T --> K[Cloud Run worker]
-  K --> L[LINE Messaging API]
-  K --> A[OpenAI / Google Gen AI]
+請閱讀 [架構](docs/architecture/overview.md)、[技術與版本](docs/versions.md)、[功能矩陣](docs/line/feature-matrix.md)。
+
+## 環境要求
+
+- Go **1.27.3**（已包含 Go 1.27 的安全修補；依 LINE/OpenAI SDK 當前要求）。
+- `make`、Git。
+- 有效 LINE Channel Secret + Channel Access Token：只有啟用 /webhook/line 與 CLI 發送時才需要。
+- 外部 Go dependencies 需網路下載，`go.sum` 必須在首次整理依賴後提交；請勿手寫 checksum。
+
+## 本機使用
+
+```sh
+make bootstrap             # go mod tidy + download；產生並檢查 go.sum
+make check                 # gofmt、vet、race tests、build
+make run-webhook           # 預設 0.0.0.0:8080
+curl http://localhost:8080/healthz
 ```
 
-以上為**預計架構**，並非目前已上線服務。
+沒有 LINE 憑證時服務只開放 `/healthz`，`/webhook/line` 回傳 503。要接收 LINE webhook，請透過安全方式在執行環境設定 `LINE_CHANNEL_SECRET` 與 `LINE_CHANNEL_ACCESS_TOKEN`（兩個必須同時存在）；不要把憑證寫進檔案或提交 GitHub。
 
-## 技術依據
+此服務沒有公開的 Push HTTP endpoint；Push 僅透過需明確指定 `--send` 的 CLI：
 
-| 用途 | 上游專案 | 狀態 |
-|---|---|---|
-| LINE Messaging API | [line/line-bot-sdk-go](https://github.com/line/line-bot-sdk-go)（`/v8/linebot`） | 預計採用 |
-| LINE 官方文件 | [line/line-developers-docs-source](https://github.com/line/line-developers-docs-source) | 參考 |
-| Cloud Run 相關 Google Cloud SDK | [googleapis/google-cloud-go](https://github.com/googleapis/google-cloud-go) | 按服務引入 |
-| Google Workspace / Discovery APIs | [googleapis/google-api-go-client](https://github.com/googleapis/google-api-go-client) | 視需求引入 |
-| OpenAI | [openai/openai-go](https://github.com/openai/openai-go)（`/v3`） | 預計採用 |
-| Google Gen AI（Gemini） | [googleapis/go-genai](https://github.com/googleapis/go-genai)（`google.golang.org/genai`） | 預計採用 |
-| 程序內韌性工具 | [line/garr](https://github.com/line/garr) | 選配 |
+```sh
+go run ./cmd/ops push --to "<LINE_USER_ID>" --text "測試通知"
+# 上方故意不會送出；需要明確加上 --send 並設定 LINE_CHANNEL_ACCESS_TOKEN。
+```
 
-請參閱 [技術依據與相容性](docs/sources.md)、[架構說明](docs/architecture/overview.md)、[完整目錄清單](docs/architecture/directory-manifest.md)、[開發路線圖](docs/roadmap.md)。
+CLI 發送會先輸出可重用的 UUID retry key。若發生 timeout 或結果未知，使用完全相同訊息內容及 `--retry-key` 重新執行，避免因新 key 重複送出；請勿將 key 和收件者資訊貼到公開 issue。
 
-## 本階段的開發限制
+完整設定與測試說明：[本機開發](docs/operations/local-development.md)、[測試策略](docs/quality/test-strategy.md)。
 
-- 尚未建立 `go.mod`／`go.sum`；這些檔案會在加入**真正可編譯的程式**時由 Go 工具產生與維護。
-- `Dockerfile`、`Makefile`、GitHub Actions、Terraform、plugin manifest 等待有實際實作與驗證後再加入；不能使用空檔假裝可運行。
-- `LICENSE` 尚待儲存庫擁有者選擇，不預設任何授權條款。
-- 不把 token、channel secret、API Key、憑證與真實個資提交到公開儲存庫。
+## 架構與限制
 
-## 建議下一階段
+- `domain/`：業務不變量、aggregates、valueobjects；本階段保留擴充空間。
+- `application/`：Messaging Port、驗證、Reply／Push、基本文字回覆 usecase。
+- `adapter/`：LINE webhook 和 outbound Messaging API SDK；健康檢查。
+- `infrastructure/`：LINE Client Factory；其餘 SDK 待按需接線。
+- `bootstrap/`：設定、組裝、啟動與 shutdown。
+- `cmd/webhook`、`cmd/ops`：實際可執行程式；`cmd/worker` 尚待實作。
 
-1. 建立 `go.mod`、HTTP `/healthz`、Graceful shutdown、測試、Makefile 與 CI。
-2. 加入 LINE webhook 簽章驗證、事件去重、Firestore inbox／outbox、Cloud Tasks。
-3. 加入 Messaging API、AI adapters 與測試；最後經授權部署 staging。
+**重要：目前同步回覆並未持久化 incoming event。** 在 LINE webhook 重送、批次處理部分成功、容器重啟時，仍可能造成重複發送；未完成 Firestore inbox/outbox + Cloud Tasks + 冪等策略前，不能稱為正式環境可靠 Bot。
 
-開始貢獻前請閱讀 [AGENTS.md](AGENTS.md) 和 [CONTRIBUTING.md](CONTRIBUTING.md)。
+## 開發與安全
+
+[AGENTS.md](AGENTS.md) 定義分層與開發規範；[CONTRIBUTING.md](CONTRIBUTING.md) 說明 PR 與驗證方式；[SECURITY.md](SECURITY.md) 說明安全通報。不要提交 API Key、Channel Secret、token、真實訊息或服務帳號金鑰。
+
+完整 [Roadmap](docs/roadmap.md) 按風險先後處理可靠事件流程、Cloud Tasks／Firestore、再擴充 LINE API 與 AI 功能。

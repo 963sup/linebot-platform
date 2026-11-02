@@ -1,3 +1,3 @@
 # Infrastructure Layer
 
-提供 SDK client 初始化、認證、Google Cloud 接線、韌性及觀測。實際使用時才加入相關套件；`garr` 的程序內 queue 不等於可持久化的 Cloud Tasks。Google Gen AI SDK client 預留於 `google/genai/`，對應 `google.golang.org/genai`；尚無實作。
+提供 SDK client 初始化、認證、Google Cloud 接線、韌性及觀測。實際使用時才加入相關套件；`garr` 的程序內 queue 不等於可持久化的 Cloud Tasks。Google Gen AI SDK client 預留於 `google/genai/`，對應 `google.golang.org/genai`；已有 LINE Messaging Client Factory（HTTP timeout）；其餘 SDK 僅宣告依賴並保留目錄，尚未執行任何外部 API 整合。
