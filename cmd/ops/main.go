@@ -2,12 +2,13 @@ package main
 
 import (
 	"context"
-	"crypto/rand"
 	"errors"
 	"flag"
 	"fmt"
 	"os"
 	"strings"
+
+	"github.com/google/uuid"
 
 	"github.com/963sup/linebot-platform/internal/adapter/outbound/line"
 	"github.com/963sup/linebot-platform/internal/application/ports/outbound"
@@ -16,14 +17,11 @@ import (
 )
 
 func uuidv4() (string, error) {
-	b := make([]byte, 16)
-	if _, err := rand.Read(b); err != nil {
-		return "", err
+	id, err := uuid.NewRandom()
+	if err != nil {
+		return "", fmt.Errorf("generate UUID v4: %w", err)
 	}
-	b[6] = b[6]&0x0f | 0x40
-	b[8] = b[8]&0x3f | 0x80
-	return fmt.Sprintf("%08x-%04x-%04x-%04x-%012x",
-		b[0:4], b[4:6], b[6:8], b[8:10], b[10:16]), nil
+	return id.String(), nil
 }
 
 func run(args []string, getenv func(string) string) error {
@@ -67,6 +65,12 @@ func run(args []string, getenv func(string) string) error {
 		if err != nil {
 			return err
 		}
+	} else {
+		parsed, err := uuid.Parse(*key)
+		if err != nil || parsed.Version() != 4 {
+			return errors.New("--retry-key must be a valid UUID v4")
+		}
+		*key = parsed.String()
 	}
 	client, err := lineinfra.NewMessagingClient(getenv("LINE_CHANNEL_ACCESS_TOKEN"))
 	if err != nil {

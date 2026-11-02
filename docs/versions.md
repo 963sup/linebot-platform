@@ -16,6 +16,7 @@ Go module 已加入；已宣告以下固定 SDK 版本。本地執行環境無�
 
 | SDK module | 宣告版本 | 功能狀態 |
 |---|---|---|
+| `github.com/google/uuid` | v1.6.0 | 直接依賴；Push CLI 使用 UUID v4 作為 LINE retry key |
 | `github.com/line/line-bot-sdk-go/v8` | v8.23.0 | Webhook、Reply、Push、Flex 由 SDK 接線 |
 | `github.com/openai/openai-go/v3` | v3.91.1 | 選用、未啟用 |
 | `google.golang.org/genai` | v1.76.0 | 選用、未啟用 |

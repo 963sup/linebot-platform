@@ -7,6 +7,7 @@ require (
 	cloud.google.com/go/firestore v1.29.2
 	cloud.google.com/go/secretmanager v1.23.1
 	cloud.google.com/go/storage v1.70.0
+	github.com/google/uuid v1.6.0
 	github.com/line/line-bot-sdk-go/v8 v8.23.0
 	github.com/openai/openai-go/v3 v3.91.1
 	go.linecorp.com/garr v0.1.1
@@ -37,7 +38,6 @@ require (
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/google/go-cmp v0.7.0 // indirect
 	github.com/google/s2a-go v0.1.11 // indirect
-	github.com/google/uuid v1.6.0 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.3.24 // indirect
 	github.com/googleapis/gax-go/v2 v2.27.0 // indirect
 	github.com/gorilla/websocket v1.5.3 // indirect

@@ -20,6 +20,8 @@
 
 請閱讀 [架構](docs/architecture/overview.md)、[技術與版本](docs/versions.md)、[功能矩陣](docs/line/feature-matrix.md)。
 
+本專案直接使用 [`github.com/google/uuid`](https://github.com/google/uuid) 的 UUID v4 產生器建立 LINE Push retry key，並驗證手動指定的 retry key；不再自行實作 UUID 編碼。
+
 ## 環境要求
 
 - Go **1.27.3**（已包含 Go 1.27 的安全修補；依 LINE/OpenAI SDK 當前要求）。
