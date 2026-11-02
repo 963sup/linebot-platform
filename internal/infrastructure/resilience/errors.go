@@ -12,12 +12,12 @@ import (
 type Kind string
 
 const (
-	KindCanceled    Kind = "canceled"
-	KindTimeout     Kind = "timeout"
+	KindCanceled     Kind = "canceled"
+	KindTimeout      Kind = "timeout"
 	KindUnauthorized Kind = "unauthorized"
-	KindRateLimited Kind = "rate_limited"
-	KindUnavailable Kind = "unavailable"
-	KindUnknown     Kind = "unknown"
+	KindRateLimited  Kind = "rate_limited"
+	KindUnavailable  Kind = "unavailable"
+	KindUnknown      Kind = "unknown"
 )
 
 // ExternalError exposes safe metadata while preserving the original error

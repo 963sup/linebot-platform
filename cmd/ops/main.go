@@ -13,8 +13,8 @@ import (
 	"github.com/963sup/linebot-platform/internal/adapter/outbound/line"
 	"github.com/963sup/linebot-platform/internal/application/ports/outbound"
 	"github.com/963sup/linebot-platform/internal/application/usecases/messaging"
-	lineinfra "github.com/963sup/linebot-platform/internal/infrastructure/line"
 	"github.com/963sup/linebot-platform/internal/infrastructure/httpclient"
+	lineinfra "github.com/963sup/linebot-platform/internal/infrastructure/line"
 )
 
 func uuidv4() (string, error) {
