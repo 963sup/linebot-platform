@@ -99,7 +99,7 @@ func TestTasksAndCalendarNativeAPIAreCallableOffline(t *testing.T) {
 
 type bearerTransport struct {
 	token string
-	next http.RoundTripper
+	next  http.RoundTripper
 }
 
 func (b bearerTransport) RoundTrip(req *http.Request) (*http.Response, error) {
