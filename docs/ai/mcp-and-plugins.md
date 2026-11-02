@@ -1,6 +1,6 @@
 # Codex MCP 與 Plugins（正式專案設定）
 
-MCP 是**開發期工具**，由 [`.codex/config.toml`](../../.codex/config.toml) 管理；LINE Bot 的 Cloud Run Runtime 仍獨立使用 Go SDK。根 `AGENTS.md` 僅描述何時使用工具，**不能安裝、登入或代管 MCP 憑證**。
+MCP 是**開發期工具**，由 [`.codex/config.toml`](../../.codex/config.toml) 管理；LINE Bot 的 Cloud Run Runtime 仍獨立使用 Go SDK。Codex SDK 任務先讀 [SDK Catalog](../sdk/catalog.toml)，再按 [SDK Integration Skill](../../.agents/skills/sdk-integration/SKILL.md) 使用本地模組原始碼／gopls／官方文件；不需要為每個 SDK 加裝一個 MCP。根 `AGENTS.md` 僅描述何時使用工具，**不能安裝、登入或代管 MCP 憑證**。
 
 ## 5 個 MCP 與安全預設
 

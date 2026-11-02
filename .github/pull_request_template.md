@@ -14,6 +14,8 @@
 - [ ] go build ./...
 - [ ] LINE contract tests（fake／fixture）
 - [ ] SDK／CI 相容性檢查
+- [ ] `go run ./cmd/codexcheck`（含 SDK Catalog 與直接依賴一致性）
+- [ ] 涉及 SDK 時同步 Catalog、README、版本與相關架構文件
 
 ## 風險與未驗證
 
