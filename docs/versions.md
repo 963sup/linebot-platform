@@ -22,13 +22,15 @@ Go module 已加入，`go.mod`／`go.sum` 由 Go 工具鏈與 CI 管理；此表
 |---|---|---|
 | `github.com/google/uuid` | v1.6.0 | 直接依賴；Push CLI 使用 UUID v4 作為 LINE retry key |
 | `github.com/line/line-bot-sdk-go/v8` | v8.23.0 | Webhook、Reply、Push、Flex 由 SDK 接線 |
-| `github.com/openai/openai-go/v3` | v3.91.1 | 選用、未啟用 |
-| `google.golang.org/genai` | v1.77.0 | 選用、未啟用 |
-| `cloud.google.com/go/firestore` | v1.29.2 | 預先宣告、未啟用 |
-| `cloud.google.com/go/storage` | v1.70.0 | 預先宣告、未啟用 |
-| `cloud.google.com/go/cloudtasks` | v1.21.1 | 預先宣告、未啟用 |
-| `cloud.google.com/go/secretmanager` | v1.23.1 | 預先宣告、未啟用 |
-| `google.golang.org/api` | v0.310.0 | Workspace 選用、未啟用 |
+| `github.com/openai/openai-go/v3` | v3.91.1 | 原生 Client Factory 已建，尚未接入業務 |
+| `google.golang.org/genai` | v1.77.0 | Gemini／Vertex 分別建立 Factory，未授權啟用 |
+| `cloud.google.com/go/firestore` | v1.29.2 | Client Factory 已建，業務 Adapter 未接線 |
+| `cloud.google.com/go/storage` | v1.70.0 | Client Factory 已建，業務 Adapter 未接線 |
+| `cloud.google.com/go/cloudtasks` | v1.21.1 | Client Factory 已建，Worker 未實作 |
+| `cloud.google.com/go/secretmanager` | v1.23.1 | Client Factory 已建，尚未使用正式憑證 |
+| `google.golang.org/api` | v0.310.0 | Drive、Sheets、Calendar、Tasks 原生 Factory 已建；使用者 OAuth 未實作 |
 | `go.linecorp.com/garr` | v0.1.1 | Worker pool / retry / circuit breaker 選用、未啟用 |
+
+Google Tasks API 使用現有模組的 `google.golang.org/api/tasks/v1`，**沒有新增 Go Module**；Google Cloud Tasks 則使用獨立的 `cloud.google.com/go/cloudtasks`。
 
 Go 版本鎖定為 **1.27.3**。若 `go mod tidy` 因間接依賴調整版本，應以實際可重現建置結果重新審查本表。Google Cloud Client Libraries 的多 module 架構不等於只安裝一個 `google-cloud-go` root module。

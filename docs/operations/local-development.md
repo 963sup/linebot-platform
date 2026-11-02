@@ -58,4 +58,4 @@ go doc google.golang.org/genai.Client
 
 `go.mod` 只表示模組版本需求。`go.mod`／`go.sum` 已於 GitHub Actions Go 1.27.3 環境解析並提交。後續升級模組時應在有網路的環境執行 `go mod tidy`、`go mod download`，檢查並提交異動；CI 持續保留依賴解析的審查用 artifact。
 
-Workspace、Cloud Services、OpenAI、Gen AI、garr 已宣告但尚未接線；不能只憑目錄／依賴存在就認定功能完成。
+Google Workspace（Tasks、Calendar、Sheets、Drive）、Google Cloud（Firestore、Cloud Tasks、Secret Manager、Storage）及 OpenAI／Gen AI 已建立原生 SDK Client Factory，但尚未接入 Webhook／Worker 業務流程，也沒有使用真實 OAuth 或正式雲端憑證。`garr` 仍為選用依賴。Catalog 區分 `declared`、`client_ready`、`integrated`；Google Tasks 使用者 OAuth 和 Calendar scopes 見 [Workspace OAuth 說明](../sdk/workspace-oauth.md)。

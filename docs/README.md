@@ -3,6 +3,7 @@
 - [架構概覽](architecture/overview.md)
 - [SDK 整合與 Codex 開發流程](architecture/sdk-integration.md)
 - [SDK Catalog（直接依賴與接線狀態）](sdk/catalog.toml)
+- [Google Tasks／Calendar／Sheets／Drive OAuth 與 Client](sdk/workspace-oauth.md)
 - [事件處理現況](architecture/event-processing.md)
 - [本機開發](operations/local-development.md)
 - [測試策略](quality/test-strategy.md)
