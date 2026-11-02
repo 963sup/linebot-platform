@@ -16,4 +16,5 @@
 - `gopls` 本地 MCP 透過 Cloud install script 安裝，Context7 用已託管的文件 MCP。
 - GitHub MCP、Firestore Toolbox 目前預設停用，**不是已獲得權限或安裝**。
 - Agent 檔案不能自行擴權或代替主 Session 的 sandbox、approval、MCP 授權。
+- Codex 設定驗證已改用純 Go 程式 `go run ./cmd/codexcheck`，不依賴 Python 檔案或 Python 執行環境。
 - 完成 PR 後，Codex Cloud 的管理者仍需在 Cloud UI 測試、Publish／Republish 才可重用此環境。

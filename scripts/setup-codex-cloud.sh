@@ -12,10 +12,6 @@ if ! command -v go >/dev/null 2>&1; then
   echo "Go is missing. Configure Go 1.27.3 in the Codex Cloud environment first." >&2
   exit 1
 fi
-if ! command -v python3 >/dev/null 2>&1; then
-  echo "Python 3.11+ is needed to validate Codex TOML files." >&2
-  exit 1
-fi
 
 # Codex Cloud has a separate setup shell: do not rely on exported PATH or tokens
 # remaining in the agent phase. The MCP config uses an explicit HOME-based path.
@@ -25,11 +21,12 @@ required_go="$(awk '$1 == "go" { print $2; exit }' go.mod)"
 test -n "$required_go" || { echo "go.mod has no Go version" >&2; exit 1; }
 printf 'Module requires Go %s\n' "$required_go"
 
-python3 scripts/validate-codex-config.py
-
-# Keep go.mod/go.sum unchanged: CI already verifies both lockfiles.
+# Keep go.mod/go.sum unchanged: CI verifies the committed lockfiles.
 go mod download
 go mod verify
+
+# Validate Codex TOML, agents and setup shell syntax with Go (no Python).
+go run ./cmd/codexcheck
 
 # gopls MCP is a standalone stdio process. Pin it independently of go.mod.
 gopls_version="v0.24.0"

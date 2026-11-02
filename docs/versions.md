@@ -12,6 +12,10 @@ Go module 已加入；已宣告以下固定 SDK 版本。本地執行環境無�
 
 正式採用前需固定實際版本、CI Go 工具鏈、建置映像與 Actions SHA；不得以浮動 `latest` 作為可重現 build 依據。
 
+## 開發工具依賴
+
+- `github.com/BurntSushi/toml v1.6.0`：Go 的 TOML 解析套件，用於 `cmd/codexcheck` 驗證專案 Codex 與 Agents 設定；不會被 LINE Bot 的執行時程式直接 import。
+
 ## 初始直接依賴版本（go.mod）
 
 | SDK module | 宣告版本 | 功能狀態 |

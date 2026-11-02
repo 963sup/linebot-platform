@@ -53,6 +53,7 @@
 
 ## 驗證與交付
 
+- Codex 設定使用 `go run ./cmd/codexcheck` 驗證 TOML、Agents、Cloud Setup Script 與專案不得包含 Python `.py` 檔案；不需要 Python runtime。
 - Go 程式存在後，依序檢查格式、`go vet ./...`、`go test ./...`、`go test -race ./...`、`go build ./...`；若環境不支援，明確記錄原因。
 - 任何與 SDK 的整合都需 unit／contract tests；實際雲端／LINE E2E 需隔離且明確授權。
 - 提交 PR 必須描述變更、實際測試結果、風險、未完成事項；不得聲稱空目錄已完成實作。

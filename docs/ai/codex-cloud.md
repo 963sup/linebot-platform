@@ -19,7 +19,7 @@
 ## 2. Setup script 做的事情
 
 - 使用 `GOTOOLCHAIN=auto` 讀取並遵守根 `go.mod` 的版本要求。
-- 校驗 `.codex/config.toml`、五份 Agent TOML 與 setup 腳本本身。
+- 以 `go run ./cmd/codexcheck` 解析 `.codex/config.toml` 與五份 Agent TOML，檢查 setup shell 語法，並拒絕儲存庫中的 Python 原始碼。
 - 執行 `go mod download`、`go mod verify`；不執行會改動 `go.mod` 的 `go mod tidy`。
 - 固定安裝 Go 官方 `gopls v0.24.0` 到 `$HOME/.local/bin`。腳本可重複執行，已安裝符合版本時跳過。
 - 預設**不執行**耗時的 race test；可選擇使用環境變數 `CODEX_CLOUD_WARM_TESTS=1` 在安裝時先做普通 `go test ./...`。
@@ -42,7 +42,7 @@ Cloud agent phase 的網路政策與 setup 的套件下載權限不一定相同�
 ## 4. 驗證步驟
 
 ```bash
-python3 scripts/validate-codex-config.py
+go run ./cmd/codexcheck
 bash -n scripts/setup-codex-cloud.sh
 go mod verify
 make check
@@ -52,7 +52,7 @@ $HOME/.local/bin/gopls version
 codex mcp list
 ```
 
-這些指令需在實際 Cloud 環境執行才算雲端驗證通過。GitHub CI 會先檢查 TOML／shell 語法，但**CI 通過不代表 Cloud MCP 已認證、工具可連線或雲端環境已 Publish**。
+這些指令需在實際 Cloud 環境執行才算雲端驗證通過。GitHub CI 會使用 Go 驗證器（`github.com/BurntSushi/toml`）檢查 TOML／shell 語法，但**CI 通過不代表 Cloud MCP 已認證、工具可連線或雲端環境已 Publish**。
 
 ## 5. 自訂 Agents 的使用
 
