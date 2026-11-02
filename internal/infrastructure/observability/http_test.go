@@ -20,7 +20,7 @@ func TestLoggingDoesNotExposeSecretsOrURLs(t *testing.T) {
 		return &http.Response{StatusCode: 202, Body: io.NopCloser(strings.NewReader("{}"))}, nil
 	})
 	decorated := WrapHTTP("line", logger)(base)
-	req, err := http.NewRequest(http.MethodPost, "https://example.test/secret-path?token=private-query", strings.NewReader("private-message"))
+	req, err := http.NewRequest(http.MethodPost, "https://example.test/private-path?token=private-query", strings.NewReader("private-message"))
 	if err != nil {
 		t.Fatal(err)
 	}
