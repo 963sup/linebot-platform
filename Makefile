@@ -1,4 +1,4 @@
-.PHONY: bootstrap check fmt-check vet test build run-webhook run-ops
+.PHONY: bootstrap check fmt-check vet test build run-webhook run-worker run-ops
 
 bootstrap:
 	go mod tidy
@@ -23,3 +23,6 @@ run-webhook:
 
 run-ops:
 	go run ./cmd/ops $(ARGS)
+
+run-worker:
+	go run ./cmd/worker

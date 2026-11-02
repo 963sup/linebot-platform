@@ -19,6 +19,7 @@ import (
 type WebhookRuntime struct {
 	Handler  http.Handler
 	outbound *httpclient.Managed
+	closers  []func() error
 }
 
 // NewWebhookRuntime constructs only the clients needed by the webhook process.
@@ -30,6 +31,13 @@ func NewWebhookRuntime(cfg Config, logger *slog.Logger) (*WebhookRuntime, error)
 		mux.HandleFunc("/webhook/line", func(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "LINE integration is not configured", http.StatusServiceUnavailable)
 		})
+		return runtime, nil
+	}
+	if cfg.EventMode == "durable" {
+		if err := configureDurableWebhook(cfg, logger, mux, runtime); err != nil {
+			runtime.Close()
+			return nil, err
+		}
 		return runtime, nil
 	}
 
@@ -72,7 +80,11 @@ func NewWebhookRuntime(cfg Config, logger *slog.Logger) (*WebhookRuntime, error)
 // Close releases idle SDK HTTP connections after the inbound server has
 // drained its requests. It is safe to call more than once.
 func (r *WebhookRuntime) Close() {
-	if r != nil {
-		r.outbound.Close()
+	if r == nil {
+		return
+	}
+	r.outbound.Close()
+	for i := len(r.closers) - 1; i >= 0; i-- {
+		_ = r.closers[i]()
 	}
 }
