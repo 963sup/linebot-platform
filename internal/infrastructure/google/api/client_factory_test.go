@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync/atomic"
 	"testing"
 )
 
@@ -35,7 +36,7 @@ func TestWorkspaceFactoriesRequireAuthorizedTransport(t *testing.T) {
 func TestTasksAndCalendarNativeAPIAreCallableOffline(t *testing.T) {
 	// This HTTP client simulates an already-authorized user token. Real code
 	// must obtain it from a secure OAuth flow and enforce the narrowest scopes.
-	var gotTasks, gotCalendar bool
+	var gotTasks, gotCalendar atomic.Bool
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Header.Get("Authorization") != "Bearer fake-oauth-user-token" {
 			t.Errorf("missing simulated OAuth bearer token")
@@ -43,10 +44,10 @@ func TestTasksAndCalendarNativeAPIAreCallableOffline(t *testing.T) {
 		w.Header().Set("Content-Type", "application/json")
 		switch {
 		case strings.HasSuffix(r.URL.Path, "/users/@me/lists"):
-			gotTasks = true
+			gotTasks.Store(true)
 			_, _ = w.Write([]byte(`{"items":[{"id":"list-1","title":"Personal"}]}`))
 		case strings.Contains(r.URL.Path, "/calendars/primary/events"):
-			gotCalendar = true
+			gotCalendar.Store(true)
 			_, _ = w.Write([]byte(`{"items":[{"id":"event-1","summary":"Event"}]}`))
 		default:
 			t.Errorf("unexpected Google API request path: %s", r.URL.Path)
@@ -58,28 +59,42 @@ func TestTasksAndCalendarNativeAPIAreCallableOffline(t *testing.T) {
 	base := server.Client()
 	client := &http.Client{Transport: bearerTransport{token: "fake-oauth-user-token", next: base.Transport}}
 	tasksSvc, err := NewTasks(context.Background(), client)
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	tasksSvc.BasePath = server.URL + "/"
 	tasklists, err := tasksSvc.Tasklists.List().Do()
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	if len(tasklists.Items) != 1 || tasklists.Items[0].Title != "Personal" {
 		t.Fatalf("unexpected tasks response: %#v", tasklists.Items)
 	}
 
 	calSvc, err := NewCalendar(context.Background(), client)
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	calSvc.BasePath = server.URL + "/"
 	events, err := calSvc.Events.List("primary").Do()
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	if len(events.Items) != 1 || events.Items[0].Summary != "Event" {
 		t.Fatalf("unexpected calendar events: %#v", events.Items)
 	}
-	if !gotTasks || !gotCalendar { t.Fatal("both Google APIs must be exercised") }
+	if !gotTasks.Load() || !gotCalendar.Load() {
+		t.Fatal("both Google APIs must be exercised")
+	}
 
 	sheetsSvc, err := NewSheets(context.Background(), client)
-	if err != nil || sheetsSvc.Spreadsheets == nil { t.Fatalf("sheets client unavailable: %v", err) }
+	if err != nil || sheetsSvc.Spreadsheets == nil {
+		t.Fatalf("sheets client unavailable: %v", err)
+	}
 	driveSvc, err := NewDrive(context.Background(), client)
-	if err != nil || driveSvc.Files == nil { t.Fatalf("drive client unavailable: %v", err) }
+	if err != nil || driveSvc.Files == nil {
+		t.Fatalf("drive client unavailable: %v", err)
+	}
 }
 
 type bearerTransport struct {

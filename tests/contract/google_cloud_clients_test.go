@@ -31,10 +31,22 @@ func TestGoogleCloudFactoriesRejectInvalidContext(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 	for name, construct := range map[string]func() error{
-		"firestore": func() error { _, err := firestore.NewClient(ctx, "test-project"); return err },
-		"cloudtasks": func() error { _, err := cloudtasks.NewClient(ctx); return err },
-		"secretmanager": func() error { _, err := secretmanager.NewClient(ctx); return err },
-		"storage": func() error { _, err := storage.NewClient(ctx); return err },
+		"firestore": func() error {
+			_, err := firestore.NewClient(ctx, "test-project")
+			return err
+		},
+		"cloudtasks": func() error {
+			_, err := cloudtasks.NewClient(ctx)
+			return err
+		},
+		"secretmanager": func() error {
+			_, err := secretmanager.NewClient(ctx)
+			return err
+		},
+		"storage": func() error {
+			_, err := storage.NewClient(ctx)
+			return err
+		},
 	} {
 		t.Run(name, func(t *testing.T) {
 			if err := construct(); !errors.Is(err, context.Canceled) {
