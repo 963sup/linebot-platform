@@ -1,0 +1,7 @@
+# Adapter Agent Rules
+
+- Inbound：先驗證、轉換，再交給 application usecase，勿在 handler 寫業務決策。
+- LINE webhook 原始 body 必須先驗簽；未知事件須安全處理。
+- Outbound：所有 SDK request / response 僅在 adapter / infrastructure 層存在。
+- 對外呼叫須有 context、timeout、明確錯誤型別及必要的契約測試。
+- 特別防範重送、部分成功、外部操作結果未知、私訊洩漏與多 Channel token 混用。
