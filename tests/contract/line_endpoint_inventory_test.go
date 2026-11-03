@@ -73,6 +73,11 @@ func TestLINEEndpointInventory(t *testing.T) {
 		"deleteRichMenuAlias":              false,
 		"broadcast": false,
 		"multicast": false,
+		"validateReply": false,
+		"validatePush": false,
+		"validateMulticast": false,
+		"validateNarrowcast": false,
+		"validateBroadcast": false,
 	}
 	seen := make(map[string]bool)
 	count := 0

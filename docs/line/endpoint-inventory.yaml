@@ -27,11 +27,11 @@ endpoints:
   - {source: messaging-api, group: delivery, operation: getNumberOfSentPushMessages, method: GET, path: "/v2/bot/message/delivery/push", integration: integrated_offline, test: contract, access: review}
   - {source: messaging-api, group: delivery, operation: getNumberOfSentMulticastMessages, method: GET, path: "/v2/bot/message/delivery/multicast", integration: integrated_offline, test: contract, access: review}
   - {source: messaging-api, group: delivery, operation: getNumberOfSentBroadcastMessages, method: GET, path: "/v2/bot/message/delivery/broadcast", integration: integrated_offline, test: contract, access: review}
-  - {source: messaging-api, group: message-validation, operation: validateReply, method: POST, path: "/v2/bot/message/validate/reply", integration: not_integrated, test: none, access: review}
-  - {source: messaging-api, group: message-validation, operation: validatePush, method: POST, path: "/v2/bot/message/validate/push", integration: not_integrated, test: none, access: review}
-  - {source: messaging-api, group: message-validation, operation: validateMulticast, method: POST, path: "/v2/bot/message/validate/multicast", integration: not_integrated, test: none, access: review}
-  - {source: messaging-api, group: message-validation, operation: validateNarrowcast, method: POST, path: "/v2/bot/message/validate/narrowcast", integration: not_integrated, test: none, access: review}
-  - {source: messaging-api, group: message-validation, operation: validateBroadcast, method: POST, path: "/v2/bot/message/validate/broadcast", integration: not_integrated, test: none, access: review}
+  - {source: messaging-api, group: message-validation, operation: validateReply, method: POST, path: "/v2/bot/message/validate/reply", integration: integrated_offline, test: contract, access: review}
+  - {source: messaging-api, group: message-validation, operation: validatePush, method: POST, path: "/v2/bot/message/validate/push", integration: integrated_offline, test: contract, access: review}
+  - {source: messaging-api, group: message-validation, operation: validateMulticast, method: POST, path: "/v2/bot/message/validate/multicast", integration: integrated_offline, test: contract, access: review}
+  - {source: messaging-api, group: message-validation, operation: validateNarrowcast, method: POST, path: "/v2/bot/message/validate/narrowcast", integration: integrated_offline, test: contract, access: review}
+  - {source: messaging-api, group: message-validation, operation: validateBroadcast, method: POST, path: "/v2/bot/message/validate/broadcast", integration: integrated_offline, test: contract, access: review}
   - {source: messaging-api, group: aggregation-unit, operation: getAggregationUnitUsage, method: GET, path: "/v2/bot/message/aggregation/info", integration: integrated_offline, test: contract, access: review}
   - {source: messaging-api, group: aggregation-unit, operation: getAggregationUnitNameList, method: GET, path: "/v2/bot/message/aggregation/list", integration: integrated_offline, test: contract, access: review}
   - {source: messaging-api, group: users, operation: getProfile, method: GET, path: "/v2/bot/profile/{userId}", integration: integrated_offline, test: contract, access: review}

@@ -16,6 +16,7 @@ import (
 // It is never exposed on the unauthenticated webhook process.
 type LINEOpsRuntime struct {
 	Messaging   *messaging.Service
+	Validation  *messaging.ValidationService
 	Profiles    *contacts.Profiles
 	Channel     *channel.Inspector
 	Menus       *engagement.RichMenuInspector
@@ -99,7 +100,9 @@ func NewLINEOpsRuntime(token string) (*LINEOpsRuntime, error) {
 	}
 	campaignMessenger, err := campaign.NewMessenger(sender)
 	if err != nil { return cleanup(err) }
-	return &LINEOpsRuntime{Messaging: messages, Profiles: profiles, Channel: inspector, Menus: menus, MenuManager: menuManager, Memberships: membership, Contacts: contactsInspector, Insights: inspectorInsights, Audiences: inspectorAudiences, Campaign: campaignMessenger, outbound: transport}, nil
+	validator, err := messaging.NewValidationService(sender)
+	if err != nil { return cleanup(err) }
+	return &LINEOpsRuntime{Messaging: messages, Validation: validator, Profiles: profiles, Channel: inspector, Menus: menus, MenuManager: menuManager, Memberships: membership, Contacts: contactsInspector, Insights: inspectorInsights, Audiences: inspectorAudiences, Campaign: campaignMessenger, outbound: transport}, nil
 }
 
 func (r *LINEOpsRuntime) Close() {

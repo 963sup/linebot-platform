@@ -70,6 +70,8 @@ Insights 唯讀查詢範例：`go run ./cmd/ops insights --kind followers --date
 
 Contacts/Group/Room 唯讀查詢須明確指定 `--read`（結果可能含使用者資料），例如 `go run ./cmd/ops contacts --kind followers --limit 10 --read`。不得將其輸出存入公開記錄，需遵循 LINE 服務條款及資料保護規範。
 
+訊息內容驗證可使用 `go run ./cmd/ops validate --kind reply --text "測試" --validate` 呼叫官方 SDK validation endpoint，不會對使用者發送訊息。
+
 Broadcast／Multicast 需已授權的測試 Channel，透過 `go run ./cmd/ops campaign --kind multicast --to "U_ID_1,U_ID_2" --text "測試" --send` 明確觸發；Broadcast 將群發給所有符合 LINE 發送條件的好友，可能產生費用。HTTP timeout 為結果未知，不得以新 retry key 盲目重試。
 
 Rich Menu 變更指令需同時提供 `--apply --confirm ACTION`，例如僅在獲授權的隔離測試帳號中執行 `go run ./cmd/ops manage-menu --action set-default --menu-id richmenu-xxx --apply --confirm set-default`。程式碼可用不代表可擅自修改真實帳號；模糊或結果未知的發送不自動重試。
