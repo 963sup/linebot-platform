@@ -14,7 +14,7 @@
 
 - 專案級 `config.toml` 只在 Codex **信任此儲存庫** 時載入；不要將 token 寫到 Git。
 - `gopls` 本地 MCP 透過 Cloud install script 安裝，Context7 與 OpenAI Docs 使用遠端文件 MCP。OpenAI Docs 須允許 `developers.openai.com` 的 agent-phase 網路連線。
-- GitHub MCP、Firestore Toolbox 目前預設停用，**不是已獲得權限或安裝**。
+- GitHub MCP 已啟用但保持唯讀，且僅使用安全環境提供的 `GITHUB_MCP_TOKEN`；Firestore Toolbox 維持停用。
 - `code_cleanup_release_validation` 專責驗收後的證據式清理與發行檢查；預留 SDK 直接依賴、空白骨架與必要回歸測試受保護，不得因未使用就刪除。
 - Agent 檔案不能自行擴權或代替主 Session 的 sandbox、approval、MCP 授權。
 - Codex 設定驗證已改用純 Go 程式 `go run ./cmd/codexcheck`，不依賴 Python 檔案或 Python 執行環境。

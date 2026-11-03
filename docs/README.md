@@ -11,8 +11,6 @@
 - [本機開發](operations/local-development.md)
 - [測試策略](quality/test-strategy.md)
 - [Cloud Build／Cloud Run 配置雛形](operations/deployment.md)
-- [Fly.io 新加坡 Staging 雙 App、Secrets 與 CI](../deploy/fly/README.md)
-- [LINE Messaging API Webhook 設定與驗證](../deploy/fly/line-webhook.md)
 - [目錄清單](architecture/directory-manifest.md)
 - [技術來源與使用分工](sources.md)
 - [LINE 能力矩陣](line/feature-matrix.md)

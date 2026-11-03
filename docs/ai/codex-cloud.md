@@ -33,7 +33,7 @@
 | gopls MCP | 本地 `$HOME/.local/bin/gopls` | 啟用，無憑證 |
 | Context7 遠端 MCP | `mcp.context7.com` 的 HTTPS 連線 | 選用；公開文件無硬編碼 key |
 | OpenAI Docs MCP | `developers.openai.com` 的 HTTPS 連線 | 啟用；唯讀文件，不需 API key |
-| GitHub MCP | `api.githubcopilot.com`、可存放於 personal vault 的 `GITHUB_MCP_TOKEN` | 停用，直到有權限 |
+| GitHub MCP | `api.githubcopilot.com`、安全環境的 `GITHUB_MCP_TOKEN` | 啟用、唯讀 |
 | Firestore Toolbox | Node 20+、`FIRESTORE_PROJECT`、測試專案的 ADC，可能使用 `FIRESTORE_DATABASE` | 停用，直到隔離 staging |
 
 Cloud agent phase 的網路政策與 setup 的套件下載權限不一定相同；需要讓 Context7／OpenAI Docs 遠端工具在 agent phase 可連線時，應依 Cloud 環境 UI 設置允許的主機。沒有權限或無法連線時，Agent 必須退回已快取文檔或官方網頁／原始碼，不能宣稱 MCP 成功。

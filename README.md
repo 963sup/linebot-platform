@@ -148,15 +148,9 @@ Google Tasks、Calendar 的授權詳見 [Workspace OAuth 與 API](docs/sdk/works
 - `bash scripts/setup-codex-cloud.sh` 是可加入 Codex Cloud **Install script** 的非互動式環境準備腳本（下載 Go modules、安裝固定版 gopls）。
 - 專案配置以 `go run ./cmd/codexcheck` 驗證，無須 Python；詳見 [Codex Cloud 建置步驟](docs/ai/codex-cloud.md)，其中的環境發布與 MCP 授權**尚未執行**。
 
-## Fly.io staging（配置已提供，尚未部署）
+## Cloud Build／Cloud Run
 
-可選擇以兩個獨立 Fly.io App 運行公用 Webhook（`fly.toml`）與 Google OIDC 驗證的 Worker（`fly.worker.toml`），沿用 Firestore、Cloud Tasks 及 LINE SDK，不建立額外資料庫。僅提供 **staging** 的手動 GitHub Actions 部署；不自動建立計費資源、不部署正式環境。Fly 並不提供 Cloud Run IAM 或預設 Google ADC，必須完成 Google 身分驗證與外部 Worker OIDC 驗收。
-
-操作前參閱 [Fly.io staging 部署指南](deploy/fly/README.md)。
-
-## Cloud Build（未啟用）
-
-根目錄新增 `cloudbuild.yaml`（Go 驗證、Docker build、Artifact Registry push）與 `cloudbuild.deploy.yaml`（僅供明確核准的**既有 staging** 服務部署）。兩份配置**不會因為提交 GitHub 而自動執行**；目前未建立 Cloud Build Trigger、Cloud Run 服務，也未授權付費雲端操作。`.gcloudignore` 排除本機／敏感上傳內容，`.gitattributes` 固定文字換行規則。操作前先閱讀 [部署配置與限制](docs/operations/deployment.md)。
+根目錄提供 `cloudbuild.yaml`、`cloudbuild.worker.yaml` 與 `cloudbuild.deploy.yaml`，分別建置 public webhook、private worker，並將不可變映像部署到既有 Cloud Run 服務。部署設定固定指向 `bubbly-area-513305-s0` 的 `line-bot-public` 與 `line-bot-private`；所有建立映像均以 sha256 digest 固定。`.gcloudignore` 排除本機／敏感上傳內容，`.gitattributes` 固定文字換行規則。操作前先閱讀 [部署配置與限制](docs/operations/deployment.md)。
 
 `skills-lock.json` 自 [line-bot-go](https://github.com/963sup/line-bot-go/blob/main/skills-lock.json) 精選 13 個與 Go／Cloud Run／安全／CI 有關的技能；**尚未安裝外部 skills**，詳見 [Codex Skills](docs/ai/skills.md)。
 

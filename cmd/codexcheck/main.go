@@ -107,10 +107,10 @@ func validateConfig(path string) error {
 		return errors.New("OpenAI Docs MCP must use the official HTTPS endpoint without local command or bearer token")
 	}
 	github := c.MCPServers["github_readonly"]
-	if github.Enabled || github.URL != "https://api.githubcopilot.com/mcp/" ||
+	if !github.Enabled || github.URL != "https://api.githubcopilot.com/mcp/" ||
 		github.BearerTokenEnvVar != "GITHUB_MCP_TOKEN" ||
 		github.HTTPHeaders["X-MCP-Readonly"] != "true" {
-		return errors.New("GitHub MCP must remain disabled and explicitly read-only")
+		return errors.New("GitHub MCP must be enabled and explicitly read-only")
 	}
 	firestore := c.MCPServers["firestore_toolbox"]
 	if firestore.Enabled || firestore.Command != "npx" ||

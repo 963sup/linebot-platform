@@ -3,12 +3,14 @@
 # and grant its Cloud Logging + Artifact Registry permissions. No triggers are installed here.
 substitutions:
   _REGION: 'asia-east1'
-  _AR_REPOSITORY: 'linebot-platform'
-  _IMAGE_NAME: 'webhook'
+  _AR_REPOSITORY: 'line-bot'
+  _IMAGE_NAME: 'line-bot-public'
+
+serviceAccount: 'projects/bubbly-area-513305-s0/serviceAccounts/line-bot-build@bubbly-area-513305-s0.iam.gserviceaccount.com'
 
 steps:
   - id: 'verify-go'
-    name: 'golang:1.27.3'
+    name: 'golang@sha256:2920bb124f1a2e12a1d39f0cab756ae0068441ee1da7655dec7f5e374944095b'
     entrypoint: 'bash'
     args:
       - '-ceu'
@@ -25,7 +27,7 @@ steps:
         go build ./...
 
   - id: 'build-webhook-image'
-    name: 'gcr.io/cloud-builders/docker'
+    name: 'gcr.io/cloud-builders/docker@sha256:fbc05705e6f24467e40ae8a4097ab9b8fae1116551f838fa2c55f4367427fc36'
     waitFor: ['verify-go']
     args:
       - 'build'

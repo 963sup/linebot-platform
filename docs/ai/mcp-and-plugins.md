@@ -9,7 +9,7 @@ MCP 是**開發期工具**，由 [`.codex/config.toml`](../../.codex/config.toml
 | `gopls` | [gopls MCP](https://go.dev/gopls/features/mcp)；`gopls mcp` | 開啟（需安裝） | Go symbols、definitions、references、型別／錯誤診斷、重構前分析 |
 | `context7` | [upstash/context7](https://github.com/upstash/context7)；`https://mcp.context7.com/mcp` | 開啟（遠端） | 第三方 SDK 版本、安裝和程式 API 用法，仍需核對官方資料 |
 | `openaiDeveloperDocs` | [OpenAI Docs MCP](https://developers.openai.com/learn/docs-mcp)；`https://developers.openai.com/mcp` | 開啟（遠端、唯讀） | 官方 OpenAI API、SDK、Responses API、Codex、Skills、MCP 和 Plugins 文件 |
-| `github_readonly` | [github/github-mcp-server](https://github.com/github/github-mcp-server)；`https://api.githubcopilot.com/mcp/` | 停用（未認證） | 依授權讀取 PR、Issue、commit、workflow 等，不寫入 |
+| `github_readonly` | [github/github-mcp-server](https://github.com/github/github-mcp-server)；`https://api.githubcopilot.com/mcp/` | 啟用（需環境 token） | 依授權讀取 PR、Issue、commit、workflow 等，不寫入 |
 | `firestore_toolbox` | [googleapis/mcp-toolbox](https://github.com/googleapis/mcp-toolbox)；Firestore prebuilt | 停用（未配置 staging ADC） | 在**隔離測試專案**審查 Firestore collections、documents、rules |
 
 `gopls` detached MCP 只能看到已儲存到磁碟的內容；它可能在分析 package 時下載 Go modules，不應誤認為只是一個純離線讀檔工具。
@@ -18,8 +18,7 @@ MCP 是**開發期工具**，由 [`.codex/config.toml`](../../.codex/config.toml
 
 ## GitHub MCP：唯讀與權限
 
-- `enabled = false`：使用者未明確提供權限前不連線；若已使用 ChatGPT 內建 GitHub 連接器，通常不需要再啟用相同用途的 MCP。
-- 若確實需要在**自己的 Codex 工作階段**連線，可將最小範圍的 GitHub PAT 存在安全 vault／環境變數 `GITHUB_MCP_TOKEN`，再由擁有者啟用 `github_readonly`。不要提交 token 或為了讓它能用而在 CI 自動登入。
+- `github_readonly` 只在環境安全提供 `GITHUB_MCP_TOKEN` 時連線；不要提交 token 或為了讓它能用而在 CI 自動登入。
 - 以 `X-MCP-Readonly: true` 限制 MCP 提供的工具，`X-MCP-Toolsets` 收斂至 `repos,issues,pull_requests`；但 token 自身權限仍須單獨限制。
 
 ## Google MCP Toolbox：不是 Google Workspace API MCP
