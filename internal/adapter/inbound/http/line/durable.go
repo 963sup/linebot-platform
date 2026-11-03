@@ -43,6 +43,9 @@ func (h *DurableHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		case errors.As(err, &tooLarge):
 			http.Error(w, "request too large", http.StatusRequestEntityTooLarge)
 		case errors.Is(err, webhook.ErrInvalidSignature):
+			if h.logger != nil {
+				h.logger.Warn("LINE webhook rejected", "reason", "invalid_signature")
+			}
 			http.Error(w, "invalid signature", http.StatusUnauthorized)
 		default:
 			http.Error(w, "invalid webhook", http.StatusBadRequest)
@@ -50,6 +53,9 @@ func (h *DurableHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if parsed.Destination != h.destination {
+		if h.logger != nil {
+			h.logger.Warn("LINE webhook rejected", "reason", "destination_mismatch")
+		}
 		http.Error(w, "destination mismatch", http.StatusUnauthorized)
 		return
 	}
