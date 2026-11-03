@@ -28,7 +28,7 @@ func TestCloudBuildConfigurationTargetsLineBotProduction(t *testing.T) {
 		"line-bot-public",
 		"line-bot-private",
 		"line-bot-events",
-		"U31469a4d9b5533208c71199a43b47803",
+		"_LINE_BOT_DESTINATION",
 		"LINE_CHANNEL_SECRET=line-bot-channel-secret:latest",
 		"LINE_CHANNEL_ACCESS_TOKEN=line-bot-channel-access-token:latest",
 		"--remove-env-vars",

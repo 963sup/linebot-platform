@@ -22,6 +22,15 @@ Cloud Run 使用 `line-bot-runtime@bubbly-area-513305-s0.iam.gserviceaccount.com
 
 環境變數名稱、角色與驗證規則的唯一來源是 [Runtime Configuration](configuration.md) 與 `internal/bootstrap/config_contract.go`。`.env.example` 包含完整非敏感範本；程式不會自動讀取該檔案。
 
+| 設定位置 | 項目 | 用途 |
+| --- | --- | --- |
+| Codex Cloud secure environment | `GITHUB_MCP_TOKEN` | 唯讀 GitHub MCP，僅可送至 `api.githubcopilot.com`；不屬於 Cloud Run runtime。 |
+| Google Secret Manager | `LINE_CHANNEL_SECRET` | 僅注入 `line-bot-public`。 |
+| Google Secret Manager | `LINE_CHANNEL_ACCESS_TOKEN` | 僅注入 `line-bot-private`。 |
+| Cloud Run deployment | `APP_ENV`、`LINE_EVENT_MODE`、`LINE_API_TIMEOUT`、`LOG_LEVEL`、`LOG_FORMAT`、`LINE_BOT_DESTINATION`、`GCP_PROJECT_ID`、`TASK_QUEUE_NAME`、`TASK_WORKER_URL`、`TASK_OIDC_AUDIENCE`、`TASK_INVOKER_EMAIL` | 非敏感 production 設定；由 `cloudbuild.deploy.yaml` 寫入。 |
+| Cloud Run platform | `PORT`、`K_SERVICE` | 由平台注入，不手動設定。 |
+| 操作人員 shell | `LINEBOT_STAGING_PROJECT` | 只有隔離 staging 的 `ops events` 使用；不注入任一服務。 |
+
 - `line-bot-public` 使用 `APP_ENV=production`、`LINE_EVENT_MODE=durable` 與 JSON logs；它只取得 `LINE_CHANNEL_SECRET` 的 Secret Manager reference，不取得 Access Token。
 - `line-bot-private` 使用相同 durable、Firestore、Cloud Tasks 與 OIDC 設定；它只取得 `LINE_CHANNEL_ACCESS_TOKEN` 的 Secret Manager reference，不取得 Channel Secret。
 - `K_SERVICE` 由 Cloud Run 自動注入，程式以此拒絕套用 local profile。
@@ -69,7 +78,7 @@ gcloud builds submit . \
 gcloud builds submit . \
   --project=bubbly-area-513305-s0 \
   --config=cloudbuild.deploy.yaml \
-  --substitutions="_APPROVE_DEPLOYMENT=true,_PUBLIC_IMAGE_URI=asia-east1-docker.pkg.dev/bubbly-area-513305-s0/line-bot/line-bot-public@sha256:PUBLIC_DIGEST,_PRIVATE_IMAGE_URI=asia-east1-docker.pkg.dev/bubbly-area-513305-s0/line-bot/line-bot-private@sha256:PRIVATE_DIGEST"
+  --substitutions="_APPROVE_DEPLOYMENT=true,_LINE_BOT_DESTINATION=YOUR_LINE_BOT_DESTINATION,_PUBLIC_IMAGE_URI=asia-east1-docker.pkg.dev/bubbly-area-513305-s0/line-bot/line-bot-public@sha256:PUBLIC_DIGEST,_PRIVATE_IMAGE_URI=asia-east1-docker.pkg.dev/bubbly-area-513305-s0/line-bot/line-bot-private@sha256:PRIVATE_DIGEST"
 ```
 
 完成後應檢查兩個 revision 的 Ready condition、public webhook 的 LINE 簽章拒絕行為，以及 private worker 對匿名請求與錯誤 OIDC audience 的拒絕行為。

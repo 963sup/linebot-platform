@@ -10,7 +10,7 @@ substitutions:
   _PUBLIC_IMAGE_URI: ''
   _PRIVATE_IMAGE_URI: ''
   _QUEUE_ID: 'line-bot-events'
-  _LINE_BOT_DESTINATION: 'U31469a4d9b5533208c71199a43b47803'
+  _LINE_BOT_DESTINATION: ''
   _TASK_INVOKER_EMAIL: 'line-bot-scheduler@bubbly-area-513305-s0.iam.gserviceaccount.com'
 
 serviceAccount: 'projects/bubbly-area-513305-s0/serviceAccounts/line-bot-build@bubbly-area-513305-s0.iam.gserviceaccount.com'
@@ -28,6 +28,10 @@ steps:
         fi
         if [ '$PROJECT_ID' != 'bubbly-area-513305-s0' ]; then
           echo 'This deployment configuration only targets bubbly-area-513305-s0.' >&2
+          exit 2
+        fi
+        if ! printf '%s' '${_LINE_BOT_DESTINATION}' | grep -Eq '^U[0-9a-f]{32}$'; then
+          echo 'Specify _LINE_BOT_DESTINATION as a LINE user ID.' >&2
           exit 2
         fi
         for image in '${_PUBLIC_IMAGE_URI}' '${_PRIVATE_IMAGE_URI}'; do
