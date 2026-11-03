@@ -24,7 +24,10 @@ jobs:
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version: '1.27.3'
-          cache: false
+          # Restore Go module downloads and compiled packages on repeat PR runs.
+          # Keep versions pinned in go.mod/go.sum; do not skip race/vet/build.
+          cache: true
+          cache-dependency-path: go.sum
       - name: Resolve approved Go SDK dependencies
         run: |
           go mod tidy

@@ -127,6 +127,7 @@ func validateConfig(path string) error {
 func validateAgents(dir string) error {
 	expected := []string{
 		"domain_architect", "line_integrator", "cloud_platform", "go_reviewer", "docs_researcher",
+		"code_cleanup_release_validation",
 	}
 	files, err := filepath.Glob(filepath.Join(dir, "*.toml"))
 	if err != nil {
@@ -180,6 +181,9 @@ func validate(root string) error {
 	if err := validateCatalog(root); err != nil {
 		return fmt.Errorf("SDK catalog: %w", err)
 	}
+	if err := validateSDKRetention(root); err != nil {
+		return fmt.Errorf("SDK retention: %w", err)
+	}
 	setup := filepath.Join(root, "scripts", "setup-codex-cloud.sh")
 	cmd := exec.Command("bash", "-n", setup)
 	if output, err := cmd.CombinedOutput(); err != nil {
@@ -198,5 +202,5 @@ func main() {
 		fmt.Fprintln(os.Stderr, "Codex config validation:", err)
 		os.Exit(1)
 	}
-	fmt.Println("Codex config OK: 5 agents, 5 MCP entries, SDK catalog; no Python source files")
+	fmt.Println("Codex config OK: 6 agents, 5 MCP entries, SDK catalog and reserved SDKs; no Python source files")
 }
