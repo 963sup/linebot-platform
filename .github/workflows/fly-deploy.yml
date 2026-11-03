@@ -1,0 +1,86 @@
+name: Fly.io staging deploy
+
+# No push/PR deployment and no production path. Requires explicit invocation,
+# GitHub Environment approval (configure reviewers), and per-app deploy tokens.
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: "Which already-provisioned staging app should be deployed?"
+        type: choice
+        required: true
+        options:
+          - both
+          - worker
+          - webhook
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fly-staging-release
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Verified staging release
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    environment: fly-staging
+    steps:
+      - name: Checkout reviewed main
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: '1.27.3'
+          cache: true
+          cache-dependency-path: go.sum
+
+      - name: Validate Go configuration and tests
+        run: |
+          set -euo pipefail
+          go run ./cmd/codexcheck
+          make check
+
+      - name: Install flyctl
+        uses: superfly/flyctl-actions/setup-flyctl@98172f70657cb3e15db199af139be99bd3e61200
+
+      - name: Validate Fly configurations
+        run: |
+          set -euo pipefail
+          flyctl config validate --config fly.toml
+          flyctl config validate --config fly.worker.toml
+
+      # When deploying both, update the OIDC-protected Cloud Tasks target first.
+      - name: Deploy Worker to existing staging app
+        if: inputs.target == 'both' || inputs.target == 'worker'
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_WORKER_DEPLOY_TOKEN }}
+          FLY_APP: ${{ vars.FLY_WORKER_APP }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${FLY_API_TOKEN}" || ! "${FLY_APP}" =~ ^[a-z0-9-]+-staging$ ]]; then
+            echo "::error::Missing worker deploy token or invalid staging app name"
+            exit 1
+          fi
+          flyctl deploy --app "${FLY_APP}" --config fly.worker.toml --remote-only --ha=false --strategy rolling
+          flyctl status --app "${FLY_APP}"
+
+      - name: Deploy Webhook to existing staging app
+        if: inputs.target == 'both' || inputs.target == 'webhook'
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_WEBHOOK_DEPLOY_TOKEN }}
+          FLY_APP: ${{ vars.FLY_WEBHOOK_APP }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${FLY_API_TOKEN}" || ! "${FLY_APP}" =~ ^[a-z0-9-]+-staging$ ]]; then
+            echo "::error::Missing webhook deploy token or invalid staging app name"
+            exit 1
+          fi
+          flyctl deploy --app "${FLY_APP}" --config fly.toml --remote-only --ha=false --strategy rolling
+          flyctl status --app "${FLY_APP}"

@@ -11,6 +11,7 @@
 - [本機開發](operations/local-development.md)
 - [測試策略](quality/test-strategy.md)
 - [Cloud Build／Cloud Run 配置雛形](operations/deployment.md)
+- [Fly.io 雙 App Staging 部署、Secrets 與 CI](../deploy/fly/README.md)
 - [目錄清單](architecture/directory-manifest.md)
 - [技術來源與使用分工](sources.md)
 - [LINE 能力矩陣](line/feature-matrix.md)
