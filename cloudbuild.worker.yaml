@@ -14,6 +14,11 @@ steps:
       - |
         go mod download
         go mod verify
+        unformatted="$$(gofmt -l cmd/ internal/ tests/)"
+        if [ -n "$$unformatted" ]; then
+          printf 'Unformatted Go files:\n%s\n' "$$unformatted"
+          exit 1
+        fi
         go vet ./...
         go test -race -count=1 ./...
         go build ./...
