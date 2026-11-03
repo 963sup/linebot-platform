@@ -20,8 +20,12 @@ func TestCampaignUsesNativeSDKEdgesAndRetryKey(t *testing.T) {
 	}))
 	defer server.Close()
 	sender := contractSender(t, server)
-	if err := sender.Broadcast(context.Background(), testText(), retryKey); err != nil { t.Fatal(err) }
-	if err := sender.Multicast(context.Background(), []string{"U123"}, testText(), retryKey); err != nil { t.Fatal(err) }
+	if err := sender.Broadcast(context.Background(), testText(), retryKey); err != nil {
+		t.Fatal(err)
+	}
+	if err := sender.Multicast(context.Background(), []string{"U123"}, testText(), retryKey); err != nil {
+		t.Fatal(err)
+	}
 	if len(urls) != 2 || urls[0] != "/v2/bot/message/broadcast" || urls[1] != "/v2/bot/message/multicast" {
 		t.Fatalf("unexpected LINE API paths: %v", urls)
 	}

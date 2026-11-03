@@ -12,21 +12,27 @@ import (
 
 func runValidate(args []string, getenv func(string) string) error {
 	flags := flag.NewFlagSet("validate", flag.ContinueOnError)
-	kind := flags.String("kind","","reply|push|multicast|narrowcast|broadcast")
-	text := flags.String("text","","text message to validate without sending")
-	confirm := flags.Bool("validate",false,"explicitly call LINE message validation")
-	if err := flags.Parse(args); err != nil {return err}
+	kind := flags.String("kind", "", "reply|push|multicast|narrowcast|broadcast")
+	text := flags.String("text", "", "text message to validate without sending")
+	confirm := flags.Bool("validate", false, "explicitly call LINE message validation")
+	if err := flags.Parse(args); err != nil {
+		return err
+	}
 	if len(flags.Args()) != 0 || !*confirm || getenv == nil {
 		return errors.New("validate requires --validate and no extra arguments")
 	}
-	if *text == "" { return errors.New("text is required") }
+	if *text == "" {
+		return errors.New("text is required")
+	}
 	if *kind != "reply" && *kind != "push" && *kind != "multicast" && *kind != "narrowcast" && *kind != "broadcast" {
 		return errors.New("unsupported validation kind")
 	}
 	rt, err := bootstrap.NewLINEOpsRuntime(getenv(bootstrap.KeyChannelToken))
-	if err != nil { return err }
+	if err != nil {
+		return err
+	}
 	defer rt.Close()
 	ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
 	defer cancel()
-	return rt.Validation.Validate(ctx,*kind,[]outbound.Message{{Kind:outbound.KindText,Text:*text}})
+	return rt.Validation.Validate(ctx, *kind, []outbound.Message{{Kind: outbound.KindText, Text: *text}})
 }

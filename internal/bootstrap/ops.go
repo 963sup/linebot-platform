@@ -99,9 +99,13 @@ func NewLINEOpsRuntime(token string) (*LINEOpsRuntime, error) {
 		return cleanup(err)
 	}
 	campaignMessenger, err := campaign.NewMessenger(sender)
-	if err != nil { return cleanup(err) }
+	if err != nil {
+		return cleanup(err)
+	}
 	validator, err := messaging.NewValidationService(sender)
-	if err != nil { return cleanup(err) }
+	if err != nil {
+		return cleanup(err)
+	}
 	return &LINEOpsRuntime{Messaging: messages, Validation: validator, Profiles: profiles, Channel: inspector, Menus: menus, MenuManager: menuManager, Memberships: membership, Contacts: contactsInspector, Insights: inspectorInsights, Audiences: inspectorAudiences, Campaign: campaignMessenger, outbound: transport}, nil
 }
 
