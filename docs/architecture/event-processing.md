@@ -5,7 +5,7 @@
 ## 模式與入口
 
 - 預設 `LINE_EVENT_MODE=sync`：保留現有 LINE 簽章驗證與文字／Flex 同步 Reply 開發模式。
-- 設定 `LINE_EVENT_MODE=durable`：Firestore 原子存入 Inbox/Outbox，Cloud Tasks 以同一短時窗內固定的任務名稱和 OIDC 派送至私有 `cmd/worker`。設定不足時直接拒絕啟動。
+- 設定 `LINE_EVENT_MODE=durable`：Firestore 原子存入 Inbox/Outbox，Cloud Tasks 以同一短時窗內固定的任務名稱和 OIDC 派送至私有 `cmd/worker`。**公開 Cloud Run 只能使用 durable 模式；Webhook 僅持有 Channel Secret、不持有 LINE 發送 Token**，發送 Token 僅交給私有 Worker。設定不足時拒絕啟動。
 - Durable Webhook 在處理前以原始 Body 驗章，驗證 bot destination，只保存文字訊息所導出的固定回覆，不儲存原始使用者訊息。
 
 ## 資料流程
@@ -20,7 +20,7 @@
 
 ## Reply Token、隱私和 TTL
 
-- 保守使用收到事件後 **45 秒** 的 Reply 視窗。過期回覆不會擅自變成 Push，也不使用使用者 ID 做回覆。
+- 保守使用每次收到簽章正確的事件後 **45 秒** 的 Reply 視窗，且最晚不能超過原始 Event Timestamp + **20 分鐘**。LINE redelivery 的 event ID 與 Reply Token 不變；只有 **從未嘗試發送** 的 `pending` 或 `expired` 工作可以在新簽章重送後延長截止時間，`sending/sent/unknown` 不能重新開啟。超過 20 分鐘的事件 ACK 但不排隊發送；過期回覆不會擅自變成 Push。
 - Inbox 以 Fingerprint 記錄 7 日；Outbox（暫存短期 Reply Token、衍生回覆及 Lease）1 小時。正式 staging 必須分別設定 Firestore `expires_at` TTL，並了解 TTL 清除非即時；終態會清空暫存的 Reply Token。
 - Cloud Tasks Payload 只包含 SHA-256 Key，並不包含 Reply Token、原始訊息或使用者 ID。日誌不輸出個資及 SDK 原始錯誤。
 - Firestore Transaction 可保證單筆去重與原子持久化，但不能宣稱對 LINE 的端到端 exactly-once delivery。若 Worker 在 Claim 後中斷，可能需要人工處理 Unknown。

@@ -41,21 +41,29 @@ func LoadConfig(getenv func(string) string) (Config, error) {
 		LINEAPITimeout: timeout,
 		EventMode:      mode,
 	}
-	if (cfg.ChannelSecret == "") != (cfg.ChannelToken == "") {
-		return Config{}, errors.New("LINE_CHANNEL_SECRET and LINE_CHANNEL_ACCESS_TOKEN must both be set or both omitted")
-	}
 	if mode == "durable" {
-		if !cfg.LiveLINE() {
-			return Config{}, errors.New("durable mode requires both LINE credentials")
+		if cfg.ChannelSecret == "" {
+			return Config{}, errors.New("durable webhook requires LINE_CHANNEL_SECRET")
+		}
+		if cfg.ChannelToken != "" {
+			return Config{}, errors.New("public durable webhook must not hold LINE_CHANNEL_ACCESS_TOKEN")
 		}
 		cfg.Durable, err = loadDurable(getenv)
 		if err != nil {
 			return Config{}, err
+		}
+	} else {
+		// Legacy synchronous mode is strictly a local development process.
+		if (cfg.ChannelSecret == "") != (cfg.ChannelToken == "") {
+			return Config{}, errors.New("sync mode requires both LINE credentials or neither")
+		}
+		if strings.TrimSpace(getenv("K_SERVICE")) != "" {
+			return Config{}, errors.New("Cloud Run webhook must use tokenless durable mode")
 		}
 	}
 	return cfg, nil
 }
 
 func (c Config) LiveLINE() bool {
-	return c.ChannelSecret != "" && c.ChannelToken != ""
+	return c.ChannelSecret != "" && (c.EventMode == "durable" || c.ChannelToken != "")
 }
