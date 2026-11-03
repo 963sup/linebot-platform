@@ -62,6 +62,14 @@ go run ./cmd/ops push --to "<LINE_USER_ID>" --text "測試通知"
 
 CLI 發送會先輸出可重用的 UUID retry key。若發生 timeout 或結果未知，使用完全相同訊息內容及 `--retry-key` 重新執行，避免因新 key 重複送出；請勿將 key 和收件者資訊貼到公開 issue。
 
+LINE Channel 唯讀查詢需由操作人員明確指定：
+```sh
+go run ./cmd/ops inspect --kind bot-info --read
+go run ./cmd/ops inspect --kind message-quota --read
+go run ./cmd/ops inspect --kind delivery-push --date 20261101 --read
+```
+其他支援的 kind 參閱 `internal/application/usecases/channel/inspect.go`；沒有登入保護的公開查詢 HTTP 路由。這些命令需要具授權的測試 Channel Token，未經帳號授權不可呼叫正式服務。
+
 Profile 查詢只供具授權的操作人員手動執行，不會由公開 Webhook 自動讀取使用者資料。先在安全環境提供 `LINE_CHANNEL_ACCESS_TOKEN`，再明確指定使用者及 `--lookup`：
 ```sh
 go run ./cmd/ops profile --user "<LINE_USER_ID>" --lookup

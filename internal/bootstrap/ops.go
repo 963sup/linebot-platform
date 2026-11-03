@@ -3,6 +3,7 @@ package bootstrap
 import (
 	"github.com/963sup/linebot-platform/internal/adapter/outbound/line"
 	"github.com/963sup/linebot-platform/internal/application/usecases/contacts"
+	"github.com/963sup/linebot-platform/internal/application/usecases/channel"
 	"github.com/963sup/linebot-platform/internal/application/usecases/messaging"
 	"github.com/963sup/linebot-platform/internal/infrastructure/httpclient"
 	lineinfra "github.com/963sup/linebot-platform/internal/infrastructure/line"
@@ -13,6 +14,7 @@ import (
 type LINEOpsRuntime struct {
 	Messaging *messaging.Service
 	Profiles  *contacts.Profiles
+	Channel   *channel.Inspector
 	outbound  *httpclient.Managed
 }
 
@@ -41,7 +43,11 @@ func NewLINEOpsRuntime(token string) (*LINEOpsRuntime, error) {
 	if err != nil {
 		return cleanup(err)
 	}
-	return &LINEOpsRuntime{Messaging: messages, Profiles: profiles, outbound: transport}, nil
+	inspector, err := channel.NewInspector(sender)
+	if err != nil {
+		return cleanup(err)
+	}
+	return &LINEOpsRuntime{Messaging: messages, Profiles: profiles, Channel: inspector, outbound: transport}, nil
 }
 
 func (r *LINEOpsRuntime) Close() {

@@ -9,7 +9,7 @@ sdk_module: "github.com/line/line-bot-sdk-go/v8"
 sdk_version: "v8.23.0"
 live_channel_verified: false
 endpoints:
-  - {source: messaging-api, group: webhook, operation: getWebhookEndpoint, method: GET, path: "/v2/bot/channel/webhook/endpoint", integration: not_integrated, test: none, access: review}
+  - {source: messaging-api, group: webhook, operation: getWebhookEndpoint, method: GET, path: "/v2/bot/channel/webhook/endpoint", integration: integrated_offline, test: contract, access: review}
   - {source: messaging-api, group: webhook, operation: setWebhookEndpoint, method: PUT, path: "/v2/bot/channel/webhook/endpoint", integration: not_integrated, test: none, access: review}
   - {source: messaging-api, group: webhook, operation: testWebhookEndpoint, method: POST, path: "/v2/bot/channel/webhook/test", integration: not_integrated, test: none, access: review}
   - {source: messaging-api, group: webhook-content, operation: getMessageContent, method: GET, path: "/v2/bot/message/{messageId}/content", integration: not_integrated, test: none, access: review}
@@ -19,24 +19,24 @@ endpoints:
   - {source: messaging-api, group: messaging, operation: pushMessage, method: POST, path: "/v2/bot/message/push", integration: integrated_offline, test: contract, access: review}
   - {source: messaging-api, group: messaging, operation: multicast, method: POST, path: "/v2/bot/message/multicast", integration: not_integrated, test: none, access: review}
   - {source: messaging-api, group: messaging, operation: narrowcast, method: POST, path: "/v2/bot/message/narrowcast", integration: not_integrated, test: none, access: review}
-  - {source: messaging-api, group: messaging, operation: getNarrowcastProgress, method: GET, path: "/v2/bot/message/progress/narrowcast", integration: not_integrated, test: none, access: review}
+  - {source: messaging-api, group: messaging, operation: getNarrowcastProgress, method: GET, path: "/v2/bot/message/progress/narrowcast", integration: integrated_offline, test: contract, access: review}
   - {source: messaging-api, group: messaging, operation: broadcast, method: POST, path: "/v2/bot/message/broadcast", integration: not_integrated, test: none, access: review}
-  - {source: messaging-api, group: quota, operation: getMessageQuota, method: GET, path: "/v2/bot/message/quota", integration: not_integrated, test: none, access: review}
-  - {source: messaging-api, group: quota, operation: getMessageQuotaConsumption, method: GET, path: "/v2/bot/message/quota/consumption", integration: not_integrated, test: none, access: review}
-  - {source: messaging-api, group: delivery, operation: getNumberOfSentReplyMessages, method: GET, path: "/v2/bot/message/delivery/reply", integration: not_integrated, test: none, access: review}
-  - {source: messaging-api, group: delivery, operation: getNumberOfSentPushMessages, method: GET, path: "/v2/bot/message/delivery/push", integration: not_integrated, test: none, access: review}
-  - {source: messaging-api, group: delivery, operation: getNumberOfSentMulticastMessages, method: GET, path: "/v2/bot/message/delivery/multicast", integration: not_integrated, test: none, access: review}
-  - {source: messaging-api, group: delivery, operation: getNumberOfSentBroadcastMessages, method: GET, path: "/v2/bot/message/delivery/broadcast", integration: not_integrated, test: none, access: review}
+  - {source: messaging-api, group: quota, operation: getMessageQuota, method: GET, path: "/v2/bot/message/quota", integration: integrated_offline, test: contract, access: review}
+  - {source: messaging-api, group: quota, operation: getMessageQuotaConsumption, method: GET, path: "/v2/bot/message/quota/consumption", integration: integrated_offline, test: contract, access: review}
+  - {source: messaging-api, group: delivery, operation: getNumberOfSentReplyMessages, method: GET, path: "/v2/bot/message/delivery/reply", integration: integrated_offline, test: contract, access: review}
+  - {source: messaging-api, group: delivery, operation: getNumberOfSentPushMessages, method: GET, path: "/v2/bot/message/delivery/push", integration: integrated_offline, test: contract, access: review}
+  - {source: messaging-api, group: delivery, operation: getNumberOfSentMulticastMessages, method: GET, path: "/v2/bot/message/delivery/multicast", integration: integrated_offline, test: contract, access: review}
+  - {source: messaging-api, group: delivery, operation: getNumberOfSentBroadcastMessages, method: GET, path: "/v2/bot/message/delivery/broadcast", integration: integrated_offline, test: contract, access: review}
   - {source: messaging-api, group: message-validation, operation: validateReply, method: POST, path: "/v2/bot/message/validate/reply", integration: not_integrated, test: none, access: review}
   - {source: messaging-api, group: message-validation, operation: validatePush, method: POST, path: "/v2/bot/message/validate/push", integration: not_integrated, test: none, access: review}
   - {source: messaging-api, group: message-validation, operation: validateMulticast, method: POST, path: "/v2/bot/message/validate/multicast", integration: not_integrated, test: none, access: review}
   - {source: messaging-api, group: message-validation, operation: validateNarrowcast, method: POST, path: "/v2/bot/message/validate/narrowcast", integration: not_integrated, test: none, access: review}
   - {source: messaging-api, group: message-validation, operation: validateBroadcast, method: POST, path: "/v2/bot/message/validate/broadcast", integration: not_integrated, test: none, access: review}
-  - {source: messaging-api, group: aggregation-unit, operation: getAggregationUnitUsage, method: GET, path: "/v2/bot/message/aggregation/info", integration: not_integrated, test: none, access: review}
-  - {source: messaging-api, group: aggregation-unit, operation: getAggregationUnitNameList, method: GET, path: "/v2/bot/message/aggregation/list", integration: not_integrated, test: none, access: review}
+  - {source: messaging-api, group: aggregation-unit, operation: getAggregationUnitUsage, method: GET, path: "/v2/bot/message/aggregation/info", integration: integrated_offline, test: contract, access: review}
+  - {source: messaging-api, group: aggregation-unit, operation: getAggregationUnitNameList, method: GET, path: "/v2/bot/message/aggregation/list", integration: integrated_offline, test: contract, access: review}
   - {source: messaging-api, group: users, operation: getProfile, method: GET, path: "/v2/bot/profile/{userId}", integration: integrated_offline, test: contract, access: review}
   - {source: messaging-api, group: users, operation: getFollowers, method: GET, path: "/v2/bot/followers/ids", integration: not_integrated, test: none, access: review}
-  - {source: messaging-api, group: bot, operation: getBotInfo, method: GET, path: "/v2/bot/info", integration: not_integrated, test: none, access: review}
+  - {source: messaging-api, group: bot, operation: getBotInfo, method: GET, path: "/v2/bot/info", integration: integrated_offline, test: contract, access: review}
   - {source: messaging-api, group: group, operation: getGroupMemberProfile, method: GET, path: "/v2/bot/group/{groupId}/member/{userId}", integration: not_integrated, test: none, access: review}
   - {source: messaging-api, group: group, operation: getRoomMemberProfile, method: GET, path: "/v2/bot/room/{roomId}/member/{userId}", integration: not_integrated, test: none, access: review}
   - {source: messaging-api, group: group, operation: getGroupMembersIds, method: GET, path: "/v2/bot/group/{groupId}/members/ids", integration: not_integrated, test: none, access: review}
