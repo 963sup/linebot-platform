@@ -74,6 +74,14 @@
 - `ops events` 僅限經明確 allowlist 的隔離 Staging，區分 `--inspect` 與 `--check`；不得讀取真實用戶訊息、Secret 或 Reply Token。Unknown 不得自動重送，Expired 不得無授權轉成 Push。
 - 所有運行中的告警、Job、Scheduler、IAM、TTL 都必須有真實隔離 Staging 驗收證據；文件或 Firestore Emulator 的成功不能取代實際雲端測試。詳見 `docs/operations/outbox-operations.md` 與 `docs/operations/staging-acceptance.md`。
 
+## 統一設定契約（必讀）
+
+- 執行期環境變數的唯一名稱、角色、預設、Secret 分類來源為 `internal/bootstrap/config_contract.go`；Webhook 與 Worker 使用同一條 `loadRuntimeConfig` 入口，角色驗證不可散落在 `cmd/` 或 Adapter。
+- 修改任何設定時同時更新 Go contract constants、bootstrap parser/validation、正確角色的測試與 `.env.example`，使用 `go run ./cmd/configcheck --write-doc` 更新 `docs/operations/configuration.md`；`make config-check` 及 CI 必須阻止文件漂移。
+- `APP_ENV` 僅能是 local、staging、production；Cloud Run 的 `K_SERVICE` 防止降級至 local。`sync` 僅供本機 demo；公有 Webhook durable 不可持有 LINE 發送 Token，Worker 不可持有簽章 Secret。Secret 在結構上與普通 Config 分離，不得印出 config 原始結構或值。
+- 程式不自動讀入 YAML／`.env`；本機 `make dev` 不會自動拿到憑證。正式環境透過短期服務身分及 Secret Manager references 注入，避免提交 Secret、URL query、user message 到 log。
+- 可觀測性 logger 使用 `LOG_LEVEL` 與 `LOG_FORMAT` 的 allowlist；HTTP 只採固定路由分類、status、duration，不用高基數 user/event ID 作為指標。正式 Staging 必須另外驗證觀測與 IAM，不把 CI 綠燈當部署成功。
+
 ## 驗證與交付
 
 - Codex 設定使用 `go run ./cmd/codexcheck` 驗證 TOML、Agents、Cloud Setup Script 與專案不得包含 Python `.py` 檔案；不需要 Python runtime。

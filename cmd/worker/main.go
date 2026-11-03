@@ -1,7 +1,7 @@
 package main
 
 import (
-	"log/slog"
+	"fmt"
 	"net/http"
 	"os"
 	"time"
@@ -10,12 +10,12 @@ import (
 )
 
 func main() {
-	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 	cfg, err := bootstrap.LoadWorkerConfig(os.Getenv)
 	if err != nil {
-		logger.Error("worker configuration invalid")
+		fmt.Fprintln(os.Stderr, "worker configuration invalid") // no secret values
 		os.Exit(1)
 	}
+	logger := bootstrap.NewLogger(cfg.Log, os.Stdout)
 	startup, cancel := bootstrap.WorkerStartupContext()
 	rt, err := bootstrap.NewWorkerRuntime(startup, cfg, logger)
 	cancel()
@@ -34,7 +34,7 @@ func main() {
 	}
 	ctx, stop := bootstrap.SignalContext()
 	defer stop()
-	logger.Info("private worker starting", "port", cfg.Port)
+	logger.Info("private worker starting", "port", cfg.Port, "profile", string(cfg.Environment))
 	if err := bootstrap.Serve(ctx, server, logger); err != nil {
 		logger.Error("worker stopped unexpectedly")
 		rt.Close()

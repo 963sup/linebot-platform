@@ -8,18 +8,33 @@
 go version
 make bootstrap # 首次解析依賴並產生 go.sum
 make check
-make run-webhook
+make dev
 ```
 
 `curl http://localhost:8080/healthz` 應回傳 `ok`。
 
 ## LINE 憑證
 
-本機 `LINE_EVENT_MODE=sync` 需要同時透過安全環境提供 `LINE_CHANNEL_SECRET` 與 `LINE_CHANNEL_ACCESS_TOKEN`；未設定時只開放 health，webhook 回 503。**Cloud Run 公開服務必須使用 `LINE_EVENT_MODE=durable`，只提供簽章用的 `LINE_CHANNEL_SECRET`，不得注入發送 Token；僅私有 Worker 持有 Token**。不要把值寫進 git、PR、公共 log 或公開 issue。
+本機 `LINE_EVENT_MODE=sync` 使用 `APP_ENV=local`，需要同時透過安全環境提供 `LINE_CHANNEL_SECRET` 與 `LINE_CHANNEL_ACCESS_TOKEN`；未設定時只開放 health，webhook 回 503。設定清單以 [設定契約](configuration.md) 為準；`make dev` **不會讀取任何 .env 檔案**。**Cloud Run 公開服務必須使用 `LINE_EVENT_MODE=durable`，只提供簽章用的 `LINE_CHANNEL_SECRET`，不得注入發送 Token；僅私有 Worker 持有 Token**。不要把值寫進 git、PR、公共 log 或公開 issue。
 
 對外 webhook 在本機測試時須透過 HTTPS 端點，並以測試 LINE Channel 驗證。這個專案**沒有自動建立 LINE Channel 或 GCP 資源**。
 
 預設 `LINE_EVENT_MODE=sync` 只支援文字事件，輸入 `flex` 或 `卡片` 時回 Flex bubble，其餘文字回固定說明。此預設模式已驗簽但**沒有持久去重**；另有需完整設定才能啟用的 `durable` 模式。詳見 [Durable Worker Staging 契約](durable-worker.md)。
+
+## 設定檢查與本機快速啟動
+
+```bash
+# 不需 LINE 或 GCP 帳號，驗證目前 shell 能啟動本機 Webhook
+go run ./cmd/configcheck --validate --role webhook
+
+# 單指令：安全的本機 Health MVP
+make dev
+
+# 由 Go contract 自動驗證文件與安全的 .env.example
+make config-check
+```
+
+`APP_ENV` 預設 local；只有明確設定 staging 或 production 且滿足 durable 所有條件時可使用部署模式。Cloud Run 的 `K_SERVICE` 若存在，明確拒絕 local。正式環境的 `LINE_CHANNEL_SECRET` 與發送 Token 以 Secret Manager references 注入不同 Service，不能將真實值放到可提交的 YAML 或 `.env.example`。
 
 ## LINE SDK Runtime 與 Timeout
 

@@ -13,6 +13,7 @@ import (
 	"github.com/963sup/linebot-platform/internal/adapter/outbound/line"
 	"github.com/963sup/linebot-platform/internal/application/ports/outbound"
 	"github.com/963sup/linebot-platform/internal/application/usecases/messaging"
+	"github.com/963sup/linebot-platform/internal/bootstrap"
 	"github.com/963sup/linebot-platform/internal/infrastructure/httpclient"
 	lineinfra "github.com/963sup/linebot-platform/internal/infrastructure/line"
 )
@@ -81,7 +82,7 @@ func run(args []string, getenv func(string) string) error {
 		return err
 	}
 	defer managed.Close()
-	client, err := lineinfra.NewMessagingClientWithHTTPClient(getenv("LINE_CHANNEL_ACCESS_TOKEN"), managed.Client)
+	client, err := lineinfra.NewMessagingClientWithHTTPClient(getenv(bootstrap.KeyChannelToken), managed.Client)
 	if err != nil {
 		return err
 	}

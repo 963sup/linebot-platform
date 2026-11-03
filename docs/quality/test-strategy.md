@@ -1,5 +1,12 @@
 # 測試策略
 
+## Configuration contract and observability
+
+- `go run ./cmd/configcheck --check` compares the generated [Runtime Configuration](../operations/configuration.md) with Go metadata and rejects unknown, duplicated or non-empty Secret entries in `.env.example`; `make check` executes this gate.
+- Bootstrap role/profile tests cover local safe defaults; staging/production durable-only; Cloud Run `K_SERVICE` fail-closed; Worker vs Webhook secret isolation; invalid LOG_LEVEL/LOG_FORMAT, Port and Timeout.
+- Logger/HTTP telemetry tests ensure no raw URL/path, query, body, access token, Channel Secret or LINE ID in logs; route labels are bounded.
+- Runtime configuration validation does not build GCP/LINE SDK clients or perform external I/O, and cannot be used as evidence of Cloud Run IAM, Secret Manager injection or deployed services.
+
 ## Unit
 
 - Config：PORT 範圍、憑證配對。

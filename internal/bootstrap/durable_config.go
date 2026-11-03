@@ -21,15 +21,8 @@ type DurableConfig struct {
 	InvokerEmail   string
 }
 
-type WorkerConfig struct {
-	Port           string
-	ChannelToken   string
-	LINEAPITimeout time.Duration
-	Durable        DurableConfig
-}
-
 func loadPort(getenv func(string) string) (string, error) {
-	port := strings.TrimSpace(getenv("PORT"))
+	port := readSetting(getenv, KeyPort)
 	if port == "" {
 		port = "8080"
 	}
@@ -42,7 +35,7 @@ func loadPort(getenv func(string) string) (string, error) {
 
 func loadLINETimeout(getenv func(string) string) (time.Duration, error) {
 	timeout := httpclient.DefaultTimeout
-	if value := strings.TrimSpace(getenv("LINE_API_TIMEOUT")); value != "" {
+	if value := readSetting(getenv, KeyLINETimeout); value != "" {
 		var err error
 		timeout, err = time.ParseDuration(value)
 		if err != nil || timeout < time.Second || timeout > 12*time.Second {
@@ -54,12 +47,12 @@ func loadLINETimeout(getenv func(string) string) (time.Duration, error) {
 
 func loadDurable(getenv func(string) string) (DurableConfig, error) {
 	d := DurableConfig{
-		ProjectID:      strings.TrimSpace(getenv("GCP_PROJECT_ID")),
-		BotDestination: strings.TrimSpace(getenv("LINE_BOT_DESTINATION")),
-		QueueName:      strings.TrimSpace(getenv("TASK_QUEUE_NAME")),
-		WorkerURL:      strings.TrimSpace(getenv("TASK_WORKER_URL")),
-		OIDCAudience:   strings.TrimSpace(getenv("TASK_OIDC_AUDIENCE")),
-		InvokerEmail:   strings.TrimSpace(getenv("TASK_INVOKER_EMAIL")),
+		ProjectID:      readSetting(getenv, KeyProjectID),
+		BotDestination: readSetting(getenv, KeyBotDestination),
+		QueueName:      readSetting(getenv, KeyQueueName),
+		WorkerURL:      readSetting(getenv, KeyWorkerURL),
+		OIDCAudience:   readSetting(getenv, KeyOIDCAudience),
+		InvokerEmail:   readSetting(getenv, KeyInvokerEmail),
 	}
 	if d.ProjectID == "" || d.BotDestination == "" || d.QueueName == "" || d.WorkerURL == "" ||
 		d.OIDCAudience == "" || d.InvokerEmail == "" {
@@ -83,25 +76,3 @@ func loadDurable(getenv func(string) string) (DurableConfig, error) {
 	return d, nil
 }
 
-func LoadWorkerConfig(getenv func(string) string) (WorkerConfig, error) {
-	if getenv == nil {
-		return WorkerConfig{}, errors.New("environment reader is required")
-	}
-	port, err := loadPort(getenv)
-	if err != nil {
-		return WorkerConfig{}, err
-	}
-	timeout, err := loadLINETimeout(getenv)
-	if err != nil {
-		return WorkerConfig{}, err
-	}
-	d, err := loadDurable(getenv)
-	if err != nil {
-		return WorkerConfig{}, err
-	}
-	token := strings.TrimSpace(getenv("LINE_CHANNEL_ACCESS_TOKEN"))
-	if token == "" {
-		return WorkerConfig{}, errors.New("worker requires LINE_CHANNEL_ACCESS_TOKEN")
-	}
-	return WorkerConfig{Port: port, ChannelToken: token, LINEAPITimeout: timeout, Durable: d}, nil
-}

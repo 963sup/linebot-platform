@@ -24,11 +24,21 @@
 
 本專案直接使用 [`github.com/google/uuid`](https://github.com/google/uuid) 的 UUID v4 產生器建立 LINE Push retry key，並驗證手動指定的 retry key；不再自行實作 UUID 編碼。
 
+## 統一設定與本機開發
+
+- **唯一契約**：`internal/bootstrap/config_contract.go` 定義設定名稱、適用角色、Secret 分類與預設值，`internal/bootstrap/config.go` 與 `durable_config.go` 負責同一條解析／驗證路徑。
+- **Role 與 Profile**：`APP_ENV=local|staging|production`；Webhook／Worker 按角色驗證，Cloud Run 必須明確指定 staging 或 production。Local 預設 sync，只用於開發；staging/production 的 Webhook 必須 durable。
+- **Secret 隔離**：公開 durable Webhook 只讀取 Channel Secret，私有 Worker 只取得 LINE 發送 Token。普通環境變數可隨部署傳入；正式機密應透過 Secret Manager reference／最小 IAM 注入。
+- **Logger**：`LOG_LEVEL`／`LOG_FORMAT` 在啟動時驗證；local 預設文字，staging/production 使用結構化 JSON。HTTP 觀測僅記錄固定 route label、status、duration，**不記錄原始路徑、查詢、body、token、LINE ID**。
+- **單指令啟動**：`make dev` 使用既有 shell 環境與安全預設；不自動載入 `.env`。必要時用 `go run ./cmd/configcheck --validate --role webhook` 預先檢查設定（無外部 I/O），`make config-check` 檢查生成文件與 `.env.example` 是否一致。
+
+設定詳情：[Runtime Configuration](docs/operations/configuration.md) · [Local Development](docs/operations/local-development.md) · [Durable Worker](docs/operations/durable-worker.md)。
+
 ## 環境要求
 
 - Go **1.27.3**（已包含 Go 1.27 的安全修補；依 LINE/OpenAI SDK 當前要求）。
 - `make`、Git。
-- 有效 LINE Channel Secret + Channel Access Token：只有啟用 /webhook/line 與 CLI 發送時才需要。
+- 本機 `sync` 測試才同時需要 LINE Channel Secret 與 Channel Access Token；Cloud Run 公開 Webhook 的 `durable` 模式只需簽章 Secret，發送 Token 僅屬於私有 Worker。
 - 外部 Go dependencies 需要網路下載；`go.sum` 已依 GitHub Actions 的 Go module resolution 產生並提交，不可手寫 checksum。
 
 ## 本機使用
@@ -36,11 +46,11 @@
 ```sh
 make bootstrap             # go mod tidy + download；產生並檢查 go.sum
 make check                 # gofmt、vet、race tests、build
-make run-webhook           # 預設 0.0.0.0:8080
+make dev                   # 本機預設模式；不讀取任何 .env 或發送 LINE 訊息
 curl http://localhost:8080/healthz
 ```
 
-沒有 LINE 憑證時服務只開放 `/healthz`，`/webhook/line` 回傳 503。要接收 LINE webhook，請透過安全方式在執行環境設定 `LINE_CHANNEL_SECRET` 與 `LINE_CHANNEL_ACCESS_TOKEN`（兩個必須同時存在）；不要把憑證寫進檔案或提交 GitHub。
+未設定本機 `sync` 的 LINE 憑證時只開放 `/healthz`，`/webhook/line` 回 503。只有本機 sync 模式需要同時設定 `LINE_CHANNEL_SECRET` 與 `LINE_CHANNEL_ACCESS_TOKEN`；正式環境公開 Webhook 禁止配置發送 Token。設定契約與環境驗證請看 [設定文件](docs/operations/configuration.md)，不要把真實憑證寫進 GitHub。
 
 此服務沒有公開的 Push HTTP endpoint；Push 僅透過需明確指定 `--send` 的 CLI：
 

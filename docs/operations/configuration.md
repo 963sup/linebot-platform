@@ -1,0 +1,31 @@
+# 執行期設定契約（自動產生）
+
+本文件由 `internal/bootstrap/config_contract.go` 產生，**禁止直接編輯表格**。請修改 Go 設定契約後執行 `go run ./cmd/configcheck --write-doc`，再以 `make config-check` 驗證。這份清單涵蓋現有 webhook、worker 與 ops-events 使用的專案設定；Google SDK / ADC 自身的環境變數不在此表。
+
+| 環境變數 | 使用者 | Secret | 預設 | 條件 | 說明 |
+|---|---|---|---|---|---|
+| `APP_ENV` | webhook,worker | 否 | local | Cloud Run 必須明確設定 staging/production | local、staging、production |
+| `PORT` | webhook,worker | 否 | 8080 | 選用 | HTTP 監聽埠，1–65535 |
+| `LINE_EVENT_MODE` | webhook | 否 | sync | Cloud Run 必須 durable | 本機 sync；正式環境僅 durable |
+| `LINE_API_TIMEOUT` | webhook,worker | 否 | 8s | 選用 | 1s–12s，單次 LINE HTTP timeout |
+| `LOG_LEVEL` | webhook,worker | 否 | info | 選用 | debug、info、warn、error |
+| `LOG_FORMAT` | webhook,worker | 否 | local=text; others=json | 選用 | staging/production 強制 json |
+| `LINE_CHANNEL_SECRET` | webhook | 是 | — | durable 必需；sync 與 Token 成對 | 僅驗證原始 Webhook 簽章，不應傳給 Worker |
+| `LINE_CHANNEL_ACCESS_TOKEN` | worker,local-sync,ops-push | 是 | — | worker 必需；本機 sync 成對 | durable 公開 Webhook 禁止持有 |
+| `LINE_BOT_DESTINATION` | webhook-durable,worker | 否 | — | durable 必需 | LINE Bot Destination ID |
+| `GCP_PROJECT_ID` | webhook-durable,worker | 否 | — | durable 必需 | 最小 IAM 的指定 Google Cloud Project |
+| `TASK_QUEUE_NAME` | webhook-durable,worker | 否 | — | durable 必需 | 完整 projects/.../locations/.../queues/... |
+| `TASK_WORKER_URL` | webhook-durable,worker | 否 | — | durable 必需 | HTTPS Worker /tasks/line-reply |
+| `TASK_OIDC_AUDIENCE` | webhook-durable,worker | 否 | — | durable 必需 | 必須符合 Worker HTTPS Origin |
+| `TASK_INVOKER_EMAIL` | webhook-durable,worker | 否 | — | durable 必需 | 允許呼叫 Worker 的 Service Account Email |
+| `K_SERVICE` | webhook,worker | 否 | 平台提供 | Cloud Run 自動提供 | 防止在 Cloud Run 以 local profile 啟動 |
+| `LINEBOT_STAGING_PROJECT` | ops-events | 否 | — | events inspect/check 必需 | 明確指定只讀操作允許的 Staging Project |
+
+## 使用規則
+
+- **local**：未指定 `APP_ENV` 時的安全本機預設，可使用 `LINE_EVENT_MODE=sync`，但本機 demo 不具持久去重。不提供 LINE 憑證時只開放 `/healthz`。
+- **staging / production**：必須明確設定 `APP_ENV`，Webhook 必須 `LINE_EVENT_MODE=durable` 且不含 LINE 發送 Token；Worker 必須持有發送 Token 但不得取得簽章用 Secret。即使誤設 `APP_ENV=local`，Cloud Run 亦會拒絕啟動。
+- **Credential 分離**：上述 Secret 僅由環境（正式環境建議 Secret Manager references）注入。普通設定可以透過部署的非敏感環境變數傳入。應用不讀取 YAML、JSON 設定檔或自動 `source` `.env`。
+- **可觀測性**：local 預設文字日志、staging/production 預設 JSON；`LOG_LEVEL` 僅允許固定等級，日誌永不包含 Token、Channel Secret、LINE user ID 或原始 webhook body。
+- **本機啟動**：`make dev` 啟動不需憑證的 Health MVP；需要測試 LINE 時在**目前 shell** 安全提供兩項測試憑證。Worker 為獨立入口，使用 `make run-worker`。
+- **無配置副作用**：`go run ./cmd/configcheck --role webhook --validate` 或 `--role worker --validate` 只解析並檢查設定，不建立 SDK Client、不連接 Google Cloud 或 LINE，也不輸出 Secret 值。

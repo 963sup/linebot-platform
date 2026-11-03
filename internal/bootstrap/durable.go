@@ -47,7 +47,7 @@ func configureDurableWebhook(cfg Config, logger *slog.Logger, mux *http.ServeMux
 		_ = db.Close()
 		return err
 	}
-	mux.Handle("/webhook/line", linein.NewDurableHandler(cfg.ChannelSecret, cfg.Durable.BotDestination, ingestor, logger))
+	mux.Handle("/webhook/line", linein.NewDurableHandler(cfg.Secrets.ChannelSecret, cfg.Durable.BotDestination, ingestor, logger))
 	rt.closers = append(rt.closers, queueClient.Close, db.Close)
 	return nil
 }

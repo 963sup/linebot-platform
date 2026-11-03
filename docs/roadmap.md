@@ -64,6 +64,15 @@
 - [ ] 只讀 Outbox 運維 CLI、Staging 驗收契約及告警策略：由下一個單獨 Draft PR 規劃；任何 Cloud Run Job、Monitoring、Scheduler 與 LINE 真實帳號驗收仍待明確核准。
 - [ ] Production readiness：完成 `docs/operations/staging-acceptance.md` 每一項 Gate 的真實證據，並取得 deployment/rollout 授權。
 
+## 設定契約整合（本次獨立 Draft PR，尚未合併）
+
+- [ ] Webhook / Worker 共用 `internal/bootstrap/loadRuntimeConfig`，以 Role 與 APP_ENV 決定合法設定；local 開發預設不需憑證，staging/production 必須 durable，Cloud Run `K_SERVICE` 拒絕降級 local。
+- [ ] 以獨立 `SecretConfig` 持有 LINE 簽章 Secret 與發送 Token；公開 Webhook 不持有發送 Token、私有 Worker 不持有簽章 Secret；普通設定不得包含 Token 值。
+- [ ] `config_contract.go` 是設定鍵名稱、角色、Secret 分類與預設值的唯一來源；`cmd/configcheck --check` 驗證 Go 產生文件與 `.env.example` 一致，`make check` 與 CI 強制執行。
+- [ ] `make dev` 提供不載入 `.env` 的安全本機啟動；`--validate` 可離線進行啟動前檢查。
+- [ ] Logger LOG_LEVEL/LOG_FORMAT 安全設計；固定路由的 HTTP status/duration，不輸出敏感資料。
+- [ ] Production Gate 仍未完成：Secret Manager references、IAM、OIDC、Firestore TTL、Scheduler、LINE redelivery、正式 logs/alerts 需要經授權 Staging 測試，不能因 CI 通過宣稱 Production-ready。
+
 ## P3 — 全公開 API、AI 與雲端
 
 - [ ] 依官方 reference 建立可驗證的 LINE endpoint inventory。

@@ -64,7 +64,7 @@ func TestDurableConfigRequiresAllCredentialsAndEndpoints(t *testing.T) {
 	if err != nil || cfg.EventMode != "durable" || cfg.Durable.ProjectID != "test-project" {
 		t.Fatalf("valid durable configuration rejected: %#v %v", cfg, err)
 	}
-	if !cfg.LiveLINE() || cfg.ChannelToken != "" {
+	if !cfg.LiveLINE() || cfg.Secrets.ChannelToken != "" {
 		t.Fatal("durable webhook must not use a send token")
 	}
 	if _, err := NewWebhookRouter(cfg, nil); err == nil {
@@ -91,8 +91,14 @@ func TestDurableConfigRequiresAllCredentialsAndEndpoints(t *testing.T) {
 			t.Fatalf("durable config accepted missing %s", missing)
 		}
 	}
-	worker, err := LoadWorkerConfig(env(withToken))
-	if err != nil || worker.ChannelToken != "token" || worker.Durable.ProjectID != "test-project" {
+	workerEnv := make(map[string]string, len(withToken))
+	for key, value := range withToken {
+		if key != KeyChannelSecret {
+			workerEnv[key] = value
+		}
+	}
+	worker, err := LoadWorkerConfig(env(workerEnv))
+	if err != nil || worker.Secrets.ChannelToken != "token" || worker.Durable.ProjectID != "test-project" {
 		t.Fatalf("worker config rejected: %#v %v", worker, err)
 	}
 	if _, err := LoadWorkerConfig(env(map[string]string{})); err == nil {
