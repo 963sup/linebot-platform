@@ -71,6 +71,8 @@ func TestLINEEndpointInventory(t *testing.T) {
 		"unlinkRichMenuIdFromUser":         false,
 		"deleteRichMenu":                   false,
 		"deleteRichMenuAlias":              false,
+		"broadcast": false,
+		"multicast": false,
 	}
 	seen := make(map[string]bool)
 	count := 0

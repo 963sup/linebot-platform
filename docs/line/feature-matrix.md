@@ -3,7 +3,7 @@
 | 功能組 | 預計範圍 | 狀態 |
 |---|---|---|
 | Webhook | 簽章驗證、文字 Message；同步模式沒有持久去重，選用 durable 模式有 Firestore 事件去重與 OIDC Worker。Edit／unsend／媒體與實際 Staging 仍待完成 | Partial (development only) |
-| Messaging | Reply、Push 已有基本 SDK adapter；Broadcast、Multicast、Narrowcast 未實作 | Partial |
+| Messaging | Reply、Push、Broadcast、Multicast 已有 SDK Adapter；Broadcast／Multicast 需明確 CLI --send + Retry Key；Narrowcast 尚未實作 | Partial (offline contract only) |
 | Message contents | Text 與簡單 Flex bubble 已實作；其餘類型尚未實作 | Partial |
 | Chat / User | Profile、Followers IDs、Group／Room 的 Summary／Count／IDs／Member Profile 已接入 CLI；媒體 content、其他事件仍未實作 | Partial (offline contract only) |
 | Rich Menu | List、Get、Default ID、Alias List/Get、User Menu ID、Batch Progress 已接入唯讀 CLI；建立、綁定、圖片、Alias 變更、Batch 寫入待實作；Set/Cancel Default、Link/Unlink User、Delete Menu/Alias 六項已接入需雙重確認的 Ops CLI | Partial (offline contract only) |

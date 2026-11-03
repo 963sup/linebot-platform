@@ -24,6 +24,7 @@ type LINEOpsRuntime struct {
 	Contacts    *contacts.Inspector
 	Insights    *insights.Inspector
 	Audiences   *campaign.AudienceInspector
+	Campaign    *campaign.Messenger
 	outbound    *httpclient.Managed
 }
 
@@ -96,7 +97,9 @@ func NewLINEOpsRuntime(token string) (*LINEOpsRuntime, error) {
 	if err != nil {
 		return cleanup(err)
 	}
-	return &LINEOpsRuntime{Messaging: messages, Profiles: profiles, Channel: inspector, Menus: menus, MenuManager: menuManager, Memberships: membership, Contacts: contactsInspector, Insights: inspectorInsights, Audiences: inspectorAudiences, outbound: transport}, nil
+	campaignMessenger, err := campaign.NewMessenger(sender)
+	if err != nil { return cleanup(err) }
+	return &LINEOpsRuntime{Messaging: messages, Profiles: profiles, Channel: inspector, Menus: menus, MenuManager: menuManager, Memberships: membership, Contacts: contactsInspector, Insights: inspectorInsights, Audiences: inspectorAudiences, Campaign: campaignMessenger, outbound: transport}, nil
 }
 
 func (r *LINEOpsRuntime) Close() {
