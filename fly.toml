@@ -3,7 +3,7 @@
 # See https://fly.io/docs/reference/configuration/ for information about how to use this file.
 #
 
-app = 'linebot-platform'
+app = 'linebot-platform-staging'
 primary_region = 'sin'
 kill_signal = 'SIGTERM'
 kill_timeout = '20s'
