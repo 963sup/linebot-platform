@@ -2,6 +2,7 @@ package engagement
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"strings"
 
@@ -9,10 +10,13 @@ import (
 )
 
 type MenuCommand struct {
-	Action     string
-	RichMenuID string
-	UserID     string
-	AliasID    string
+	Action      string
+	RichMenuID  string
+	UserID      string
+	AliasID     string
+	Payload     json.RawMessage
+	Image       []byte
+	ContentType string
 }
 
 type MenuManager struct {
@@ -32,6 +36,18 @@ func validID(id string) bool {
 
 func ValidateMenuCommand(cmd MenuCommand) error {
 	switch cmd.Action {
+	case "create", "validate", "create-alias", "bulk-link", "bulk-unlink", "batch", "validate-batch":
+		if len(cmd.Payload) == 0 || !json.Valid(cmd.Payload) || cmd.RichMenuID != "" || cmd.UserID != "" || cmd.AliasID != "" || len(cmd.Image) != 0 || cmd.ContentType != "" {
+			return errors.New("a valid JSON payload and no IDs are required")
+		}
+	case "update-alias":
+		if !validID(cmd.AliasID) || len(cmd.Payload) == 0 || !json.Valid(cmd.Payload) || cmd.RichMenuID != "" || cmd.UserID != "" || len(cmd.Image) != 0 || cmd.ContentType != "" {
+			return errors.New("alias ID and a valid JSON payload are required")
+		}
+	case "upload-image":
+		if !validID(cmd.RichMenuID) || len(cmd.Image) == 0 || (cmd.ContentType != "image/png" && cmd.ContentType != "image/jpeg") || cmd.UserID != "" || cmd.AliasID != "" || len(cmd.Payload) != 0 {
+			return errors.New("rich menu ID, PNG or JPEG image, and no additional input are required")
+		}
 	case "set-default", "delete-menu":
 		if !validID(cmd.RichMenuID) || cmd.UserID != "" || cmd.AliasID != "" {
 			return errors.New("valid rich menu ID and no additional IDs are required")
@@ -72,6 +88,22 @@ func (s *MenuManager) Execute(ctx context.Context, cmd MenuCommand) error {
 		return err
 	}
 	switch cmd.Action {
+	case "create":
+		return s.manager.CreateRichMenu(ctx, cmd.Payload)
+	case "validate":
+		return s.manager.ValidateRichMenu(ctx, cmd.Payload)
+	case "create-alias":
+		return s.manager.CreateRichMenuAlias(ctx, cmd.Payload)
+	case "update-alias":
+		return s.manager.UpdateRichMenuAlias(ctx, cmd.AliasID, cmd.Payload)
+	case "bulk-link":
+		return s.manager.BulkLinkRichMenu(ctx, cmd.Payload)
+	case "bulk-unlink":
+		return s.manager.BulkUnlinkRichMenu(ctx, cmd.Payload)
+	case "batch":
+		return s.manager.RichMenuBatch(ctx, cmd.Payload)
+	case "validate-batch":
+		return s.manager.ValidateRichMenuBatch(ctx, cmd.Payload)
 	case "set-default":
 		return s.manager.SetDefaultRichMenu(ctx, cmd.RichMenuID)
 	case "cancel-default":
@@ -82,7 +114,9 @@ func (s *MenuManager) Execute(ctx context.Context, cmd MenuCommand) error {
 		return s.manager.UnlinkRichMenuFromUser(ctx, cmd.UserID)
 	case "delete-menu":
 		return s.manager.DeleteRichMenu(ctx, cmd.RichMenuID)
-	default:
+	case "delete-alias":
 		return s.manager.DeleteRichMenuAlias(ctx, cmd.AliasID)
+	default:
+		return errors.New("unsupported rich menu action")
 	}
 }

@@ -73,6 +73,7 @@ func TestLINEEndpointInventory(t *testing.T) {
 		"deleteRichMenuAlias":              false,
 		"broadcast":                        false,
 		"multicast":                        false,
+		"narrowcast":                       false,
 		"validateReply":                    false,
 		"validatePush":                     false,
 		"validateMulticast":                false,
@@ -80,6 +81,14 @@ func TestLINEEndpointInventory(t *testing.T) {
 		"validateBroadcast":                false,
 		"setWebhookEndpoint":               false,
 		"testWebhookEndpoint":              false,
+		"createRichMenu":                   false,
+		"validateRichMenuObject":           false,
+		"createRichMenuAlias":              false,
+		"updateRichMenuAlias":              false,
+		"linkRichMenuIdToUsers":            false,
+		"unlinkRichMenuIdFromUsers":        false,
+		"richMenuBatch":                    false,
+		"validateRichMenuBatchRequest":     false,
 	}
 	seen := make(map[string]bool)
 	count := 0

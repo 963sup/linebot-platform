@@ -6,7 +6,7 @@
 | Messaging | Reply、Push、Broadcast、Multicast、Narrowcast 均有 SDK Adapter；所有 campaign 發送均需明確 CLI --send + UUID v4 Retry Key；Narrowcast 以 JSON request file 保留 recipient、filter、limit 的完整官方結構 | Partial (offline contract only) |
 | Message contents | Text／簡單 Flex Bubble；Reply、Push、Multicast、Narrowcast、Broadcast 五種發送請求的官方 Validation API 已接入 CLI，其他訊息類型未實作 | Partial (offline contract only) |
 | Chat / User | Profile、Followers IDs、Group／Room 的 Summary／Count／IDs／Member Profile 已接入 CLI；媒體 content、其他事件仍未實作 | Partial (offline contract only) |
-| Rich Menu | List、Get、Default ID、Alias List/Get、User Menu ID、Batch Progress 已接入唯讀 CLI；建立、綁定、圖片、Alias 變更、Batch 寫入待實作；Set/Cancel Default、Link/Unlink User、Delete Menu/Alias 六項已接入需雙重確認的 Ops CLI | Partial (offline contract only) |
+| Rich Menu | List、Get、Default ID、Alias List/Get、User Menu ID、Batch Progress 已接入唯讀 CLI；建立、官方驗證、Alias 建立／更新、單一／批次綁定與解除、Batch 寫入及驗證已接入需雙重確認的 Ops CLI；圖片上傳／下載待實作 | Partial (offline contract only) |
 | Audience | Audience Data、List、Shared Data、Shared List 已接入唯讀 CLI；建立、上傳、刪除、修改仍未接入 | Partial (offline contract only) |
 | Insights | Demographics、Deliveries、Followers、Message Event、Aggregation Unit、Rich Menu Summary/Daily 七項已接入唯讀 CLI | Partial (offline contract only) |
 | Coupon / Membership | 會員清單、訂閱、會員 ID、Coupon 列表與詳情已接入唯讀 CLI；建立／關閉 Coupon 尚未接入，實際使用仍需確認地區、資格與授權 | Partial / Restricted |

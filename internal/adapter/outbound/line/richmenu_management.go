@@ -2,9 +2,11 @@ package line
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 
 	"github.com/963sup/linebot-platform/internal/infrastructure/resilience"
+	"github.com/line/line-bot-sdk-go/v8/linebot/messaging_api"
 )
 
 func lineWriteError(operation string, response *http.Response, err error) error {
@@ -12,6 +14,103 @@ func lineWriteError(operation string, response *http.Response, err error) error 
 		return nil
 	}
 	return resilience.Wrap("line", operation, httpStatus(response), err)
+}
+
+func (s *Sender) CreateRichMenu(ctx context.Context, payload json.RawMessage) error {
+	client, err := s.clientFor(ctx)
+	if err != nil {
+		return err
+	}
+	var request messaging_api.RichMenuRequest
+	if err := json.Unmarshal(payload, &request); err != nil {
+		return err
+	}
+	response, _, err := client.CreateRichMenuWithHttpInfo(&request)
+	return lineWriteError("createRichMenu", response, err)
+}
+func (s *Sender) ValidateRichMenu(ctx context.Context, payload json.RawMessage) error {
+	client, err := s.clientFor(ctx)
+	if err != nil {
+		return err
+	}
+	var request messaging_api.RichMenuRequest
+	if err := json.Unmarshal(payload, &request); err != nil {
+		return err
+	}
+	response, _, err := client.ValidateRichMenuObjectWithHttpInfo(&request)
+	return lineWriteError("validateRichMenuObject", response, err)
+}
+func (s *Sender) CreateRichMenuAlias(ctx context.Context, payload json.RawMessage) error {
+	client, err := s.clientFor(ctx)
+	if err != nil {
+		return err
+	}
+	var request messaging_api.CreateRichMenuAliasRequest
+	if err := json.Unmarshal(payload, &request); err != nil {
+		return err
+	}
+	response, _, err := client.CreateRichMenuAliasWithHttpInfo(&request)
+	return lineWriteError("createRichMenuAlias", response, err)
+}
+func (s *Sender) UpdateRichMenuAlias(ctx context.Context, aliasID string, payload json.RawMessage) error {
+	client, err := s.clientFor(ctx)
+	if err != nil {
+		return err
+	}
+	var request messaging_api.UpdateRichMenuAliasRequest
+	if err := json.Unmarshal(payload, &request); err != nil {
+		return err
+	}
+	response, _, err := client.UpdateRichMenuAliasWithHttpInfo(aliasID, &request)
+	return lineWriteError("updateRichMenuAlias", response, err)
+}
+func (s *Sender) BulkLinkRichMenu(ctx context.Context, payload json.RawMessage) error {
+	client, err := s.clientFor(ctx)
+	if err != nil {
+		return err
+	}
+	var request messaging_api.RichMenuBulkLinkRequest
+	if err := json.Unmarshal(payload, &request); err != nil {
+		return err
+	}
+	response, _, err := client.LinkRichMenuIdToUsersWithHttpInfo(&request)
+	return lineWriteError("linkRichMenuIdToUsers", response, err)
+}
+func (s *Sender) BulkUnlinkRichMenu(ctx context.Context, payload json.RawMessage) error {
+	client, err := s.clientFor(ctx)
+	if err != nil {
+		return err
+	}
+	var request messaging_api.RichMenuBulkUnlinkRequest
+	if err := json.Unmarshal(payload, &request); err != nil {
+		return err
+	}
+	response, _, err := client.UnlinkRichMenuIdFromUsersWithHttpInfo(&request)
+	return lineWriteError("unlinkRichMenuIdFromUsers", response, err)
+}
+func (s *Sender) RichMenuBatch(ctx context.Context, payload json.RawMessage) error {
+	client, err := s.clientFor(ctx)
+	if err != nil {
+		return err
+	}
+	var request messaging_api.RichMenuBatchRequest
+	if err := json.Unmarshal(payload, &request); err != nil {
+		return err
+	}
+	response, _, err := client.RichMenuBatchWithHttpInfo(&request)
+	return lineWriteError("richMenuBatch", response, err)
+}
+func (s *Sender) ValidateRichMenuBatch(ctx context.Context, payload json.RawMessage) error {
+	client, err := s.clientFor(ctx)
+	if err != nil {
+		return err
+	}
+	var request messaging_api.RichMenuBatchRequest
+	if err := json.Unmarshal(payload, &request); err != nil {
+		return err
+	}
+	response, _, err := client.ValidateRichMenuBatchRequestWithHttpInfo(&request)
+	return lineWriteError("validateRichMenuBatchRequest", response, err)
 }
 
 func (s *Sender) SetDefaultRichMenu(ctx context.Context, richMenuID string) error {
