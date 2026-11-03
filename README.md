@@ -55,7 +55,7 @@ CLI 發送會先輸出可重用的 UUID retry key。若發生 timeout 或結果�
 
 ## 架構與限制
 
-- `domain/`：業務不變量、aggregates、valueobjects；本階段保留擴充空間。
+- `domain/`：業務不變量、aggregates、`value-objects/`（Go package `valueobjects`）；本階段保留擴充空間。
 - `application/`：Messaging Port、Reply／Push、文字回覆，以及持久 Ingestion／Worker Use Case。
 - `adapter/`：同步與持久 Webhook、具 OIDC 驗證的 Worker、Firestore、Cloud Tasks、LINE 發送。
 - `infrastructure/`：LINE 受管理 HTTP Runtime、Firestore／Cloud Tasks 的可選 Durable 業務接線，以及其餘 Provider 的原生 Typed Client Factories（`client_ready`）；SDK 已可建構不代表其真實服務已獲授權。
