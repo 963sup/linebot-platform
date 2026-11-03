@@ -37,11 +37,11 @@ func emulatorStore(t *testing.T) (*sdk.Client, *fsadapter.Store) {
 
 func eventJob(id int, received time.Time) outbound.EventJob {
 	return outbound.EventJob{
-		Key: fmt.Sprintf("%064x", id),
+		Key:        fmt.Sprintf("%064x", id),
 		ReplyToken: "emulator-token",
-		Message: outbound.Message{Kind: outbound.KindText, Text: "fixed reply"},
+		Message:    outbound.Message{Kind: outbound.KindText, Text: "fixed reply"},
 		OccurredAt: received,
-		CreatedAt: received,
+		CreatedAt:  received,
 		ReplyUntil: received.Add(45 * time.Second),
 	}
 }
@@ -97,7 +97,7 @@ func TestFirestoreTransactionAndConcurrentClaim(t *testing.T) {
 	}
 	_, err = store.Record(ctx, outbound.EventJob{
 		Key: job.Key, ReplyToken: job.ReplyToken, Message: job.Message,
-		OccurredAt: now, CreatedAt: now.Add(20*time.Second),
+		OccurredAt: now, CreatedAt: now.Add(20 * time.Second),
 		ReplyUntil: now.Add(time.Minute),
 	})
 	if err != nil {
