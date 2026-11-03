@@ -4,7 +4,6 @@ import (
 	"errors"
 	"net/url"
 	"strconv"
-	"strings"
 	"time"
 
 	queueinfra "github.com/963sup/linebot-platform/internal/infrastructure/google/cloud/cloudtasks"
