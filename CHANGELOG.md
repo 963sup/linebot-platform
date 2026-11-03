@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Value Object 目錄命名調整（待合併）
+
+- 將 `internal/domain/valueobjects/` 調整為 `internal/domain/value-objects/`，僅移動預留 `.gitkeep`；Go package 名稱保留 `valueobjects`。
+- 同步根與 Domain AGENTS、README、架構文件、目錄清單及自動化架構契約測試。此變更不修改 Runtime、SDK、資料模型、發送或部署行為；下方歷史記錄保持原狀。
+
 ### 已合併至 main（PR #8，2026-11-03）
 
 - 建立 Go **1.27.3**、DDD／Hexagonal Architecture、Webhook、Reply／Push／Flex、健康檢查、CLI 與驗證環境。
