@@ -51,14 +51,14 @@ func TestLoadConfigNilEnv(t *testing.T) {
 
 func TestDurableConfigRequiresAllCredentialsAndEndpoints(t *testing.T) {
 	fields := map[string]string{
-		"LINE_EVENT_MODE":           "durable",
-		"LINE_CHANNEL_SECRET":       "secret",
-		"LINE_BOT_DESTINATION":      "U0123456789abcdef0123456789abcdef",
-		"GCP_PROJECT_ID":            "test-project",
-		"TASK_QUEUE_NAME":           "projects/test-project/locations/asia-east1/queues/line-queue",
-		"TASK_WORKER_URL":           "https://worker.example.test/tasks/line-reply",
-		"TASK_OIDC_AUDIENCE":        "https://worker.example.test",
-		"TASK_INVOKER_EMAIL":        "invoker@test-project.iam.gserviceaccount.com",
+		"LINE_EVENT_MODE":      "durable",
+		"LINE_CHANNEL_SECRET":  "secret",
+		"LINE_BOT_DESTINATION": "U0123456789abcdef0123456789abcdef",
+		"GCP_PROJECT_ID":       "test-project",
+		"TASK_QUEUE_NAME":      "projects/test-project/locations/asia-east1/queues/line-queue",
+		"TASK_WORKER_URL":      "https://worker.example.test/tasks/line-reply",
+		"TASK_OIDC_AUDIENCE":   "https://worker.example.test",
+		"TASK_INVOKER_EMAIL":   "invoker@test-project.iam.gserviceaccount.com",
 	}
 	cfg, err := LoadConfig(env(fields))
 	if err != nil || cfg.EventMode != "durable" || cfg.Durable.ProjectID != "test-project" {

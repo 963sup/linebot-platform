@@ -15,10 +15,10 @@ import (
 )
 
 const (
-	replyWindow = 45 * time.Second
-	maxEventAge = 20 * time.Minute
+	replyWindow  = 45 * time.Second
+	maxEventAge  = 20 * time.Minute
 	maxClockSkew = 5 * time.Minute
-	maxDispatch = 100
+	maxDispatch  = 100
 )
 
 // ErrEventTooOld indicates no LINE Reply can be attempted because the
