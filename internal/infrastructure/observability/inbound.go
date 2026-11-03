@@ -18,6 +18,20 @@ func (w *inboundWriter) Unwrap() http.ResponseWriter {
 	return w.ResponseWriter
 }
 
+// FlushError records the implicit HTTP 200 committed by a successful flush.
+// Otherwise a later WriteHeader could be logged as the final status despite
+// the underlying writer having already sent 200. Delegate to ResponseController
+// to preserve support detection and ErrNotSupported for non-flushing writers.
+func (w *inboundWriter) FlushError() error {
+	if err := http.NewResponseController(w.ResponseWriter).Flush(); err != nil {
+		return err
+	}
+	if w.status == 0 {
+		w.status = http.StatusOK
+	}
+	return nil
+}
+
 func (w *inboundWriter) WriteHeader(status int) {
 	if w.status != 0 {
 		return
