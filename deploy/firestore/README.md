@@ -6,4 +6,4 @@ The inbox/outbox transaction persists the original reply token only in the outbo
 
 Before staging, create an isolated Firestore database, configure least-privilege service identities, review retention/privacy policy, and arrange a scheduled, OIDC-authenticated POST to `/tasks/dispatch` to repair committed but unscheduled work. Bounded state queries in this implementation are not suitable for high-volume unpaginated operation; a later iteration needs indexed expiry queries, pagination, metrics and operator reconciliation.
 
-This PR does not provision any Firestore, Cloud Tasks, Cloud Run, IAM, TTL or Scheduler resources.
+These schema/retention notes and the merged PR #8 implementation do **not** provision Firestore, Cloud Tasks, Cloud Run, IAM, TTL policies or Cloud Scheduler. An isolated, explicitly authorized staging setup is required.
