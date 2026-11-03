@@ -19,7 +19,22 @@ func TestLINEEndpointInventory(t *testing.T) {
 	defer file.Close()
 
 	item := regexp.MustCompile(`^  - \{source: ([a-z-]+), group: ([a-z-]+), operation: ([A-Za-z0-9]+), method: (GET|POST|PUT|DELETE|PATCH), path: "([^"]+)", integration: (not_integrated|integrated_offline), test: (none|contract), access: (review|required_eligibility_review)\}$`)
-	implemented := map[string]bool{"replyMessage": false, "pushMessage": false, "getProfile": false}
+	implemented := map[string]bool{
+		"replyMessage": false,
+		"pushMessage": false,
+		"getProfile": false,
+		"getBotInfo": false,
+		"getWebhookEndpoint": false,
+		"getMessageQuota": false,
+		"getMessageQuotaConsumption": false,
+		"getAggregationUnitUsage": false,
+		"getAggregationUnitNameList": false,
+		"getNumberOfSentReplyMessages": false,
+		"getNumberOfSentPushMessages": false,
+		"getNumberOfSentMulticastMessages": false,
+		"getNumberOfSentBroadcastMessages": false,
+		"getNarrowcastProgress": false,
+	}
 	seen := make(map[string]bool)
 	count := 0
 	scanner := bufio.NewScanner(file)
