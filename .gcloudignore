@@ -7,7 +7,6 @@
 # Non-runtime project material is omitted from Cloud Build source uploads.
 .github/
 .agents/
-.codex/
 .vscode/
 docs/
 deploy/
