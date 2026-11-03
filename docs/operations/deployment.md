@@ -75,3 +75,12 @@ gcloud builds submit . \
 - [Cloud Run deployment](https://docs.cloud.google.com/run/docs/deploying)
 - [Cloud Build service accounts](https://docs.cloud.google.com/build/docs/securing-builds/configure-user-specified-service-accounts)
 - [gcloudignore](https://docs.cloud.google.com/sdk/gcloud/reference/topic/gcloudignore)
+
+
+## Fly.io 可選部署路徑（Staging，未部署）
+
+Fly.io 的雙 App Docker、OIDC Worker、ADC 注入、環境變數和手動
+GitHub Actions 流程獨立整理於 [Fly.io Staging 部署指南](../../deploy/fly/README.md)。
+Fly.io 不是 Cloud Run，**不會自動提供 Cloud Run IAM、私有 Worker Ingress
+或 Google ADC**。請勿直接沿用本頁的 Cloud Run 身分假設，也不得因
+Fly 的 `/healthz` 通過就宣稱 GCP 或 LINE 整合已完成驗收。
