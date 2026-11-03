@@ -71,13 +71,17 @@ func (s *MembershipInspector) Inspect(ctx context.Context, q MembershipQuery) (j
 	if err := ValidateMembershipQuery(q); err != nil {
 		return nil, err
 	}
+	limit := q.Limit
+	if limit == 0 {
+		limit = 20
+	}
 	switch q.Kind {
 	case "memberships":
 		return s.reader.MembershipList(ctx)
 	case "subscription":
 		return s.reader.MembershipSubscription(ctx, q.UserID)
 	case "membership-users":
-		return s.reader.MembershipUsers(ctx, int32(q.MembershipID), q.Start, int32(q.Limit))
+		return s.reader.MembershipUsers(ctx, int32(q.MembershipID), q.Start, int32(limit))
 	case "coupons":
 		return s.reader.CouponList(ctx, q.Start, int32(q.Limit))
 	default:
