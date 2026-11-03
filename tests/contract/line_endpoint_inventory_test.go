@@ -65,6 +65,12 @@ func TestLINEEndpointInventory(t *testing.T) {
 		"getSharedAudienceData": false,
 		"getAudienceGroups": false,
 		"getSharedAudienceGroups": false,
+		"setDefaultRichMenu": false,
+		"cancelDefaultRichMenu": false,
+		"linkRichMenuIdToUser": false,
+		"unlinkRichMenuIdFromUser": false,
+		"deleteRichMenu": false,
+		"deleteRichMenuAlias": false,
 	}
 	seen := make(map[string]bool)
 	count := 0

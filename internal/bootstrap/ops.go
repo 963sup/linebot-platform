@@ -19,6 +19,7 @@ type LINEOpsRuntime struct {
 	Profiles  *contacts.Profiles
 	Channel   *channel.Inspector
 	Menus     *engagement.RichMenuInspector
+	MenuManager *engagement.MenuManager
 	Memberships *engagement.MembershipInspector
 	Contacts  *contacts.Inspector
 	Insights  *insights.Inspector
@@ -91,7 +92,9 @@ func NewLINEOpsRuntime(token string) (*LINEOpsRuntime, error) {
 	if err != nil {
 		return cleanup(err)
 	}
-	return &LINEOpsRuntime{Messaging: messages, Profiles: profiles, Channel: inspector, Menus: menus, Memberships: membership, Contacts: contactsInspector, Insights: inspectorInsights, Audiences: inspectorAudiences, outbound: transport}, nil
+	menuManager, err := engagement.NewMenuManager(sender)
+	if err != nil { return cleanup(err) }
+	return &LINEOpsRuntime{Messaging: messages, Profiles: profiles, Channel: inspector, Menus: menus, MenuManager: menuManager, Memberships: membership, Contacts: contactsInspector, Insights: inspectorInsights, Audiences: inspectorAudiences, outbound: transport}, nil
 }
 
 func (r *LINEOpsRuntime) Close() {

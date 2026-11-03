@@ -70,6 +70,8 @@ Insights 唯讀查詢範例：`go run ./cmd/ops insights --kind followers --date
 
 Contacts/Group/Room 唯讀查詢須明確指定 `--read`（結果可能含使用者資料），例如 `go run ./cmd/ops contacts --kind followers --limit 10 --read`。不得將其輸出存入公開記錄，需遵循 LINE 服務條款及資料保護規範。
 
+Rich Menu 變更指令需同時提供 `--apply --confirm ACTION`，例如僅在獲授權的隔離測試帳號中執行 `go run ./cmd/ops manage-menu --action set-default --menu-id richmenu-xxx --apply --confirm set-default`。程式碼可用不代表可擅自修改真實帳號；模糊或結果未知的發送不自動重試。
+
 Rich Menu 唯讀查詢可執行 `go run ./cmd/ops menus --kind list --read`，其它 `--kind` 使用 `internal/application/usecases/engagement/inspect.go` 的 allowlist。查詢單一選單需搭配 `--id`，所有操作都不會在公開 Webhook 執行。
 
 LINE Channel 唯讀查詢需由操作人員明確指定：
