@@ -10,4 +10,4 @@
 
 驗證：`go run ./cmd/codexcheck` 與 `make check` 由 CI 執行，保護依賴、架構、型別、Race Test 與建置。PR #8 的 Firestore Emulator 整合測試曾通過，但一次性驗收檔已於合併前移除；**真實 GCP IAM／OIDC／Firestore TTL／Cloud Scheduler／LINE 測試 Channel／使用者 OAuth 仍待隔離 Staging 驗收**。
 
-詳細狀態見 [SDK Integration](../../../docs/architecture/sdk-integration.md)、[main 基礎設施狀態](../../../docs/architecture/infrastructure-status.md)。
+詳細狀態見 [SDK Integration](../../docs/architecture/sdk-integration.md)、[main 基礎設施狀態](../../docs/architecture/infrastructure-status.md)。
