@@ -64,7 +64,9 @@ func (s *Inspector) Inspect(ctx context.Context, q Inspection) (json.RawMessage,
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
-	if err := ValidateInspection(q); err != nil { return nil, err }
+	if err := ValidateInspection(q); err != nil {
+		return nil, err
+	}
 	switch q.Kind {
 	case "bot-info":
 		return s.reader.BotInfo(ctx)

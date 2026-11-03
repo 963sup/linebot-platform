@@ -33,43 +33,57 @@ func (s *InsightReader) clientFor(ctx context.Context) (*insight.InsightAPI, err
 
 func (s *InsightReader) FriendsDemographics(ctx context.Context) (json.RawMessage, error) {
 	client, err := s.clientFor(ctx)
-	if err != nil { return nil, err }
+	if err != nil {
+		return nil, err
+	}
 	response, result, err := client.GetFriendsDemographicsWithHttpInfo()
 	return reportResult("getFriendsDemographics", response, result, err)
 }
 func (s *InsightReader) MessageDeliveries(ctx context.Context, date string) (json.RawMessage, error) {
 	client, err := s.clientFor(ctx)
-	if err != nil { return nil, err }
+	if err != nil {
+		return nil, err
+	}
 	response, result, err := client.GetNumberOfMessageDeliveriesWithHttpInfo(date)
 	return reportResult("getNumberOfMessageDeliveries", response, result, err)
 }
 func (s *InsightReader) FollowerMetrics(ctx context.Context, date string) (json.RawMessage, error) {
 	client, err := s.clientFor(ctx)
-	if err != nil { return nil, err }
+	if err != nil {
+		return nil, err
+	}
 	response, result, err := client.GetNumberOfFollowersWithHttpInfo(date)
 	return reportResult("getNumberOfFollowers", response, result, err)
 }
 func (s *InsightReader) MessageEvent(ctx context.Context, requestID string) (json.RawMessage, error) {
 	client, err := s.clientFor(ctx)
-	if err != nil { return nil, err }
+	if err != nil {
+		return nil, err
+	}
 	response, result, err := client.GetMessageEventWithHttpInfo(requestID)
 	return reportResult("getMessageEvent", response, result, err)
 }
 func (s *InsightReader) StatisticsPerUnit(ctx context.Context, unit, from, to string) (json.RawMessage, error) {
 	client, err := s.clientFor(ctx)
-	if err != nil { return nil, err }
+	if err != nil {
+		return nil, err
+	}
 	response, result, err := client.GetStatisticsPerUnitWithHttpInfo(unit, from, to)
 	return reportResult("getStatisticsPerUnit", response, result, err)
 }
 func (s *InsightReader) RichMenuSummary(ctx context.Context, menuID, from, to string) (json.RawMessage, error) {
 	client, err := s.clientFor(ctx)
-	if err != nil { return nil, err }
+	if err != nil {
+		return nil, err
+	}
 	response, result, err := client.GetRichMenuInsightSummaryWithHttpInfo(menuID, from, to)
 	return reportResult("getRichMenuInsightSummary", response, result, err)
 }
 func (s *InsightReader) RichMenuDaily(ctx context.Context, menuID, from, to string) (json.RawMessage, error) {
 	client, err := s.clientFor(ctx)
-	if err != nil { return nil, err }
+	if err != nil {
+		return nil, err
+	}
 	response, result, err := client.GetRichMenuInsightDailyWithHttpInfo(menuID, from, to)
 	return reportResult("getRichMenuInsightDaily", response, result, err)
 }

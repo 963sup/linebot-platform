@@ -20,15 +20,23 @@ func runManageMenu(args []string, getenv func(string) string) error {
 	alias := flags.String("alias-id", "", "rich menu alias ID")
 	apply := flags.Bool("apply", false, "explicitly enable a remote write")
 	confirm := flags.String("confirm", "", "must equal the action to avoid accidental changes")
-	if err := flags.Parse(args); err != nil { return err }
+	if err := flags.Parse(args); err != nil {
+		return err
+	}
 	if len(flags.Args()) != 0 || !*apply || *confirm != *action {
 		return errors.New("manage-menu requires --apply --confirm ACTION and no extra arguments")
 	}
-	if getenv == nil { return errors.New("missing environment reader") }
-	cmd := engagement.MenuCommand{Action:*action, RichMenuID:*menu, UserID:*user, AliasID:*alias}
-	if err := engagement.ValidateMenuCommand(cmd); err != nil { return err }
+	if getenv == nil {
+		return errors.New("missing environment reader")
+	}
+	cmd := engagement.MenuCommand{Action: *action, RichMenuID: *menu, UserID: *user, AliasID: *alias}
+	if err := engagement.ValidateMenuCommand(cmd); err != nil {
+		return err
+	}
 	runtime, err := bootstrap.NewLINEOpsRuntime(getenv(bootstrap.KeyChannelToken))
-	if err != nil { return err }
+	if err != nil {
+		return err
+	}
 	defer runtime.Close()
 	ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
 	defer cancel()

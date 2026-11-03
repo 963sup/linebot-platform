@@ -36,7 +36,10 @@ func TestChannelInspectorUsesRealSDKEndpoints(t *testing.T) {
 		{"push stats", func() error { _, e := sender.DeliveryPush(context.Background(), "20261101"); return e }},
 		{"multicast stats", func() error { _, e := sender.DeliveryMulticast(context.Background(), "20261101"); return e }},
 		{"broadcast stats", func() error { _, e := sender.DeliveryBroadcast(context.Background(), "20261101"); return e }},
-		{"narrowcast progress", func() error { _, e := sender.NarrowcastProgress(context.Background(), "123e4567-e89b-42d3-a456-426614174000"); return e }},
+		{"narrowcast progress", func() error {
+			_, e := sender.NarrowcastProgress(context.Background(), "123e4567-e89b-42d3-a456-426614174000")
+			return e
+		}},
 	}
 	for _, tc := range checks {
 		t.Run(tc.name, func(t *testing.T) {
