@@ -1,6 +1,7 @@
 package bootstrap
 
 import (
+	"strings"
 	"testing"
 )
 
@@ -136,6 +137,9 @@ func TestWorkerRejectsIncompatibleWebhookMode(t *testing.T) {
 func TestDurableConfigPreflightRejectsMalformedQueueName(t *testing.T) {
 	for _, queue := range []string{
 		"projects/test-project/locations/asia-east1/queues/line-queue/extra",
+		"projects/test-project/locations/asia-east1/queues/line_queue",
+		"projects/test-project/locations/asia-east1/queues/" + strings.Repeat("a", 101),
+		"projects/test-project/locations/asia_east1/queues/line-queue",
 		"projects/test-project/locations//queues/line-queue",
 		"projects/test-project/locations/../queues/line-queue",
 		"projects/test-project/locations/asia-east1/queues/",

@@ -49,7 +49,7 @@ var settingContract = []SettingSpec{
 	{Key: KeyChannelToken, Roles: "worker,local-sync,ops-push", Secret: true, Default: "—", Required: "worker 必需；本機 sync 成對", Description: "durable 公開 Webhook 禁止持有"},
 	{Key: KeyBotDestination, Roles: "webhook-durable,worker", Secret: false, Default: "—", Required: "durable 必需", Description: "LINE Bot Destination ID"},
 	{Key: KeyProjectID, Roles: "webhook-durable,worker", Secret: false, Default: "—", Required: "durable 必需", Description: "最小 IAM 的指定 Google Cloud Project"},
-	{Key: KeyQueueName, Roles: "webhook-durable,worker", Secret: false, Default: "—", Required: "durable 必需", Description: "六段 Queue 資源名稱，Project 必須等於 GCP_PROJECT_ID"},
+	{Key: KeyQueueName, Roles: "webhook-durable,worker", Secret: false, Default: "—", Required: "durable 必需", Description: "六段 Queue 資源名稱；Project 必須等於 GCP_PROJECT_ID；Queue ID 僅限 1–100 字元英數或連字號"},
 	{Key: KeyWorkerURL, Roles: "webhook-durable,worker", Secret: false, Default: "—", Required: "durable 必需", Description: "HTTPS Worker /tasks/line-reply"},
 	{Key: KeyOIDCAudience, Roles: "webhook-durable,worker", Secret: false, Default: "—", Required: "durable 必需", Description: "必須符合 Worker HTTPS Origin"},
 	{Key: KeyInvokerEmail, Roles: "webhook-durable,worker", Secret: false, Default: "—", Required: "durable 必需", Description: "允許呼叫 Worker 的 Service Account Email"},

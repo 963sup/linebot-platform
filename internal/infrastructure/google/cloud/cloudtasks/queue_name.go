@@ -12,10 +12,27 @@ func QueueProjectID(name string) (string, bool) {
 	if len(parts) != 6 || parts[0] != "projects" || parts[2] != "locations" || parts[4] != "queues" {
 		return "", false
 	}
-	for _, index := range [...]int{1, 3, 5} {
-		if parts[index] == "" || parts[index] == "." || parts[index] == ".." {
-			return "", false
-		}
+	// The Cloud Tasks API permits letters, digits and hyphens in queue IDs
+	// (up to 100 characters). Project IDs additionally permit dots/colons.
+	// Location IDs use canonical codes; their existence is checked in staging.
+	if !validResourceID(parts[1], true) || !validResourceID(parts[3], false) ||
+		!validResourceID(parts[5], false) || len(parts[5]) > 100 {
+		return "", false
 	}
 	return parts[1], true
+}
+
+func validResourceID(value string, project bool) bool {
+	if value == "" || value == "." || value == ".." {
+		return false
+	}
+	for i := 0; i < len(value); i++ {
+		c := value[i]
+		if (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') ||
+			(c >= '0' && c <= '9') || c == '-' || (project && (c == '.' || c == ':')) {
+			continue
+		}
+		return false
+	}
+	return true
 }

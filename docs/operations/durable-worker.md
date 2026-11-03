@@ -19,7 +19,7 @@
 | `LINE_CHANNEL_ACCESS_TOKEN` | **forbidden** | required | Only the private worker is permitted to send LINE messages |
 | `LINE_BOT_DESTINATION` | required | required | Bot destination ID for event isolation and event-key derivation |
 | `GCP_PROJECT_ID` | required | required | Dedicated staging project |
-| `TASK_QUEUE_NAME` | required | required | Exactly projects/PROJECT/locations/REGION/queues/NAME; PROJECT must equal GCP_PROJECT_ID |
+| `TASK_QUEUE_NAME` | required | required | Exactly projects/PROJECT/locations/REGION/queues/NAME; PROJECT must equal GCP_PROJECT_ID, QUEUE ID must be 1–100 ASCII letters/digits/hyphens |
 | `TASK_WORKER_URL` | required | required | HTTPS worker URL ending in /tasks/line-reply |
 | `TASK_OIDC_AUDIENCE` | required | required | Origin of the worker URL (without task path) |
 | `TASK_INVOKER_EMAIL` | required | required | Google service account email authorized to call worker |
