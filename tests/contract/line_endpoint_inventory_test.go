@@ -78,6 +78,8 @@ func TestLINEEndpointInventory(t *testing.T) {
 		"validateMulticast":                false,
 		"validateNarrowcast":               false,
 		"validateBroadcast":                false,
+		"setWebhookEndpoint": false,
+		"testWebhookEndpoint": false,
 	}
 	seen := make(map[string]bool)
 	count := 0

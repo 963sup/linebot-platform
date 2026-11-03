@@ -2,7 +2,7 @@
 
 | 功能組 | 預計範圍 | 狀態 |
 |---|---|---|
-| Webhook | 簽章驗證、文字 Message；同步模式沒有持久去重，選用 durable 模式有 Firestore 事件去重與 OIDC Worker。Edit／unsend／媒體與實際 Staging 仍待完成 | Partial (development only) |
+| Webhook | 簽章驗證、文字 Message、Get/Set/Test Webhook Endpoint；Set/Test 僅限需明確確認的管理 CLI。同步模式沒有持久去重，durable 具 Firestore + Cloud Tasks；Edit／Unsend／媒體事件與 Staging 驗收仍未完成 | Partial (offline contract only) |
 | Messaging | Reply、Push、Broadcast、Multicast 已有 SDK Adapter；Broadcast／Multicast 需明確 CLI --send + Retry Key；Narrowcast 尚未實作 | Partial (offline contract only) |
 | Message contents | Text／簡單 Flex Bubble；Reply、Push、Multicast、Narrowcast、Broadcast 五種發送請求的官方 Validation API 已接入 CLI，其他訊息類型未實作 | Partial (offline contract only) |
 | Chat / User | Profile、Followers IDs、Group／Room 的 Summary／Count／IDs／Member Profile 已接入 CLI；媒體 content、其他事件仍未實作 | Partial (offline contract only) |

@@ -19,6 +19,7 @@ type LINEOpsRuntime struct {
 	Validation  *messaging.ValidationService
 	Profiles    *contacts.Profiles
 	Channel     *channel.Inspector
+	WebhookAdmin *channel.WebhookConfigurator
 	Menus       *engagement.RichMenuInspector
 	MenuManager *engagement.MenuManager
 	Memberships *engagement.MembershipInspector
@@ -106,7 +107,9 @@ func NewLINEOpsRuntime(token string) (*LINEOpsRuntime, error) {
 	if err != nil {
 		return cleanup(err)
 	}
-	return &LINEOpsRuntime{Messaging: messages, Validation: validator, Profiles: profiles, Channel: inspector, Menus: menus, MenuManager: menuManager, Memberships: membership, Contacts: contactsInspector, Insights: inspectorInsights, Audiences: inspectorAudiences, Campaign: campaignMessenger, outbound: transport}, nil
+	webhookAdmin, err := channel.NewWebhookConfigurator(sender)
+	if err != nil {return cleanup(err)}
+	return &LINEOpsRuntime{Messaging: messages, Validation: validator, Profiles: profiles, Channel: inspector, WebhookAdmin: webhookAdmin, Menus: menus, MenuManager: menuManager, Memberships: membership, Contacts: contactsInspector, Insights: inspectorInsights, Audiences: inspectorAudiences, Campaign: campaignMessenger, outbound: transport}, nil
 }
 
 func (r *LINEOpsRuntime) Close() {

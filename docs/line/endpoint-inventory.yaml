@@ -10,8 +10,8 @@ sdk_version: "v8.23.0"
 live_channel_verified: false
 endpoints:
   - {source: messaging-api, group: webhook, operation: getWebhookEndpoint, method: GET, path: "/v2/bot/channel/webhook/endpoint", integration: integrated_offline, test: contract, access: review}
-  - {source: messaging-api, group: webhook, operation: setWebhookEndpoint, method: PUT, path: "/v2/bot/channel/webhook/endpoint", integration: not_integrated, test: none, access: review}
-  - {source: messaging-api, group: webhook, operation: testWebhookEndpoint, method: POST, path: "/v2/bot/channel/webhook/test", integration: not_integrated, test: none, access: review}
+  - {source: messaging-api, group: webhook, operation: setWebhookEndpoint, method: PUT, path: "/v2/bot/channel/webhook/endpoint", integration: integrated_offline, test: contract, access: review}
+  - {source: messaging-api, group: webhook, operation: testWebhookEndpoint, method: POST, path: "/v2/bot/channel/webhook/test", integration: integrated_offline, test: contract, access: review}
   - {source: messaging-api, group: webhook-content, operation: getMessageContent, method: GET, path: "/v2/bot/message/{messageId}/content", integration: not_integrated, test: none, access: review}
   - {source: messaging-api, group: webhook-content, operation: getMessageContentPreview, method: GET, path: "/v2/bot/message/{messageId}/content/preview", integration: not_integrated, test: none, access: review}
   - {source: messaging-api, group: webhook-content, operation: getMessageContentTranscodingByMessageId, method: GET, path: "/v2/bot/message/{messageId}/content/transcoding", integration: not_integrated, test: none, access: review}
