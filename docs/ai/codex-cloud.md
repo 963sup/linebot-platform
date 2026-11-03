@@ -19,7 +19,7 @@
 ## 2. Setup script 做的事情
 
 - 使用 `GOTOOLCHAIN=auto` 讀取並遵守根 `go.mod` 的版本要求。
-- 以 `go run ./cmd/codexcheck` 驗證 `.codex/config.toml`、五份 Agent TOML、`docs/sdk/catalog.toml` 和 `docs/ai/zero-context-scenarios.toml`，檢查對 `go.mod` 的依賴、情境路由、Setup Script 語法，並拒絕 Python 原始碼。
+- 以 `go run ./cmd/codexcheck` 驗證 `.codex/config.toml`、五份 Agent TOML 與 `docs/sdk/catalog.toml`，檢查直接依賴與 Setup Script 語法，並拒絕 Python 原始碼。
 - 執行 `go mod download`、`go mod verify`；不執行會改動 `go.mod` 的 `go mod tidy`。
 - 固定安裝 Go 官方 `gopls v0.24.0` 到 `$HOME/.local/bin`。腳本可重複執行，已安裝符合版本時跳過。
 - 預設**不執行**耗時的 race test；可選擇使用環境變數 `CODEX_CLOUD_WARM_TESTS=1` 在安裝時先做普通 `go test ./...`。
@@ -55,7 +55,7 @@ codex mcp list
 
 此外，Codex SDK 任務應使用 `.agents/skills/sdk-integration/SKILL.md`，按需讀取 `docs/sdk/catalog.toml` 並以 `go doc` / gopls 查證真實 API；不需另外安裝 SDK 知識伺服器。
 
-這些指令需在實際 Cloud 環境執行才算雲端驗證通過。第五階段的六項 Codex 新會話與人工證據 Gate 另見 [零先驗驗收](zero-context-acceptance.md) 及 [Staging 驗收](../operations/stage5-acceptance.md)。GitHub CI 會使用 Go 驗證器（`github.com/BurntSushi/toml`）檢查 TOML／shell 語法，但**CI 通過不代表 Cloud MCP 已認證、工具可連線或雲端環境已 Publish**。
+這些指令需在實際 Cloud 環境執行才算雲端驗證通過。GitHub CI 會使用 Go 驗證器（`github.com/BurntSushi/toml`）檢查 TOML／shell 語法，但**CI 通過不代表 Cloud MCP 已認證、工具可連線或雲端環境已 Publish**。
 
 ## 5. 自訂 Agents 的使用
 

@@ -61,12 +61,10 @@
 
 請閱讀 [Agents 職責](docs/ai/agents.md)、[MCP 設定與權限](docs/ai/mcp-and-plugins.md)、[Codex Cloud](docs/ai/codex-cloud.md)。
 
-## Stage-5 驗收界線
+## 外部環境驗收邊界
 
-- Codex 零先驗能力必須依 `docs/ai/zero-context-scenarios.toml` 在六個**全新工作階段**實際驗收；不能以情境檔、MCP 設定或 CI 成功取代。
-- `make acceptance-emulator` 只能對**本機** Firestore Emulator 執行。沒有 Emulator 時必須失敗，不可將 skipped tests 當作通過。
-- 真實 Staging IAM／OIDC、Scheduler、Firestore TTL、LINE 測試帳號及 OAuth 必須明確授權並隔離，依 `docs/operations/stage5-acceptance.md` 留下證據。
-- 最終 `go run ./cmd/acceptance -evidence <file>` 為人工證據 Gate，預設 blocked；不得自行填造 passed、在 CI／PR 上傳秘密、部署付費服務或合併 PR。
+- 真實 Cloud IAM／OIDC、Cloud Scheduler、Firestore TTL、LINE Channel 及使用者 OAuth 僅能在隔離且經明確授權的環境中驗證，不得以 CI 通過當作已部署或取得權限。
+- 不可自行部署付費服務、執行正式 API 發送或合併 PR；正式驗收結果應於 PR 審查紀錄中明確註明。
 
 ## 驗證與交付
 
