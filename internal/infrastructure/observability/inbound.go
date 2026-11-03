@@ -12,6 +12,12 @@ type inboundWriter struct {
 	status int
 }
 
+// Unwrap preserves optional ResponseWriter capabilities for
+// http.NewResponseController (Flush, Hijack, and deadlines).
+func (w *inboundWriter) Unwrap() http.ResponseWriter {
+	return w.ResponseWriter
+}
+
 func (w *inboundWriter) WriteHeader(status int) {
 	if w.status != 0 {
 		return

@@ -35,26 +35,26 @@ const (
 	KeyOpsStagingProject = "LINEBOT_STAGING_PROJECT"
 )
 
-// settingContract is the source of truth for environment-variable names,
-// their roles, defaults and secrecy classification. Parser code refers to the
-// corresponding Key constants; docs are generated from this list.
+// settingContract owns the role, default and secret metadata for each key.
+// Key constants are shared with the parsers so a renamed setting cannot drift
+// between runtime validation and the generated documentation.
 var settingContract = []SettingSpec{
-	{Key: "APP_ENV", Roles: "webhook,worker", Secret: false, Default: "local", Required: "Cloud Run 必須明確設定 staging/production", Description: "local、staging、production"},
-	{Key: "PORT", Roles: "webhook,worker", Secret: false, Default: "8080", Required: "選用", Description: "HTTP 監聽埠，1–65535"},
-	{Key: "LINE_EVENT_MODE", Roles: "webhook", Secret: false, Default: "sync", Required: "Cloud Run 必須 durable", Description: "本機 sync；正式環境僅 durable"},
-	{Key: "LINE_API_TIMEOUT", Roles: "webhook,worker", Secret: false, Default: "8s", Required: "選用", Description: "1s–12s，單次 LINE HTTP timeout"},
-	{Key: "LOG_LEVEL", Roles: "webhook,worker", Secret: false, Default: "info", Required: "選用", Description: "debug、info、warn、error"},
-	{Key: "LOG_FORMAT", Roles: "webhook,worker", Secret: false, Default: "local=text; others=json", Required: "選用", Description: "staging/production 強制 json"},
-	{Key: "LINE_CHANNEL_SECRET", Roles: "webhook", Secret: true, Default: "—", Required: "durable 必需；sync 與 Token 成對", Description: "僅驗證原始 Webhook 簽章，不應傳給 Worker"},
-	{Key: "LINE_CHANNEL_ACCESS_TOKEN", Roles: "worker,local-sync,ops-push", Secret: true, Default: "—", Required: "worker 必需；本機 sync 成對", Description: "durable 公開 Webhook 禁止持有"},
-	{Key: "LINE_BOT_DESTINATION", Roles: "webhook-durable,worker", Secret: false, Default: "—", Required: "durable 必需", Description: "LINE Bot Destination ID"},
-	{Key: "GCP_PROJECT_ID", Roles: "webhook-durable,worker", Secret: false, Default: "—", Required: "durable 必需", Description: "最小 IAM 的指定 Google Cloud Project"},
-	{Key: "TASK_QUEUE_NAME", Roles: "webhook-durable,worker", Secret: false, Default: "—", Required: "durable 必需", Description: "完整 projects/.../locations/.../queues/..."},
-	{Key: "TASK_WORKER_URL", Roles: "webhook-durable,worker", Secret: false, Default: "—", Required: "durable 必需", Description: "HTTPS Worker /tasks/line-reply"},
-	{Key: "TASK_OIDC_AUDIENCE", Roles: "webhook-durable,worker", Secret: false, Default: "—", Required: "durable 必需", Description: "必須符合 Worker HTTPS Origin"},
-	{Key: "TASK_INVOKER_EMAIL", Roles: "webhook-durable,worker", Secret: false, Default: "—", Required: "durable 必需", Description: "允許呼叫 Worker 的 Service Account Email"},
-	{Key: "K_SERVICE", Roles: "webhook,worker", Secret: false, Default: "平台提供", Required: "Cloud Run 自動提供", Description: "防止在 Cloud Run 以 local profile 啟動"},
-	{Key: "LINEBOT_STAGING_PROJECT", Roles: "ops-events", Secret: false, Default: "—", Required: "events inspect/check 必需", Description: "明確指定只讀操作允許的 Staging Project"},
+	{Key: KeyAppEnv, Roles: "webhook,worker", Secret: false, Default: "local", Required: "Cloud Run 必須明確設定 staging/production", Description: "local、staging、production"},
+	{Key: KeyPort, Roles: "webhook,worker", Secret: false, Default: "8080", Required: "選用", Description: "HTTP 監聽埠，1–65535"},
+	{Key: KeyEventMode, Roles: "webhook", Secret: false, Default: "sync", Required: "Cloud Run 必須 durable", Description: "本機 sync；正式環境僅 durable"},
+	{Key: KeyLINETimeout, Roles: "webhook,worker", Secret: false, Default: "8s", Required: "選用", Description: "1s–12s，單次 LINE HTTP timeout"},
+	{Key: KeyLogLevel, Roles: "webhook,worker", Secret: false, Default: "info", Required: "選用", Description: "debug、info、warn、error"},
+	{Key: KeyLogFormat, Roles: "webhook,worker", Secret: false, Default: "local=text; others=json", Required: "選用", Description: "staging/production 強制 json"},
+	{Key: KeyChannelSecret, Roles: "webhook", Secret: true, Default: "—", Required: "durable 必需；sync 與 Token 成對", Description: "僅驗證原始 Webhook 簽章，不應傳給 Worker"},
+	{Key: KeyChannelToken, Roles: "worker,local-sync,ops-push", Secret: true, Default: "—", Required: "worker 必需；本機 sync 成對", Description: "durable 公開 Webhook 禁止持有"},
+	{Key: KeyBotDestination, Roles: "webhook-durable,worker", Secret: false, Default: "—", Required: "durable 必需", Description: "LINE Bot Destination ID"},
+	{Key: KeyProjectID, Roles: "webhook-durable,worker", Secret: false, Default: "—", Required: "durable 必需", Description: "最小 IAM 的指定 Google Cloud Project"},
+	{Key: KeyQueueName, Roles: "webhook-durable,worker", Secret: false, Default: "—", Required: "durable 必需", Description: "完整 projects/.../locations/.../queues/..."},
+	{Key: KeyWorkerURL, Roles: "webhook-durable,worker", Secret: false, Default: "—", Required: "durable 必需", Description: "HTTPS Worker /tasks/line-reply"},
+	{Key: KeyOIDCAudience, Roles: "webhook-durable,worker", Secret: false, Default: "—", Required: "durable 必需", Description: "必須符合 Worker HTTPS Origin"},
+	{Key: KeyInvokerEmail, Roles: "webhook-durable,worker", Secret: false, Default: "—", Required: "durable 必需", Description: "允許呼叫 Worker 的 Service Account Email"},
+	{Key: KeyCloudRunService, Roles: "webhook,worker", Secret: false, Default: "平台提供", Required: "Cloud Run 自動提供", Description: "防止在 Cloud Run 以 local profile 啟動"},
+	{Key: KeyOpsStagingProject, Roles: "ops-events", Secret: false, Default: "—", Required: "events inspect/check 必需", Description: "明確指定只讀操作允許的 Staging Project"},
 }
 
 // SettingsContract returns a copy so callers cannot mutate global metadata.

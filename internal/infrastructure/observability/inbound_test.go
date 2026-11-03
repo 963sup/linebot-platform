@@ -31,3 +31,21 @@ func TestInboundMetadataNeverLeaksQueryOrHeaders(t *testing.T) {
 		t.Fatal("unknown route must use a bounded label")
 	}
 }
+
+func TestInboundWrapperPreservesResponseControllerFlush(t *testing.T) {
+	var out bytes.Buffer
+	logger := slog.New(slog.NewJSONHandler(&out, &slog.HandlerOptions{Level: slog.LevelDebug}))
+	handler := WrapInboundHTTP("webhook", logger, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		if err := http.NewResponseController(w).Flush(); err != nil {
+			t.Errorf("ResponseController.Flush through observability wrapper: %v", err)
+		}
+	}))
+	recorder := httptest.NewRecorder()
+	handler.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/healthz", nil))
+	if !recorder.Flushed {
+		t.Fatal("underlying response writer flush capability was lost")
+	}
+	if !strings.Contains(out.String(), "\"health\"") {
+		t.Fatal("missing bounded health route telemetry")
+	}
+}
