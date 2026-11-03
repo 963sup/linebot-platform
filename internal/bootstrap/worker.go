@@ -83,7 +83,7 @@ func NewWorkerRuntime(ctx context.Context, cfg WorkerConfig, logger *slog.Logger
 		return cleanup(err)
 	}
 	rt.outbound = out
-	client, err := lineinfra.NewMessagingClientWithHTTPClient(cfg.ChannelToken, out.Client)
+	client, err := lineinfra.NewMessagingClientWithHTTPClient(cfg.Secrets.ChannelToken, out.Client)
 	if err != nil {
 		return cleanup(err)
 	}
@@ -106,7 +106,7 @@ func NewWorkerRuntime(ctx context.Context, cfg WorkerConfig, logger *slog.Logger
 	mux := http.NewServeMux()
 	mux.HandleFunc("/healthz", health.Handler)
 	mux.Handle("/tasks/", workHandler)
-	rt.Handler = mux
+	rt.Handler = observability.WrapInboundHTTP("worker", logger, mux)
 	return rt, nil
 }
 

@@ -2,6 +2,17 @@
 
 目前僅提交 Cloud Build YAML、忽略規則和使用指引。**未設定 Google Cloud Project、Artifact Registry、IAM、Trigger 或 Cloud Run 服務，也未執行任何雲端建置或部署。** 本專案仍是開發用 MVP；持久 Inbox/Outbox、Cloud Tasks Worker 和重送去重的**可選程式碼**已加入，但尚未部署，未建立實際 IAM／Scheduler／Firestore TTL 及隔離 Staging 驗收。
 
+## Runtime 設定與 Secret 分離（未部署）
+
+正式設定名稱、角色、預設值及 Secret 標記由 [Runtime Configuration](configuration.md) 自動產生，唯一來源為 `internal/bootstrap/config_contract.go`。執行前先通過 `make config-check` 與 `go run ./cmd/configcheck --validate --role webhook`／`--role worker`（只讀設定，不會呼叫外部 API）。
+
+- Cloud Run 服務必須明確設定 `APP_ENV=staging` 或 `APP_ENV=production`，Webhook 設定 `LINE_EVENT_MODE=durable`，兩者皆應輸出 `LOG_FORMAT=json`。如果 `K_SERVICE` 存在而 `APP_ENV` 未指定，啟動會 fail closed。
+- 公開 Webhook 服務只能有 LINE Channel Secret、不可有發送 Token；私有 Worker 僅有 LINE Channel Access Token、不可有 Channel Secret。環境的**非敏感值**可作一般 Cloud Run environment variables；實際憑證由 Secret Manager references 及最小 IAM 管理，不在 Cloud Build substitutions 或 YAML 中攜帶。
+- `configs/local.example.yaml` 僅是歷史配置檔提示，不由 Go Runtime 解析；`.env.example` 不應包含真實密鑰，也不會被 Go 程式自動讀取。
+- 既有 `cloudbuild.deploy.yaml` 只更新經人工核准的現有 Staging 服務，不會替你建立 Secret Manager references 或修改 IAM；部署前確認相容的 Service Revision 與 rollout 規則。
+
+本節是靜態發布條件，**不代表已在 Staging 完成真正的 Secret Manager、OIDC、Cloud Run IAM 或 Logging 驗證**。
+
 ## Stage 4 Worker 建置與安全要求
 
 - `Dockerfile.worker` 和 `cloudbuild.worker.yaml` 可建置**獨立的私有 Worker 映像**，不建立 GCP 資源、部署 Cloud Run、開啟公開路由或觸發付費 API。

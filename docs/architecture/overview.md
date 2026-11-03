@@ -18,6 +18,10 @@ Cloud Run／Firestore／Cloud Tasks 實際資源與 IAM 均未由儲存庫自動
 
 其他 SDK 的 Client Factory、Codex SDK Catalog 與逐步啟用計畫見 [SDK Integration 設計](sdk-integration.md)。Catalog 僅為開發路由資料，非執行期 Registry。
 
+## 設定契約與啟動邊界
+
+`internal/bootstrap/config_contract.go` 是 Go Runtime 設定的唯一契約；Webhook、Worker 共用同一組解析與驗證邏輯。各角色僅取得需要的 Secret，Cloud Run 必須明確選擇 staging/production Profile 且 Webhook 不得持有 LINE 發送 Token。正式文件由 `go run ./cmd/configcheck --write-doc` 產生，`make check` 檢查設定與文件一致。詳見 [Runtime Configuration](../operations/configuration.md)。
+
 ## 邊界
 
 - **Domain**：業務模型與不變量，不接觸 SDK；Value Objects 預留於 `internal/domain/value-objects/`（Go package 使用 `valueobjects`）。

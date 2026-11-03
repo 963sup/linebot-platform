@@ -1,0 +1,33 @@
+package observability
+
+import (
+	"bytes"
+	"log/slog"
+	"net/http"
+	"net/http/httptest"
+	"strings"
+	"testing"
+)
+
+func TestInboundMetadataNeverLeaksQueryOrHeaders(t *testing.T) {
+	var out bytes.Buffer
+	logger := slog.New(slog.NewJSONHandler(&out, &slog.HandlerOptions{Level: slog.LevelDebug}))
+	handler := WrapInboundHTTP("webhook", logger, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, "no", http.StatusServiceUnavailable)
+	}))
+	req := httptest.NewRequest(http.MethodPost, "http://local/private-user-id?token=private-secret", strings.NewReader("private-message"))
+	req.Header.Set("Authorization", "Bearer private-auth")
+	writer := httptest.NewRecorder()
+	handler.ServeHTTP(writer, req)
+	if writer.Code != http.StatusServiceUnavailable || !strings.Contains(out.String(), "503") {
+		t.Fatal("missing safe HTTP telemetry")
+	}
+	for _, secret := range []string{"private-user-id", "private-secret", "private-message", "private-auth"} {
+		if strings.Contains(out.String(), secret) {
+			t.Fatalf("inbound telemetry leaked sensitive %s", secret)
+		}
+	}
+	if !strings.Contains(out.String(), "other") {
+		t.Fatal("unknown route must use a bounded label")
+	}
+}

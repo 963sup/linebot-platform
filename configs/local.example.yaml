@@ -1,13 +1,4 @@
-# Documentation example only: runtime currently reads environment variables.
-http:
-  port: 8080
-line:
-  webhook_path: /webhook/line
-  configured_by:
-    - LINE_CHANNEL_SECRET
-    - LINE_CHANNEL_ACCESS_TOKEN
-features:
-  ai: false
-  cloud_tasks: false
-  cloud_storage: false
-  firestore: false
+# Reference-only legacy scaffold. Go runtime does not parse YAML.
+# The authoritative configuration contract is internal/bootstrap/config_contract.go;
+# read docs/operations/configuration.md for the generated settings table.
+# Local safe defaults are represented in .env.example, without real secrets.

@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+### 統一設定系統（Draft PR，尚未合併）
+
+- 將 Runtime 設定、角色與環境驗證集中於 Bootstrap，區分非敏感 Config 與獨立 SecretConfig；加入 local/staging/production 與 Cloud Run fail-closed 原則。
+- 新增 Go 原生設定契約、生成文件與 `.env.example` 一致性檢查；`make dev` 簡化安全本機啟動，不載入秘密檔。
+- 統一 LOG_LEVEL/LOG_FORMAT、JSON staging 日誌與去敏 inbound HTTP metadata；未部署或啟用任何雲端資源。
+
 ### Value Object 目錄命名調整（待合併）
 
 - 將 `internal/domain/valueobjects/` 調整為 `internal/domain/value-objects/`，僅移動預留 `.gitkeep`；Go package 名稱保留 `valueobjects`。

@@ -37,7 +37,7 @@ func runEvents(args []string, getenv func(string) string) error {
 	if !selected.Valid() || *limit < 0 || *limit > 100 || *pendingAge <= 0 || *expiredMax < -1 {
 		return errors.New("invalid outbox state or alert thresholds")
 	}
-	allowed := strings.TrimSpace(getenv("LINEBOT_STAGING_PROJECT"))
+	allowed := strings.TrimSpace(getenv(bootstrap.KeyOpsStagingProject))
 	if *project == "" || allowed == "" || *project != allowed {
 		return errors.New("project must match nonempty LINEBOT_STAGING_PROJECT")
 	}

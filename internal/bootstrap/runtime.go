@@ -25,12 +25,12 @@ type WebhookRuntime struct {
 
 // NewWebhookRuntime constructs only the clients needed by the webhook process.
 func NewWebhookRuntime(cfg Config, logger *slog.Logger) (*WebhookRuntime, error) {
-	if cfg.EventMode == "durable" && cfg.ChannelToken != "" {
+	if cfg.EventMode == "durable" && cfg.Secrets.ChannelToken != "" {
 		return nil, errors.New("durable webhook cannot contain LINE send token")
 	}
 	mux := http.NewServeMux()
 	mux.HandleFunc("/healthz", health.Handler)
-	runtime := &WebhookRuntime{Handler: mux}
+	runtime := &WebhookRuntime{Handler: observability.WrapInboundHTTP("webhook", logger, mux)}
 	if !cfg.LiveLINE() {
 		mux.HandleFunc("/webhook/line", func(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "LINE integration is not configured", http.StatusServiceUnavailable)
@@ -56,7 +56,7 @@ func NewWebhookRuntime(cfg Config, logger *slog.Logger) (*WebhookRuntime, error)
 	}
 	// The factory accepts a managed native HTTP client; its SDK client does not
 	// own the transport. The composition root closes it after HTTP shutdown.
-	client, err := lineinfra.NewMessagingClientWithHTTPClient(cfg.ChannelToken, outboundHTTP.Client)
+	client, err := lineinfra.NewMessagingClientWithHTTPClient(cfg.Secrets.ChannelToken, outboundHTTP.Client)
 	if err != nil {
 		outboundHTTP.Close()
 		return nil, err
@@ -76,7 +76,7 @@ func NewWebhookRuntime(cfg Config, logger *slog.Logger) (*WebhookRuntime, error)
 		outboundHTTP.Close()
 		return nil, err
 	}
-	mux.Handle("/webhook/line", linein.NewHandler(cfg.ChannelSecret, responder, logger))
+	mux.Handle("/webhook/line", linein.NewHandler(cfg.Secrets.ChannelSecret, responder, logger))
 	runtime.outbound = outboundHTTP
 	return runtime, nil
 }

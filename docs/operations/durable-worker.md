@@ -12,6 +12,7 @@
 
 | Variable | Webhook durable | Worker | Meaning |
 |---|---|---|---|
+| `APP_ENV` | `staging` or `production` on Cloud Run | same | Explicit runtime profile; local is rejected when `K_SERVICE` is present |
 | `PORT` | optional | optional | HTTP listener port, default 8080 |
 | `LINE_EVENT_MODE` | `durable` | n/a | Explicitly enables durable webhook mode |
 | `LINE_CHANNEL_SECRET` | required | n/a | Verify LINE raw-body signature |
@@ -23,6 +24,10 @@
 | `TASK_OIDC_AUDIENCE` | required | required | Origin of the worker URL (without task path) |
 | `TASK_INVOKER_EMAIL` | required | required | Google service account email authorized to call worker |
 | `LINE_API_TIMEOUT` | optional | optional | Defaults to 8s, accepted 1s–12s |
+| `LOG_LEVEL` | optional | optional | debug/info/warn/error; default info |
+| `LOG_FORMAT` | json | json | staging/production require structured JSON |
+
+The checked and generated contract for the complete settings list is [Runtime Configuration](configuration.md). Do not duplicate or drift runtime defaults in deployment templates. In production the Webhook receives its Secret and the Worker receives its Token via separate Secret Manager references, not a shared `.env` file.
 
 ## IAM and networking checks before enabling
 

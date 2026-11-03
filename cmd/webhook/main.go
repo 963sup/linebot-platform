@@ -1,7 +1,7 @@
 package main
 
 import (
-	"log/slog"
+	"fmt"
 	"net/http"
 	"os"
 	"time"
@@ -10,12 +10,12 @@ import (
 )
 
 func main() {
-	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 	cfg, err := bootstrap.LoadConfig(os.Getenv)
 	if err != nil {
-		logger.Error("invalid configuration")
+		fmt.Fprintln(os.Stderr, "invalid configuration") // no secret values
 		os.Exit(1)
 	}
+	logger := bootstrap.NewLogger(cfg.Log, os.Stdout)
 	runtime, err := bootstrap.NewWebhookRuntime(cfg, logger)
 	if err != nil {
 		logger.Error("failed to configure HTTP runtime")
@@ -32,7 +32,7 @@ func main() {
 	}
 	ctx, stop := bootstrap.SignalContext()
 	defer stop()
-	logger.Info("HTTP service starting", "port", cfg.Port, "line_configured", cfg.LiveLINE())
+	logger.Info("HTTP service starting", "port", cfg.Port, "profile", string(cfg.Environment), "mode", cfg.EventMode, "line_configured", cfg.LiveLINE())
 	if err := bootstrap.Serve(ctx, server, logger); err != nil {
 		logger.Error("HTTP service stopped unexpectedly")
 		runtime.Close() // os.Exit does not run deferred cleanup.
