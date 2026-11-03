@@ -57,6 +57,13 @@
 
 **完成證據**：每個 PR 列出不變量、涉及 Port/Adapter、可重現測試命令、CI URL、未驗證的外部資源／身分與回滾步驟。不得單憑目錄存在或文件宣稱已完成功能。
 
+## Outbox 可靠性與營運驗收（堆疊 Draft PR，尚未合併）
+
+- [ ] [PR #11](https://github.com/963sup/linebot-platform/pull/11)：經簽章 LINE redelivery、原始 Event Timestamp + 20 分鐘上限、只恢復從未發送的 Pending/Expired；公開 Webhook 憑證隔離。Go CI 已通過，但真實 LINE 驗收未完成。
+- [ ] [PR #12](https://github.com/963sup/linebot-platform/pull/12)：有序且公平的 bounded Reconcile、`next_dispatch_at` 與必要 Index、常設 Firestore Emulator Transaction／Race Tests。Go/Emulator CI 已通過；線上索引和 Backfill 未完成。
+- [ ] 只讀 Outbox 運維 CLI、Staging 驗收契約及告警策略：由下一個單獨 Draft PR 規劃；任何 Cloud Run Job、Monitoring、Scheduler 與 LINE 真實帳號驗收仍待明確核准。
+- [ ] Production readiness：完成 `docs/operations/staging-acceptance.md` 每一項 Gate 的真實證據，並取得 deployment/rollout 授權。
+
 ## P3 — 全公開 API、AI 與雲端
 
 - [ ] 依官方 reference 建立可驗證的 LINE endpoint inventory。

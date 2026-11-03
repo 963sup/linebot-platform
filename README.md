@@ -113,6 +113,19 @@ Google Tasks、Calendar 的授權詳見 [Workspace OAuth 與 API](docs/sdk/works
 - GitHub Actions 使用既有 `actions/setup-go` 的內建 **Go Modules／Build Cache**（以 `go.sum` 為快取依據）。先前無快取的 [#41558587334](https://github.com/963sup/linebot-platform/actions/runs/41558587334) 中，`go vet` 約 91 秒、`go test -race` 約 144 秒，是主要耗時來源。
 - 快取用於降低重複編譯成本，**不會**跳過 `go mod tidy`／鎖定檔驗證、`gofmt`、`go vet`、`go test -race -count=1` 或 `go build`；首次冷快取仍可能耗時較長。未使用的 SDK 依賴與預留目錄不刪除。
 
+## Outbox 狀態監控與人工處置（規劃中）
+
+本倉庫新增 `cmd/ops events` 的只讀 Staging 稽核入口，透過 Firestore Aggregation Count 與有限筆數 metadata 檢視 Pending、Sending、Sent、Expired、Unknown。檢查模式只輸出安全 JSON summary，Unknown 或過久 Pending 可以使定期 Cloud Run Job 非零退出，以便在**經核准部署後**使用 Cloud Monitoring 失敗執行告警。此工具不會建立 Task、重發 LINE 或解除 Unknown；所有 Staging 資源、告警與身分仍待實測。
+
+```sh
+# 只在已核准、已具最小讀取 IAM 的隔離 Staging 執行
+export LINEBOT_STAGING_PROJECT='<APPROVED_STAGING_PROJECT>'
+go run ./cmd/ops events --project "$LINEBOT_STAGING_PROJECT" --inspect --state unknown --limit 20
+go run ./cmd/ops events --project "$LINEBOT_STAGING_PROJECT" --check --max-pending-age 2m
+```
+
+操作與修復界線參閱 [Outbox Operations](docs/operations/outbox-operations.md)；真正的 Cloud Run IAM／OIDC／TTL／Scheduler／LINE Redelivery 驗收契約參閱 [Staging Acceptance](docs/operations/staging-acceptance.md)。
+
 ## 開發與安全
 
 [AGENTS.md](AGENTS.md) 定義分層與開發規範；[CONTRIBUTING.md](CONTRIBUTING.md) 說明 PR 與驗證方式；[SECURITY.md](SECURITY.md) 說明安全通報。不要提交 API Key、Channel Secret、token、真實訊息或服務帳號金鑰。
