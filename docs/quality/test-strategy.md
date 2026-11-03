@@ -46,13 +46,6 @@ make check
 ```
 包含 gofmt、go vet、go test -race、go build；另外由 `go run ./cmd/codexcheck` 進行 Codex 設定與 SDK Catalog 的離線驗證。基礎 SDK 版本透過 `go.mod`／`go.sum` 及固定 Go toolchain 管理。CI 狀態只有 GitHub run 成功後才可宣稱通過。
 
-## Stage-5 驗收工具
-
-- `go run ./cmd/codexcheck` 會驗證六項 Codex 自然語言情境的 Module、來源路徑與評分標準。這是**情境資料驗證**，不是已執行 Codex Cloud。
-- `cmd/acceptance` 的單元測試會驗證 production／錯誤 SHA／過時、缺少或不安全的證據一律 fail closed；最終 Gate 只能透過明確審核後的真實 Staging 證據通過。
-- `tests/integration/firestore_emulator_test.go` 以 `//go:build integration` 隔離；GitHub Actions 自動啟動官方本機 Emulator 並執行實際 Firestore Transaction/Claim/Recovery 測試，已於 [#41554849393](https://github.com/963sup/linebot-platform/actions/runs/41554849393) 通過。手動重現可使用 `make acceptance-emulator`。未提供有效 Emulator Host 時整合測試明確失敗。
-- CI 驗證 gofmt、vet、race tests、build、情境清單與 Stage-5 Example 的預設拒絕行為；不在一般 PR 中呼叫真實雲端或個人 OAuth。
-
 ## Integration / E2E
 
-Firestore Emulator SDK 整合測試已在 GitHub Actions 的本機容器**實際執行並通過**。Cloud Tasks、Cloud Run OIDC、LINE Sandbox 和 Workspace 的真實跨服務 E2E 仍需要隔離憑證、授權和人工審查。CI 通過不得視為這些外部測試通過。
+Firestore Emulator SDK 交易／併發測試曾在 PR #8 的隔離 CI 執行並通過，但已依合併前清理要求移除一次性測試程式和專用工作流程。正式 Cloud Tasks、Cloud Run OIDC、LINE Sandbox 與 Workspace 的跨服務驗證仍需要隔離的授權與人工審查。既有單元、契約、架構及 Race Test 仍由 `make check` 維護。

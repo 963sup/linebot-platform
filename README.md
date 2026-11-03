@@ -76,7 +76,6 @@ CLI 發送會先輸出可重用的 UUID retry key。若發生 timeout 或結果�
 - Webhook 透過 `bootstrap.NewWebhookRuntime` 組裝 LINE 原生 SDK Client，並管理專屬 HTTP Transport 的生命週期；CLI Push 也使用相同的受管理 HTTP 基礎。
 - `internal/infrastructure/httpclient` 採用獨立連線池與 Timeout 設定，`observability` 只記錄安全 HTTP metadata，`resilience` 分類失敗但**不做未經審核的自動重試**。
 - `LINE_API_TIMEOUT` 預設 `8s`，可調範圍 `1s` 到 `12s`。LINE v8.23.0 的 `WithContext` 會改動 Client，因此 Adapter 以每次呼叫的獨立副本帶入 Context，避免並行請求共用可變狀態。
-- 增加模擬 HTTP 契約、取消、並發及錯誤去敏測試。這些改善**不包含** Firestore Inbox/Outbox、Cloud Tasks Worker 或正式環境驗收。
 
 ## Provider Client Factories（階段 3）
 
@@ -94,13 +93,6 @@ Google Tasks、Calendar 的授權詳見 [Workspace OAuth 與 API](docs/sdk/works
 - `cmd/worker` 的 `/tasks/line-reply`、`/tasks/dispatch` 必須通過 OIDC 驗證。Worker 執行單次 Claim（`pending -> sending -> sent/expired/unknown`），避免模糊發送結果後盲目重試。
 - `Dockerfile.worker` 與 `cloudbuild.worker.yaml` 僅是建置範本，不自動部署。仍需隔離 Staging 的 Firestore TTL、Cloud Scheduler、IAM、Cloud Tasks、私有 Cloud Run 實際驗證。
 - [事件狀態機](docs/architecture/event-processing.md)／[Staging 操作要求](docs/operations/durable-worker.md) 說明可靠性和安全限制。
-
-## Stage 5：零先驗與 Staging 驗收工具
-
-- 新增 [六項 Codex 零先驗情境](docs/ai/zero-context-scenarios.toml)，由 `codexcheck` 驗證模組與來源路由；**不代表已實際執行六個新工作階段**。
-- **GitHub Actions 已自動執行真實 Firestore Emulator SDK 交易測試**：以官方容器在 Runner 的 `127.0.0.1:8085` 啟動，不需提供 GCP 專案、環境變數或 API Key；完成原子交易／併發 Claim／恢復驗證。亦可選擇本機執行 `make acceptance-emulator`。
-- [Stage-5 Reviewer Evidence Gate](docs/operations/stage5-acceptance.md) 要求目前 PR HEAD、獨立 Staging 環境、OIDC／IAM／TTL／LINE 測試及 Codex 新工作階段的可審查證據。範例全部預設 `blocked`。
-- [無憑證 Firestore Emulator CI 測試](https://github.com/963sup/linebot-platform/actions/runs/41554849393)已實際執行並通過；**真實 Cloud Staging、LINE／OAuth 授權與 Codex 全新會話驗收仍待完成**，不會自動取得雲端權限或部署。
 
 ## Codex Cloud 開發環境
 

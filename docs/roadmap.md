@@ -35,20 +35,8 @@
 - [x] OpenAI、Gemini／Vertex、Drive、Sheets、Calendar、Google Tasks（待辦）的原生 Client Factory 與離線契約測試。
 - [ ] 各 Provider 業務 Adapter、使用者 OAuth 同意與 Token 隔離；目前只有 LINE 實際接入 Webhook／CLI。
 - [x] 原子 Inbox/Outbox、事件 Key 去重、Worker 單次 Claim、unknown/expired 終態和 Reconcile 程式碼。
-- [x] GitHub Actions 的本機 Firestore Emulator Transaction／併發驗證。
 - [ ] 實際部署、定期 Cloud Scheduler 與獨立 Staging 的故障恢復驗收。
 - [ ] 經授權的 staging SDK 整合測試及 Codex 零先驗需求驗收。
-
-## Stage 5 — Zero-context / Emulator / Staging acceptance
-
-- [x] 新增六項 Codex 零先驗任務清單、模組／路徑驗證及審查準則。
-- [x] 新增需明確設定本機端點的 Firestore Emulator Transaction／去重／併發 Claim／終態／TTL 整合測試與執行入口。
-- [x] 新增綁定 PR HEAD 的 fail-closed Staging Reviewer Evidence Gate、預設 blocked 的範例與 CI 防誤報驗證。
-- [x] 同步驗收文件、Git 忽略規則、Makefile、CI 與安全規範。
-- [x] [GitHub Actions #41554849393](https://github.com/963sup/linebot-platform/actions/runs/41554849393) 在無憑證的官方本機 Firestore Emulator 中實際執行並通過原子交易、併發 Claim、TTL 與終態測試。
-- [ ] 在經授權隔離 Staging 完成 Firestore IAM/TTL、Cloud Tasks OIDC、Cloud Scheduler、LINE Sandbox 的端到端驗證。
-- [ ] 在六個**全新 Codex 工作階段**逐一驗收自然語言功能開發與來源／SDK／Method／測試證據。
-- [ ] Stage-5 Reviewer Evidence Gate／安全審查與人工核准全部通過後，才可考慮合併或部署。
 
 ## P2 — LINE webhook 與持久工作
 
@@ -57,8 +45,6 @@
 - [ ] Unsend、Edit、其他事件類型與高吞吐回復策略。
 - [x] 基礎 Reply／Push／Flex Message adapter 及可測試 usecase。
 - [x] 發送前持久化單次 Claim，結果未知標示 unknown，不進行盲目重試；保留跨執行個體事件 Fingerprint 去重。
-- [x] 應用 Fake Store／Queue、Webhook 驗章與重送、OIDC Worker Handler、Cloud Tasks Payload 離線測試程式碼。
-- [x] Firestore Emulator 的 SDK 交易與併發整合測試在 GitHub Actions 通過。
 - [ ] GCP Staging／Cloud Tasks OIDC／LINE Sandbox 的真實跨服務驗證。
 
 ## P3 — 全公開 API、AI 與雲端
