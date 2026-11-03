@@ -56,6 +56,11 @@ func TestLINEEndpointInventory(t *testing.T) {
 		"getStatisticsPerUnit": false,
 		"getRichMenuInsightSummary": false,
 		"getRichMenuInsightDaily": false,
+		"getMembershipList": false,
+		"getMembershipSubscription": false,
+		"getJoinedMembershipUsers": false,
+		"listCoupon": false,
+		"getCouponDetail": false,
 	}
 	seen := make(map[string]bool)
 	count := 0

@@ -75,12 +75,12 @@ endpoints:
   - {source: messaging-api, group: optional-apis, operation: pushTemplatedMessagesByPhone, method: POST, path: "/v2/bot/message/pnp/templated/push", integration: not_integrated, test: none, access: required_eligibility_review}
   - {source: messaging-api, group: optional-apis, operation: getPNPMessageStatistics, method: GET, path: "/v2/bot/message/delivery/pnp", integration: not_integrated, test: none, access: required_eligibility_review}
   - {source: messaging-api, group: optional-apis, operation: getPNPTemplatedMessageStatistics, method: GET, path: "/v2/bot/message/delivery/pnp/templated", integration: not_integrated, test: none, access: required_eligibility_review}
-  - {source: messaging-api, group: membership, operation: getMembershipSubscription, method: GET, path: "/v2/bot/membership/subscription/{userId}", integration: not_integrated, test: none, access: required_eligibility_review}
-  - {source: messaging-api, group: membership, operation: getMembershipList, method: GET, path: "/v2/bot/membership/list", integration: not_integrated, test: none, access: required_eligibility_review}
-  - {source: messaging-api, group: membership, operation: getJoinedMembershipUsers, method: GET, path: "/v2/bot/membership/{membershipId}/users/ids", integration: not_integrated, test: none, access: required_eligibility_review}
-  - {source: messaging-api, group: coupon, operation: listCoupon, method: GET, path: "/v2/bot/coupon", integration: not_integrated, test: none, access: required_eligibility_review}
+  - {source: messaging-api, group: membership, operation: getMembershipSubscription, method: GET, path: "/v2/bot/membership/subscription/{userId}", integration: integrated_offline, test: contract, access: required_eligibility_review}
+  - {source: messaging-api, group: membership, operation: getMembershipList, method: GET, path: "/v2/bot/membership/list", integration: integrated_offline, test: contract, access: required_eligibility_review}
+  - {source: messaging-api, group: membership, operation: getJoinedMembershipUsers, method: GET, path: "/v2/bot/membership/{membershipId}/users/ids", integration: integrated_offline, test: contract, access: required_eligibility_review}
+  - {source: messaging-api, group: coupon, operation: listCoupon, method: GET, path: "/v2/bot/coupon", integration: integrated_offline, test: contract, access: required_eligibility_review}
   - {source: messaging-api, group: coupon, operation: createCoupon, method: POST, path: "/v2/bot/coupon", integration: not_integrated, test: none, access: required_eligibility_review}
-  - {source: messaging-api, group: coupon, operation: getCouponDetail, method: GET, path: "/v2/bot/coupon/{couponId}", integration: not_integrated, test: none, access: required_eligibility_review}
+  - {source: messaging-api, group: coupon, operation: getCouponDetail, method: GET, path: "/v2/bot/coupon/{couponId}", integration: integrated_offline, test: contract, access: required_eligibility_review}
   - {source: messaging-api, group: coupon, operation: closeCoupon, method: PUT, path: "/v2/bot/coupon/{couponId}/close", integration: not_integrated, test: none, access: required_eligibility_review}
   - {source: messaging-api, group: chat, operation: showLoadingAnimation, method: POST, path: "/v2/bot/chat/loading/start", integration: not_integrated, test: none, access: review}
   - {source: messaging-api, group: chat, operation: markMessagesAsReadByToken, method: POST, path: "/v2/bot/chat/markAsRead", integration: not_integrated, test: none, access: review}

@@ -9,7 +9,7 @@
 | Rich Menu | List、Get、Default ID、Alias List/Get、User Menu ID、Batch Progress 已接入唯讀 CLI；建立、綁定、圖片、Alias 變更、Batch 寫入待實作 | Partial (offline contract only) |
 | Audience | 建立、上傳、查詢、刪除、分享 | Planned |
 | Insights | Demographics、Deliveries、Followers、Message Event、Aggregation Unit、Rich Menu Summary/Daily 七項已接入唯讀 CLI | Partial (offline contract only) |
-| Coupon / Membership | 視 LINE 官方帳號所在地區與資格啟用 | Planned / Restricted |
+| Coupon / Membership | 會員清單、訂閱、會員 ID、Coupon 列表與詳情已接入唯讀 CLI；建立／關閉 Coupon 尚未接入，實際使用仍需確認地區、資格與授權 | Partial / Restricted |
 | Channel / account link | Bot Info、Webhook Endpoint GET、Quota、發送統計、Aggregation、Narrowcast Progress 已接入唯讀 CLI；Webhook 寫入、Token、Account Linking 尚未接入 | Partial (offline contract only) |
 
 此表只是能力分組，不能代替端點級覆蓋追蹤。參閱 [Endpoint Inventory](endpoint-inventory.yaml)：固定官方 LINE OpenAPI revision，列出 Messaging API、Insights、Audience Group、Channel Access Token 共 102 個操作。狀態 `integrated_offline` 僅表示程式碼接線及離線契約測試，**不代表真實 LINE Channel／地區資格／Production 已驗證**。每次擴充都必須核對 pinned SDK 的真實 Go symbols、更新 inventory 並新增測試；未知帳號權限標記 `review`，受地區／功能資格限制的操作標記 `required_eligibility_review`。
