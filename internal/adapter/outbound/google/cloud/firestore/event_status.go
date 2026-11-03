@@ -30,7 +30,7 @@ func (s *Store) Inspect(ctx context.Context, state outbound.EventState, limit in
 	coll := s.client.Collection(outboxCollection)
 	report := outbound.EventStatusReport{
 		GeneratedAt: now,
-		Counts: make(map[outbound.EventState]int64),
+		Counts:      make(map[outbound.EventState]int64),
 	}
 	for _, current := range []outbound.EventState{
 		outbound.EventPending, outbound.EventSending, outbound.EventSent,
@@ -90,8 +90,8 @@ func (s *Store) Inspect(ctx context.Context, state outbound.EventState, limit in
 			return outbound.EventStatusReport{}, err
 		}
 		report.Samples = append(report.Samples, outbound.EventStatusSample{
-			KeyHint: doc.Ref.ID[:12],
-			State: state,
+			KeyHint:   doc.Ref.ID[:12],
+			State:     state,
 			UpdatedAt: saved.UpdatedAt,
 		})
 	}
