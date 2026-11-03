@@ -43,7 +43,7 @@ These are **offline contract tests** against the pinned Go SDK and local HTTP se
 - HTTP：原始 LINE Webhook 驗章、bot destination、持久化後才回 200、派送失敗時回 503；Cloud Tasks／Scheduler Callback 必須經 OIDC Verifier 驗證。
 - Cloud Tasks Queue：事件 Key + 10 秒派送時窗決定 Task ID，驗證同一時窗去重、跨時窗可恢復，OIDC email/audience、只包含 opaque Key 的 JSON Body、AlreadyExists 與其他失敗區分。
 - Bootstrap Config：預設同步模式維持相容，Durable/Worker 的 GCP、LINE、OIDC 欄位缺少時 fail closed；`configcheck --validate` 與 Cloud Tasks Adapter 共用 Queue 資源名稱格式檢查，拒絕多餘路徑段、空 Location/Queue、非法資源 ID 字元、Queue ID 超過 100 字元與跨 Project（無須連接 Google Cloud）。
-- Firestore Transaction、併發 Claim 與恢復已在 GitHub Actions 的本機 Firestore Emulator 實際驗證；Cloud Tasks CreateTask、IAM、OIDC、TTL 政策與排程仍需經授權的真實 Staging 驗收。
+- Firestore Emulator integration tests 保留供手動隔離驗證，不再是 GitHub Actions gate。Cloud Run 使用真實 Firestore database 時，Cloud Tasks CreateTask、IAM、OIDC、TTL 政策與排程必須以已授權的部署驗收確認。
 
 ## CI
 
@@ -61,4 +61,4 @@ make check
 
 ## Integration / E2E
 
-PR #12 已恢復**常設 Firestore Emulator CI**，驗證真實交易、併發 Claim 和 Reconcile；此工作與 `make check` 的 Go 格式、Vet、Race Test、Build 均為 PR 及 `main` 的持續品質 Gate。Emulator 不代表真實 IAM、複合索引、TTL、Cloud Tasks、Cloud Run OIDC、LINE Sandbox 或 Workspace 已完成獲授權的 Staging 驗收。
+GitHub Actions 僅執行 `make check` 與 Codex 設定驗證；Firestore Emulator integration tests 是手動、隔離的選用檢查。實際 Firestore、複合索引、TTL、Cloud Tasks、Cloud Run OIDC、LINE Sandbox 與 Workspace 驗收由已授權的雲端部署流程負責。

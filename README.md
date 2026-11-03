@@ -143,7 +143,7 @@ Google Tasks、Calendar 的授權詳見 [Workspace OAuth 與 API](docs/sdk/works
 
 ## Codex Cloud 開發環境
 
-- [`.codex/config.toml`](.codex/config.toml) 配置 gopls／Context7／OpenAI Docs MCP，並保留停用中的唯讀 GitHub MCP／Firestore Toolbox。Codex Cloud agent-phase 需允許 `developers.openai.com`，在 Republish 後的新工作階段驗證連線。
+- [`.codex/config.toml`](.codex/config.toml) 配置 gopls／Context7／OpenAI Docs MCP、唯讀 GitHub MCP，並保留停用中的 Firestore Toolbox。Codex Cloud agent-phase 需允許 `developers.openai.com`，在 Republish 後的新工作階段驗證連線。
 - [六個專用 Agents](docs/ai/agents.md) 負責 DDD、LINE SDK、Cloud Platform、Go Review、官方文件查證，以及交付前的 Code Cleanup & Release Validation。
 - `bash scripts/setup-codex-cloud.sh` 是可加入 Codex Cloud **Install script** 的非互動式環境準備腳本（下載 Go modules、安裝固定版 gopls）。
 - 專案配置以 `go run ./cmd/codexcheck` 驗證，無須 Python；詳見 [Codex Cloud 建置步驟](docs/ai/codex-cloud.md)，其中的環境發布與 MCP 授權**尚未執行**。
