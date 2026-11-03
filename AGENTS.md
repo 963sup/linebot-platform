@@ -67,6 +67,13 @@
 - 真實 Cloud IAM／OIDC、Cloud Scheduler、Firestore TTL、LINE Channel 及使用者 OAuth 僅能在隔離且經明確授權的環境中驗證，不得以 CI 通過當作已部署或取得權限。
 - 不可自行部署付費服務、執行正式 API 發送或合併 PR；正式驗收結果應於 PR 審查紀錄中明確註明。
 
+## Pragmatic DDD + Lightweight Hexagonal + Idiomatic Go
+
+- 優先使用小型、由呼叫端需求決定的 Port，明確 `context.Context` 與錯誤回傳；只有真實業務不變量才建立 Aggregate／Value Object。不要因資料表、LINE API Endpoint、報表而預先增加空抽象。
+- 營運 Outbox 狀態不是 Domain Aggregate：只讀查詢放在 Application Outbound Port，由 Firestore Adapter 實作；CLI 只經 Bootstrap 組裝，不得繞過核心安全規範直接發送 LINE。
+- `ops events` 僅限經明確 allowlist 的隔離 Staging，區分 `--inspect` 與 `--check`；不得讀取真實用戶訊息、Secret 或 Reply Token。Unknown 不得自動重送，Expired 不得無授權轉成 Push。
+- 所有運行中的告警、Job、Scheduler、IAM、TTL 都必須有真實隔離 Staging 驗收證據；文件或 Firestore Emulator 的成功不能取代實際雲端測試。詳見 `docs/operations/outbox-operations.md` 與 `docs/operations/staging-acceptance.md`。
+
 ## 驗證與交付
 
 - Codex 設定使用 `go run ./cmd/codexcheck` 驗證 TOML、Agents、Cloud Setup Script 與專案不得包含 Python `.py` 檔案；不需要 Python runtime。

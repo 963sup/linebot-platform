@@ -31,6 +31,12 @@ database to the new reconciler, perform an authorized, restartable backfill
 of `next_dispatch_at` for Pending records, verify the counts, and only then
 cut over. No live database has been updated by this repository change.
 
+The optional read-only Outbox inspection also requires `(state,created_at)`
+for oldest Pending age, and `(state,updated_at)` for bounded samples.
+`ops events --check` uses Firestore server-side count aggregations and
+**never** loads any LINE user text or token. This is a snapshot from several
+queries, not a globally consistent read transaction.
+
 Deploying these indexes or the two `expires_at` TTL policies is a separate
 reviewed staging operation. The emulator can accept queries without enforcing
 cloud index availability; **CI passing cannot establish production index or

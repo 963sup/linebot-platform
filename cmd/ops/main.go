@@ -26,8 +26,11 @@ func uuidv4() (string, error) {
 }
 
 func run(args []string, getenv func(string) string) error {
+	if len(args) > 0 && args[0] == "events" {
+		return runEvents(args[1:], getenv)
+	}
 	if len(args) == 0 || args[0] != "push" {
-		return errors.New("usage: ops push --to ID --text MESSAGE [--send] [--retry-key UUID]")
+		return errors.New("usage: ops push --to ID --text MESSAGE [--send] [--retry-key UUID] | ops events --inspect --project PROJECT")
 	}
 	fs := flag.NewFlagSet("push", flag.ContinueOnError)
 	to := fs.String("to", "", "LINE recipient ID")
