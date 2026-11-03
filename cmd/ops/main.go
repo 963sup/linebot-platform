@@ -38,6 +38,9 @@ func run(args []string, getenv func(string) string) error {
 	if len(args) > 0 && args[0] == "contacts" {
 		return runContacts(args[1:], getenv, os.Stdout)
 	}
+	if len(args) > 0 && args[0] == "insights" {
+		return runInsights(args[1:], getenv, os.Stdout)
+	}
 	if len(args) == 0 || args[0] != "push" {
 		return errors.New("usage: ops push --to ID --text MESSAGE [--send] [--retry-key UUID] | ops events --inspect --project PROJECT | ops profile --user ID --lookup")
 	}

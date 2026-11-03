@@ -49,6 +49,13 @@ func TestLINEEndpointInventory(t *testing.T) {
 		"getRoomMembersIds": false,
 		"getGroupMemberProfile": false,
 		"getRoomMemberProfile": false,
+		"getFriendsDemographics": false,
+		"getNumberOfMessageDeliveries": false,
+		"getNumberOfFollowers": false,
+		"getMessageEvent": false,
+		"getStatisticsPerUnit": false,
+		"getRichMenuInsightSummary": false,
+		"getRichMenuInsightDaily": false,
 	}
 	seen := make(map[string]bool)
 	count := 0

@@ -5,6 +5,7 @@ import (
 	"github.com/963sup/linebot-platform/internal/application/usecases/contacts"
 	"github.com/963sup/linebot-platform/internal/application/usecases/channel"
 	"github.com/963sup/linebot-platform/internal/application/usecases/engagement"
+	"github.com/963sup/linebot-platform/internal/application/usecases/insights"
 	"github.com/963sup/linebot-platform/internal/application/usecases/messaging"
 	"github.com/963sup/linebot-platform/internal/infrastructure/httpclient"
 	lineinfra "github.com/963sup/linebot-platform/internal/infrastructure/line"
@@ -18,6 +19,7 @@ type LINEOpsRuntime struct {
 	Channel   *channel.Inspector
 	Menus     *engagement.RichMenuInspector
 	Contacts  *contacts.Inspector
+	Insights  *insights.Inspector
 	outbound  *httpclient.Managed
 }
 
@@ -58,7 +60,19 @@ func NewLINEOpsRuntime(token string) (*LINEOpsRuntime, error) {
 	if err != nil {
 		return cleanup(err)
 	}
-	return &LINEOpsRuntime{Messaging: messages, Profiles: profiles, Channel: inspector, Menus: menus, Contacts: contactsInspector, outbound: transport}, nil
+	insightClient, err := lineinfra.NewInsightClientWithHTTPClient(token, transport.Client)
+	if err != nil {
+		return cleanup(err)
+	}
+	insightReader, err := line.NewInsightReader(insightClient)
+	if err != nil {
+		return cleanup(err)
+	}
+	inspectorInsights, err := insights.NewInspector(insightReader)
+	if err != nil {
+		return cleanup(err)
+	}
+	return &LINEOpsRuntime{Messaging: messages, Profiles: profiles, Channel: inspector, Menus: menus, Contacts: contactsInspector, Insights: inspectorInsights, outbound: transport}, nil
 }
 
 func (r *LINEOpsRuntime) Close() {

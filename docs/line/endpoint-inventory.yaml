@@ -84,13 +84,13 @@ endpoints:
   - {source: messaging-api, group: coupon, operation: closeCoupon, method: PUT, path: "/v2/bot/coupon/{couponId}/close", integration: not_integrated, test: none, access: required_eligibility_review}
   - {source: messaging-api, group: chat, operation: showLoadingAnimation, method: POST, path: "/v2/bot/chat/loading/start", integration: not_integrated, test: none, access: review}
   - {source: messaging-api, group: chat, operation: markMessagesAsReadByToken, method: POST, path: "/v2/bot/chat/markAsRead", integration: not_integrated, test: none, access: review}
-  - {source: insight, group: insight, operation: getFriendsDemographics, method: GET, path: "/v2/bot/insight/demographic", integration: not_integrated, test: none, access: review}
-  - {source: insight, group: insight, operation: getNumberOfMessageDeliveries, method: GET, path: "/v2/bot/insight/message/delivery", integration: not_integrated, test: none, access: review}
-  - {source: insight, group: insight, operation: getNumberOfFollowers, method: GET, path: "/v2/bot/insight/followers", integration: not_integrated, test: none, access: review}
-  - {source: insight, group: insight, operation: getMessageEvent, method: GET, path: "/v2/bot/insight/message/event", integration: not_integrated, test: none, access: review}
-  - {source: insight, group: insight, operation: getStatisticsPerUnit, method: GET, path: "/v2/bot/insight/message/event/aggregation", integration: not_integrated, test: none, access: review}
-  - {source: insight, group: insight, operation: getRichMenuInsightSummary, method: GET, path: "/v2/bot/insight/richmenu/{richMenuId}/summary", integration: not_integrated, test: none, access: review}
-  - {source: insight, group: insight, operation: getRichMenuInsightDaily, method: GET, path: "/v2/bot/insight/richmenu/{richMenuId}/daily", integration: not_integrated, test: none, access: review}
+  - {source: insight, group: insight, operation: getFriendsDemographics, method: GET, path: "/v2/bot/insight/demographic", integration: integrated_offline, test: contract, access: review}
+  - {source: insight, group: insight, operation: getNumberOfMessageDeliveries, method: GET, path: "/v2/bot/insight/message/delivery", integration: integrated_offline, test: contract, access: review}
+  - {source: insight, group: insight, operation: getNumberOfFollowers, method: GET, path: "/v2/bot/insight/followers", integration: integrated_offline, test: contract, access: review}
+  - {source: insight, group: insight, operation: getMessageEvent, method: GET, path: "/v2/bot/insight/message/event", integration: integrated_offline, test: contract, access: review}
+  - {source: insight, group: insight, operation: getStatisticsPerUnit, method: GET, path: "/v2/bot/insight/message/event/aggregation", integration: integrated_offline, test: contract, access: review}
+  - {source: insight, group: insight, operation: getRichMenuInsightSummary, method: GET, path: "/v2/bot/insight/richmenu/{richMenuId}/summary", integration: integrated_offline, test: contract, access: review}
+  - {source: insight, group: insight, operation: getRichMenuInsightDaily, method: GET, path: "/v2/bot/insight/richmenu/{richMenuId}/daily", integration: integrated_offline, test: contract, access: review}
   - {source: manage-audience, group: manage-audience, operation: createAudienceGroup, method: POST, path: "/v2/bot/audienceGroup/upload", integration: not_integrated, test: none, access: review}
   - {source: manage-audience, group: manage-audience, operation: addAudienceToAudienceGroup, method: PUT, path: "/v2/bot/audienceGroup/upload", integration: not_integrated, test: none, access: review}
   - {source: manage-audience, group: manage-audience, operation: createAudienceForUploadingUserIds, method: POST, path: "/v2/bot/audienceGroup/upload/byFile", integration: not_integrated, test: none, access: review}
