@@ -50,6 +50,13 @@
 | 固定文字／Flex 範例回覆 | 仍是目前 MVP 既有行為；不能當作完整對話或正式 AI 整合，也不在純文件更新中擅自移除 |
 | 一次性 Stage-5 模擬／假證據／Emulator 驗收檔 | PR #8 清理後未保留在 `main`；Git 歷史保留先前驗證證據，非執行期殘留 |
 
+## 程式碼與文件引用掃描
+
+- 核對 `main` 的 **38 個非測試 Go 原始碼檔**：未找到 `TODO`、`FIXME`、`XXX`、`HACK` 等明確的臨時待辦標記。仍有刻意保留的 MVP／Demo Reply 與必要 SDK 兼容限制註解；不將其誤判為可直接刪除的廢碼。
+- 以本次更新分支的 Git Tree 檢查 **47 份 Markdown 的相對連結路徑**：未發現指向不存在的儲存庫檔案／目錄。此檢查不含外部 HTTP 網址的即時可用性。
+- `main` 有 **130 個目錄**，SDK 空白骨架及 `.gitkeep` 均依既有保留規則維持；本次純文件更新未改 `go.mod`、`go.sum`、SDK Catalog、Factory 或任何自動化測試。
+- **未進行外部機密掃描、真實服務登入或雲端權限測試**；不應把靜態文字掃描視為安全稽核的完整替代品。
+
 ## 尚待完成，但不能以刪除 TODO／文件掩蓋
 
 真實 Staging IAM／OIDC／Cloud Tasks／Firestore TTL／Cloud Scheduler／LINE 測試帳號；Google Workspace 使用者 OAuth；必要時恢復持久性整合回歸測試；高吞吐的 Recover 游標／索引與 Unknown 告警；尚未建立的進階 LINE／AI 業務 Adapter。這些是功能及營運驗收工作，不是已完成的正式部署。
