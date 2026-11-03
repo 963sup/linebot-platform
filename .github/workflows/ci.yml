@@ -71,7 +71,7 @@ jobs:
         run: |
           docker run --rm --detach --name firestore-emulator \
             --publish 127.0.0.1:8085:8085 \
-            gcr.io/google.com/cloudsdktool/google-cloud-cli:emulators \
+            gcr.io/google.com/cloudsdktool/google-cloud-cli@sha256:112c21f8f6e04b03b393b3c34fb943a1f443e839f18c6492c364ac2e6c3ff935 \
             gcloud emulators firestore start --host-port=0.0.0.0:8085
           for attempt in $(seq 1 90); do
             if (echo > /dev/tcp/127.0.0.1/8085) >/dev/null 2>&1; then

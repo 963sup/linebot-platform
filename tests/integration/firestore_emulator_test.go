@@ -25,7 +25,7 @@ func emulator(t *testing.T) (*sdk.Client, context.Context) {
 	t.Helper()
 	host := os.Getenv("FIRESTORE_EMULATOR_HOST")
 	if host == "" {
-		t.Skip("FIRESTORE_EMULATOR_HOST is not set; no external Firestore access is permitted")
+		t.Fatal("FIRESTORE_EMULATOR_HOST is required for integration-tagged tests; refusing to skip real Emulator verification")
 	}
 	addr, _, err := net.SplitHostPort(host)
 	if err != nil || (addr != "localhost" && addr != "127.0.0.1" && addr != "::1") {
@@ -93,8 +93,11 @@ func TestEmulatorAtomicRecordAndSingleUseClaim(t *testing.T) {
 		t.Fatal("inbox/outbox must not include raw messages")
 	}
 	expiry, ok := fields["expires_at"].(time.Time)
-	if !ok || !expiry.Equal(job.CreatedAt.Add(time.Hour)) {
-		t.Fatalf("outbox TTL field is missing or inconsistent")
+	// Firestore timestamps round down to microsecond precision on write.
+	// Test persisted expiry semantics, not Go's sub-microsecond clock digits.
+	wantExpiry := job.CreatedAt.Add(time.Hour).Truncate(time.Microsecond)
+	if !ok || !expiry.Equal(wantExpiry) {
+		t.Fatalf("outbox TTL mismatch: received=%v (type %T), expected=%v", fields["expires_at"], fields["expires_at"], wantExpiry)
 	}
 
 	type claimResult struct {
