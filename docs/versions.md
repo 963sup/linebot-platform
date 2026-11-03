@@ -16,24 +16,27 @@ Go module 已加入，`go.mod`／`go.sum` 由 Go 工具鏈與 CI 管理；此表
 
 - `github.com/BurntSushi/toml v1.6.0`：Go 的 TOML 解析套件，用於 `cmd/codexcheck` 驗證專案 Codex 與 Agents 設定；不會被 LINE Bot 的執行時程式直接 import。
 
-## 初始直接依賴版本（go.mod）
+## main 的直接依賴版本（go.mod）
 
 | SDK module | 宣告版本 | 功能狀態 |
 |---|---|---|
+| `github.com/BurntSushi/toml` | v1.6.0 | `cmd/codexcheck` 的 TOML／Agents／SDK Catalog 驗證工具 |
 | `github.com/google/uuid` | v1.6.0 | 直接依賴；Push CLI 使用 UUID v4 作為 LINE retry key |
 | `github.com/line/line-bot-sdk-go/v8` | v8.23.0 | Webhook、Reply、Push、Flex 由 SDK 接線 |
 | `github.com/openai/openai-go/v3` | v3.91.1 | 原生 Client Factory 已建，尚未接入業務 |
 | `google.golang.org/genai` | v1.77.0 | Gemini／Vertex 分別建立 Factory，未授權啟用 |
-| `cloud.google.com/go/firestore` | v1.29.2 | Client Factory 已建，業務 Adapter 未接線 |
+| `cloud.google.com/go/firestore` | v1.29.2 | 原生 Client Factory 與 Durable Inbox/Outbox Adapter 已接線；僅在明確啟用持久模式後使用，尚未 Staging 驗收 |
 | `cloud.google.com/go/storage` | v1.70.0 | Client Factory 已建，業務 Adapter 未接線 |
-| `cloud.google.com/go/cloudtasks` | v1.21.1 | Client Factory 已建，Worker 未實作 |
+| `cloud.google.com/go/cloudtasks` | v1.21.1 | 原生 Client Factory、背景任務 Queue Adapter、OIDC Worker 與 Reconcile 程式碼已實作；尚未正式部署 |
 | `cloud.google.com/go/secretmanager` | v1.23.1 | Client Factory 已建，尚未使用正式憑證 |
-| `google.golang.org/api` | v0.310.0 | Drive、Sheets、Calendar、Tasks 原生 Factory 已建；使用者 OAuth 未實作 |
+| `google.golang.org/api` | v0.310.0 | Drive、Sheets、Calendar、Google Tasks 原生 Factory 已建；尚無使用者 OAuth Consent／Token 管理／業務 Adapter |
 | `go.linecorp.com/garr` | v0.1.1 | Worker pool / retry / circuit breaker 選用、未啟用 |
 | `google.golang.org/grpc` | v1.84.0 | Firestore／Cloud Tasks 狀態碼與 gRPC 錯誤處理的直接依賴（原間接依賴升級分類，未新增下載） |
 
 Google Tasks API 使用現有模組的 `google.golang.org/api/tasks/v1`，**沒有新增 Go Module**；Google Cloud Tasks 則使用獨立的 `cloud.google.com/go/cloudtasks`。
 
-本次 Firestore／Cloud Tasks Adapter 直接使用 `google.golang.org/grpc/codes`／`status`，因此 `go mod tidy` 將既有 gRPC module 轉為直接依賴；`go.sum` 不新增未經驗證的 checksum。
+PR #8 實作的 Firestore／Cloud Tasks Adapter 直接使用 `google.golang.org/grpc/codes`／`status`，因此 `go mod tidy` 將既有 gRPC module 轉為直接依賴；`go.sum` 不新增未經驗證的 checksum。
+
+**上述 12 個直接依賴及 SDK 預留空白骨架是經核准的開發基礎，不得因目前 runtime 未啟用就移除。** `integrated` 表示程式碼已接線，不表示 IAM／OAuth／部署完成。詳見 [main 基礎設施狀態](architecture/infrastructure-status.md) 與 [SDK Catalog](sdk/catalog.toml)。
 
 Go 版本鎖定為 **1.27.3**。若 `go mod tidy` 因間接依賴調整版本，應以實際可重現建置結果重新審查本表。Google Cloud Client Libraries 的多 module 架構不等於只安裝一個 `google-cloud-go` root module。

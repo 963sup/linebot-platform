@@ -1,6 +1,6 @@
 # Codex Cloud 最小、可重現環境
 
-**本檔是已提交的環境安裝契約，不是已發布的 Codex Cloud Environment。** 完成 PR 合併後，需由使用者在 Codex Cloud UI 指定這個儲存庫、執行安裝並審核發布。
+**本檔是已提交至 `main` 的環境安裝契約，不代表已發布 Codex Cloud Environment。** PR #8 已合併；仍須由具有權限的使用者在 Codex Cloud UI 選擇儲存庫、執行安裝、審核及 Publish／Republish，才可在新工作階段驗證工具。
 
 ## 1. 建立或更新 Codex Cloud 環境
 

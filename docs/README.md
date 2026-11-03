@@ -3,6 +3,7 @@
 - [架構概覽](architecture/overview.md)
 - [SDK 整合與 Codex 開發流程](architecture/sdk-integration.md)
 - [SDK Catalog（直接依賴與接線狀態）](sdk/catalog.toml)
+- [main 基礎設施狀態／依賴與歷史殘留稽核](architecture/infrastructure-status.md)
 - [Google Tasks／Calendar／Sheets／Drive OAuth 與 Client](sdk/workspace-oauth.md)
 - [事件處理（同步／持久模式與限制）](architecture/event-processing.md)
 - [Durable Worker Staging／OIDC／Cloud Scheduler 要求](operations/durable-worker.md)

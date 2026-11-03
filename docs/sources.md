@@ -1,6 +1,6 @@
 # 技術來源與採用界線
 
-以下為本專案的**官方／上游技術參考**，已在 `go.mod` 宣告各 SDK（文件來源除外），但未在本環境下載或驗證完整依賴樹；只有 LINE Messaging API SDK 實際供 webhook／發送 adapter 使用。
+以下為本專案的**官方／上游技術參考**。`go.mod` 已鎖定 12 個直接依賴，GitHub Actions 已下載並驗證版本鎖定；目前 LINE SDK 已用於 Webhook／Reply／Push，Firestore 與 Cloud Tasks SDK 已用於可選的 Durable Inbox/Outbox／Worker，其他 Provider 已有原生 Client Factory。**程式碼已接線不代表真實帳號、OAuth、IAM 或正式部署已啟用。**
 
 | 來源（README） | Go module 或參考方式 | 本專案預定用途 |
 |---|---|---|
@@ -23,7 +23,7 @@ Firestore／Cloud Tasks 的持久事件與 OIDC Worker 接線流程參考 [事�
 1. **Google Cloud 服務優先使用 google-cloud-go**，不要為同一目的無差別混用 API client。
 2. LINE 與 OpenAI 官方 README 目前都要求至少 Go 1.26，OpenAI README 還要求採用已含 HTTP/2 安全修補的 patch；建立 `go.mod` 時重新查證並使用已修補的工具鏈。
 3. 所有客戶端實作隔離於 `adapter/outbound` 與 `infrastructure`；domain 不依賴外部 SDK。
-4. 只有當功能被實際使用、測試與審核後才更新 `go.mod` 並引入 dependency。
+4. 已核准的 12 個直接依賴（含暫未使用的 `garr`）、`go.sum` 與 SDK 預留骨架必須保留；**額外新增**依賴時才按實際功能、版本查證及測試審核變更 `go.mod`。
 5. LINE「全功能」以可用公開 API reference 為追蹤範圍，資格或地區受限的 endpoints 要有 feature gate。
 6. `line-developers-docs-source` 是文件來源，不是 Go SDK，不能加入 `go.mod`。
 7. `go.linecorp.com/garr` 保留在預先宣告的選用模組中，不能用其程序內 queue 代替 Cloud Tasks 的持久排程。

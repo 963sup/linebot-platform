@@ -2,7 +2,7 @@
 
 使用 Go、DDD（Domain-Driven Design）與 Hexagonal Architecture 的 LINE Messaging API 平台；規劃部署在 Google Cloud Run，並保留 Google Cloud、Workspace、OpenAI 與 Google Gen AI 整合介面。
 
-> **狀態：開發用 MVP，非 production-ready。** 預設仍為同步 LINE Webhook／Reply／Push 示範。另有需明確啟用的 Firestore Inbox/Outbox、Cloud Tasks OIDC Worker 與 Reconcile 程式碼；**未建立或部署任何 GCP 資源、IAM、TTL、排程，也未實測真實 LINE／GCP 帳號**。
+> **狀態：SDK 與事件處理基礎設施已合併至 `main`（PR #8），目前仍是未正式部署的開發用 MVP。** 預設為同步 LINE Webhook／Reply／Push；另有明確啟用才使用的 Firestore Inbox/Outbox、Cloud Tasks OIDC Worker 與 Reconcile。**尚無具授權的實際 GCP／LINE Staging、IAM／OAuth／TTL／排程部署驗收，因此不是 production-ready。**
 
 ## 已實作的功能
 
@@ -20,7 +20,7 @@
 | `garr` | `go.mod` | 選用工具，仍未啟用 |
 | LINE 官方文件來源 | [line-developers-docs-source](https://github.com/line/line-developers-docs-source) | 僅供查閱，不是 SDK |
 
-請閱讀 [架構](docs/architecture/overview.md)、[SDK 整合設計](docs/architecture/sdk-integration.md)、[SDK Catalog](docs/sdk/catalog.toml)、[技術與版本](docs/versions.md)、[功能矩陣](docs/line/feature-matrix.md)。
+請閱讀 [main 基礎設施狀態與歷史殘留稽核](docs/architecture/infrastructure-status.md)、[架構](docs/architecture/overview.md)、[SDK 整合設計](docs/architecture/sdk-integration.md)、[SDK Catalog](docs/sdk/catalog.toml)、[技術與版本](docs/versions.md)、[功能矩陣](docs/line/feature-matrix.md)。
 
 本專案直接使用 [`github.com/google/uuid`](https://github.com/google/uuid) 的 UUID v4 產生器建立 LINE Push retry key，並驗證手動指定的 retry key；不再自行實作 UUID 編碼。
 
@@ -58,7 +58,7 @@ CLI 發送會先輸出可重用的 UUID retry key。若發生 timeout 或結果�
 - `domain/`：業務不變量、aggregates、valueobjects；本階段保留擴充空間。
 - `application/`：Messaging Port、Reply／Push、文字回覆，以及持久 Ingestion／Worker Use Case。
 - `adapter/`：同步與持久 Webhook、具 OIDC 驗證的 Worker、Firestore、Cloud Tasks、LINE 發送。
-- `infrastructure/`：LINE 受管理 HTTP Runtime，以及其他 Provider 的原生 Client Factory（`client_ready`）；後者尚未接入業務。
+- `infrastructure/`：LINE 受管理 HTTP Runtime、Firestore／Cloud Tasks 的可選 Durable 業務接線，以及其餘 Provider 的原生 Typed Client Factories（`client_ready`）；SDK 已可建構不代表其真實服務已獲授權。
 - `bootstrap/`：設定、組裝、啟動與 shutdown。
 - `cmd/webhook`、`cmd/worker`、`cmd/ops`：已具可編譯入口；Worker 尚未部署。
 

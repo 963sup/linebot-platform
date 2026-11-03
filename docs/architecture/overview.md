@@ -1,15 +1,19 @@
-# 架構概覽（計畫）
+# 架構概覽（程式碼已建立，部署尚待驗證）
 
-採 Go modular monolith + DDD + Hexagonal Architecture，先以最小可測的 LINE 訊息流程驗證。
+採 Go modular monolith、DDD 與 Hexagonal Architecture。**預設同步 LINE Webhook／CLI 已接線；可選的 Firestore Inbox/Outbox 與 Cloud Tasks Worker 程式碼已接線，但 Google Cloud 資源、IAM／OIDC 與正式部署尚未啟用或驗證。**
 
 ```text
 LINE Platform
-  -> Cloud Run webhook (public, raw-body signature verification)
-  -> Firestore inbox + outbox
-  -> Cloud Tasks (OIDC)
-  -> Cloud Run worker (private)
-  -> application usecase -> outbound port
-  -> LINE Messaging API / OpenAI / Gemini / Google Cloud
+  -> cmd/webhook: LINE SDK raw-body signature verification
+      |-> 預設 LINE_EVENT_MODE=sync -> Text/Flex usecase -> LINE Messaging API
+      |-> 選用 LINE_EVENT_MODE=durable
+           -> Firestore Inbox + Outbox (atomic transaction)
+           -> Cloud Tasks OIDC queue
+           -> cmd/worker (private OIDC-authenticated handler)
+           -> LINE Reply via outbound Messaging port
+
+預留但尚未接入業務：OpenAI、Gemini、Workspace、Storage、Secret Manager。
+Cloud Run／Firestore／Cloud Tasks 實際資源與 IAM 均未由儲存庫自動建立。
 ```
 
 其他 SDK 的 Client Factory、Codex SDK Catalog 與逐步啟用計畫見 [SDK Integration 設計](sdk-integration.md)。Catalog 僅為開發路由資料，非執行期 Registry。

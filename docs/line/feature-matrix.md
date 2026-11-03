@@ -1,8 +1,8 @@
-# LINE 功能覆蓋矩陣（尚未實作）
+# LINE 功能覆蓋矩陣（部分實作）
 
 | 功能組 | 預計範圍 | 狀態 |
 |---|---|---|
-| Webhook | 基本簽章、文字 message（SDK ParseRequest）；其餘事件、去重、edit／unsend 待完成 | Partial (development only) |
+| Webhook | 簽章驗證、文字 Message；同步模式沒有持久去重，選用 durable 模式有 Firestore 事件去重與 OIDC Worker。Edit／unsend／媒體與實際 Staging 仍待完成 | Partial (development only) |
 | Messaging | Reply、Push 已有基本 SDK adapter；Broadcast、Multicast、Narrowcast 未實作 | Partial |
 | Message contents | Text 與簡單 Flex bubble 已實作；其餘類型尚未實作 | Partial |
 | Chat / User | Profile、followers、group／room、content retrieval | Planned |
