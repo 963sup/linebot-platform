@@ -15,10 +15,10 @@ type flyConfig struct {
 	} `toml:"build"`
 	Env         map[string]string `toml:"env"`
 	HTTPService struct {
-		InternalPort       int    `toml:"internal_port"`
-		ForceHTTPS         bool   `toml:"force_https"`
-		AutoStopMachines   any    `toml:"auto_stop_machines"`
-		MinMachinesRunning int    `toml:"min_machines_running"`
+		InternalPort       int  `toml:"internal_port"`
+		ForceHTTPS         bool `toml:"force_https"`
+		AutoStopMachines   any  `toml:"auto_stop_machines"`
+		MinMachinesRunning int  `toml:"min_machines_running"`
 		Checks             []struct {
 			Method string `toml:"method"`
 			Path   string `toml:"path"`
