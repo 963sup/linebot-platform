@@ -2,9 +2,9 @@
 
 ## Configuration contract and observability
 
-- `go run ./cmd/configcheck --check` compares the generated [Runtime Configuration](../operations/configuration.md) with Go metadata and rejects unknown, duplicated or non-empty Secret entries in `.env.example`; `make check` executes this gate.
-- Bootstrap role/profile tests cover local safe defaults; staging/production durable-only; Cloud Run `K_SERVICE` fail-closed; Worker vs Webhook secret isolation; invalid LOG_LEVEL/LOG_FORMAT, Port and Timeout.
-- Logger/HTTP telemetry tests ensure no raw URL/path, query, body, access token, Channel Secret or LINE ID in logs; route labels are bounded.
+- `go run ./cmd/configcheck --check` compares the generated [Runtime Configuration](../operations/configuration.md) with Go metadata, rejects unknown/duplicate keys and non-empty Secret values, **and parses `.env.example` with the same webhook configuration validator**. Invalid Port, Timeout, logging or deployment profile fails CI without external requests.
+- Bootstrap role/profile tests cover local safe defaults; staging/production durable-only; Cloud Run `K_SERVICE` fail-closed; Worker vs Webhook secret isolation; explicit Worker `LINE_EVENT_MODE=sync` rejection; invalid LOG_LEVEL/LOG_FORMAT, Port and Timeout.
+- Logger/HTTP telemetry tests ensure no raw URL/path, query, body, access token, Channel Secret or LINE ID in logs; route **and client-controlled HTTP method labels** are bounded, while `ResponseController` capabilities remain accessible.
 - Runtime configuration validation does not build GCP/LINE SDK clients or perform external I/O, and cannot be used as evidence of Cloud Run IAM, Secret Manager injection or deployed services.
 
 ## Unit
@@ -61,4 +61,4 @@ make check
 
 ## Integration / E2E
 
-Firestore Emulator SDK 交易／併發測試曾在 PR #8 的隔離 CI 執行並通過，但已依合併前清理要求移除一次性測試程式和專用工作流程。正式 Cloud Tasks、Cloud Run OIDC、LINE Sandbox 與 Workspace 的跨服務驗證仍需要隔離的授權與人工審查。既有單元、契約、架構及 Race Test 仍由 `make check` 維護。
+PR #12 已恢復**常設 Firestore Emulator CI**，驗證真實交易、併發 Claim 和 Reconcile；此工作與 `make check` 的 Go 格式、Vet、Race Test、Build 均為 PR 及 `main` 的持續品質 Gate。Emulator 不代表真實 IAM、複合索引、TTL、Cloud Tasks、Cloud Run OIDC、LINE Sandbox 或 Workspace 已完成獲授權的 Staging 驗收。

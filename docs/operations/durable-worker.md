@@ -14,7 +14,7 @@
 |---|---|---|---|
 | `APP_ENV` | `staging` or `production` on Cloud Run | same | Explicit runtime profile; local is rejected when `K_SERVICE` is present |
 | `PORT` | optional | optional | HTTP listener port, default 8080 |
-| `LINE_EVENT_MODE` | `durable` | n/a | Explicitly enables durable webhook mode |
+| `LINE_EVENT_MODE` | `durable` | optional `durable` only | Worker always runs in durable mode; explicit `sync` or unknown values fail startup |
 | `LINE_CHANNEL_SECRET` | required | n/a | Verify LINE raw-body signature |
 | `LINE_CHANNEL_ACCESS_TOKEN` | **forbidden** | required | Only the private worker is permitted to send LINE messages |
 | `LINE_BOT_DESTINATION` | required | required | Bot destination ID for event isolation and event-key derivation |

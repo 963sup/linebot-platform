@@ -103,6 +103,11 @@ func loadRuntimeConfig(role RuntimeRole, getenv func(string) string) (Config, er
 		},
 	}
 	if role == RoleWorker {
+		// Worker processing is always durable. Fail closed when a shared
+		// environment explicitly requests an incompatible webhook mode.
+		if mode := readSetting(getenv, KeyEventMode); mode != "" && mode != "durable" {
+			return Config{}, errors.New("worker LINE_EVENT_MODE must be durable when provided")
+		}
 		cfg.EventMode = "durable"
 		if cfg.Secrets.ChannelSecret != "" {
 			return Config{}, errors.New("worker must not hold LINE_CHANNEL_SECRET")

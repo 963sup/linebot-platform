@@ -106,3 +106,25 @@ func TestSettingContractUniqueAndSecretClassified(t *testing.T) {
 		}
 	}
 }
+
+func TestWorkerRejectsIncompatibleWebhookMode(t *testing.T) {
+	values := durableSettings()
+	delete(values, KeyChannelSecret)
+	values[KeyChannelToken] = "private-worker-token"
+	values[KeyEventMode] = "sync"
+	if _, err := LoadWorkerConfig(env(values)); err == nil {
+		t.Fatal("worker accepted explicit sync mode instead of failing closed")
+	}
+	values[KeyEventMode] = "not-a-mode"
+	if _, err := LoadWorkerConfig(env(values)); err == nil {
+		t.Fatal("worker silently ignored unknown event mode")
+	}
+	values[KeyEventMode] = "durable"
+	if _, err := LoadWorkerConfig(env(values)); err != nil {
+		t.Fatalf("valid shared durable setting rejected: %v", err)
+	}
+	delete(values, KeyEventMode)
+	if _, err := LoadWorkerConfig(env(values)); err != nil {
+		t.Fatalf("worker should use implicit durable mode: %v", err)
+	}
+}

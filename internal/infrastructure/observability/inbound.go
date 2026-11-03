@@ -57,6 +57,15 @@ func WrapInboundHTTP(role string, logger *slog.Logger, next http.Handler) http.H
 		case "/tasks/dispatch":
 			route = "outbox_dispatch"
 		}
+		// An HTTP method is client-controlled. Bound the emitted value so
+		// future metrics/log aggregations cannot gain unbounded cardinality.
+		method := r.Method
+		switch method {
+		case http.MethodGet, http.MethodHead, http.MethodPost,
+			http.MethodPut, http.MethodPatch, http.MethodDelete, http.MethodOptions:
+		default:
+			method = "other"
+		}
 		level := slog.LevelDebug
 		if writer.status >= http.StatusInternalServerError {
 			level = slog.LevelWarn
@@ -64,7 +73,7 @@ func WrapInboundHTTP(role string, logger *slog.Logger, next http.Handler) http.H
 		logger.LogAttrs(r.Context(), level, "HTTP inbound",
 			slog.String("role", role),
 			slog.String("route", route),
-			slog.String("method", r.Method),
+			slog.String("method", method),
 			slog.Int("status_code", writer.status),
 			slog.Duration("duration", time.Since(started)))
 	})

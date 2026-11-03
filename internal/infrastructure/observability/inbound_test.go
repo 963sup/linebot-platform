@@ -49,3 +49,29 @@ func TestInboundWrapperPreservesResponseControllerFlush(t *testing.T) {
 		t.Fatal("missing bounded health route telemetry")
 	}
 }
+
+func TestInboundMethodHasBoundedLoggingCardinality(t *testing.T) {
+	for _, tc := range []struct {
+		method string
+		want   string
+	}{
+		{http.MethodPost, http.MethodPost},
+		{"CUSTOM-UNBOUNDED-PRIVATE-REQUEST", "other"},
+	} {
+		t.Run(tc.method, func(t *testing.T) {
+			var out bytes.Buffer
+			logger := slog.New(slog.NewJSONHandler(&out, &slog.HandlerOptions{Level: slog.LevelDebug}))
+			handler := WrapInboundHTTP("webhook", logger, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				w.WriteHeader(http.StatusAccepted)
+			}))
+			req := httptest.NewRequest(tc.method, "http://localhost/webhook/line", nil)
+			handler.ServeHTTP(httptest.NewRecorder(), req)
+			if !strings.Contains(out.String(), "\"method\":\""+tc.want+"\"") {
+				t.Fatalf("expected bounded method %q in %q", tc.want, out.String())
+			}
+			if tc.method != tc.want && strings.Contains(out.String(), tc.method) {
+				t.Fatal("client-controlled method leaked to telemetry")
+			}
+		})
+	}
+}
