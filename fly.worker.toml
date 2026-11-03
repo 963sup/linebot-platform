@@ -2,7 +2,7 @@
 # is enforced by the existing Google OIDC verifier on /tasks/* (NOT Cloud Run IAM).
 # Replace app with your globally unique Fly app name.
 app = "linebot-worker-staging"
-primary_region = "nrt"
+primary_region = "sin" # Singapore; measure end-to-end latency from Taiwan before production
 kill_signal = "SIGTERM"
 kill_timeout = 20
 

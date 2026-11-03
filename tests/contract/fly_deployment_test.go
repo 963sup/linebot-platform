@@ -46,7 +46,7 @@ func TestFlyStagingConfigurationContracts(t *testing.T) {
 			if _, err := toml.DecodeFile(filepath.Join("../..", tc.file), &cfg); err != nil {
 				t.Fatal(err)
 			}
-			if !strings.HasSuffix(cfg.App, "-staging") || cfg.PrimaryRegion == "" {
+			if !strings.HasSuffix(cfg.App, "-staging") || cfg.PrimaryRegion != "sin" {
 				t.Fatalf("Fly app must target an explicit staging name and region: %q", cfg.App)
 			}
 			if cfg.Build.Dockerfile != tc.dockerfile {

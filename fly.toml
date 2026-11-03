@@ -1,7 +1,7 @@
 # Staging-only public LINE webhook. Replace app with your globally unique Fly app name.
 # Do not place credentials or Google service-account JSON in this file.
 app = "linebot-webhook-staging"
-primary_region = "nrt"
+primary_region = "sin" # Singapore; measure end-to-end latency from Taiwan before production
 kill_signal = "SIGTERM"
 kill_timeout = 20
 
