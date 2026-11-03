@@ -10,7 +10,7 @@ import (
 func TestWebhookConfigurationUsesOfficialSDK(t *testing.T) {
 	var paths []string
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Header.Get("Authorization") != "***" {
+		if r.Header.Get("Authorization") != "Bearer private-token" {
 			t.Error("missing token")
 		}
 		paths = append(paths, r.Method+" "+r.URL.Path)

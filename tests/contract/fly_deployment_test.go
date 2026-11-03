@@ -2,7 +2,6 @@ package contract
 
 import (
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/BurntSushi/toml"
@@ -18,7 +17,7 @@ type flyConfig struct {
 	HTTPService struct {
 		InternalPort       int    `toml:"internal_port"`
 		ForceHTTPS         bool   `toml:"force_https"`
-		AutoStopMachines   string `toml:"auto_stop_machines"`
+		AutoStopMachines   any    `toml:"auto_stop_machines"`
 		MinMachinesRunning int    `toml:"min_machines_running"`
 		Checks             []struct {
 			Method string `toml:"method"`
@@ -37,17 +36,18 @@ func TestFlyStagingConfigurationContracts(t *testing.T) {
 	for _, tc := range []struct {
 		file       string
 		dockerfile string
+		app        string
 	}{
-		{file: "fly.toml", dockerfile: "Dockerfile"},
-		{file: "fly.worker.toml", dockerfile: "Dockerfile.worker"},
+		{file: "fly.toml", dockerfile: "Dockerfile", app: "linebot-platform"},
+		{file: "fly.worker.toml", dockerfile: "Dockerfile.worker", app: "linebot-worker-staging"},
 	} {
 		t.Run(tc.file, func(t *testing.T) {
 			var cfg flyConfig
 			if _, err := toml.DecodeFile(filepath.Join("../..", tc.file), &cfg); err != nil {
 				t.Fatal(err)
 			}
-			if !strings.HasSuffix(cfg.App, "-staging") || cfg.PrimaryRegion != "sin" {
-				t.Fatalf("Fly app must target an explicit staging name and region: %q", cfg.App)
+			if cfg.App != tc.app || cfg.PrimaryRegion != "sin" {
+				t.Fatalf("Fly app name or region differs from the existing configuration: %q", cfg.App)
 			}
 			if cfg.Build.Dockerfile != tc.dockerfile {
 				t.Fatalf("wrong Dockerfile: %q", cfg.Build.Dockerfile)
@@ -62,9 +62,18 @@ func TestFlyStagingConfigurationContracts(t *testing.T) {
 					t.Fatalf("%s must not be hardcoded in [env]", secret)
 				}
 			}
+			// Fly supports both bool false and string "off" for disabling autostop.
+			// Never force a renamed Fly app just to satisfy a suffix convention.
+			autoStopDisabled := false
+			switch value := cfg.HTTPService.AutoStopMachines.(type) {
+			case bool:
+				autoStopDisabled = !value
+			case string:
+				autoStopDisabled = value == "off"
+			}
 			if cfg.HTTPService.InternalPort != 8080 || !cfg.HTTPService.ForceHTTPS ||
-				cfg.HTTPService.AutoStopMachines != "off" || cfg.HTTPService.MinMachinesRunning != 1 {
-				t.Fatal("staging HTTP service must remain on HTTPS with an always-running Machine")
+				!autoStopDisabled || cfg.HTTPService.MinMachinesRunning != 1 {
+				t.Fatal("staging HTTP service must remain on HTTPS with autostop disabled")
 			}
 			if len(cfg.HTTPService.Checks) != 1 ||
 				cfg.HTTPService.Checks[0].Path != "/healthz" ||
