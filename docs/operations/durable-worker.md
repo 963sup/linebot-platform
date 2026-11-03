@@ -4,7 +4,7 @@
 
 ## Processes and mode
 
-- **Public webhook**: existing `cmd/webhook`, with raw LINE signature validation. Default is `LINE_EVENT_MODE=sync`; set `LINE_EVENT_MODE=durable` only after Firestore, queue, worker authentication and dispatcher are validated.
+- **Public webhook**: existing `cmd/webhook`, with raw LINE signature validation. `LINE_EVENT_MODE=sync` is local-development-only; Cloud Run fails closed unless `LINE_EVENT_MODE=durable`. The public durable webhook holds `LINE_CHANNEL_SECRET` but **must not be provided `LINE_CHANNEL_ACCESS_TOKEN`**. Enable durable only after Firestore, queue, worker authentication and dispatcher are validated.
 - **Private worker**: `cmd/worker`, built separately with `Dockerfile.worker` and optionally `cloudbuild.worker.yaml`. Both the public webhook and private worker need least-privilege GCP identities; do not share a broad service account.
 - **Scheduled reconciliation**: Cloud Scheduler invokes POST `/tasks/dispatch` using Google-signed OIDC. The worker independently checks the token Audience and the configured service account Email, in addition to Cloud Run IAM. This is best-effort pending-work recovery, **not** a guarantee to meet the 45-second LINE Reply window.
 
@@ -15,7 +15,7 @@
 | `PORT` | optional | optional | HTTP listener port, default 8080 |
 | `LINE_EVENT_MODE` | `durable` | n/a | Explicitly enables durable webhook mode |
 | `LINE_CHANNEL_SECRET` | required | n/a | Verify LINE raw-body signature |
-| `LINE_CHANNEL_ACCESS_TOKEN` | required | required | LINE SDK credential; not logged |
+| `LINE_CHANNEL_ACCESS_TOKEN` | **forbidden** | required | Only the private worker is permitted to send LINE messages |
 | `LINE_BOT_DESTINATION` | required | required | Bot destination ID for event isolation and event-key derivation |
 | `GCP_PROJECT_ID` | required | required | Dedicated staging project |
 | `TASK_QUEUE_NAME` | required | required | Full projects/.../locations/.../queues/... name |
@@ -36,6 +36,8 @@
 ## Cloud Tasks task-name reuse and bounded recovery
 
 Cloud Tasks retains task names for **up to 24 hours** after the task completes or is deleted. A single permanently fixed task ID can therefore prevent recovery of a pending Outbox after the first task was acknowledged. The Queue uses the deterministic event SHA-256 fingerprint combined with a **10-second scheduling bucket**: enqueueing within the same bucket deduplicates, but later buckets may produce a fresh task even if an old task completed. The worker's Firestore single-use claim prevents a second LINE call; task-name dedupe alone does not.
+
+LINE Reply tokens can only be used once. A redelivered webhook carries the same token, and reply eligibility is bounded by the original event timestamp + 20 minutes. A fresh signed redelivery may extend a reply window only when the outbox has **never been sent** (`pending` or `expired`). `sending`, `sent`, and `unknown` are never reopened. The resulting 45-second local window is conservative; LINE does not guarantee actual token validity for the full interval.
 
 Cloud Scheduler's minimum common cadence is one minute, longer than the conservative 45-second Reply deadline. Scheduled reconciliation can expire stale records and repair some pending work, **but does not guarantee an on-time Reply**; review a separate authorized Push/follow-up strategy before production.
 

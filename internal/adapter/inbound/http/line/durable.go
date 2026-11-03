@@ -4,6 +4,7 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"time"
 
 	"github.com/963sup/linebot-platform/internal/application/usecases/conversation"
 	"github.com/963sup/linebot-platform/internal/application/usecases/ingestion"
@@ -66,7 +67,11 @@ func (h *DurableHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		reply := conversation.ResponseForText(m.Text)
-		if err := h.ingestor.Ingest(r.Context(), h.destination, e.WebhookEventId, e.ReplyToken, reply); err != nil {
+		if err := h.ingestor.Ingest(r.Context(), h.destination, e.WebhookEventId, e.ReplyToken, time.UnixMilli(e.Timestamp), reply); err != nil {
+			if errors.Is(err, ingestion.ErrEventTooOld) {
+				// ACK stale redelivery instead of inviting endless retries.
+				continue
+			}
 			if h.logger != nil {
 				h.logger.Error("durable LINE event persistence or dispatch failed", "operation", "ingest")
 			}

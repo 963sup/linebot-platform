@@ -62,7 +62,7 @@ CLI 發送會先輸出可重用的 UUID retry key。若發生 timeout 或結果�
 - `bootstrap/`：設定、組裝、啟動與 shutdown。
 - `cmd/webhook`、`cmd/worker`、`cmd/ops`：已具可編譯入口；Worker 尚未部署。
 
-**重要：預設 `LINE_EVENT_MODE=sync` 不持久化事件。** Durable 模式目前僅有程式碼與離線測試，缺少真實 Staging、unsend／edit、正式 IAM 與人工故障修復驗證；不能宣稱 production-ready 或端到端 exactly-once。
+**重要：預設 `LINE_EVENT_MODE=sync` 僅供本地開發，不持久化事件。Cloud Run 拒絕 sync；公開 Webhook 的 durable 模式只持有 `LINE_CHANNEL_SECRET`，發送 Token 僅交由私有 Worker 持有。** Durable 模式目前僅有程式碼與離線測試，缺少真實 Staging、unsend／edit、正式 IAM 與人工故障修復驗證；不能宣稱 production-ready 或端到端 exactly-once。
 
 ## Codex SDK 自動辨識（開發基礎）
 

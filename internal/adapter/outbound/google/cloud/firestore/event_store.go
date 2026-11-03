@@ -25,6 +25,7 @@ type storedJob struct {
 	ReplyToken string           `firestore:"reply_token"`
 	Message    outbound.Message `firestore:"message"`
 	ReplyUntil time.Time        `firestore:"reply_until"`
+	OccurredAt time.Time        `firestore:"occurred_at"`
 	CreatedAt  time.Time        `firestore:"created_at"`
 	UpdatedAt  time.Time        `firestore:"updated_at"`
 	ExpiresAt  time.Time        `firestore:"expires_at"`
@@ -59,6 +60,28 @@ func (s *Store) Record(ctx context.Context, job outbound.EventJob) (bool, error)
 		created = false // reset on Firestore's automatic transaction retries
 		_, err := tx.Get(inbox)
 		if err == nil {
+			// Only never-sent pending or expired work can be refreshed.
+			// Once a sending claim exists, no duplicate LINE call is allowed.
+			doc, err := tx.Get(outbox)
+			if status.Code(err) == codes.NotFound {
+				return nil // outbox already removed by TTL
+			}
+			if err != nil {
+				return err
+			}
+			var saved storedJob
+			if err := doc.DataTo(&saved); err != nil {
+				return err
+			}
+			if (saved.State == "pending" || saved.State == "expired") &&
+				job.ReplyUntil.After(saved.ReplyUntil) {
+				return tx.Update(outbox, []sdk.Update{
+					{Path: "state", Value: "pending"},
+					{Path: "reply_until", Value: job.ReplyUntil},
+					{Path: "reply_token", Value: job.ReplyToken},
+					{Path: "updated_at", Value: job.CreatedAt},
+				})
+			}
 			return nil
 		}
 		if status.Code(err) != codes.NotFound {
@@ -74,6 +97,7 @@ func (s *Store) Record(ctx context.Context, job outbound.EventJob) (bool, error)
 			ReplyToken: job.ReplyToken,
 			Message:    job.Message,
 			ReplyUntil: job.ReplyUntil,
+			OccurredAt: job.OccurredAt,
 			CreatedAt:  job.CreatedAt,
 			UpdatedAt:  job.CreatedAt,
 			ExpiresAt:  job.CreatedAt.Add(outboxRetention),

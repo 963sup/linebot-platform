@@ -15,9 +15,15 @@ import (
 )
 
 const (
-	replyWindow = 45 * time.Second
-	maxDispatch = 100
+	replyWindow  = 45 * time.Second
+	maxEventAge  = 20 * time.Minute
+	maxClockSkew = 5 * time.Minute
+	maxDispatch  = 100
 )
+
+// ErrEventTooOld indicates no LINE Reply can be attempted because the
+// original webhook event is outside the documented redelivery eligibility.
+var ErrEventTooOld = errors.New("LINE event reply window expired")
 
 // EventKey is stable for a LINE channel + webhook event ID across redeliveries.
 // The opaque hash avoids storing either identifier in Firestore document paths.
@@ -46,7 +52,7 @@ func NewIngestor(store outbound.EventStore, queue outbound.EventQueue) (*Ingesto
 // Queue is called even for duplicates: this repairs a crash after the Firestore
 // commit but before CreateTask. A separate dispatcher repairs missed enqueueing
 // when no LINE redelivery arrives.
-func (s *Ingestor) Ingest(ctx context.Context, channel, eventID, replyToken string, message outbound.Message) error {
+func (s *Ingestor) Ingest(ctx context.Context, channel, eventID, replyToken string, occurredAt time.Time, message outbound.Message) error {
 	if ctx == nil {
 		return errors.New("context is required")
 	}
@@ -64,9 +70,23 @@ func (s *Ingestor) Ingest(ctx context.Context, channel, eventID, replyToken stri
 		return err
 	}
 	now := s.now().UTC()
+	occurredAt = occurredAt.UTC()
+	if occurredAt.IsZero() || occurredAt.After(now.Add(maxClockSkew)) {
+		return errors.New("invalid LINE event timestamp")
+	}
+	// A redelivered reply token may be usable for up to 20 minutes from
+	// the original event, and only shortly after each webhook receipt.
+	// This is a conservative local upper bound, not a delivery guarantee.
+	if !now.Before(occurredAt.Add(maxEventAge)) {
+		return ErrEventTooOld
+	}
+	replyUntil := now.Add(replyWindow)
+	if eventLimit := occurredAt.Add(maxEventAge); replyUntil.After(eventLimit) {
+		replyUntil = eventLimit
+	}
 	if _, err := s.store.Record(ctx, outbound.EventJob{
 		Key: key, ReplyToken: replyToken, Message: message,
-		CreatedAt: now, ReplyUntil: now.Add(replyWindow),
+		CreatedAt: now, OccurredAt: occurredAt, ReplyUntil: replyUntil,
 	}); err != nil {
 		return err
 	}
@@ -111,7 +131,7 @@ func (p *Processor) Process(ctx context.Context, key string) error {
 	// Do not automatically retry any ambiguous LINE result. An unknown reply
 	// must be reviewed; sending it again could deliver a duplicate.
 	outcome := outbound.DeliverySent
-	if p.now().After(job.ReplyUntil) {
+	if !p.now().Before(job.ReplyUntil) {
 		outcome = outbound.DeliveryExpired
 	} else if err := p.sender.Reply(ctx, job.ReplyToken, []outbound.Message{job.Message}); err != nil {
 		outcome = outbound.DeliveryUnknown

@@ -12,6 +12,7 @@ type EventJob struct {
 	ReplyToken string
 	Message    Message
 	ReplyUntil time.Time
+	OccurredAt time.Time
 	CreatedAt  time.Time
 }
 
@@ -25,8 +26,11 @@ const (
 
 // EventStore provides a durable, transaction-backed inbox/outbox boundary.
 // Record MUST atomically create both documents or create neither, and repeated
-// keys MUST NOT overwrite the original payload. Claim is a single-use atomic
-// transition from pending to sending. Sending is never automatically reclaimed
+// keys MUST NOT overwrite the original response payload. A fresh signed
+// redelivery may extend a never-sent pending/expired reply window, bounded by
+// the original event age; sent/sending/unknown states must never be reopened.
+// Claim is a single-use atomic transition from pending to sending.
+// Sending is never automatically reclaimed
 // for a second LINE API call because a remote timeout may mean it was sent.
 type EventStore interface {
 	Record(ctx context.Context, job EventJob) (created bool, err error)

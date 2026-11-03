@@ -15,7 +15,7 @@ make run-webhook
 
 ## LINE 憑證
 
-從安全的環境變數提供 `LINE_CHANNEL_SECRET` 與 `LINE_CHANNEL_ACCESS_TOKEN`，兩者必須一起設定；未設定時只開放 health，webhook 回 503。不要把值寫進 git、PR、公共 log 或公開 issue。
+本機 `LINE_EVENT_MODE=sync` 需要同時透過安全環境提供 `LINE_CHANNEL_SECRET` 與 `LINE_CHANNEL_ACCESS_TOKEN`；未設定時只開放 health，webhook 回 503。**Cloud Run 公開服務必須使用 `LINE_EVENT_MODE=durable`，只提供簽章用的 `LINE_CHANNEL_SECRET`，不得注入發送 Token；僅私有 Worker 持有 Token**。不要把值寫進 git、PR、公共 log 或公開 issue。
 
 對外 webhook 在本機測試時須透過 HTTPS 端點，並以測試 LINE Channel 驗證。這個專案**沒有自動建立 LINE Channel 或 GCP 資源**。
 

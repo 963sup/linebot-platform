@@ -1,6 +1,7 @@
 package bootstrap
 
 import (
+	"errors"
 	"log/slog"
 	"net/http"
 
@@ -24,6 +25,9 @@ type WebhookRuntime struct {
 
 // NewWebhookRuntime constructs only the clients needed by the webhook process.
 func NewWebhookRuntime(cfg Config, logger *slog.Logger) (*WebhookRuntime, error) {
+	if cfg.EventMode == "durable" && cfg.ChannelToken != "" {
+		return nil, errors.New("durable webhook cannot contain LINE send token")
+	}
 	mux := http.NewServeMux()
 	mux.HandleFunc("/healthz", health.Handler)
 	runtime := &WebhookRuntime{Handler: mux}

@@ -3,6 +3,7 @@ package line
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -52,7 +53,7 @@ func TestDurableWebhookSignatureDestinationDedupAndEnqueueFailure(t *testing.T) 
 	queue := &workQueue{}
 	ingestor, _ := ingestion.NewIngestor(store, queue)
 	h := NewDurableHandler(secret, destination, ingestor, nil)
-	body := `{"destination":"Uxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx","events":[{"type":"message","mode":"active","timestamp":1690000000000,"webhookEventId":"01H00ABCDEF0123456789ABCDE","deliveryContext":{"isRedelivery":false},"source":{"type":"user","userId":"Uxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"},"replyToken":"reply-token","message":{"id":"1234567890123","type":"text","text":"hello"}}]}`
+	body := fmt.Sprintf(`{"destination":"Uxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx","events":[{"type":"message","mode":"active","timestamp":%d,"webhookEventId":"01H00ABCDEF0123456789ABCDE","deliveryContext":{"isRedelivery":false},"source":{"type":"user","userId":"Uxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"},"replyToken":"reply-token","message":{"id":"1234567890123","type":"text","text":"hello"}}]}`, time.Now().UnixMilli())
 	for n := 0; n < 2; n++ {
 		w := httptest.NewRecorder()
 		h.ServeHTTP(w, signedRequest(secret, body))
