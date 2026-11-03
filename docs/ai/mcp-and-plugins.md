@@ -1,6 +1,6 @@
 # Codex MCP 與 Plugins（正式專案設定）
 
-MCP 是**開發期工具**，由 [`.codex/config.toml`](../../.codex/config.toml) 管理；LINE Bot 的 Cloud Run Runtime 仍獨立使用 Go SDK。根 `AGENTS.md` 僅描述何時使用工具，**不能安裝、登入或代管 MCP 憑證**。
+MCP 是**開發期工具**，由 [`.codex/config.toml`](../../.codex/config.toml) 管理；LINE Bot 的 Cloud Run Runtime 仍獨立使用 Go SDK。Codex SDK 任務先讀 [SDK Catalog](../sdk/catalog.toml)，再按 [SDK Integration Skill](../../.agents/skills/sdk-integration/SKILL.md) 使用本地模組原始碼／gopls／官方文件；不需要為每個 SDK 加裝一個 MCP。根 `AGENTS.md` 僅描述何時使用工具，**不能安裝、登入或代管 MCP 憑證**。
 
 ## 5 個 MCP 與安全預設
 
@@ -33,7 +33,7 @@ MCP 是**開發期工具**，由 [`.codex/config.toml`](../../.codex/config.toml
 ## 設定與驗證
 
 1. Cloud setup 在非互動情境安裝 `gopls v0.24.0` 至 `$HOME/.local/bin/gopls`，專案 config 用絕對 HOME 路徑執行 `gopls mcp`。
-2. 本地執行 `go run ./cmd/codexcheck` 確認五個 MCP、五個 Agents 與 setup shell 語法。
+2. 本地執行 `go run ./cmd/codexcheck` 確認五個 MCP、六個 Agents 與 setup shell 語法。
 3. 若可使用 Codex CLI，在可信 repo 內執行 `codex mcp list`，檢查已啟用 server 與認證狀態。
 4. 在 Codex Cloud 設定網路允許必要主機（包括 `developers.openai.com`），Publish／Republish 後於**新工作階段**再驗證 MCP 可用性；本專案尚未代你發布雲端環境。
 

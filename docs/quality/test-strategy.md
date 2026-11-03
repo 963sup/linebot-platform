@@ -7,7 +7,36 @@
 - Health endpoint：GET 200、其他方法 405。
 - LINE webhook：方法限制、簽章驗證、body 大小、文字轉換、Flex 轉換（使用 fake Sender，不接真實 LINE）。
 - CLI：沒有 `--send` 不得發送。
-- Go AST：Domain／Application 禁止反向依賴。
+- Go AST：Domain／Application 禁止反向依賴與任何外部套件 import，SDK 型別不進入業務核心。
+- SDK Catalog：`go.mod` 直接依賴完整覆蓋、狀態與欄位驗證、import 路徑及整合程式存在性；不需對外 API 權限。
+
+## SDK Runtime Foundation (Stage 2)
+
+- HTTP Client: invalid timeout, independent transport ownership, idempotent Close, decorator errors.
+- Observability: no secrets, user messages, request URL or headers in logs; preserve HTTP response.
+- LINE factory: reject invalid credentials and nil HTTP Client without network calls.
+- LINE outbound SDK: local httptest Reply/Push paths and retry keys, failure classification and sanitized errors.
+- Context: cancel in-flight LINE request and execute parallel LINE calls with `go test -race`; do not invoke mutable SDK `WithContext` on the shared Client.
+- Bootstrap: construct the LINE runtime only when configured, verify health endpoint and resource cleanup; `LINE_API_TIMEOUT` defaults and invalid bounds.
+
+These are **offline contract tests** against the pinned Go SDK and local HTTP servers. They do not validate real LINE account permissions or provider availability.
+
+## Provider Client Factories (Stage 3)
+
+- **Google Workspace**: local HTTP fake exercises the Google Tasks `Tasklists.List` and Calendar `Events.List` native API, a simulated OAuth Bearer transport, and native Sheets/Drive construction. Factories reject nil/cancelled inputs. No real user account or consent is involved.
+- **OpenAI / Gemini**: verify explicit API Key requirements, backend differences (Gemini Developer API vs Vertex AI), and native SDK access without paid API calls.
+- **Google Cloud**: type-checked Firestore, Cloud Tasks, Secret Manager and Storage constructors reject nil/cancelled contexts and missing Firestore project. GCP IAM and external services are not tested.
+- Google Tasks, Google Calendar and Google Cloud Tasks are distinct products with different credentials, scopes and API models.
+- Catalog `client_ready` requires actual native Factory source but does not mean a service is enabled, an Adapter exists or a live API permission was verified.
+
+## Durable Event Processing (Stage 4)
+
+- Application Fake Store／Queue：事件 SHA-256 Fingerprint、單次 Record、重送時重新派送但不覆寫 Reply Token。
+- Worker：Pending 單次 Claim／送出、模糊網路失敗記錄 Unknown、同一 Key 的第二次交付不再呼叫 LINE。
+- HTTP：原始 LINE Webhook 驗章、bot destination、持久化後才回 200、派送失敗時回 503；Cloud Tasks／Scheduler Callback 必須經 OIDC Verifier 驗證。
+- Cloud Tasks Queue：事件 Key + 10 秒派送時窗決定 Task ID，驗證同一時窗去重、跨時窗可恢復，OIDC email/audience、只包含 opaque Key 的 JSON Body、AlreadyExists 與其他失敗區分。
+- Bootstrap Config：預設同步模式維持相容，Durable/Worker 的 GCP、LINE、OIDC 欄位缺少時 fail closed。
+- Firestore Transaction、併發 Claim 與恢復已在 GitHub Actions 的本機 Firestore Emulator 實際驗證；Cloud Tasks CreateTask、IAM、OIDC、TTL 政策與排程仍需經授權的真實 Staging 驗收。
 
 ## CI
 
@@ -15,8 +44,14 @@ GitHub Actions 須先下載依賴，再執行：
 ```bash
 make check
 ```
-包含 gofmt、go vet、go test -race、go build。基礎 SDK 版本透過 `go.mod`／`go.sum` 及固定 Go toolchain 管理。CI 狀態只有 GitHub run 成功後才可宣稱通過。
+包含 gofmt、go vet、go test -race、go build；另外由 `go run ./cmd/codexcheck` 進行 Codex 設定與 SDK Catalog 的離線驗證。基礎 SDK 版本透過 `go.mod`／`go.sum` 及固定 Go toolchain 管理。CI 狀態只有 GitHub run 成功後才可宣稱通過。
+
+## CI 效能（保留完整驗證）
+
+- 無快取的 [Actions #41558587334](https://github.com/963sup/linebot-platform/actions/runs/41558587334) 中，`go vet ./...` 約 91 秒，`go test -race -count=1 ./...` 約 144 秒，下載解析依賴約 9 秒，`go build ./...` 約 3 秒。瓶頸是大型 Go SDK 在全新 Runner 上的編譯與 Race Instrumentation。
+- 使用既有 pinned `actions/setup-go`，啟用其內建 module/build cache，並以 `go.sum` 作快取失效依據；首次冷快取可能同樣慢，往後重複 PR 工作可觀察 Cache Hit 與縮短的編譯時間。不會改動 SDK 版本、移除預先保留的依賴或刪除空白 SDK 骨架。
+- **不跳過任何品質 Gate**：`go mod tidy`、`go.mod/go.sum` diff、`codexcheck`（含 SDK retention）、`gofmt`、`go vet`、`go test -race -count=1` 及 `go build` 全數保留。觀察最新 HEAD 的實際結果後，才能宣稱快取效益。
 
 ## Integration / E2E
 
-尚未實作。Firestore Emulator、Cloud Tasks、LINE sandbox／測試帳號與 Google Workspace 都必須有隔離憑證、授權和測試用的最小權限，不能在 PR workflow 直接對正式服務操作。
+Firestore Emulator SDK 交易／併發測試曾在 PR #8 的隔離 CI 執行並通過，但已依合併前清理要求移除一次性測試程式和專用工作流程。正式 Cloud Tasks、Cloud Run OIDC、LINE Sandbox 與 Workspace 的跨服務驗證仍需要隔離的授權與人工審查。既有單元、契約、架構及 Race Test 仍由 `make check` 維護。

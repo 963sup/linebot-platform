@@ -39,8 +39,8 @@ func TestDependencyDirection(t *testing.T) {
 						!(layer.dir == "../../internal/application" && strings.HasPrefix(p, "github.com/963sup/linebot-platform/internal/domain")) {
 						t.Errorf("%s must not depend on %s", path, p)
 					}
-				} else if layer.dir == "../../internal/domain" && strings.Contains(strings.Split(p, "/")[0], ".") {
-					t.Errorf("domain external dependency: %s imports %s", path, p)
+				} else if strings.Contains(strings.Split(p, "/")[0], ".") {
+					t.Errorf("domain/application external dependency: %s imports %s", path, p)
 				}
 			}
 			return nil

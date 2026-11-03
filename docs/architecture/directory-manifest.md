@@ -2,7 +2,7 @@
 
 下表保留最初 scaffold 的 123 個目錄；已有實際檔案的目錄會移除 `.gitkeep`，仍為空的目錄則繼續保留 `.gitkeep`。Go／CI／Terraform 等檔案依階段實作，不能因目錄存在就視為功能完成。`valueobjects` 是 Go package 識別名稱；`genai` 對應 Google Gen AI SDK 的實作邊界。
 
-原 scaffold：**123 個目錄**。此階段另外增加 `internal/infrastructure/dependencies/`（選用 SDK 的 Go dependency tracking package），並為 Codex 設定檢查程式新增 `cmd/codexcheck/`，因此目前實際共有 **125 個目錄**；以下列出當前全部目錄。
+原 scaffold 為 123 個目錄，後續加入 Codex Agents、SDK Catalog／Skills、SDK Infrastructure 以及 Task OIDC 驗證目錄。以下依照最新 Git Tree 列出 **130 個目錄**；目錄存在不代表功能已部署。
 
 ```text
 .agents
@@ -14,7 +14,10 @@
 .agents/skills/linebot-domain-change
 .agents/skills/linebot-messaging-feature
 .agents/skills/linebot-webhook-safety
+.agents/skills/sdk-integration
+.agents/skills/sdk-integration/references
 .codex
+.codex/agents
 .github
 .github/ISSUE_TEMPLATE
 .github/workflows
@@ -46,6 +49,7 @@ docs/architecture
 docs/line
 docs/operations
 docs/quality
+docs/sdk
 internal
 internal/adapter
 internal/adapter/inbound
@@ -112,6 +116,7 @@ internal/infrastructure/google/cloud/cloudtasks
 internal/infrastructure/google/cloud/firestore
 internal/infrastructure/google/cloud/secretmanager
 internal/infrastructure/google/cloud/storage
+internal/infrastructure/google/cloud/tasksauth
 internal/infrastructure/google/genai
 internal/infrastructure/httpclient
 internal/infrastructure/line

@@ -5,8 +5,8 @@
 ## 先確認狀態
 
 - 先讀 `README.md`、`docs/architecture/overview.md`、`docs/roadmap.md` 和相關子目錄規範。
-- 現階段有開發用 Go HTTP / LINE SDK 回覆示範；**尚無 durable inbox/outbox、Cloud Tasks worker 與 production 部署**。請依實際實作情況更新文件，不得把預留目錄當成已完成功能。
-- 以最小可行、可編譯、可測試的垂直切片實作新功能。新增實作時可刪除該目錄的 `.gitkeep`；避免保留冗餘 placeholder。
+- 現階段有開發用同步 LINE 回覆示範，另有明確啟用才使用的 Firestore Inbox/Outbox、Cloud Tasks OIDC Worker／Reconcile 程式碼；**尚無正式部署、IAM/Firestore TTL／Cloud Scheduler 配置與 Staging 驗收**。請依實際實作情況更新文件，不得把預留目錄當成已完成功能。
+- 以最小可行、可編譯、可測試的垂直切片實作新功能。**SDK 預留空白骨架、擴充目錄及其 `.gitkeep` 必須保留**，不得因尚未接線而刪除；其他類型的占位內容，僅在確認用途、引用與授權後才可另行清理。
 - 新 SDK 或 feature 在加入前確認上游官方文件、API 版本、帳號地區資格與安全修補版本。依賴已在 `go.mod` 預先宣告，但未在 runtime 接線的不算已啟用；更新後需執行 `go mod tidy` 並提交真實 `go.sum`。
 - 使用已修補的 Go 1.27.3 工具鏈；CI／Docker 版本須一致，部署前再固定 image digest。
 
@@ -23,7 +23,7 @@
 ## LINE webhook 與發送
 
 - 必須使用 LINE raw request body 驗證簽章，驗證前不得更改內容。
-- 持久化 inbox 與 outbox 後才可確認事件接收成功；不得在回覆 200 後靠程序內 goroutine 保證處理。
+- 持久模式先以 Firestore Transaction 原子保存 Inbox/Outbox，再安排固定 ID 的 Cloud Task；排程失敗回 503 並由具授權的定期 Reconcile 修復，不得在回覆 200 後靠程序內 goroutine 保證處理。
 - 以 channel 與 event ID 去重；Cloud Tasks 工作須能冪等、可重試、可補償。
 - Reply token 有時效，不得假設任何長時間背景任務完成後仍可 reply。
 - 發送超時可能是「結果未知」；不可在未確認冪等策略時直接重送。
@@ -34,15 +34,25 @@
 
 - 禁止提交真實 `.env`、憑證、LINE Channel Secret、Access Token、AI API Key。
 - 禁止把完整 webhook、token、使用者私訊或個資輸出到 log。
-- 配置使用 ADC／工作負載身分／Secret Manager；權限最小化。
+- 配置使用 ADC／工作負載身分／Secret Manager；權限最小化。私有 Worker 必須具備 Cloud Run IAM、OIDC Audience 與獲授權 Service Account Email 的雙重驗證；不能信任 `X-CloudTasks-*` Header 代替驗證。
 - 外部發送、刪除、付費雲端資源與正式環境部署都須遵循授權；不自行合併 PR 或啟用 production。
 - 不將未審核的外部 skills／MCP 當作可信程式自動執行。
 - `skills-lock.json` 是從其他儲存庫精選的外部技能來源指紋，不代表已安裝或已驗證，禁止自動執行未審查的腳本。
 - `cloudbuild.deploy.yaml` 僅允許經授權的 staging；在完善可靠性、IAM、Secret Manager 與人工核准之前，不得執行 production 部署。
 
+## SDK 自動辨識與開發路由
+
+- 新增或修改任何 `go.mod` 直接依賴 SDK 時，先讀 [SDK Catalog](docs/sdk/catalog.toml) 和 [SDK 整合架構](docs/architecture/sdk-integration.md)，再按需套用 [sdk-integration Skill](.agents/skills/sdk-integration/SKILL.md)。只讀相關模組，勿預載全部 SDK。
+- `go.mod` 是版本唯一來源；Catalog 用來定位 Provider／Package／Factory／Adapter 與整合狀態，不能當成完整 API 清單或實際授權證明。
+- **保留規則：所有已核准直接 SDK／工具依賴（包含尚未使用的 `garr`）、`go.sum`、`internal/infrastructure/dependencies/modules.go`、SDK Catalog 與預留 SDK 空白骨架不得因未使用而刪除；`cmd/codexcheck` 在 CI 中檢查受保護項目。**
+- 優先使用已鎖定模組的 Go 原始碼、`go list`、`go doc` 和 gopls 驗證真實 Symbol，再對照官方文件查核認證、配額、冪等性及限制；不可猜測 API。
+- 修改依賴、Factory 或 Adapter 時，連同 Catalog、架構文件、相關能力矩陣和測試一併同步；執行 `go run ./cmd/codexcheck` 與 `make check`。
+- Application 與 Domain 使用 Go 標準庫及專案自有 Port，不直接 import 外部 SDK；不建立萬用動態 SDK 呼叫器。已宣告、已整合、已經 staging 驗證是不同狀態。
+- SDK Runtime 使用明確的 Factory 與 Bootstrap 所擁有的 HTTP Transport；不要在共享 LINE Client 上直接呼叫會修改 Receiver 的 `WithContext`。錯誤需去敏且保留可供程式辨識的型別，不要預設自動重試。
+
 ## Codex Agents 與 MCP 選用（不負責安裝）
 
-- 複雜且互不依賴的任務才委派給 `domain_architect`、`line_integrator`、`cloud_platform`、`go_reviewer` 或 `docs_researcher`；同一檔案不得由多個 Agent 同時改寫，最後由主 Agent 整合、驗證。
+- 複雜且互不依賴的任務才委派給 `domain_architect`、`line_integrator`、`cloud_platform`、`go_reviewer` 或 `docs_researcher`；合併前清理與驗證則使用 `code_cleanup_release_validation`，且不得刪 SDK 預留模組／骨架或必要的回歸測試。同一檔案不得由多個 Agent 同時改寫，最後由主 Agent 整合、驗證。
 - 修改 Go 程式前，需要追查 definitions、references、型別或診斷時用 **gopls MCP**；若不可用則使用本地 Go 工具。
 - OpenAI API、Responses API、OpenAI Go SDK、Codex、Skills、MCP 或 Plugins 的更新與實作優先使用 **openaiDeveloperDocs MCP** 查閱官方文件；不得推測不存在的 API、參數或能力。若 MCP 不可用，改用 OpenAI 官方網站並標示未驗證事項。
 - 其他新版本 SDK／API 使用方式、設定或重大變更使用 **Context7 MCP**，再核對相關官方 Go／LINE／Google 文件；無法查證時明確標示。
@@ -51,6 +61,11 @@
 - `AGENTS.md` 只負責路由規則；**不可因指示而自行安裝 MCP、產生 token、執行 OAuth 或修改個人 Codex 設定**。MCP 的啟用與安裝由 `.codex/config.toml`、Codex Cloud Install script 與使用者環境設定處理。
 
 請閱讀 [Agents 職責](docs/ai/agents.md)、[MCP 設定與權限](docs/ai/mcp-and-plugins.md)、[Codex Cloud](docs/ai/codex-cloud.md)。
+
+## 外部環境驗收邊界
+
+- 真實 Cloud IAM／OIDC、Cloud Scheduler、Firestore TTL、LINE Channel 及使用者 OAuth 僅能在隔離且經明確授權的環境中驗證，不得以 CI 通過當作已部署或取得權限。
+- 不可自行部署付費服務、執行正式 API 發送或合併 PR；正式驗收結果應於 PR 審查紀錄中明確註明。
 
 ## 驗證與交付
 

@@ -1,7 +1,12 @@
 # 文件索引
 
 - [架構概覽](architecture/overview.md)
-- [事件處理現況](architecture/event-processing.md)
+- [SDK 整合與 Codex 開發流程](architecture/sdk-integration.md)
+- [SDK Catalog（直接依賴與接線狀態）](sdk/catalog.toml)
+- [Google Tasks／Calendar／Sheets／Drive OAuth 與 Client](sdk/workspace-oauth.md)
+- [事件處理（同步／持久模式與限制）](architecture/event-processing.md)
+- [Durable Worker Staging／OIDC／Cloud Scheduler 要求](operations/durable-worker.md)
+- [Firestore Inbox／Outbox TTL 與隱私](../deploy/firestore/README.md)
 - [本機開發](operations/local-development.md)
 - [測試策略](quality/test-strategy.md)
 - [Cloud Build／Cloud Run 配置雛形](operations/deployment.md)

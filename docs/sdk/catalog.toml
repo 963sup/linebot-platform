@@ -1,0 +1,128 @@
+# Codex SDK routing catalog, not a version lockfile or complete API inventory.
+# The only module-version authority is go.mod.
+# declared = dependency only; client_ready = native factory, no business wiring;
+# integrated = native Factory plus outbound Adapter source (not staging/prod approval).
+schema_version = 1
+
+[[modules]]
+module = "github.com/line/line-bot-sdk-go/v8"
+provider = "line"
+kind = "service"
+status = "integrated"
+imports = ["github.com/line/line-bot-sdk-go/v8/linebot/messaging_api", "github.com/line/line-bot-sdk-go/v8/linebot/webhook"]
+capabilities = ["line-webhook", "line-reply", "line-push", "line-flex", "line-managed-http", "line-context-isolation"]
+factory = "internal/infrastructure/line"
+adapter = "internal/adapter/outbound/line"
+reference = "https://github.com/line/line-bot-sdk-go"
+
+[[modules]]
+module = "github.com/google/uuid"
+provider = "google-uuid"
+kind = "utility"
+status = "integrated"
+imports = ["github.com/google/uuid"]
+capabilities = ["uuid-v4", "line-retry-key"]
+reference = "https://pkg.go.dev/github.com/google/uuid"
+
+[[modules]]
+module = "github.com/BurntSushi/toml"
+provider = "toml"
+kind = "tooling"
+status = "integrated"
+imports = ["github.com/BurntSushi/toml"]
+capabilities = ["codex-config-validation", "toml-parse"]
+reference = "https://github.com/BurntSushi/toml"
+
+[[modules]]
+module = "cloud.google.com/go/firestore"
+provider = "google-cloud"
+kind = "service"
+status = "integrated"
+imports = ["cloud.google.com/go/firestore"]
+capabilities = ["firestore-documents", "firestore-transactions", "durable-inbox-outbox", "single-use-claim", "reconcile"]
+factory = "internal/infrastructure/google/cloud/firestore"
+adapter = "internal/adapter/outbound/google/cloud/firestore"
+reference = "https://cloud.google.com/go/docs/reference/cloud.google.com/go/firestore/latest"
+
+[[modules]]
+module = "cloud.google.com/go/cloudtasks"
+provider = "google-cloud"
+kind = "service"
+status = "integrated"
+imports = ["cloud.google.com/go/cloudtasks/apiv2"]
+capabilities = ["cloud-tasks", "durable-background-work", "oidc-worker", "retry-window-task-id"]
+factory = "internal/infrastructure/google/cloud/cloudtasks"
+adapter = "internal/adapter/outbound/google/cloud/cloudtasks"
+reference = "https://cloud.google.com/go/docs/reference/cloud.google.com/go/cloudtasks/latest"
+
+[[modules]]
+module = "cloud.google.com/go/secretmanager"
+provider = "google-cloud"
+kind = "service"
+status = "client_ready"
+imports = ["cloud.google.com/go/secretmanager/apiv1"]
+capabilities = ["secret-manager", "secret-access"]
+factory = "internal/infrastructure/google/cloud/secretmanager"
+reference = "https://cloud.google.com/go/docs/reference/cloud.google.com/go/secretmanager/latest"
+
+[[modules]]
+module = "cloud.google.com/go/storage"
+provider = "google-cloud"
+kind = "service"
+status = "client_ready"
+imports = ["cloud.google.com/go/storage"]
+capabilities = ["cloud-storage", "object-upload", "object-download"]
+factory = "internal/infrastructure/google/cloud/storage"
+adapter = "internal/adapter/outbound/google/cloud/storage"
+reference = "https://cloud.google.com/go/docs/reference/cloud.google.com/go/storage/latest"
+
+[[modules]]
+module = "github.com/openai/openai-go/v3"
+provider = "openai"
+kind = "service"
+status = "client_ready"
+imports = ["github.com/openai/openai-go/v3"]
+capabilities = ["ai-text-generation", "responses-api"]
+factory = "internal/infrastructure/openai"
+adapter = "internal/adapter/outbound/openai"
+reference = "https://github.com/openai/openai-go"
+
+[[modules]]
+module = "google.golang.org/genai"
+provider = "google-genai"
+kind = "service"
+status = "client_ready"
+imports = ["google.golang.org/genai"]
+capabilities = ["gemini", "ai-text-generation", "vertex-ai"]
+factory = "internal/infrastructure/google/genai"
+adapter = "internal/adapter/outbound/genai"
+reference = "https://github.com/googleapis/go-genai"
+
+[[modules]]
+module = "google.golang.org/api"
+provider = "google-workspace"
+kind = "service"
+status = "client_ready"
+imports = ["google.golang.org/api/drive/v3", "google.golang.org/api/sheets/v4", "google.golang.org/api/calendar/v3", "google.golang.org/api/tasks/v1"]
+capabilities = ["google-drive", "google-sheets", "google-calendar", "google-tasks", "user-oauth-scopes"]
+factory = "internal/infrastructure/google/api"
+adapter = "internal/adapter/outbound/google/api"
+reference = "https://github.com/googleapis/google-api-go-client"
+
+[[modules]]
+module = "go.linecorp.com/garr"
+provider = "line-garr"
+kind = "utility"
+status = "declared"
+imports = ["go.linecorp.com/garr/retry"]
+capabilities = ["retry", "circuit-breaker"]
+reference = "https://github.com/line/garr"
+
+[[modules]]
+module = "google.golang.org/grpc"
+provider = "grpc"
+kind = "utility"
+status = "integrated"
+imports = ["google.golang.org/grpc/codes", "google.golang.org/grpc/status"]
+capabilities = ["cloud-api-status", "not-found", "already-exists"]
+reference = "https://pkg.go.dev/google.golang.org/grpc"

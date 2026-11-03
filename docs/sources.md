@@ -5,12 +5,18 @@
 | 來源（README） | Go module 或參考方式 | 本專案預定用途 |
 |---|---|---|
 | [google-cloud-go](https://github.com/googleapis/google-cloud-go/blob/main/README.md) | `cloud.google.com/go/<service>` | Firestore、Cloud Tasks、Storage、Secret Manager 等雲端服務。 |
-| [google-api-go-client](https://github.com/googleapis/google-api-go-client/blob/main/README.md) | `google.golang.org/api` | Sheets、Drive、Calendar 等 Discovery/Workspace API；該專案 README 註明處於 maintenance mode。 |
+| [google-api-go-client](https://github.com/googleapis/google-api-go-client/blob/main/README.md) | `google.golang.org/api` | Sheets、Drive、Calendar、Google Tasks 等 Discovery/Workspace API；個人資料需使用者 OAuth，且與 Cloud Tasks 不同。 |
 | [line-bot-sdk-go](https://github.com/line/line-bot-sdk-go/blob/master/README.md) | `github.com/line/line-bot-sdk-go/v8/linebot` | Messaging API、Webhook、Audience、Insight、Channel token 等。 |
 | [garr](https://github.com/line/garr/blob/main/README.md) | `go.linecorp.com/garr` | 選配 retry、circuit breaker、程序內韌性；不能代替 Cloud Tasks 的持久處理。 |
 | [line-developers-docs-source](https://github.com/line/line-developers-docs-source/blob/main/README.md) | 官方文件來源（不當 runtime dependency） | 核對事件與 endpoints。上游標示 read-only，請勿直接複製無授權內容。 |
 | [openai-go](https://github.com/openai/openai-go/blob/main/README.md) | `github.com/openai/openai-go/v3` | OpenAI Responses API 等 AI 功能。 |
 | [go-genai](https://github.com/googleapis/go-genai/blob/main/README.md) | `google.golang.org/genai` | Google Gen AI SDK（Gemini API 等）；adapter 放 `internal/adapter/outbound/genai/`、client 初始化放 `internal/infrastructure/google/genai/`。 |
+
+Google Tasks、Calendar 的 OAuth 範圍與 Factory 使用方式參閱 [Workspace OAuth 與 API](sdk/workspace-oauth.md)。
+
+Firestore／Cloud Tasks 的持久事件與 OIDC Worker 接線流程參考 [事件處理](architecture/event-processing.md)，隔離 IAM／TTL／排程要求參考 [Durable Worker](operations/durable-worker.md)。
+
+所有 `go.mod` 直接依賴的用途及預定接線路徑可查閱 [SDK Catalog](sdk/catalog.toml)。Catalog 不鎖定版本、不代表 API 已啟用，API 參數與權限仍應以實際模組程式碼和官方文件查證。Codex 工作流程請參考 [SDK Integration 設計](architecture/sdk-integration.md)。
 
 ## 採用原則
 

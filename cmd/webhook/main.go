@@ -16,14 +16,15 @@ func main() {
 		logger.Error("invalid configuration")
 		os.Exit(1)
 	}
-	router, err := bootstrap.NewWebhookRouter(cfg, logger)
+	runtime, err := bootstrap.NewWebhookRuntime(cfg, logger)
 	if err != nil {
-		logger.Error("failed to configure HTTP router")
+		logger.Error("failed to configure HTTP runtime")
 		os.Exit(1)
 	}
+	defer runtime.Close()
 	server := &http.Server{
 		Addr:              ":" + cfg.Port,
-		Handler:           router,
+		Handler:           runtime.Handler,
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       10 * time.Second,
 		WriteTimeout:      15 * time.Second,
@@ -34,6 +35,7 @@ func main() {
 	logger.Info("HTTP service starting", "port", cfg.Port, "line_configured", cfg.LiveLINE())
 	if err := bootstrap.Serve(ctx, server, logger); err != nil {
 		logger.Error("HTTP service stopped unexpectedly")
+		runtime.Close() // os.Exit does not run deferred cleanup.
 		os.Exit(1)
 	}
 }
