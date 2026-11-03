@@ -10,12 +10,8 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/963sup/linebot-platform/internal/adapter/outbound/line"
 	"github.com/963sup/linebot-platform/internal/application/ports/outbound"
-	"github.com/963sup/linebot-platform/internal/application/usecases/messaging"
 	"github.com/963sup/linebot-platform/internal/bootstrap"
-	"github.com/963sup/linebot-platform/internal/infrastructure/httpclient"
-	lineinfra "github.com/963sup/linebot-platform/internal/infrastructure/line"
 )
 
 func uuidv4() (string, error) {
@@ -30,8 +26,11 @@ func run(args []string, getenv func(string) string) error {
 	if len(args) > 0 && args[0] == "events" {
 		return runEvents(args[1:], getenv)
 	}
+	if len(args) > 0 && args[0] == "profile" {
+		return runProfile(args[1:], getenv, os.Stdout)
+	}
 	if len(args) == 0 || args[0] != "push" {
-		return errors.New("usage: ops push --to ID --text MESSAGE [--send] [--retry-key UUID] | ops events --inspect --project PROJECT")
+		return errors.New("usage: ops push --to ID --text MESSAGE [--send] [--retry-key UUID] | ops events --inspect --project PROJECT | ops profile --user ID --lookup")
 	}
 	fs := flag.NewFlagSet("push", flag.ContinueOnError)
 	to := fs.String("to", "", "LINE recipient ID")
@@ -77,26 +76,14 @@ func run(args []string, getenv func(string) string) error {
 		}
 		*key = parsed.String()
 	}
-	managed, err := httpclient.New(httpclient.Config{Timeout: httpclient.DefaultTimeout}, nil)
+	runtime, err := bootstrap.NewLINEOpsRuntime(getenv(bootstrap.KeyChannelToken))
 	if err != nil {
 		return err
 	}
-	defer managed.Close()
-	client, err := lineinfra.NewMessagingClientWithHTTPClient(getenv(bootstrap.KeyChannelToken), managed.Client)
-	if err != nil {
-		return err
-	}
-	sender, err := line.NewSender(client)
-	if err != nil {
-		return err
-	}
-	service, err := messaging.NewService(sender)
-	if err != nil {
-		return err
-	}
+	defer runtime.Close()
 	// Printed before sending so an uncertain result can be retried with the same key.
 	fmt.Fprintln(os.Stderr, "LINE push retry key:", *key)
-	return service.Push(context.Background(), *to, []outbound.Message{message}, *key)
+	return runtime.Messaging.Push(context.Background(), *to, []outbound.Message{message}, *key)
 }
 
 func main() {

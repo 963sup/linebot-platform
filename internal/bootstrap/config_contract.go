@@ -46,7 +46,7 @@ var settingContract = []SettingSpec{
 	{Key: KeyLogLevel, Roles: "webhook,worker", Secret: false, Default: "info", Required: "選用", Description: "debug、info、warn、error"},
 	{Key: KeyLogFormat, Roles: "webhook,worker", Secret: false, Default: "local=text; others=json", Required: "選用", Description: "staging/production 強制 json"},
 	{Key: KeyChannelSecret, Roles: "webhook", Secret: true, Default: "—", Required: "durable 必需；sync 與 Token 成對", Description: "僅驗證原始 Webhook 簽章，不應傳給 Worker"},
-	{Key: KeyChannelToken, Roles: "worker,local-sync,ops-push", Secret: true, Default: "—", Required: "worker 必需；本機 sync 成對", Description: "durable 公開 Webhook 禁止持有"},
+	{Key: KeyChannelToken, Roles: "worker,local-sync,ops-push,ops-profile", Secret: true, Default: "—", Required: "worker 必需；本機 sync 成對", Description: "durable 公開 Webhook 禁止持有"},
 	{Key: KeyBotDestination, Roles: "webhook-durable,worker", Secret: false, Default: "—", Required: "durable 必需", Description: "LINE Bot Destination ID"},
 	{Key: KeyProjectID, Roles: "webhook-durable,worker", Secret: false, Default: "—", Required: "durable 必需", Description: "最小 IAM 的指定 Google Cloud Project"},
 	{Key: KeyQueueName, Roles: "webhook-durable,worker", Secret: false, Default: "—", Required: "durable 必需", Description: "六段 Queue 資源名稱；Project 必須等於 GCP_PROJECT_ID；Queue ID 僅限 1–100 字元英數或連字號"},
