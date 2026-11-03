@@ -61,11 +61,28 @@ fly apps create "$WORKER_APP"
 
 Update the `app` values in `fly.toml` and `fly.worker.toml` to the chosen
 names (the deploy workflow also passes `--app` explicitly).
-The sample `primary_region = "nrt"` is a starting point, not a claim of
-lowest latency: place Fly Machines near the actual GCP queue/Firestore and
-measure network latency. Staging defaults to a **single always-on Machine**
+The staging default is **Singapore** (`primary_region = "sin"`) for both Fly
+apps, rather than Tokyo. `sin` is a supported Fly.io location but is not
+proven to be the fastest route for all Taiwan users or LINE infrastructure.
+Measure Taiwan → Webhook and Fly → Firestore/Cloud Tasks latency separately.
+For **new**, isolated GCP staging resources, `asia-southeast1` is an available
+Singapore Cloud Tasks/Firestore region candidate; if existing GCP staging data
+is in `asia-east1` (Taiwan), **do not change the queue name or move Firestore
+implicitly**. Regional moves require planned data migration, IAM/queue updates,
+latency comparison, and explicit authorization. Use the actual queue region in
+`TASK_QUEUE_NAME` and keep Cloud Tasks target HTTPS reachable. Staging defaults to a **single always-on Machine**
 per app (`--ha=false`); expect uptime limits and continuous costs. A production
 design needs explicit HA/scaling/capacity review and separate configs.
+
+## LINE Developers & Taiwan-side latency measurements
+
+- [LINE Messaging API webhook setup and verification](line-webhook.md) — channel
+  settings, environment key mapping, URL, HTTP 200 validation, redelivery,
+  and error diagnosis.
+- [Low-risk Taiwan-side latency probe](latency-check.sh) — measures GET
+  `/healthz` from the machine that runs it; not a LINE-to-Fly or
+  Firestore/Cloud Tasks end-to-end latency metric. Measure real staging
+  traces separately.
 
 ## 3. Set per-app runtime settings and secrets
 
