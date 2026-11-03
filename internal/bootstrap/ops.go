@@ -4,6 +4,7 @@ import (
 	"github.com/963sup/linebot-platform/internal/adapter/outbound/line"
 	"github.com/963sup/linebot-platform/internal/application/usecases/contacts"
 	"github.com/963sup/linebot-platform/internal/application/usecases/channel"
+	"github.com/963sup/linebot-platform/internal/application/usecases/engagement"
 	"github.com/963sup/linebot-platform/internal/application/usecases/messaging"
 	"github.com/963sup/linebot-platform/internal/infrastructure/httpclient"
 	lineinfra "github.com/963sup/linebot-platform/internal/infrastructure/line"
@@ -15,6 +16,7 @@ type LINEOpsRuntime struct {
 	Messaging *messaging.Service
 	Profiles  *contacts.Profiles
 	Channel   *channel.Inspector
+	Menus     *engagement.RichMenuInspector
 	outbound  *httpclient.Managed
 }
 
@@ -47,7 +49,11 @@ func NewLINEOpsRuntime(token string) (*LINEOpsRuntime, error) {
 	if err != nil {
 		return cleanup(err)
 	}
-	return &LINEOpsRuntime{Messaging: messages, Profiles: profiles, Channel: inspector, outbound: transport}, nil
+	menus, err := engagement.NewRichMenuInspector(sender)
+	if err != nil {
+		return cleanup(err)
+	}
+	return &LINEOpsRuntime{Messaging: messages, Profiles: profiles, Channel: inspector, Menus: menus, outbound: transport}, nil
 }
 
 func (r *LINEOpsRuntime) Close() {

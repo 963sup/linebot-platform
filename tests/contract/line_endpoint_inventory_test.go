@@ -34,6 +34,13 @@ func TestLINEEndpointInventory(t *testing.T) {
 		"getNumberOfSentMulticastMessages": false,
 		"getNumberOfSentBroadcastMessages": false,
 		"getNarrowcastProgress": false,
+		"getRichMenuList": false,
+		"getRichMenu": false,
+		"getDefaultRichMenuId": false,
+		"getRichMenuAliasList": false,
+		"getRichMenuAlias": false,
+		"getRichMenuIdOfUser": false,
+		"getRichMenuBatchProgress": false,
 	}
 	seen := make(map[string]bool)
 	count := 0

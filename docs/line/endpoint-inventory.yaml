@@ -50,25 +50,25 @@ endpoints:
   - {source: messaging-api, group: richmenu, operation: validateRichMenuObject, method: POST, path: "/v2/bot/richmenu/validate", integration: not_integrated, test: none, access: review}
   - {source: messaging-api, group: richmenu, operation: getRichMenuImage, method: GET, path: "/v2/bot/richmenu/{richMenuId}/content", integration: not_integrated, test: none, access: review}
   - {source: messaging-api, group: richmenu, operation: setRichMenuImage, method: POST, path: "/v2/bot/richmenu/{richMenuId}/content", integration: not_integrated, test: none, access: review}
-  - {source: messaging-api, group: richmenu, operation: getRichMenu, method: GET, path: "/v2/bot/richmenu/{richMenuId}", integration: not_integrated, test: none, access: review}
+  - {source: messaging-api, group: richmenu, operation: getRichMenu, method: GET, path: "/v2/bot/richmenu/{richMenuId}", integration: integrated_offline, test: contract, access: review}
   - {source: messaging-api, group: richmenu, operation: deleteRichMenu, method: DELETE, path: "/v2/bot/richmenu/{richMenuId}", integration: not_integrated, test: none, access: review}
-  - {source: messaging-api, group: richmenu, operation: getRichMenuList, method: GET, path: "/v2/bot/richmenu/list", integration: not_integrated, test: none, access: review}
+  - {source: messaging-api, group: richmenu, operation: getRichMenuList, method: GET, path: "/v2/bot/richmenu/list", integration: integrated_offline, test: contract, access: review}
   - {source: messaging-api, group: default-richmenu, operation: setDefaultRichMenu, method: POST, path: "/v2/bot/user/all/richmenu/{richMenuId}", integration: not_integrated, test: none, access: review}
-  - {source: messaging-api, group: default-richmenu, operation: getDefaultRichMenuId, method: GET, path: "/v2/bot/user/all/richmenu", integration: not_integrated, test: none, access: review}
+  - {source: messaging-api, group: default-richmenu, operation: getDefaultRichMenuId, method: GET, path: "/v2/bot/user/all/richmenu", integration: integrated_offline, test: contract, access: review}
   - {source: messaging-api, group: default-richmenu, operation: cancelDefaultRichMenu, method: DELETE, path: "/v2/bot/user/all/richmenu", integration: not_integrated, test: none, access: review}
   - {source: messaging-api, group: richmenu-alias, operation: createRichMenuAlias, method: POST, path: "/v2/bot/richmenu/alias", integration: not_integrated, test: none, access: review}
-  - {source: messaging-api, group: richmenu-alias, operation: getRichMenuAlias, method: GET, path: "/v2/bot/richmenu/alias/{richMenuAliasId}", integration: not_integrated, test: none, access: review}
+  - {source: messaging-api, group: richmenu-alias, operation: getRichMenuAlias, method: GET, path: "/v2/bot/richmenu/alias/{richMenuAliasId}", integration: integrated_offline, test: contract, access: review}
   - {source: messaging-api, group: richmenu-alias, operation: updateRichMenuAlias, method: POST, path: "/v2/bot/richmenu/alias/{richMenuAliasId}", integration: not_integrated, test: none, access: review}
   - {source: messaging-api, group: richmenu-alias, operation: deleteRichMenuAlias, method: DELETE, path: "/v2/bot/richmenu/alias/{richMenuAliasId}", integration: not_integrated, test: none, access: review}
-  - {source: messaging-api, group: richmenu-alias, operation: getRichMenuAliasList, method: GET, path: "/v2/bot/richmenu/alias/list", integration: not_integrated, test: none, access: review}
-  - {source: messaging-api, group: user-richmenu, operation: getRichMenuIdOfUser, method: GET, path: "/v2/bot/user/{userId}/richmenu", integration: not_integrated, test: none, access: review}
+  - {source: messaging-api, group: richmenu-alias, operation: getRichMenuAliasList, method: GET, path: "/v2/bot/richmenu/alias/list", integration: integrated_offline, test: contract, access: review}
+  - {source: messaging-api, group: user-richmenu, operation: getRichMenuIdOfUser, method: GET, path: "/v2/bot/user/{userId}/richmenu", integration: integrated_offline, test: contract, access: review}
   - {source: messaging-api, group: user-richmenu, operation: unlinkRichMenuIdFromUser, method: DELETE, path: "/v2/bot/user/{userId}/richmenu", integration: not_integrated, test: none, access: review}
   - {source: messaging-api, group: user-richmenu, operation: linkRichMenuIdToUser, method: POST, path: "/v2/bot/user/{userId}/richmenu/{richMenuId}", integration: not_integrated, test: none, access: review}
   - {source: messaging-api, group: user-richmenu, operation: linkRichMenuIdToUsers, method: POST, path: "/v2/bot/richmenu/bulk/link", integration: not_integrated, test: none, access: review}
   - {source: messaging-api, group: user-richmenu, operation: unlinkRichMenuIdFromUsers, method: POST, path: "/v2/bot/richmenu/bulk/unlink", integration: not_integrated, test: none, access: review}
   - {source: messaging-api, group: user-richmenu, operation: richMenuBatch, method: POST, path: "/v2/bot/richmenu/batch", integration: not_integrated, test: none, access: review}
   - {source: messaging-api, group: user-richmenu, operation: validateRichMenuBatchRequest, method: POST, path: "/v2/bot/richmenu/validate/batch", integration: not_integrated, test: none, access: review}
-  - {source: messaging-api, group: user-richmenu, operation: getRichMenuBatchProgress, method: GET, path: "/v2/bot/richmenu/progress/batch", integration: not_integrated, test: none, access: review}
+  - {source: messaging-api, group: user-richmenu, operation: getRichMenuBatchProgress, method: GET, path: "/v2/bot/richmenu/progress/batch", integration: integrated_offline, test: contract, access: review}
   - {source: messaging-api, group: account-link, operation: issueLinkToken, method: POST, path: "/v2/bot/user/{userId}/linkToken", integration: not_integrated, test: none, access: review}
   - {source: messaging-api, group: optional-apis, operation: markMessagesAsRead, method: POST, path: "/v2/bot/message/markAsRead", integration: not_integrated, test: none, access: required_eligibility_review}
   - {source: messaging-api, group: optional-apis, operation: pushMessagesByPhone, method: POST, path: "/bot/pnp/push", integration: not_integrated, test: none, access: required_eligibility_review}

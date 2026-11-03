@@ -6,7 +6,7 @@
 | Messaging | Reply、Push 已有基本 SDK adapter；Broadcast、Multicast、Narrowcast 未實作 | Partial |
 | Message contents | Text 與簡單 Flex bubble 已實作；其餘類型尚未實作 | Partial |
 | Chat / User | Profile 已接入 SDK Adapter、Contacts Use Case 與明確啟動的 Ops CLI；followers、group／room、content retrieval 尚未實作 | Partial (offline contract only) |
-| Rich Menu | 建立、綁定、圖片、alias、batch | Planned |
+| Rich Menu | List、Get、Default ID、Alias List/Get、User Menu ID、Batch Progress 已接入唯讀 CLI；建立、綁定、圖片、Alias 變更、Batch 寫入待實作 | Partial (offline contract only) |
 | Audience | 建立、上傳、查詢、刪除、分享 | Planned |
 | Insights | 發送、互動、followers、demographics | Planned |
 | Coupon / Membership | 視 LINE 官方帳號所在地區與資格啟用 | Planned / Restricted |

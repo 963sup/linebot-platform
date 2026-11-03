@@ -62,6 +62,8 @@ go run ./cmd/ops push --to "<LINE_USER_ID>" --text "測試通知"
 
 CLI 發送會先輸出可重用的 UUID retry key。若發生 timeout 或結果未知，使用完全相同訊息內容及 `--retry-key` 重新執行，避免因新 key 重複送出；請勿將 key 和收件者資訊貼到公開 issue。
 
+Rich Menu 唯讀查詢可執行 `go run ./cmd/ops menus --kind list --read`，其它 `--kind` 使用 `internal/application/usecases/engagement/inspect.go` 的 allowlist。查詢單一選單需搭配 `--id`，所有操作都不會在公開 Webhook 執行。
+
 LINE Channel 唯讀查詢需由操作人員明確指定：
 ```sh
 go run ./cmd/ops inspect --kind bot-info --read
