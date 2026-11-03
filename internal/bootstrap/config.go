@@ -29,7 +29,7 @@ type SecretConfig struct {
 	ChannelToken  string
 }
 
-func (SecretConfig) String() string { return "[redacted secrets]" }
+func (SecretConfig) String() string   { return "[redacted secrets]" }
 func (SecretConfig) GoString() string { return "bootstrap.SecretConfig{redacted}" }
 
 // LogConfig contains safe, non-sensitive logging settings.
@@ -99,7 +99,7 @@ func loadRuntimeConfig(role RuntimeRole, getenv func(string) string) (Config, er
 		LINEAPITimeout: timeout, Log: logging,
 		Secrets: SecretConfig{
 			ChannelSecret: readSetting(getenv, KeyChannelSecret),
-			ChannelToken: readSetting(getenv, KeyChannelToken),
+			ChannelToken:  readSetting(getenv, KeyChannelToken),
 		},
 	}
 	if role == RoleWorker {

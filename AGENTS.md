@@ -78,6 +78,7 @@
 
 - 執行期環境變數的唯一名稱、角色、預設、Secret 分類來源為 `internal/bootstrap/config_contract.go`；Webhook 與 Worker 使用同一條 `loadRuntimeConfig` 入口，角色驗證不可散落在 `cmd/` 或 Adapter。
 - 修改任何設定時同時更新 Go contract constants、bootstrap parser/validation、正確角色的測試與 `.env.example`，使用 `go run ./cmd/configcheck --write-doc` 更新 `docs/operations/configuration.md`；`make config-check` 及 CI 必須阻止文件漂移。
+- `make dev` 會強制將 LINE Channel Secret / Access Token 設為空字串，避免意外連到真實 LINE；要使用測試 Channel 須在安全 shell 中明確執行 `make run-webhook`，並提供測試 Channel 的兩項憑證。
 - `APP_ENV` 僅能是 local、staging、production；Cloud Run 的 `K_SERVICE` 防止降級至 local。`sync` 僅供本機 demo；公有 Webhook durable 不可持有 LINE 發送 Token，Worker 不可持有簽章 Secret。Secret 在結構上與普通 Config 分離，不得印出 config 原始結構或值。
 - 程式不自動讀入 YAML／`.env`；本機 `make dev` 不會自動拿到憑證。正式環境透過短期服務身分及 Secret Manager references 注入，避免提交 Secret、URL query、user message 到 log。
 - 可觀測性 logger 使用 `LOG_LEVEL` 與 `LOG_FORMAT` 的 allowlist；HTTP 只採固定路由分類、status、duration，不用高基數 user/event ID 作為指標。正式 Staging 必須另外驗證觀測與 IAM，不把 CI 綠燈當部署成功。

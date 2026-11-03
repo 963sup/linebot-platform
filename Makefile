@@ -14,7 +14,7 @@ config-docs:
 
 # No implicit .env loading: make dev starts the safe, credential-free local MVP.
 dev:
-	APP_ENV=local LINE_EVENT_MODE=sync go run ./cmd/webhook
+	APP_ENV=local LINE_EVENT_MODE=sync LINE_CHANNEL_SECRET= LINE_CHANNEL_ACCESS_TOKEN= go run ./cmd/webhook
 
 fmt-check:
 	@if [ -n "`gofmt -l cmd/ internal/ tests/`" ]; then printf "Go files require gofmt:\n"; gofmt -d cmd/ internal/ tests/; exit 1; fi

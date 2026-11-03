@@ -40,7 +40,7 @@ func TestRuntimeWithLINEAndShutdown(t *testing.T) {
 
 func TestRuntimeInvalidTimeout(t *testing.T) {
 	_, err := NewWebhookRuntime(Config{
-		Secrets: SecretConfig{ChannelSecret: "secret", ChannelToken: "token"},
+		Secrets:        SecretConfig{ChannelSecret: "secret", ChannelToken: "token"},
 		LINEAPITimeout: -time.Second,
 	}, nil)
 	if err == nil {

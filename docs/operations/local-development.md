@@ -27,8 +27,11 @@ make dev
 # 不需 LINE 或 GCP 帳號，驗證目前 shell 能啟動本機 Webhook
 go run ./cmd/configcheck --validate --role webhook
 
-# 單指令：安全的本機 Health MVP
+# 單指令：安全的本機 Health MVP，強制清空兩項 LINE 憑證
 make dev
+
+# 真正要使用已授權的 LINE 測試 Channel，須在安全的 shell
+# 設定兩項測試憑證，再明確呼叫：make run-webhook
 
 # 由 Go contract 自動驗證文件與安全的 .env.example
 make config-check

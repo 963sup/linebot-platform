@@ -9,7 +9,7 @@ import (
 
 func TestLoggerRespectsProfileAndSecretRedaction(t *testing.T) {
 	config, err := LoadConfig(env(map[string]string{
-		KeyLogLevel: "debug",
+		KeyLogLevel:  "debug",
 		KeyLogFormat: "json",
 	}))
 	if err != nil {

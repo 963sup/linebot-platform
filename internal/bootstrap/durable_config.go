@@ -75,4 +75,3 @@ func loadDurable(getenv func(string) string) (DurableConfig, error) {
 	}
 	return d, nil
 }
-

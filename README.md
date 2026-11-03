@@ -46,7 +46,7 @@
 ```sh
 make bootstrap             # go mod tidy + download；產生並檢查 go.sum
 make check                 # gofmt、vet、race tests、build
-make dev                   # 本機預設模式；不讀取任何 .env 或發送 LINE 訊息
+make dev                   # 強制清空 LINE Secret/Token 的安全本機 Health MVP
 curl http://localhost:8080/healthz
 ```
 
