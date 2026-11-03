@@ -1,10 +1,12 @@
 # Stage 5：Firestore Emulator、Staging 與 Codex 零先驗驗收
 
-**目前提供可執行的驗收測試／檢查器；真實 Staging、使用者 OAuth、Cloud Tasks OIDC、LINE 測試帳號與 Codex 新工作階段均尚未實測。**
+**Firestore Emulator 已在 GitHub Actions 的隔離本機容器實際驗證通過。** 真實 Staging、使用者 OAuth、Cloud Tasks OIDC、LINE 測試帳號及 Codex 新工作階段仍尚未實測。
 
 ## A. 本機離線驗收（不需真實 GCP 憑證）
 
-需自行準備官方 gcloud CLI／Firestore Emulator 及 Go 1.27.3。官方文件：[使用 Firestore Emulator](https://docs.cloud.google.com/firestore/native/docs/emulator)。
+**CI 自動執行無憑證測試，不需要手動設定環境變數。** GitHub Actions 的獨立 `firestore-emulator` Job 以 Digest 固定的官方容器綁定 Runner 本機 `127.0.0.1:8085`，執行 `go test -tags=integration -race -count=1` 並清理容器。[驗證紀錄 #41554849393](https://github.com/963sup/linebot-platform/actions/runs/41554849393)已通過兩項真實 SDK／Emulator 測試。
+
+下列是**額外的本機手動重現方式**，才需自行準備 gcloud CLI／Firestore Emulator 及 Go 1.27.3。官方文件：[使用 Firestore Emulator](https://docs.cloud.google.com/firestore/native/docs/emulator)。
 
 在第一個終端啟動只監聽本機的模擬器：
 

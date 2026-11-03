@@ -98,9 +98,9 @@ Google Tasks、Calendar 的授權詳見 [Workspace OAuth 與 API](docs/sdk/works
 ## Stage 5：零先驗與 Staging 驗收工具
 
 - 新增 [六項 Codex 零先驗情境](docs/ai/zero-context-scenarios.toml)，由 `codexcheck` 驗證模組與來源路由；**不代表已實際執行六個新工作階段**。
-- Firestore Emulator Transaction 測試使用 `integration` Build Tag，必須設定本機 `FIRESTORE_EMULATOR_HOST` 並執行 `make acceptance-emulator`。未設定時直接拒絕通過，而非把跳過的測試算成成功。
+- **GitHub Actions 已自動執行真實 Firestore Emulator SDK 交易測試**：以官方容器在 Runner 的 `127.0.0.1:8085` 啟動，不需提供 GCP 專案、環境變數或 API Key；完成原子交易／併發 Claim／恢復驗證。亦可選擇本機執行 `make acceptance-emulator`。
 - [Stage-5 Reviewer Evidence Gate](docs/operations/stage5-acceptance.md) 要求目前 PR HEAD、獨立 Staging 環境、OIDC／IAM／TTL／LINE 測試及 Codex 新工作階段的可審查證據。範例全部預設 `blocked`。
-- CI 可以驗證工具本身，但**真實 Emulator 執行、Cloud Staging 與 Codex 全新會話驗收仍待獨立完成**；不會自動取得雲端權限或部署。
+- [無憑證 Firestore Emulator CI 測試](https://github.com/963sup/linebot-platform/actions/runs/41554849393)已實際執行並通過；**真實 Cloud Staging、LINE／OAuth 授權與 Codex 全新會話驗收仍待完成**，不會自動取得雲端權限或部署。
 
 ## Codex Cloud 開發環境
 

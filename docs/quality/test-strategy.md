@@ -36,7 +36,7 @@ These are **offline contract tests** against the pinned Go SDK and local HTTP se
 - HTTP：原始 LINE Webhook 驗章、bot destination、持久化後才回 200、派送失敗時回 503；Cloud Tasks／Scheduler Callback 必須經 OIDC Verifier 驗證。
 - Cloud Tasks Queue：事件 Key + 10 秒派送時窗決定 Task ID，驗證同一時窗去重、跨時窗可恢復，OIDC email/audience、只包含 opaque Key 的 JSON Body、AlreadyExists 與其他失敗區分。
 - Bootstrap Config：預設同步模式維持相容，Durable/Worker 的 GCP、LINE、OIDC 欄位缺少時 fail closed。
-- Google SDK 的 Firestore Transaction、Cloud Tasks CreateTask 尚須在隔離 Firestore Emulator 與授權 Staging 進行真實一致性測試。本 PR 的離線測試不能替代 IAM／OIDC／TTL／排程驗證。
+- Firestore Transaction、併發 Claim 與恢復已在 GitHub Actions 的本機 Firestore Emulator 實際驗證；Cloud Tasks CreateTask、IAM、OIDC、TTL 政策與排程仍需經授權的真實 Staging 驗收。
 
 ## CI
 
@@ -50,9 +50,9 @@ make check
 
 - `go run ./cmd/codexcheck` 會驗證六項 Codex 自然語言情境的 Module、來源路徑與評分標準。這是**情境資料驗證**，不是已執行 Codex Cloud。
 - `cmd/acceptance` 的單元測試會驗證 production／錯誤 SHA／過時、缺少或不安全的證據一律 fail closed；最終 Gate 只能透過明確審核後的真實 Staging 證據通過。
-- `tests/integration/firestore_emulator_test.go` 以 `//go:build integration` 隔離，需要本機 Emulator Host 和 `make acceptance-emulator` 才執行真正 Firestore Transaction。沒有 Emulator 即屬**未執行**。
+- `tests/integration/firestore_emulator_test.go` 以 `//go:build integration` 隔離；GitHub Actions 自動啟動官方本機 Emulator 並執行實際 Firestore Transaction/Claim/Recovery 測試，已於 [#41554849393](https://github.com/963sup/linebot-platform/actions/runs/41554849393) 通過。手動重現可使用 `make acceptance-emulator`。未提供有效 Emulator Host 時整合測試明確失敗。
 - CI 驗證 gofmt、vet、race tests、build、情境清單與 Stage-5 Example 的預設拒絕行為；不在一般 PR 中呼叫真實雲端或個人 OAuth。
 
 ## Integration / E2E
 
-Firestore Emulator SDK 整合測試**程式碼已新增**，仍需在實際啟動的本機 Emulator 執行。Cloud Tasks、Cloud Run OIDC、LINE Sandbox 和 Workspace 的跨服務 E2E 仍需要隔離憑證、授權和人工審查。CI 通過不得視為上述外部測試通過。
+Firestore Emulator SDK 整合測試已在 GitHub Actions 的本機容器**實際執行並通過**。Cloud Tasks、Cloud Run OIDC、LINE Sandbox 和 Workspace 的真實跨服務 E2E 仍需要隔離憑證、授權和人工審查。CI 通過不得視為這些外部測試通過。

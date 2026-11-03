@@ -80,12 +80,12 @@ The webhook entrypoint now calls `bootstrap.NewWebhookRuntime` to compose only t
 2. **Typed client infrastructure (PR #8, completed LINE slice)**: typed factory injection, owned transport, configuration, logging metadata, safe error semantics and request-context isolation; reusable base for future providers. Verify CI and authorized staging separately.
 3. **Native provider factories (PR #8)**: Google Cloud, Google Workspace (including Tasks and Calendar), OpenAI and Gemini native Client Factories have offline tests. Business Adapters and authorized runtime activation remain pending.
 4. **Durable event handling (PR #8, code implemented)**: Firestore inbox/outbox, Cloud Tasks worker, single-use Claim, unknown outcomes and bounded reconciliation. Authorized IAM/OIDC/TTL/scheduler setup and staging proof remain pending.
-5. **Stage-5 acceptance tooling (PR #8)**: checked-in six zero-context scenarios, local Firestore emulator-tagged integration tests, a fail-closed staging reviewer evidence gate, and security runbooks. **Actual** staging IAM/OIDC/TTL, sandbox calls, emulator execution and six fresh Codex sessions remain outstanding; do not treat test tooling as production approval.
+5. **Stage-5 acceptance (PR #8)**: six zero-context scenarios, a fail-closed reviewer gate, security runbooks, and **real Firestore SDK tests passed against an isolated emulator in GitHub Actions**. Authorized staging IAM/OIDC/TTL, LINE Sandbox calls, user OAuth and six fresh Codex sessions remain outstanding; do not treat emulator evidence as production approval.
 
 ## Stage-5 verification evidence boundary
 
 - `cmd/codexcheck` checks the six prompts reference real declared modules and paths, not whether Codex actually solved them.
-- `make acceptance-emulator` requires an explicitly running loopback Firestore Emulator and validates atomic inbox/outbox, deduplication, worker Claim, TTL serialization and terminal-state recovery. The build-tagged suite does not run in ordinary CI without its emulator; a compile-only CI step checks type safety.
+- The dedicated `firestore-emulator` CI Job starts the official loopback-only Emulator without credentials and runs the build-tagged Firestore SDK tests (atomic Inbox/Outbox, deduplication, Worker Claim, TTL serialization, terminal-state recovery). The regular Go verification job also compiles the tagged suite without external access. Manual repetition is available via `make acceptance-emulator`.
 - `cmd/acceptance` validates reviewer-supplied evidence for isolated Staging IAM, OIDC, Scheduler, LINE Sandbox, privacy checks and fresh Codex sessions. Without actual independent evidence, the provided example is blocked.
 - No credential issuance, cloud resource creation, deployment or PR merge is authorized by these tools.
 
