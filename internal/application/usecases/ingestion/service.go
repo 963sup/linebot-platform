@@ -176,10 +176,13 @@ func (d *Dispatcher) Dispatch(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	// Attempt every reserved item. A single queue error must not prevent
+	// younger work from being offered; Recover will retry after cooldown.
+	var dispatchErr error
 	for _, key := range keys {
 		if err := d.queue.Enqueue(ctx, key); err != nil {
-			return err
+			dispatchErr = errors.Join(dispatchErr, err)
 		}
 	}
-	return nil
+	return dispatchErr
 }
