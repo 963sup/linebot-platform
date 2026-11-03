@@ -13,6 +13,7 @@
 | Reply Text | `application/usecases/conversation` 與 LINE adapter | 使用 LINE Messaging API SDK |
 | Reply Flex | 同上 | 傳入 `flex` 或 `卡片` 時回覆簡單 bubble |
 | Push Text／Flex | `cmd/ops` | 僅 CLI `push --send` 會實際呼叫 API，且需要接收者與 retry key |
+| Profile（明確查詢） | `cmd/ops`、`application/usecases/contacts`、LINE adapter | `profile --lookup` 只在 CLI 查詢；已有離線契約測試，未完成真實 Channel 驗收 |
 | Firestore、Cloud Tasks（背景佇列） | `internal/adapter/outbound/google/cloud/` | 具備選用 Durable Inbox/Outbox 與派送 Adapter，尚未部署 |
 | Storage、Secret Manager | `internal/infrastructure/google/cloud/` | 原生 Client Factory，未接入業務 |
 | Sheets、Drive、Calendar、Google Tasks（待辦） | `internal/infrastructure/google/api/` | 原生 Client Factory 已建立；個人資料仍需使用者 OAuth 授權 |
@@ -60,6 +61,12 @@ go run ./cmd/ops push --to "<LINE_USER_ID>" --text "測試通知"
 ```
 
 CLI 發送會先輸出可重用的 UUID retry key。若發生 timeout 或結果未知，使用完全相同訊息內容及 `--retry-key` 重新執行，避免因新 key 重複送出；請勿將 key 和收件者資訊貼到公開 issue。
+
+Profile 查詢只供具授權的操作人員手動執行，不會由公開 Webhook 自動讀取使用者資料。先在安全環境提供 `LINE_CHANNEL_ACCESS_TOKEN`，再明確指定使用者及 `--lookup`：
+```sh
+go run ./cmd/ops profile --user "<LINE_USER_ID>" --lookup
+```
+Profile 回應包含個人資料，請勿將 stdout、Shell 紀錄或查詢結果提交至 GitHub。官方端點覆蓋及權限待確認項目請見 [LINE Endpoint Inventory](docs/line/endpoint-inventory.yaml)。
 
 完整設定與測試說明：[本機開發](docs/operations/local-development.md)、[測試策略](docs/quality/test-strategy.md)。
 

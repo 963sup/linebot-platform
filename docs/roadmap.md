@@ -75,7 +75,7 @@
 
 ## P3 — 全公開 API、AI 與雲端
 
-- [ ] 依官方 reference 建立可驗證的 LINE endpoint inventory。
+- [x] 依固定官方 OpenAPI revision 建立 102 項 LINE endpoint inventory（Messaging、Insights、Audience、Channel Access Token）；目前僅 Reply、Push、GetProfile 已接入，真實 Channel 驗收仍待完成。
 - [ ] Message types、Rich Menu、Audience、Insights、Coupon、Account link。
 - [ ] OpenAI / Gemini 可替換 adapter；Google Cloud／Workspace。
 - [ ] 批准後部署 staging，驗證後再考慮 production。
