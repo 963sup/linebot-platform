@@ -50,7 +50,7 @@ func TestFirestoreTransactionAndConcurrentClaim(t *testing.T) {
 	_, store := emulatorStore(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancel()
-	now := time.Now().UTC()
+	now := time.Now().UTC().Truncate(time.Millisecond)
 	job := eventJob(10001, now)
 	created, err := store.Record(ctx, job)
 	if err != nil || !created {
