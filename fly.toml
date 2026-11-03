@@ -1,43 +1,43 @@
-# Staging-only public LINE webhook. Replace app with your globally unique Fly app name.
-# Do not place credentials or Google service-account JSON in this file.
-app = "linebot-webhook-staging"
-primary_region = "sin" # Singapore; measure end-to-end latency from Taiwan before production
-kill_signal = "SIGTERM"
-kill_timeout = 20
+# fly.toml app configuration file generated for linebot-platform on 2026-11-03T12:35:01Z
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = 'linebot-platform'
+primary_region = 'sin'
+kill_signal = 'SIGTERM'
+kill_timeout = '20s'
 
 [build]
-  dockerfile = "Dockerfile"
+  dockerfile = 'Dockerfile'
 
 [env]
-  APP_ENV = "staging"
-  PORT = "8080"
-  LINE_EVENT_MODE = "durable"
-  LOG_LEVEL = "info"
-  LOG_FORMAT = "json"
-  GOOGLE_APPLICATION_CREDENTIALS = "/gcp-credentials.json"
+  APP_ENV = 'staging'
+  GOOGLE_APPLICATION_CREDENTIALS = '/gcp-credentials.json'
+  LINE_EVENT_MODE = 'durable'
+  LOG_FORMAT = 'json'
+  LOG_LEVEL = 'info'
+  PORT = '8080'
 
 [http_service]
   internal_port = 8080
   force_https = true
-  auto_stop_machines = "off"
+  auto_stop_machines = 'off'
   auto_start_machines = true
   min_machines_running = 1
 
-[[http_service.checks]]
-  grace_period = "30s"
-  interval = "30s"
-  timeout = "5s"
-  method = "GET"
-  path = "/healthz"
+  [[http_service.checks]]
+    interval = '30s'
+    timeout = '5s'
+    grace_period = '30s'
+    method = 'GET'
+    path = '/healthz'
 
-# Staging bootstrap: only use a restricted, rotatable Google SA key in this
-# base64-encoded Fly secret. Replace with a verified keyless ADC/WIF setup
-# before production; Fly does not automatically provide Cloud Run ADC.
 [[files]]
-  guest_path = "/gcp-credentials.json"
-  secret_name = "GCP_ADC_JSON_B64"
+  guest_path = '/gcp-credentials.json'
+  secret_name = 'GCP_ADC_JSON_B64'
 
 [[vm]]
-  cpu_kind = "shared"
+  cpu_kind = 'shared'
   cpus = 1
   memory_mb = 512
