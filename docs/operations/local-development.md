@@ -30,7 +30,7 @@ export LINE_API_TIMEOUT=6s
 make run-webhook
 ```
 
-允許 `1s` 至 `12s`，不合法的值會在啟動時拒絕；CLI Push 維持預設 `8s`。HTTP Client 使用獨立的連線池，完成 Shutdown 後關閉其閒置連線。SDK 出站 Debug Log 只有 Provider、Status、Duration、錯誤旗標，不應含 URL、Token 或原始訊息。LINE Context 已改為逐次呼叫隔離，但尚無持久重試與事件去重。
+允許 `1s` 至 `12s`，不合法的值會在啟動時拒絕；CLI Push 維持預設 `8s`。HTTP Client 使用獨立的連線池，完成 Shutdown 後關閉其閒置連線。SDK 出站 Debug Log 只有 Provider、Status、Duration、錯誤旗標，不應含 URL、Token 或原始訊息。LINE Context 已改為逐次呼叫隔離。**預設 sync Webhook 不提供持久事件去重**；只有明確設定且取得隔離 GCP 權限的 durable 模式具備 Firestore Inbox/Outbox 與單次 Claim，不代表已經完成正式環境驗證。
 
 ## Push CLI
 

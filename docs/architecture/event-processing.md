@@ -1,6 +1,6 @@
 # LINE 事件處理：同步 MVP 與選用的持久工作模式
 
-目前只有本機／離線契約測試；**沒有建立或部署任何 GCP、Firestore、Cloud Tasks、Cloud Scheduler、Cloud Run 或正式 LINE 資源**。新增的持久模式不代表可以直接上 production。
+**程式碼已併入 main；目前未建立或部署任何專案專屬 GCP、Firestore、Cloud Tasks、Cloud Scheduler、Cloud Run 或正式 LINE 資源。** PR #8 合併前的 [CI #41555545761](https://github.com/963sup/linebot-platform/actions/runs/41555545761) 曾在無憑證的本機 Firestore Emulator 通過交易／併發驗收；一次性 Emulator 測試已依清理要求移除，現行 CI 只維持 Unit／Contract／Architecture／Race Tests。不得將歷史 Emulator 結果視為正式雲端驗收。
 
 ## 模式與入口
 
