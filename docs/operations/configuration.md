@@ -14,7 +14,7 @@
 | `LINE_CHANNEL_ACCESS_TOKEN` | worker,local-sync,ops-push | 是 | — | worker 必需；本機 sync 成對 | durable 公開 Webhook 禁止持有 |
 | `LINE_BOT_DESTINATION` | webhook-durable,worker | 否 | — | durable 必需 | LINE Bot Destination ID |
 | `GCP_PROJECT_ID` | webhook-durable,worker | 否 | — | durable 必需 | 最小 IAM 的指定 Google Cloud Project |
-| `TASK_QUEUE_NAME` | webhook-durable,worker | 否 | — | durable 必需 | 完整 projects/.../locations/.../queues/... |
+| `TASK_QUEUE_NAME` | webhook-durable,worker | 否 | — | durable 必需 | 六段 Queue 資源名稱，Project 必須等於 GCP_PROJECT_ID |
 | `TASK_WORKER_URL` | webhook-durable,worker | 否 | — | durable 必需 | HTTPS Worker /tasks/line-reply |
 | `TASK_OIDC_AUDIENCE` | webhook-durable,worker | 否 | — | durable 必需 | 必須符合 Worker HTTPS Origin |
 | `TASK_INVOKER_EMAIL` | webhook-durable,worker | 否 | — | durable 必需 | 允許呼叫 Worker 的 Service Account Email |

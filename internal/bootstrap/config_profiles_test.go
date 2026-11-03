@@ -132,3 +132,29 @@ func TestWorkerRejectsIncompatibleWebhookMode(t *testing.T) {
 		t.Fatalf("worker should use implicit durable mode: %v", err)
 	}
 }
+
+func TestDurableConfigPreflightRejectsMalformedQueueName(t *testing.T) {
+	for _, queue := range []string{
+		"projects/test-project/locations/asia-east1/queues/line-queue/extra",
+		"projects/test-project/locations//queues/line-queue",
+		"projects/test-project/locations/../queues/line-queue",
+		"projects/test-project/locations/asia-east1/queues/",
+		"projects/other-project/locations/asia-east1/queues/line-queue",
+		"projects/test-project/locations/asia-east1/tasks/line-queue",
+	} {
+		t.Run(queue, func(t *testing.T) {
+			webhook := durableSettings()
+			webhook[KeyQueueName] = queue
+			if _, err := LoadConfig(env(webhook)); err == nil {
+				t.Fatal("webhook preflight accepted an invalid or cross-project queue")
+			}
+			worker := durableSettings()
+			delete(worker, KeyChannelSecret)
+			worker[KeyChannelToken] = "test-token"
+			worker[KeyQueueName] = queue
+			if _, err := LoadWorkerConfig(env(worker)); err == nil {
+				t.Fatal("worker preflight accepted an invalid or cross-project queue")
+			}
+		})
+	}
+}
