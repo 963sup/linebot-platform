@@ -254,3 +254,32 @@ func TestRedeliveryWindowUsesOriginalTimestamp(t *testing.T) {
 		}
 	}
 }
+
+type failFirstEnqueue struct{ calls int }
+
+func (q *failFirstEnqueue) Enqueue(_ context.Context, _ string) error {
+	q.calls++
+	if q.calls == 1 {
+		return errors.New("transient queue failure")
+	}
+	return nil
+}
+
+func TestDispatcherAttemptsAllReservedKeysOnQueueError(t *testing.T) {
+	store := newFakeStore()
+	store.pending = []string{
+		"0000000000000000000000000000000000000000000000000000000000000001",
+		"0000000000000000000000000000000000000000000000000000000000000002",
+	}
+	queue := &failFirstEnqueue{}
+	dispatcher, err := NewDispatcher(store, queue)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := dispatcher.Dispatch(context.Background()); err == nil {
+		t.Fatal("expected partial queue failure to be reported")
+	}
+	if queue.calls != len(store.pending) {
+		t.Fatalf("later reserved tasks were skipped, calls=%d", queue.calls)
+	}
+}

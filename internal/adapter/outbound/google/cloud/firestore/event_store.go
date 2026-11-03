@@ -17,21 +17,23 @@ const (
 	inboxCollection  = "line_inbox_v1"
 	outboxCollection = "line_outbox_v1"
 	leaseDuration    = 90 * time.Second
+	dispatchCooldown = 2 * time.Minute
 	inboxRetention   = 7 * 24 * time.Hour
 	outboxRetention  = time.Hour
 )
 
 type storedJob struct {
-	ReplyToken string           `firestore:"reply_token"`
-	Message    outbound.Message `firestore:"message"`
-	ReplyUntil time.Time        `firestore:"reply_until"`
-	OccurredAt time.Time        `firestore:"occurred_at"`
-	CreatedAt  time.Time        `firestore:"created_at"`
-	UpdatedAt  time.Time        `firestore:"updated_at"`
-	ExpiresAt  time.Time        `firestore:"expires_at"`
-	State      string           `firestore:"state"`
-	LeaseID    string           `firestore:"lease_id"`
-	LeaseUntil time.Time        `firestore:"lease_until"`
+	ReplyToken     string           `firestore:"reply_token"`
+	Message        outbound.Message `firestore:"message"`
+	ReplyUntil     time.Time        `firestore:"reply_until"`
+	NextDispatchAt time.Time        `firestore:"next_dispatch_at"`
+	OccurredAt     time.Time        `firestore:"occurred_at"`
+	CreatedAt      time.Time        `firestore:"created_at"`
+	UpdatedAt      time.Time        `firestore:"updated_at"`
+	ExpiresAt      time.Time        `firestore:"expires_at"`
+	State          string           `firestore:"state"`
+	LeaseID        string           `firestore:"lease_id"`
+	LeaseUntil     time.Time        `firestore:"lease_until"`
 }
 
 type Store struct{ client *sdk.Client }
@@ -78,6 +80,7 @@ func (s *Store) Record(ctx context.Context, job outbound.EventJob) (bool, error)
 				return tx.Update(outbox, []sdk.Update{
 					{Path: "state", Value: "pending"},
 					{Path: "reply_until", Value: job.ReplyUntil},
+					{Path: "next_dispatch_at", Value: job.CreatedAt},
 					{Path: "reply_token", Value: job.ReplyToken},
 					{Path: "updated_at", Value: job.CreatedAt},
 				})
@@ -97,6 +100,7 @@ func (s *Store) Record(ctx context.Context, job outbound.EventJob) (bool, error)
 			ReplyToken: job.ReplyToken,
 			Message:    job.Message,
 			ReplyUntil: job.ReplyUntil,
+			NextDispatchAt: job.CreatedAt,
 			OccurredAt: job.OccurredAt,
 			CreatedAt:  job.CreatedAt,
 			UpdatedAt:  job.CreatedAt,
@@ -199,64 +203,120 @@ func (s *Store) Complete(ctx context.Context, key, leaseID string, outcome outbo
 	})
 }
 
-// Recover queries pending events for re-enqueue and marks abandoned sending
-// leases unknown. It intentionally never turns an old sending state to pending.
+// Recover makes bounded progress across *due* records, rather than repeatedly
+// selecting the same 100 pending documents. A durable next_dispatch_at is
+// reserved before enqueueing. If the process crashes, a later scan retries
+// after dispatchCooldown; Claim remains the one-use LINE send gate.
+//
+// Required composite indexes: state+reply_until, state+lease_until,
+// state+next_dispatch_at (all ascending). See deploy/firestore/indexes.json.
 func (s *Store) Recover(ctx context.Context, now time.Time, limit int) ([]string, error) {
 	if limit < 1 || limit > 100 {
 		return nil, errors.New("recovery batch size must be 1–100")
 	}
-	// Query each state separately. These bounded index queries require only
-	// the default single-field state index.
-	query := s.client.Collection(outboxCollection).Where("state", "==", "pending").Limit(limit)
-	iter := query.Documents(ctx)
-	defer iter.Stop()
-	var pending []string
+	coll := s.client.Collection(outboxCollection)
+
+	// Expire only actually overdue replies; a large set of future replies
+	// must not block expiry processing. Conditional updates guard races.
+	expired := coll.Where("state", "==", "pending").
+		Where("reply_until", "<=", now).OrderBy("reply_until", sdk.Asc).Limit(limit).Documents(ctx)
+	defer expired.Stop()
 	for {
-		doc, err := iter.Next()
+		doc, err := expired.Next()
 		if err == iterator.Done {
 			break
 		}
 		if err != nil {
 			return nil, err
 		}
-		var saved storedJob
-		if err := doc.DataTo(&saved); err != nil {
+		if err := s.expirePending(ctx, doc.Ref, now); err != nil {
 			return nil, err
 		}
-		if !now.Before(saved.ReplyUntil) {
-			if err := s.expirePending(ctx, doc.Ref, now); err != nil {
-				return nil, err
-			}
+	}
+
+	// A timed-out lease means an earlier worker might have called LINE.
+	// Never reclaim it for an automatic second send.
+	abandoned := coll.Where("state", "==", "sending").
+		Where("lease_until", "<=", now).OrderBy("lease_until", sdk.Asc).Limit(limit).Documents(ctx)
+	defer abandoned.Stop()
+	for {
+		doc, err := abandoned.Next()
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			return nil, err
+		}
+		if err := s.unknownExpired(ctx, doc.Ref, now); err != nil {
+			return nil, err
+		}
+	}
+
+	// Process the earliest eligible next_dispatch_at, moving each selected
+	// item forward so repeated schedule runs do not starve later pending jobs.
+	due := coll.Where("state", "==", "pending").
+		Where("next_dispatch_at", "<=", now).OrderBy("next_dispatch_at", sdk.Asc).Limit(limit).Documents(ctx)
+	defer due.Stop()
+	keys := make([]string, 0, limit)
+	for {
+		doc, err := due.Next()
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			return nil, err
+		}
+		if !validKey(doc.Ref.ID) {
 			continue
 		}
-		if validKey(doc.Ref.ID) {
-			pending = append(pending, doc.Ref.ID)
-		}
-	}
-	// An expired lease means the prior worker might have called LINE. Mark
-	// unknown; no second sending attempt is automatically permitted.
-	sending := s.client.Collection(outboxCollection).Where("state", "==", "sending").Limit(limit)
-	inProgress := sending.Documents(ctx)
-	defer inProgress.Stop()
-	for {
-		doc, err := inProgress.Next()
-		if err == iterator.Done {
-			break
-		}
+		reserved, err := s.reserveDispatch(ctx, doc.Ref, now)
 		if err != nil {
 			return nil, err
 		}
-		var saved storedJob
-		if err := doc.DataTo(&saved); err != nil {
-			return nil, err
-		}
-		if !now.Before(saved.LeaseUntil) {
-			if err := s.unknownExpired(ctx, doc.Ref, now); err != nil {
-				return nil, err
-			}
+		if reserved {
+			keys = append(keys, doc.Ref.ID)
 		}
 	}
-	return pending, nil
+	return keys, nil
+}
+
+// reserveDispatch conditionally advances the due time in a Firestore
+// transaction. Lost task publication can be retried after the cooldown.
+func (s *Store) reserveDispatch(ctx context.Context, ref *sdk.DocumentRef, now time.Time) (bool, error) {
+	var reserved bool
+	err := s.client.RunTransaction(ctx, func(ctx context.Context, tx *sdk.Transaction) error {
+		reserved = false
+		doc, err := tx.Get(ref)
+		if status.Code(err) == codes.NotFound {
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+		var saved storedJob
+		if err := doc.DataTo(&saved); err != nil {
+			return err
+		}
+		if saved.State != "pending" || now.Before(saved.NextDispatchAt) {
+			return nil
+		}
+		if !now.Before(saved.ReplyUntil) {
+			return tx.Update(ref, []sdk.Update{
+				{Path: "state", Value: "expired"},
+				{Path: "reply_token", Value: ""},
+				{Path: "updated_at", Value: now},
+			})
+		}
+		if err := tx.Update(ref, []sdk.Update{
+			{Path: "next_dispatch_at", Value: now.Add(dispatchCooldown)},
+			{Path: "updated_at", Value: now},
+		}); err != nil {
+			return err
+		}
+		reserved = true
+		return nil
+	})
+	return reserved, err
 }
 
 func (s *Store) expirePending(ctx context.Context, ref *sdk.DocumentRef, now time.Time) error {
