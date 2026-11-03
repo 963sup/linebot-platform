@@ -56,3 +56,35 @@ func TestValidatePrintsNoSecretValues(t *testing.T) {
 		}
 	}
 }
+
+func TestExampleRejectsInvalidRuntimeValues(t *testing.T) {
+	original, err := os.ReadFile(filepath.Join("..", "..", examplePath))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, tt := range []struct {
+		name, before, after string
+	}{
+		{"invalid port", "PORT=8080", "PORT=0"},
+		{"invalid timeout", "LINE_API_TIMEOUT=8s", "LINE_API_TIMEOUT=0s"},
+		{"invalid log level", "LOG_LEVEL=info", "LOG_LEVEL=trace"},
+		{"invalid log format", "LOG_FORMAT=text", "LOG_FORMAT=xml"},
+		{"unsafe deployment profile", "APP_ENV=local", "APP_ENV=production"},
+		{"durable without credentials", "LINE_EVENT_MODE=sync", "LINE_EVENT_MODE=durable"},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			if !bytes.Contains(original, []byte(tt.before)) {
+				t.Fatalf("example is missing expected safe setting %q", tt.before)
+			}
+			changed := strings.Replace(string(original), tt.before, tt.after, 1)
+			if err := checkExample([]byte(changed)); err == nil {
+				t.Fatalf("example with %q should fail runtime validation", tt.after)
+			}
+		})
+	}
+	// Even a known platform-provided key must not make a local template
+	// accidentally pass as a Cloud Run configuration.
+	if err := checkExample(append(append([]byte(nil), original...), []byte("K_SERVICE=unexpected-cloud-run\n")...)); err == nil {
+		t.Fatal("local example must reject Cloud Run runtime metadata")
+	}
+}

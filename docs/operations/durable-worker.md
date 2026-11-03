@@ -14,12 +14,12 @@
 |---|---|---|---|
 | `APP_ENV` | `staging` or `production` on Cloud Run | same | Explicit runtime profile; local is rejected when `K_SERVICE` is present |
 | `PORT` | optional | optional | HTTP listener port, default 8080 |
-| `LINE_EVENT_MODE` | `durable` | n/a | Explicitly enables durable webhook mode |
+| `LINE_EVENT_MODE` | `durable` | optional `durable` only | Worker always runs in durable mode; explicit `sync` or unknown values fail startup |
 | `LINE_CHANNEL_SECRET` | required | n/a | Verify LINE raw-body signature |
 | `LINE_CHANNEL_ACCESS_TOKEN` | **forbidden** | required | Only the private worker is permitted to send LINE messages |
 | `LINE_BOT_DESTINATION` | required | required | Bot destination ID for event isolation and event-key derivation |
 | `GCP_PROJECT_ID` | required | required | Dedicated staging project |
-| `TASK_QUEUE_NAME` | required | required | Full projects/.../locations/.../queues/... name |
+| `TASK_QUEUE_NAME` | required | required | Exactly projects/PROJECT/locations/REGION/queues/NAME; PROJECT must equal GCP_PROJECT_ID, QUEUE ID must be 1–100 ASCII letters/digits/hyphens |
 | `TASK_WORKER_URL` | required | required | HTTPS worker URL ending in /tasks/line-reply |
 | `TASK_OIDC_AUDIENCE` | required | required | Origin of the worker URL (without task path) |
 | `TASK_INVOKER_EMAIL` | required | required | Google service account email authorized to call worker |

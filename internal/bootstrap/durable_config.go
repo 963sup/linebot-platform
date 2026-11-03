@@ -4,9 +4,9 @@ import (
 	"errors"
 	"net/url"
 	"strconv"
-	"strings"
 	"time"
 
+	queueinfra "github.com/963sup/linebot-platform/internal/infrastructure/google/cloud/cloudtasks"
 	"github.com/963sup/linebot-platform/internal/infrastructure/httpclient"
 )
 
@@ -58,9 +58,11 @@ func loadDurable(getenv func(string) string) (DurableConfig, error) {
 		d.OIDCAudience == "" || d.InvokerEmail == "" {
 		return DurableConfig{}, errors.New("durable event mode requires GCP project, LINE bot destination, queue, worker URL and OIDC identity")
 	}
-	prefix := "projects/" + d.ProjectID + "/locations/"
-	if !strings.HasPrefix(d.QueueName, prefix) || !strings.Contains(d.QueueName[len(prefix):], "/queues/") {
-		return DurableConfig{}, errors.New("TASK_QUEUE_NAME must belong to configured GCP_PROJECT_ID")
+	// The preflight must reject the same malformed names as the Cloud Tasks
+	// adapter, before creating Firestore or Cloud Tasks SDK clients.
+	queueProject, ok := queueinfra.QueueProjectID(d.QueueName)
+	if !ok || queueProject != d.ProjectID {
+		return DurableConfig{}, errors.New("TASK_QUEUE_NAME must be a valid six-segment queue in GCP_PROJECT_ID")
 	}
 	u, err := url.Parse(d.WorkerURL)
 	if err != nil || u.Scheme != "https" || u.Host == "" || u.User != nil ||

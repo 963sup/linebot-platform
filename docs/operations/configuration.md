@@ -6,7 +6,7 @@
 |---|---|---|---|---|---|
 | `APP_ENV` | webhook,worker | 否 | local | Cloud Run 必須明確設定 staging/production | local、staging、production |
 | `PORT` | webhook,worker | 否 | 8080 | 選用 | HTTP 監聽埠，1–65535 |
-| `LINE_EVENT_MODE` | webhook | 否 | sync | Cloud Run 必須 durable | 本機 sync；正式環境僅 durable |
+| `LINE_EVENT_MODE` | webhook,worker | 否 | webhook=sync; worker=durable | 正式 Webhook 必須 durable；Worker 僅允許 durable | 本機 Webhook 可 sync；Worker 固定 durable |
 | `LINE_API_TIMEOUT` | webhook,worker | 否 | 8s | 選用 | 1s–12s，單次 LINE HTTP timeout |
 | `LOG_LEVEL` | webhook,worker | 否 | info | 選用 | debug、info、warn、error |
 | `LOG_FORMAT` | webhook,worker | 否 | local=text; others=json | 選用 | staging/production 強制 json |
@@ -14,7 +14,7 @@
 | `LINE_CHANNEL_ACCESS_TOKEN` | worker,local-sync,ops-push | 是 | — | worker 必需；本機 sync 成對 | durable 公開 Webhook 禁止持有 |
 | `LINE_BOT_DESTINATION` | webhook-durable,worker | 否 | — | durable 必需 | LINE Bot Destination ID |
 | `GCP_PROJECT_ID` | webhook-durable,worker | 否 | — | durable 必需 | 最小 IAM 的指定 Google Cloud Project |
-| `TASK_QUEUE_NAME` | webhook-durable,worker | 否 | — | durable 必需 | 完整 projects/.../locations/.../queues/... |
+| `TASK_QUEUE_NAME` | webhook-durable,worker | 否 | — | durable 必需 | 六段 Queue 資源名稱；Project 必須等於 GCP_PROJECT_ID；Queue ID 僅限 1–100 字元英數或連字號 |
 | `TASK_WORKER_URL` | webhook-durable,worker | 否 | — | durable 必需 | HTTPS Worker /tasks/line-reply |
 | `TASK_OIDC_AUDIENCE` | webhook-durable,worker | 否 | — | durable 必需 | 必須符合 Worker HTTPS Origin |
 | `TASK_INVOKER_EMAIL` | webhook-durable,worker | 否 | — | durable 必需 | 允許呼叫 Worker 的 Service Account Email |

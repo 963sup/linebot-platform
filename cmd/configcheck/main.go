@@ -29,6 +29,7 @@ func checkExample(data []byte) error {
 		known[spec.Key] = spec
 	}
 	seen := make(map[string]bool)
+	values := make(map[string]string, len(known))
 	for _, raw := range strings.Split(string(data), "\n") {
 		line := strings.TrimSpace(raw)
 		if line == "" || strings.HasPrefix(line, "#") {
@@ -50,6 +51,7 @@ func checkExample(data []byte) error {
 		if spec.Secret && strings.TrimSpace(value) != "" {
 			return fmt.Errorf(".env.example must not contain credential values for %s", key)
 		}
+		values[key] = strings.TrimSpace(value)
 	}
 	for _, key := range []string{
 		bootstrap.KeyAppEnv, bootstrap.KeyPort, bootstrap.KeyEventMode,
@@ -58,6 +60,16 @@ func checkExample(data []byte) error {
 		if !seen[key] {
 			return fmt.Errorf(".env.example is missing public setting %s", key)
 		}
+	}
+	// Validate the example against the same typed runtime parser as the
+	// webhook. Key-only checks would accept invalid ports, log levels or
+	// deployment profiles, then advertise a configuration that cannot start.
+	cfg, err := bootstrap.LoadConfig(func(key string) string { return values[key] })
+	if err != nil {
+		return fmt.Errorf(".env.example runtime settings: %w", err)
+	}
+	if cfg.Environment != bootstrap.EnvLocal || cfg.EventMode != "sync" || cfg.LiveLINE() {
+		return errors.New(".env.example must describe a credential-free local sync webhook")
 	}
 	return nil
 }

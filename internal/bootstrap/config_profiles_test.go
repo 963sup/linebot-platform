@@ -1,6 +1,7 @@
 package bootstrap
 
 import (
+	"strings"
 	"testing"
 )
 
@@ -92,6 +93,10 @@ func TestSettingContractUniqueAndSecretClassified(t *testing.T) {
 		if spec.Key == "" || spec.Roles == "" || spec.Required == "" {
 			t.Fatal("incomplete setting contract")
 		}
+		if spec.Key == KeyEventMode &&
+			(spec.Roles != "webhook,worker" || spec.Default != "webhook=sync; worker=durable") {
+			t.Fatal("event mode metadata must document both runtime roles")
+		}
 		seen[spec.Key] = true
 	}
 	for _, secret := range []string{KeyChannelSecret, KeyChannelToken} {
@@ -104,5 +109,56 @@ func TestSettingContractUniqueAndSecretClassified(t *testing.T) {
 		if !found {
 			t.Fatalf("secret classification missing: %s", secret)
 		}
+	}
+}
+
+func TestWorkerRejectsIncompatibleWebhookMode(t *testing.T) {
+	values := durableSettings()
+	delete(values, KeyChannelSecret)
+	values[KeyChannelToken] = "private-worker-token"
+	values[KeyEventMode] = "sync"
+	if _, err := LoadWorkerConfig(env(values)); err == nil {
+		t.Fatal("worker accepted explicit sync mode instead of failing closed")
+	}
+	values[KeyEventMode] = "not-a-mode"
+	if _, err := LoadWorkerConfig(env(values)); err == nil {
+		t.Fatal("worker silently ignored unknown event mode")
+	}
+	values[KeyEventMode] = "durable"
+	if _, err := LoadWorkerConfig(env(values)); err != nil {
+		t.Fatalf("valid shared durable setting rejected: %v", err)
+	}
+	delete(values, KeyEventMode)
+	if _, err := LoadWorkerConfig(env(values)); err != nil {
+		t.Fatalf("worker should use implicit durable mode: %v", err)
+	}
+}
+
+func TestDurableConfigPreflightRejectsMalformedQueueName(t *testing.T) {
+	for _, queue := range []string{
+		"projects/test-project/locations/asia-east1/queues/line-queue/extra",
+		"projects/test-project/locations/asia-east1/queues/line_queue",
+		"projects/test-project/locations/asia-east1/queues/" + strings.Repeat("a", 101),
+		"projects/test-project/locations/asia_east1/queues/line-queue",
+		"projects/test-project/locations//queues/line-queue",
+		"projects/test-project/locations/../queues/line-queue",
+		"projects/test-project/locations/asia-east1/queues/",
+		"projects/other-project/locations/asia-east1/queues/line-queue",
+		"projects/test-project/locations/asia-east1/tasks/line-queue",
+	} {
+		t.Run(queue, func(t *testing.T) {
+			webhook := durableSettings()
+			webhook[KeyQueueName] = queue
+			if _, err := LoadConfig(env(webhook)); err == nil {
+				t.Fatal("webhook preflight accepted an invalid or cross-project queue")
+			}
+			worker := durableSettings()
+			delete(worker, KeyChannelSecret)
+			worker[KeyChannelToken] = "test-token"
+			worker[KeyQueueName] = queue
+			if _, err := LoadWorkerConfig(env(worker)); err == nil {
+				t.Fatal("worker preflight accepted an invalid or cross-project queue")
+			}
+		})
 	}
 }

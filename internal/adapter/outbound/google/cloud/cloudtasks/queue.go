@@ -14,6 +14,7 @@ import (
 	sdk "cloud.google.com/go/cloudtasks/apiv2"
 	"cloud.google.com/go/cloudtasks/apiv2/cloudtaskspb"
 	"github.com/963sup/linebot-platform/internal/application/usecases/ingestion"
+	queueinfra "github.com/963sup/linebot-platform/internal/infrastructure/google/cloud/cloudtasks"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -41,7 +42,7 @@ func NewQueue(client *sdk.Client, queueName, workerURL, audience, invokerEmail s
 	if client == nil {
 		return nil, errors.New("Cloud Tasks client is required")
 	}
-	if !validQueueName(queueName) {
+	if _, ok := queueinfra.QueueProjectID(queueName); !ok {
 		return nil, errors.New("invalid Cloud Tasks queue name")
 	}
 	u, err := url.Parse(workerURL)
@@ -64,19 +65,6 @@ func NewQueue(client *sdk.Client, queueName, workerURL, audience, invokerEmail s
 		},
 		now: time.Now,
 	}, nil
-}
-
-func validQueueName(n string) bool {
-	parts := strings.Split(n, "/")
-	if len(parts) != 6 || parts[0] != "projects" || parts[2] != "locations" || parts[4] != "queues" {
-		return false
-	}
-	for _, i := range []int{1, 3, 5} {
-		if parts[i] == "" || parts[i] == "." || parts[i] == ".." {
-			return false
-		}
-	}
-	return true
 }
 
 // Enqueue includes only an opaque digest; no reply token, user ID or user text.

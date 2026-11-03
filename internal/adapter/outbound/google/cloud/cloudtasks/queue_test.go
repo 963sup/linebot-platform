@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"cloud.google.com/go/cloudtasks/apiv2/cloudtaskspb"
+	queueinfra "github.com/963sup/linebot-platform/internal/infrastructure/google/cloud/cloudtasks"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -21,11 +22,11 @@ const (
 
 func TestQueueConfiguration(t *testing.T) {
 	for _, n := range []string{"", "projects/x", "projects/x/locations/y/queues/"} {
-		if validQueueName(n) {
+		if _, ok := queueinfra.QueueProjectID(n); ok {
 			t.Fatal("accepted invalid Cloud Tasks queue")
 		}
 	}
-	if !validQueueName(testQueue) {
+	if project, ok := queueinfra.QueueProjectID(testQueue); !ok || project != "test-project" {
 		t.Fatal("expected valid queue")
 	}
 }

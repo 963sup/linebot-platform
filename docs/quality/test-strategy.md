@@ -2,9 +2,9 @@
 
 ## Configuration contract and observability
 
-- `go run ./cmd/configcheck --check` compares the generated [Runtime Configuration](../operations/configuration.md) with Go metadata and rejects unknown, duplicated or non-empty Secret entries in `.env.example`; `make check` executes this gate.
-- Bootstrap role/profile tests cover local safe defaults; staging/production durable-only; Cloud Run `K_SERVICE` fail-closed; Worker vs Webhook secret isolation; invalid LOG_LEVEL/LOG_FORMAT, Port and Timeout.
-- Logger/HTTP telemetry tests ensure no raw URL/path, query, body, access token, Channel Secret or LINE ID in logs; route labels are bounded.
+- `go run ./cmd/configcheck --check` compares the generated [Runtime Configuration](../operations/configuration.md) with Go metadata, rejects unknown/duplicate keys and non-empty Secret values, **and parses `.env.example` with the same webhook configuration validator**. Invalid Port, Timeout, logging or deployment profile fails CI without external requests.
+- Bootstrap role/profile tests cover local safe defaults; staging/production durable-only; Cloud Run `K_SERVICE` fail-closed; Worker vs Webhook secret isolation; explicit Worker `LINE_EVENT_MODE=sync` rejection; invalid LOG_LEVEL/LOG_FORMAT, Port and Timeout.
+- Logger/HTTP telemetry tests ensure no raw URL/path, query, body, access token, Channel Secret or LINE ID in logs; route **and client-controlled HTTP method labels** are bounded, while `ResponseController` capabilities remain accessible.
 - Runtime configuration validation does not build GCP/LINE SDK clients or perform external I/O, and cannot be used as evidence of Cloud Run IAM, Secret Manager injection or deployed services.
 
 ## Unit
@@ -42,7 +42,7 @@ These are **offline contract tests** against the pinned Go SDK and local HTTP se
 - Worker：Pending 單次 Claim／送出、模糊網路失敗記錄 Unknown、同一 Key 的第二次交付不再呼叫 LINE。
 - HTTP：原始 LINE Webhook 驗章、bot destination、持久化後才回 200、派送失敗時回 503；Cloud Tasks／Scheduler Callback 必須經 OIDC Verifier 驗證。
 - Cloud Tasks Queue：事件 Key + 10 秒派送時窗決定 Task ID，驗證同一時窗去重、跨時窗可恢復，OIDC email/audience、只包含 opaque Key 的 JSON Body、AlreadyExists 與其他失敗區分。
-- Bootstrap Config：預設同步模式維持相容，Durable/Worker 的 GCP、LINE、OIDC 欄位缺少時 fail closed。
+- Bootstrap Config：預設同步模式維持相容，Durable/Worker 的 GCP、LINE、OIDC 欄位缺少時 fail closed；`configcheck --validate` 與 Cloud Tasks Adapter 共用 Queue 資源名稱格式檢查，拒絕多餘路徑段、空 Location/Queue、非法資源 ID 字元、Queue ID 超過 100 字元與跨 Project（無須連接 Google Cloud）。
 - Firestore Transaction、併發 Claim 與恢復已在 GitHub Actions 的本機 Firestore Emulator 實際驗證；Cloud Tasks CreateTask、IAM、OIDC、TTL 政策與排程仍需經授權的真實 Staging 驗收。
 
 ## CI
@@ -61,4 +61,4 @@ make check
 
 ## Integration / E2E
 
-Firestore Emulator SDK 交易／併發測試曾在 PR #8 的隔離 CI 執行並通過，但已依合併前清理要求移除一次性測試程式和專用工作流程。正式 Cloud Tasks、Cloud Run OIDC、LINE Sandbox 與 Workspace 的跨服務驗證仍需要隔離的授權與人工審查。既有單元、契約、架構及 Race Test 仍由 `make check` 維護。
+PR #12 已恢復**常設 Firestore Emulator CI**，驗證真實交易、併發 Claim 和 Reconcile；此工作與 `make check` 的 Go 格式、Vet、Race Test、Build 均為 PR 及 `main` 的持續品質 Gate。Emulator 不代表真實 IAM、複合索引、TTL、Cloud Tasks、Cloud Run OIDC、LINE Sandbox 或 Workspace 已完成獲授權的 Staging 驗收。
