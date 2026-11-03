@@ -4,7 +4,7 @@
 
 - `go run ./cmd/configcheck --check` compares the generated [Runtime Configuration](../operations/configuration.md) with Go metadata, rejects unknown/duplicate keys and non-empty Secret values, **and parses `.env.example` with the same webhook configuration validator**. Invalid Port, Timeout, logging or deployment profile fails CI without external requests.
 - Bootstrap role/profile tests cover local safe defaults; staging/production durable-only; Cloud Run `K_SERVICE` fail-closed; Worker vs Webhook secret isolation; explicit Worker `LINE_EVENT_MODE=sync` rejection; invalid LOG_LEVEL/LOG_FORMAT, Port and Timeout.
-- Logger/HTTP telemetry tests ensure no raw URL/path, query, body, access token, Channel Secret or LINE ID in logs; route **and client-controlled HTTP method labels** are bounded, while `ResponseController` capabilities remain accessible.
+- Logger/HTTP telemetry tests ensure no raw URL/path, query, body, access token, Channel Secret or LINE ID in logs; route **and client-controlled HTTP method labels** are bounded, while `ResponseController` capabilities remain accessible. Flush commits the effective HTTP status before later `WriteHeader` calls; unit tests verify that telemetry matches the committed response and unsupported Flush returns `ErrNotSupported`.
 - Runtime configuration validation does not build GCP/LINE SDK clients or perform external I/O, and cannot be used as evidence of Cloud Run IAM, Secret Manager injection or deployed services.
 
 ## Unit

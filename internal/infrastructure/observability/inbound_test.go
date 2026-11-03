@@ -2,6 +2,7 @@ package observability
 
 import (
 	"bytes"
+	"errors"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
@@ -105,5 +106,60 @@ func TestInboundEarlyHintsPreservesFinalStatus(t *testing.T) {
 	<-logged
 	if !strings.Contains(out.String(), "\"status_code\":401") {
 		t.Fatalf("terminal status missing from safe telemetry: %s", out.String())
+	}
+}
+
+type responseWriterWithoutFlush struct{ http.ResponseWriter }
+
+func TestInboundFlushTracksCommittedStatus(t *testing.T) {
+	for _, tc := range []struct {
+		name          string
+		beforeFlush   int
+		wantStatus    int
+		wantStatusLog string
+	}{
+		{"implicit OK", 0, http.StatusOK, `"status_code":200`},
+		{"explicit accepted", http.StatusAccepted, http.StatusAccepted, `"status_code":202`},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			var out bytes.Buffer
+			logger := slog.New(slog.NewJSONHandler(&out, &slog.HandlerOptions{Level: slog.LevelDebug}))
+			handler := WrapInboundHTTP("worker", logger, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				if tc.beforeFlush != 0 {
+					w.WriteHeader(tc.beforeFlush)
+				}
+				if err := http.NewResponseController(w).Flush(); err != nil {
+					t.Errorf("Flush through inbound wrapper: %v", err)
+				}
+				// Once flushed, this is too late to replace the HTTP status.
+				w.WriteHeader(http.StatusUnauthorized)
+			}))
+			recorder := httptest.NewRecorder()
+			handler.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/tasks/line-reply", nil))
+			if !recorder.Flushed || recorder.Code != tc.wantStatus {
+				t.Fatalf("underlying response: flushed=%t status=%d, want %d",
+					recorder.Flushed, recorder.Code, tc.wantStatus)
+			}
+			if !strings.Contains(out.String(), tc.wantStatusLog) {
+				t.Fatalf("status logged after Flush differs from the committed HTTP response: %s", out.String())
+			}
+		})
+	}
+}
+
+func TestInboundUnsupportedFlushPreservesLaterStatus(t *testing.T) {
+	var out bytes.Buffer
+	logger := slog.New(slog.NewJSONHandler(&out, &slog.HandlerOptions{Level: slog.LevelDebug}))
+	handler := WrapInboundHTTP("worker", logger, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		if err := http.NewResponseController(w).Flush(); !errors.Is(err, http.ErrNotSupported) {
+			t.Errorf("Flush without an underlying flusher: got %v, want ErrNotSupported", err)
+		}
+		w.WriteHeader(http.StatusUnauthorized)
+	}))
+	recorder := httptest.NewRecorder()
+	handler.ServeHTTP(responseWriterWithoutFlush{recorder}, httptest.NewRequest(http.MethodPost, "/tasks/dispatch", nil))
+	if recorder.Code != http.StatusUnauthorized || !strings.Contains(out.String(), `"status_code":401`) {
+		t.Fatalf("unsupported Flush changed final status or telemetry: code=%d log=%s",
+			recorder.Code, out.String())
 	}
 }
