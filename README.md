@@ -62,6 +62,8 @@ go run ./cmd/ops push --to "<LINE_USER_ID>" --text "測試通知"
 
 CLI 發送會先輸出可重用的 UUID retry key。若發生 timeout 或結果未知，使用完全相同訊息內容及 `--retry-key` 重新執行，避免因新 key 重複送出；請勿將 key 和收件者資訊貼到公開 issue。
 
+Audience Group 唯讀查詢範例：`go run ./cmd/ops audiences --kind list --page 1 --size 20 --read`。共享 Audience 的實際存取仍取決於 LINE 帳號資格。
+
 Membership/Coupon 查詢僅供已取得所在地區及帳號功能資格的操作人員使用，例如 `go run ./cmd/ops memberships --kind memberships --read`。請勿存放會員 ID 或訂閱資料至公開日誌。
 
 Insights 唯讀查詢範例：`go run ./cmd/ops insights --kind followers --date 20261101 --read`。Insights SDK 另以相同受管理 HTTP Transport 建立 Client，但不會由公開 Webhook 自動建立。

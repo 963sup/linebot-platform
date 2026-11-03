@@ -61,6 +61,10 @@ func TestLINEEndpointInventory(t *testing.T) {
 		"getJoinedMembershipUsers": false,
 		"listCoupon": false,
 		"getCouponDetail": false,
+		"getAudienceData": false,
+		"getSharedAudienceData": false,
+		"getAudienceGroups": false,
+		"getSharedAudienceGroups": false,
 	}
 	seen := make(map[string]bool)
 	count := 0

@@ -7,7 +7,7 @@
 | Message contents | Text 與簡單 Flex bubble 已實作；其餘類型尚未實作 | Partial |
 | Chat / User | Profile、Followers IDs、Group／Room 的 Summary／Count／IDs／Member Profile 已接入 CLI；媒體 content、其他事件仍未實作 | Partial (offline contract only) |
 | Rich Menu | List、Get、Default ID、Alias List/Get、User Menu ID、Batch Progress 已接入唯讀 CLI；建立、綁定、圖片、Alias 變更、Batch 寫入待實作 | Partial (offline contract only) |
-| Audience | 建立、上傳、查詢、刪除、分享 | Planned |
+| Audience | Audience Data、List、Shared Data、Shared List 已接入唯讀 CLI；建立、上傳、刪除、修改仍未接入 | Partial (offline contract only) |
 | Insights | Demographics、Deliveries、Followers、Message Event、Aggregation Unit、Rich Menu Summary/Daily 七項已接入唯讀 CLI | Partial (offline contract only) |
 | Coupon / Membership | 會員清單、訂閱、會員 ID、Coupon 列表與詳情已接入唯讀 CLI；建立／關閉 Coupon 尚未接入，實際使用仍需確認地區、資格與授權 | Partial / Restricted |
 | Channel / account link | Bot Info、Webhook Endpoint GET、Quota、發送統計、Aggregation、Narrowcast Progress 已接入唯讀 CLI；Webhook 寫入、Token、Account Linking 尚未接入 | Partial (offline contract only) |
