@@ -2,10 +2,12 @@ package cli
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -16,9 +18,10 @@ import (
 
 func runCampaign(args []string, getenv func(string) string) error {
 	flags := flag.NewFlagSet("campaign", flag.ContinueOnError)
-	kind := flags.String("kind", "", "broadcast|multicast")
+	kind := flags.String("kind", "", "broadcast|multicast|narrowcast")
 	recipients := flags.String("to", "", "comma-separated multicast user IDs")
 	message := flags.String("text", "", "text")
+	requestFile := flags.String("request", "", "Narrowcast request JSON file")
 	key := flags.String("retry-key", "", "stable UUID v4")
 	send := flags.Bool("send", false, "explicitly enable a potentially billable send")
 	if err := flags.Parse(args); err != nil {
@@ -27,11 +30,26 @@ func runCampaign(args []string, getenv func(string) string) error {
 	if len(flags.Args()) != 0 || !*send || getenv == nil {
 		return errors.New("campaign requires --send and no extra arguments")
 	}
-	if (*kind != "broadcast" && *kind != "multicast") || strings.TrimSpace(*message) == "" {
-		return errors.New("valid kind and text required")
+	if *kind != "broadcast" && *kind != "multicast" && *kind != "narrowcast" {
+		return errors.New("valid campaign kind required")
 	}
 	var users []string
-	if *kind == "broadcast" {
+	var payload json.RawMessage
+	if *kind == "narrowcast" {
+		if *recipients != "" || *message != "" || *requestFile == "" {
+			return errors.New("narrowcast requires --request and does not accept --to or --text")
+		}
+		data, err := os.ReadFile(filepath.Clean(*requestFile))
+		if err != nil {
+			return fmt.Errorf("read narrowcast request: %w", err)
+		}
+		if !json.Valid(data) {
+			return errors.New("narrowcast request must be valid JSON")
+		}
+		payload = data
+	} else if strings.TrimSpace(*message) == "" || *requestFile != "" {
+		return errors.New("broadcast and multicast require --text and do not accept --request")
+	} else if *kind == "broadcast" {
 		if *recipients != "" {
 			return errors.New("broadcast must not specify --to")
 		}
@@ -63,6 +81,9 @@ func runCampaign(args []string, getenv func(string) string) error {
 	defer cancel()
 	msgs := []outbound.Message{{Kind: outbound.KindText, Text: *message}}
 	fmt.Fprintln(os.Stderr, "LINE campaign retry key:", *key)
+	if *kind == "narrowcast" {
+		return rt.BulkMessaging.Narrowcast(ctx, payload, *key)
+	}
 	if *kind == "broadcast" {
 		return rt.BulkMessaging.Broadcast(ctx, msgs, *key)
 	}

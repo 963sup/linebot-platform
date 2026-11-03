@@ -1,6 +1,10 @@
 package cli
 
-import "testing"
+import (
+	"os"
+	"path/filepath"
+	"testing"
+)
 
 func TestCampaignRequiresExplicitSend(t *testing.T) {
 	env := func(string) string { return "" }
@@ -9,9 +13,21 @@ func TestCampaignRequiresExplicitSend(t *testing.T) {
 		{"--kind", "other", "--text", "hello", "--send"},
 		{"--kind", "broadcast", "--to", "U123", "--text", "hello", "--send"},
 		{"--kind", "multicast", "--text", "hello", "--send"},
+		{"--kind", "narrowcast", "--text", "hello", "--send"},
+		{"--kind", "narrowcast", "--request", "missing.json", "--send"},
 	} {
 		if err := runCampaign(args, env); err == nil {
 			t.Fatalf("unapproved send: %v", args)
 		}
+	}
+}
+
+func TestCampaignNarrowcastRejectsMalformedRequestFile(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "request.json")
+	if err := os.WriteFile(path, []byte(`{"messages":`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := runCampaign([]string{"--kind", "narrowcast", "--request", path, "--send"}, func(string) string { return "" }); err == nil {
+		t.Fatal("malformed narrowcast request accepted")
 	}
 }

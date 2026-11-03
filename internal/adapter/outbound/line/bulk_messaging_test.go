@@ -2,6 +2,7 @@ package line
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -26,7 +27,11 @@ func TestCampaignUsesNativeSDKEdgesAndRetryKey(t *testing.T) {
 	if err := sender.Multicast(context.Background(), []string{"U123"}, testText(), retryKey); err != nil {
 		t.Fatal(err)
 	}
-	if len(urls) != 2 || urls[0] != "/v2/bot/message/broadcast" || urls[1] != "/v2/bot/message/multicast" {
+	request := json.RawMessage(`{"messages":[{"type":"text","text":"hello"}],"recipient":{"type":"operator","and":[]}}`)
+	if err := sender.Narrowcast(context.Background(), request, retryKey); err != nil {
+		t.Fatal(err)
+	}
+	if len(urls) != 3 || urls[0] != "/v2/bot/message/broadcast" || urls[1] != "/v2/bot/message/multicast" || urls[2] != "/v2/bot/message/narrowcast" {
 		t.Fatalf("unexpected LINE API paths: %v", urls)
 	}
 }

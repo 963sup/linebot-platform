@@ -18,7 +18,7 @@ endpoints:
   - {source: messaging-api, group: messaging, operation: replyMessage, method: POST, path: "/v2/bot/message/reply", integration: integrated_offline, test: contract, access: review}
   - {source: messaging-api, group: messaging, operation: pushMessage, method: POST, path: "/v2/bot/message/push", integration: integrated_offline, test: contract, access: review}
   - {source: messaging-api, group: messaging, operation: multicast, method: POST, path: "/v2/bot/message/multicast", integration: integrated_offline, test: contract, access: review}
-  - {source: messaging-api, group: messaging, operation: narrowcast, method: POST, path: "/v2/bot/message/narrowcast", integration: not_integrated, test: none, access: review}
+  - {source: messaging-api, group: messaging, operation: narrowcast, method: POST, path: "/v2/bot/message/narrowcast", integration: integrated_offline, test: contract, access: review}
   - {source: messaging-api, group: messaging, operation: getNarrowcastProgress, method: GET, path: "/v2/bot/message/progress/narrowcast", integration: integrated_offline, test: contract, access: review}
   - {source: messaging-api, group: messaging, operation: broadcast, method: POST, path: "/v2/bot/message/broadcast", integration: integrated_offline, test: contract, access: review}
   - {source: messaging-api, group: quota, operation: getMessageQuota, method: GET, path: "/v2/bot/message/quota", integration: integrated_offline, test: contract, access: review}

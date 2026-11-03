@@ -2,6 +2,7 @@ package messaging
 
 import (
 	"context"
+	"encoding/json"
 	"testing"
 
 	"github.com/963sup/linebot-platform/internal/application/ports/outbound"
@@ -16,6 +17,33 @@ func (f *fakeBulkMessaging) Broadcast(context.Context, []outbound.Message, strin
 func (f *fakeBulkMessaging) Multicast(context.Context, []string, []outbound.Message, string) error {
 	f.calls++
 	return nil
+}
+func (f *fakeBulkMessaging) Narrowcast(context.Context, json.RawMessage, string) error {
+	f.calls++
+	return nil
+}
+
+func TestBulkSendNarrowcastValidatesPayloadBeforeCallingAdapter(t *testing.T) {
+	f := &fakeBulkMessaging{}
+	s, err := NewBulkSender(f)
+	if err != nil {
+		t.Fatal(err)
+	}
+	valid := json.RawMessage(`{"messages":[{"type":"text","text":"hello"}],"recipient":{"type":"operator","and":[]}}`)
+	for _, payload := range []json.RawMessage{nil, []byte(`[]`), []byte(`{"messages":[]}`), []byte(`{"messages":[{"type":"text"}]}`)} {
+		if err := s.Narrowcast(context.Background(), payload, "stable"); err == nil {
+			t.Fatalf("invalid payload accepted: %s", payload)
+		}
+	}
+	if f.calls != 0 {
+		t.Fatal("invalid narrowcasts must not reach adapter")
+	}
+	if err := s.Narrowcast(context.Background(), valid, "stable"); err != nil {
+		t.Fatal(err)
+	}
+	if f.calls != 1 {
+		t.Fatalf("calls: %d", f.calls)
+	}
 }
 
 func TestBulkSendRejectsInvalidRecipientsAndRetryKeys(t *testing.T) {
