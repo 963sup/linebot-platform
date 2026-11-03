@@ -36,7 +36,7 @@ Cloud Run 使用 `line-bot-runtime@bubbly-area-513305-s0.iam.gserviceaccount.com
 - `K_SERVICE` 由 Cloud Run 自動注入，程式以此拒絕套用 local profile。
 - 既有服務的 `GOOGLE_CLOUD_PROJECT`、`FIRESTORE_DATABASE`、`OPENAI_MODEL`、`AUTO_TASKS`、`AUTO_CALENDAR`、`CALENDAR_SERVICE_ACCOUNT`、`WORKER_MODE` 及錯置 Secret 會在部署時移除。
 
-`line-bot-public` 維持允許未驗證的 LINE webhook 請求；簽章由應用程式使用原始 request body 驗證。`line-bot-private` 維持 IAM 驗證，並驗證 Cloud Tasks OIDC audience 和 invoker service account。
+`line-bot-public` 以 Cloud Run 的 `--no-invoker-iam-check` 接受未驗證的 LINE webhook 請求；簽章由應用程式使用原始 request body 驗證。`line-bot-private` 維持 IAM 驗證，並驗證 Cloud Tasks OIDC audience 和 invoker service account。
 
 ## 固定映像來源
 
