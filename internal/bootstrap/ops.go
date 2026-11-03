@@ -2,7 +2,10 @@ package bootstrap
 
 import (
 	"github.com/963sup/linebot-platform/internal/adapter/outbound/line"
+	"github.com/963sup/linebot-platform/internal/application/usecases/channel"
 	"github.com/963sup/linebot-platform/internal/application/usecases/contacts"
+	"github.com/963sup/linebot-platform/internal/application/usecases/engagement"
+	"github.com/963sup/linebot-platform/internal/application/usecases/insights"
 	"github.com/963sup/linebot-platform/internal/application/usecases/messaging"
 	"github.com/963sup/linebot-platform/internal/infrastructure/httpclient"
 	lineinfra "github.com/963sup/linebot-platform/internal/infrastructure/line"
@@ -11,9 +14,20 @@ import (
 // LINEOpsRuntime owns the HTTP transport used by explicit, local CLI actions.
 // It is never exposed on the unauthenticated webhook process.
 type LINEOpsRuntime struct {
-	Messaging *messaging.Service
-	Profiles  *contacts.Profiles
-	outbound  *httpclient.Managed
+	Messaging     *messaging.Service
+	Validation    *messaging.ValidationService
+	Profiles      *contacts.Profiles
+	Channel       *channel.Inspector
+	WebhookAdmin  *channel.WebhookConfigurator
+	Menus         *engagement.RichMenuInspector
+	MenuManager   *engagement.MenuManager
+	Memberships   *engagement.MembershipInspector
+	Coupons       *engagement.CouponInspector
+	Contacts      *contacts.Inspector
+	Insights      *insights.Inspector
+	Audiences     *engagement.AudienceInspector
+	BulkMessaging *messaging.BulkSender
+	outbound      *httpclient.Managed
 }
 
 func NewLINEOpsRuntime(token string) (*LINEOpsRuntime, error) {
@@ -41,7 +55,67 @@ func NewLINEOpsRuntime(token string) (*LINEOpsRuntime, error) {
 	if err != nil {
 		return cleanup(err)
 	}
-	return &LINEOpsRuntime{Messaging: messages, Profiles: profiles, outbound: transport}, nil
+	inspector, err := channel.NewInspector(sender)
+	if err != nil {
+		return cleanup(err)
+	}
+	menus, err := engagement.NewRichMenuInspector(sender)
+	if err != nil {
+		return cleanup(err)
+	}
+	contactsInspector, err := contacts.NewInspector(sender)
+	if err != nil {
+		return cleanup(err)
+	}
+	insightClient, err := lineinfra.NewInsightClientWithHTTPClient(token, transport.Client)
+	if err != nil {
+		return cleanup(err)
+	}
+	insightReader, err := line.NewInsightReader(insightClient)
+	if err != nil {
+		return cleanup(err)
+	}
+	inspectorInsights, err := insights.NewInspector(insightReader)
+	if err != nil {
+		return cleanup(err)
+	}
+	membership, err := engagement.NewMembershipInspector(sender)
+	if err != nil {
+		return cleanup(err)
+	}
+	coupon, err := engagement.NewCouponInspector(sender)
+	if err != nil {
+		return cleanup(err)
+	}
+	audienceClient, err := lineinfra.NewAudienceClientWithHTTPClient(token, transport.Client)
+	if err != nil {
+		return cleanup(err)
+	}
+	audienceReader, err := line.NewAudienceReader(audienceClient)
+	if err != nil {
+		return cleanup(err)
+	}
+	inspectorAudiences, err := engagement.NewAudienceInspector(audienceReader)
+	if err != nil {
+		return cleanup(err)
+	}
+	menuManager, err := engagement.NewMenuManager(sender)
+	if err != nil {
+		return cleanup(err)
+	}
+	bulkMessenger, err := messaging.NewBulkSender(sender)
+	if err != nil {
+		return cleanup(err)
+	}
+	validator, err := messaging.NewValidationService(sender)
+	if err != nil {
+		return cleanup(err)
+	}
+	webhookAdmin, err := channel.NewWebhookConfigurator(sender)
+	if err != nil {
+		return cleanup(err)
+	}
+	return &LINEOpsRuntime{Messaging: messages, Validation: validator, Profiles: profiles, Channel: inspector, WebhookAdmin: webhookAdmin, Menus: menus, MenuManager: menuManager, Memberships: membership, Coupons: coupon, Contacts: contactsInspector, Insights: inspectorInsights, Audiences: inspectorAudiences, BulkMessaging: bulkMessenger, outbound: transport}, nil
 }
 
 func (r *LINEOpsRuntime) Close() {

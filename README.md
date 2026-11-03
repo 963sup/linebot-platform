@@ -62,6 +62,36 @@ go run ./cmd/ops push --to "<LINE_USER_ID>" --text "測試通知"
 
 CLI 發送會先輸出可重用的 UUID retry key。若發生 timeout 或結果未知，使用完全相同訊息內容及 `--retry-key` 重新執行，避免因新 key 重複送出；請勿將 key 和收件者資訊貼到公開 issue。
 
+Audience Group 唯讀查詢範例：`go run ./cmd/ops audiences --kind list --page 1 --size 20 --read`。共享 Audience 的實際存取仍取決於 LINE 帳號資格。
+
+Membership/Coupon 查詢僅供已取得所在地區及帳號功能資格的操作人員使用，例如 `go run ./cmd/ops memberships --kind memberships --read`。請勿存放會員 ID 或訂閱資料至公開日誌。
+
+Coupon 已與 Membership 的內部 Port／Usecase 隔離；可使用 `go run ./cmd/ops coupons --read`，或 `go run ./cmd/ops coupons --kind coupon --coupon-id ID --read`。既有 `memberships --kind coupons|coupon` 仍可使用；所有查詢均受帳號資格與授權限制。
+
+Operator CLI 的實作位於 `internal/adapter/inbound/cli/`，`cmd/ops/main.go` 僅作為程序入口。
+
+Insights 唯讀查詢範例：`go run ./cmd/ops insights --kind followers --date 20261101 --read`。Insights SDK 另以相同受管理 HTTP Transport 建立 Client，但不會由公開 Webhook 自動建立。
+
+Contacts/Group/Room 唯讀查詢須明確指定 `--read`（結果可能含使用者資料），例如 `go run ./cmd/ops contacts --kind followers --limit 10 --read`。不得將其輸出存入公開記錄，需遵循 LINE 服務條款及資料保護規範。
+
+Webhook 設定及測試管理 CLI 需要雙重明確確認：`go run ./cmd/ops webhook-admin --action test --endpoint "https://example.com/webhook" --apply --confirm test`。請勿在未授權環境修改已使用的正式 Callback URL；此指令不會自動從公開 Webhook 執行。
+
+訊息內容驗證可使用 `go run ./cmd/ops validate --kind reply --text "測試" --validate` 呼叫官方 SDK validation endpoint，不會對使用者發送訊息。
+
+Broadcast／Multicast 需已授權的測試 Channel，透過 `go run ./cmd/ops campaign --kind multicast --to "U_ID_1,U_ID_2" --text "測試" --send` 明確觸發；Broadcast 將群發給所有符合 LINE 發送條件的好友，可能產生費用。HTTP timeout 為結果未知，不得以新 retry key 盲目重試。
+
+Rich Menu 變更指令需同時提供 `--apply --confirm ACTION`，例如僅在獲授權的隔離測試帳號中執行 `go run ./cmd/ops manage-menu --action set-default --menu-id richmenu-xxx --apply --confirm set-default`。程式碼可用不代表可擅自修改真實帳號；模糊或結果未知的發送不自動重試。
+
+Rich Menu 唯讀查詢可執行 `go run ./cmd/ops menus --kind list --read`，其它 `--kind` 使用 `internal/application/usecases/engagement/inspect.go` 的 allowlist。查詢單一選單需搭配 `--id`，所有操作都不會在公開 Webhook 執行。
+
+LINE Channel 唯讀查詢需由操作人員明確指定：
+```sh
+go run ./cmd/ops inspect --kind bot-info --read
+go run ./cmd/ops inspect --kind message-quota --read
+go run ./cmd/ops inspect --kind delivery-push --date 20261101 --read
+```
+其他支援的 kind 參閱 `internal/application/usecases/channel/inspect.go`；沒有登入保護的公開查詢 HTTP 路由。這些命令需要具授權的測試 Channel Token，未經帳號授權不可呼叫正式服務。
+
 Profile 查詢只供具授權的操作人員手動執行，不會由公開 Webhook 自動讀取使用者資料。先在安全環境提供 `LINE_CHANNEL_ACCESS_TOKEN`，再明確指定使用者及 `--lookup`：
 ```sh
 go run ./cmd/ops profile --user "<LINE_USER_ID>" --lookup

@@ -2,14 +2,14 @@
 
 | 功能組 | 預計範圍 | 狀態 |
 |---|---|---|
-| Webhook | 簽章驗證、文字 Message；同步模式沒有持久去重，選用 durable 模式有 Firestore 事件去重與 OIDC Worker。Edit／unsend／媒體與實際 Staging 仍待完成 | Partial (development only) |
-| Messaging | Reply、Push 已有基本 SDK adapter；Broadcast、Multicast、Narrowcast 未實作 | Partial |
-| Message contents | Text 與簡單 Flex bubble 已實作；其餘類型尚未實作 | Partial |
-| Chat / User | Profile 已接入 SDK Adapter、Contacts Use Case 與明確啟動的 Ops CLI；followers、group／room、content retrieval 尚未實作 | Partial (offline contract only) |
-| Rich Menu | 建立、綁定、圖片、alias、batch | Planned |
-| Audience | 建立、上傳、查詢、刪除、分享 | Planned |
-| Insights | 發送、互動、followers、demographics | Planned |
-| Coupon / Membership | 視 LINE 官方帳號所在地區與資格啟用 | Planned / Restricted |
-| Channel / account link | Token、bot info、webhook settings、account link | Planned |
+| Webhook | 簽章驗證、文字 Message、Get/Set/Test Webhook Endpoint；Set/Test 僅限需明確確認的管理 CLI。同步模式沒有持久去重，durable 具 Firestore + Cloud Tasks；Edit／Unsend／媒體事件與 Staging 驗收仍未完成 | Partial (offline contract only) |
+| Messaging | Reply、Push、Broadcast、Multicast 已有 SDK Adapter；Broadcast／Multicast 需明確 CLI --send + Retry Key；Narrowcast 尚未實作 | Partial (offline contract only) |
+| Message contents | Text／簡單 Flex Bubble；Reply、Push、Multicast、Narrowcast、Broadcast 五種發送請求的官方 Validation API 已接入 CLI，其他訊息類型未實作 | Partial (offline contract only) |
+| Chat / User | Profile、Followers IDs、Group／Room 的 Summary／Count／IDs／Member Profile 已接入 CLI；媒體 content、其他事件仍未實作 | Partial (offline contract only) |
+| Rich Menu | List、Get、Default ID、Alias List/Get、User Menu ID、Batch Progress 已接入唯讀 CLI；建立、綁定、圖片、Alias 變更、Batch 寫入待實作；Set/Cancel Default、Link/Unlink User、Delete Menu/Alias 六項已接入需雙重確認的 Ops CLI | Partial (offline contract only) |
+| Audience | Audience Data、List、Shared Data、Shared List 已接入唯讀 CLI；建立、上傳、刪除、修改仍未接入 | Partial (offline contract only) |
+| Insights | Demographics、Deliveries、Followers、Message Event、Aggregation Unit、Rich Menu Summary/Daily 七項已接入唯讀 CLI | Partial (offline contract only) |
+| Coupon / Membership | 會員清單、訂閱、會員 ID、Coupon 列表與詳情已接入唯讀 CLI；建立／關閉 Coupon 尚未接入，實際使用仍需確認地區、資格與授權 | Partial / Restricted |
+| Channel / account link | Bot Info、Webhook Endpoint GET、Quota、發送統計、Aggregation、Narrowcast Progress 已接入唯讀 CLI；Webhook 寫入、Token、Account Linking 尚未接入 | Partial (offline contract only) |
 
 此表只是能力分組，不能代替端點級覆蓋追蹤。參閱 [Endpoint Inventory](endpoint-inventory.yaml)：固定官方 LINE OpenAPI revision，列出 Messaging API、Insights、Audience Group、Channel Access Token 共 102 個操作。狀態 `integrated_offline` 僅表示程式碼接線及離線契約測試，**不代表真實 LINE Channel／地區資格／Production 已驗證**。每次擴充都必須核對 pinned SDK 的真實 Go symbols、更新 inventory 並新增測試；未知帳號權限標記 `review`，受地區／功能資格限制的操作標記 `required_eligibility_review`。
