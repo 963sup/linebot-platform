@@ -15,19 +15,19 @@ import (
 // LINEOpsRuntime owns the HTTP transport used by explicit, local CLI actions.
 // It is never exposed on the unauthenticated webhook process.
 type LINEOpsRuntime struct {
-	Messaging   *messaging.Service
-	Validation  *messaging.ValidationService
-	Profiles    *contacts.Profiles
-	Channel     *channel.Inspector
+	Messaging    *messaging.Service
+	Validation   *messaging.ValidationService
+	Profiles     *contacts.Profiles
+	Channel      *channel.Inspector
 	WebhookAdmin *channel.WebhookConfigurator
-	Menus       *engagement.RichMenuInspector
-	MenuManager *engagement.MenuManager
-	Memberships *engagement.MembershipInspector
-	Contacts    *contacts.Inspector
-	Insights    *insights.Inspector
-	Audiences   *campaign.AudienceInspector
-	Campaign    *campaign.Messenger
-	outbound    *httpclient.Managed
+	Menus        *engagement.RichMenuInspector
+	MenuManager  *engagement.MenuManager
+	Memberships  *engagement.MembershipInspector
+	Contacts     *contacts.Inspector
+	Insights     *insights.Inspector
+	Audiences    *campaign.AudienceInspector
+	Campaign     *campaign.Messenger
+	outbound     *httpclient.Managed
 }
 
 func NewLINEOpsRuntime(token string) (*LINEOpsRuntime, error) {
@@ -108,7 +108,9 @@ func NewLINEOpsRuntime(token string) (*LINEOpsRuntime, error) {
 		return cleanup(err)
 	}
 	webhookAdmin, err := channel.NewWebhookConfigurator(sender)
-	if err != nil {return cleanup(err)}
+	if err != nil {
+		return cleanup(err)
+	}
 	return &LINEOpsRuntime{Messaging: messages, Validation: validator, Profiles: profiles, Channel: inspector, WebhookAdmin: webhookAdmin, Menus: menus, MenuManager: menuManager, Memberships: membership, Contacts: contactsInspector, Insights: inspectorInsights, Audiences: inspectorAudiences, Campaign: campaignMessenger, outbound: transport}, nil
 }
 

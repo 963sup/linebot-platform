@@ -3,9 +3,9 @@ package outbound
 import "context"
 
 type WebhookEndpointTest struct {
-	Success bool
+	Success    bool
 	StatusCode int32
-	Reason string
+	Reason     string
 }
 
 // WebhookConfigurer is an operator-only command boundary.
