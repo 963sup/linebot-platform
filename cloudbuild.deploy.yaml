@@ -1,6 +1,6 @@
-# Manual production deployment for the existing Line Bot Cloud Run services.
-# It only deploys immutable images to the declared project and removes the
-# legacy environment variables from both services.
+# Manual production deployment for the Line Bot Cloud Run services.
+# It creates or updates services from immutable images and removes legacy
+# environment variables from both services.
 substitutions:
   _APPROVE_DEPLOYMENT: 'false'
   _REGION: 'asia-east1'
@@ -40,9 +40,6 @@ steps:
             *) echo 'Specify a target-repository image pinned by @sha256:.' >&2; exit 2 ;;
           esac
           gcloud artifacts docker images describe "$$image" --project='$PROJECT_ID' --quiet >/dev/null
-        done
-        for service in '${_PUBLIC_SERVICE}' '${_PRIVATE_SERVICE}'; do
-          gcloud run services describe "$$service" --region='${_REGION}' --project='$PROJECT_ID' --quiet >/dev/null
         done
         for secret in line-bot-channel-secret line-bot-channel-access-token; do
           gcloud secrets describe "$$secret" --project='$PROJECT_ID' --quiet >/dev/null

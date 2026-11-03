@@ -9,7 +9,7 @@
 | Artifact Registry | `line-bot` |
 | Public webhook service | `line-bot-public` |
 | Private worker service | `line-bot-private` |
-| Firestore database | `line-bot` |
+| Firestore database | `(default)` |
 | Cloud Tasks queue | `line-bot-events` |
 
 ## 建置與部署身分
@@ -72,7 +72,7 @@ gcloud builds submit . \
 
 ## 部署既有服務
 
-`cloudbuild.deploy.yaml` 不會建立新的 Cloud Run service。它預設拒絕執行，並在部署前確認 project、服務、Queue、Secrets 和兩個不可變映像均存在。
+`cloudbuild.deploy.yaml` 可建立或更新兩個 Cloud Run service。它預設拒絕執行，並在部署前確認 project、Queue、Secrets 和兩個不可變映像均存在。
 
 ```bash
 gcloud builds submit . \
