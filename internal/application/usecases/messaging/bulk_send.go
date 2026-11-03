@@ -1,4 +1,4 @@
-package campaign
+package messaging
 
 import (
 	"context"
@@ -8,16 +8,16 @@ import (
 	"github.com/963sup/linebot-platform/internal/application/ports/outbound"
 )
 
-type Messenger struct{ sender outbound.CampaignMessaging }
+type BulkSender struct{ sender outbound.BulkMessaging }
 
-func NewMessenger(sender outbound.CampaignMessaging) (*Messenger, error) {
+func NewBulkSender(sender outbound.BulkMessaging) (*BulkSender, error) {
 	if sender == nil {
 		return nil, errors.New("campaign sender is required")
 	}
-	return &Messenger{sender: sender}, nil
+	return &BulkSender{sender: sender}, nil
 }
 
-func validCampaign(messages []outbound.Message, retryKey string) error {
+func validBulkMessages(messages []outbound.Message, retryKey string) error {
 	if retryKey == "" || retryKey != strings.TrimSpace(retryKey) {
 		return errors.New("stable retry key required")
 	}
@@ -32,27 +32,27 @@ func validCampaign(messages []outbound.Message, retryKey string) error {
 	return nil
 }
 
-func (s *Messenger) Broadcast(ctx context.Context, messages []outbound.Message, retryKey string) error {
+func (s *BulkSender) Broadcast(ctx context.Context, messages []outbound.Message, retryKey string) error {
 	if ctx == nil {
 		return errors.New("context is required")
 	}
 	if err := ctx.Err(); err != nil {
 		return err
 	}
-	if err := validCampaign(messages, retryKey); err != nil {
+	if err := validBulkMessages(messages, retryKey); err != nil {
 		return err
 	}
 	return s.sender.Broadcast(ctx, messages, retryKey)
 }
 
-func (s *Messenger) Multicast(ctx context.Context, users []string, messages []outbound.Message, retryKey string) error {
+func (s *BulkSender) Multicast(ctx context.Context, users []string, messages []outbound.Message, retryKey string) error {
 	if ctx == nil {
 		return errors.New("context is required")
 	}
 	if err := ctx.Err(); err != nil {
 		return err
 	}
-	if err := validCampaign(messages, retryKey); err != nil {
+	if err := validBulkMessages(messages, retryKey); err != nil {
 		return err
 	}
 	if len(users) == 0 || len(users) > 500 {

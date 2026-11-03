@@ -8,7 +8,7 @@ import (
 	"io"
 	"time"
 
-	"github.com/963sup/linebot-platform/internal/application/usecases/campaign"
+	"github.com/963sup/linebot-platform/internal/application/usecases/engagement"
 	"github.com/963sup/linebot-platform/internal/bootstrap"
 )
 
@@ -28,8 +28,8 @@ func runAudiences(args []string, getenv func(string) string, output io.Writer) e
 	if getenv == nil || output == nil {
 		return errors.New("missing CLI configuration")
 	}
-	q := campaign.AudienceQuery{Kind: *kind, ID: *id, Page: *page, Size: *size}
-	if err := campaign.ValidateAudienceQuery(q); err != nil {
+	q := engagement.AudienceQuery{Kind: *kind, ID: *id, Page: *page, Size: *size}
+	if err := engagement.ValidateAudienceQuery(q); err != nil {
 		return err
 	}
 	rt, err := bootstrap.NewLINEOpsRuntime(getenv(bootstrap.KeyChannelToken))

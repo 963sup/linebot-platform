@@ -9,11 +9,11 @@ import (
 	"github.com/963sup/linebot-platform/internal/application/ports/outbound"
 )
 
+// MembershipQuery contains only membership operations; coupons have their own port.
 type MembershipQuery struct {
 	Kind         string
 	UserID       string
 	MembershipID int
-	CouponID     string
 	Start        string
 	Limit        int
 }
@@ -42,22 +42,12 @@ func ValidateMembershipQuery(q MembershipQuery) error {
 		}
 		return nil
 	case "membership-users":
-		if q.MembershipID <= 0 {
-			return errors.New("membership ID must be positive")
-		}
-		if q.MembershipID > 2147483647 {
-			return errors.New("membership ID out of range")
-		}
-		return nil
-	case "coupons":
-		return nil
-	case "coupon":
-		if q.CouponID == "" || q.CouponID != strings.TrimSpace(q.CouponID) {
-			return errors.New("coupon ID is required")
+		if q.MembershipID <= 0 || q.MembershipID > 2147483647 {
+			return errors.New("membership ID must be in range 1-2147483647")
 		}
 		return nil
 	default:
-		return errors.New("unsupported membership/coupon query kind")
+		return errors.New("unsupported membership query kind")
 	}
 }
 
@@ -80,11 +70,7 @@ func (s *MembershipInspector) Inspect(ctx context.Context, q MembershipQuery) (j
 		return s.reader.MembershipList(ctx)
 	case "subscription":
 		return s.reader.MembershipSubscription(ctx, q.UserID)
-	case "membership-users":
-		return s.reader.MembershipUsers(ctx, int32(q.MembershipID), q.Start, int32(limit))
-	case "coupons":
-		return s.reader.CouponList(ctx, q.Start, int32(q.Limit))
 	default:
-		return s.reader.CouponDetail(ctx, q.CouponID)
+		return s.reader.MembershipUsers(ctx, int32(q.MembershipID), q.Start, int32(limit))
 	}
 }

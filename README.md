@@ -66,6 +66,10 @@ Audience Group 唯讀查詢範例：`go run ./cmd/ops audiences --kind list --pa
 
 Membership/Coupon 查詢僅供已取得所在地區及帳號功能資格的操作人員使用，例如 `go run ./cmd/ops memberships --kind memberships --read`。請勿存放會員 ID 或訂閱資料至公開日誌。
 
+Coupon 已與 Membership 的內部 Port／Usecase 隔離；可使用 `go run ./cmd/ops coupons --read`，或 `go run ./cmd/ops coupons --kind coupon --coupon-id ID --read`。既有 `memberships --kind coupons|coupon` 仍可使用；所有查詢均受帳號資格與授權限制。
+
+Operator CLI 的實作位於 `internal/adapter/inbound/cli/`，`cmd/ops/main.go` 僅作為程序入口。
+
 Insights 唯讀查詢範例：`go run ./cmd/ops insights --kind followers --date 20261101 --read`。Insights SDK 另以相同受管理 HTTP Transport 建立 Client，但不會由公開 Webhook 自動建立。
 
 Contacts/Group/Room 唯讀查詢須明確指定 `--read`（結果可能含使用者資料），例如 `go run ./cmd/ops contacts --kind followers --limit 10 --read`。不得將其輸出存入公開記錄，需遵循 LINE 服務條款及資料保護規範。

@@ -64,7 +64,7 @@ func runCampaign(args []string, getenv func(string) string) error {
 	msgs := []outbound.Message{{Kind: outbound.KindText, Text: *message}}
 	fmt.Fprintln(os.Stderr, "LINE campaign retry key:", *key)
 	if *kind == "broadcast" {
-		return rt.Campaign.Broadcast(ctx, msgs, *key)
+		return rt.BulkMessaging.Broadcast(ctx, msgs, *key)
 	}
-	return rt.Campaign.Multicast(ctx, users, msgs, *key)
+	return rt.BulkMessaging.Multicast(ctx, users, msgs, *key)
 }

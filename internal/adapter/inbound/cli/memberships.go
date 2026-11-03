@@ -30,7 +30,11 @@ func runMemberships(args []string, getenv func(string) string, output io.Writer)
 	if getenv == nil || output == nil {
 		return errors.New("missing CLI configuration")
 	}
-	q := engagement.MembershipQuery{Kind: *kind, UserID: *user, MembershipID: *membershipID, CouponID: *couponID, Start: *start, Limit: *limit}
+	// Keep the original memberships --kind coupon(s) CLI syntax compatible.
+	if *kind == "coupons" || *kind == "coupon" {
+		return inspectCoupon(engagement.CouponQuery{Kind: *kind, CouponID: *couponID, Start: *start, Limit: *limit}, getenv, output)
+	}
+	q := engagement.MembershipQuery{Kind: *kind, UserID: *user, MembershipID: *membershipID, Start: *start, Limit: *limit}
 	if err := engagement.ValidateMembershipQuery(q); err != nil {
 		return err
 	}

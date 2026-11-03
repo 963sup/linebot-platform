@@ -41,6 +41,9 @@ func run(args []string, getenv func(string) string) error {
 	if len(args) > 0 && args[0] == "insights" {
 		return runInsights(args[1:], getenv, os.Stdout)
 	}
+	if len(args) > 0 && args[0] == "coupons" {
+		return runCoupons(args[1:], getenv, os.Stdout)
+	}
 	if len(args) > 0 && args[0] == "memberships" {
 		return runMemberships(args[1:], getenv, os.Stdout)
 	}

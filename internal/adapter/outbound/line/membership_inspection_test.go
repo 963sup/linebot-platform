@@ -25,8 +25,6 @@ func TestMembershipReadOnlySDKEndpoints(t *testing.T) {
 		{"list", func() error { _, e := s.MembershipList(ctx); return e }},
 		{"subscription", func() error { _, e := s.MembershipSubscription(ctx, "U123"); return e }},
 		{"users", func() error { _, e := s.MembershipUsers(ctx, 123, "", 10); return e }},
-		{"coupons", func() error { _, e := s.CouponList(ctx, "", 10); return e }},
-		{"coupon", func() error { _, e := s.CouponDetail(ctx, "coupon-1"); return e }},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			if err := tc.fn(); err != nil {

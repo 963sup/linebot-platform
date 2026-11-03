@@ -1,4 +1,4 @@
-package campaign
+package messaging
 
 import (
 	"context"
@@ -7,20 +7,20 @@ import (
 	"github.com/963sup/linebot-platform/internal/application/ports/outbound"
 )
 
-type fakeCampaign struct{ calls int }
+type fakeBulkMessaging struct{ calls int }
 
-func (f *fakeCampaign) Broadcast(context.Context, []outbound.Message, string) error {
+func (f *fakeBulkMessaging) Broadcast(context.Context, []outbound.Message, string) error {
 	f.calls++
 	return nil
 }
-func (f *fakeCampaign) Multicast(context.Context, []string, []outbound.Message, string) error {
+func (f *fakeBulkMessaging) Multicast(context.Context, []string, []outbound.Message, string) error {
 	f.calls++
 	return nil
 }
 
-func TestCampaignRejectsInvalidRecipientsAndRetryKeys(t *testing.T) {
-	f := &fakeCampaign{}
-	s, err := NewMessenger(f)
+func TestBulkSendRejectsInvalidRecipientsAndRetryKeys(t *testing.T) {
+	f := &fakeBulkMessaging{}
+	s, err := NewBulkSender(f)
 	if err != nil {
 		t.Fatal(err)
 	}
