@@ -44,7 +44,6 @@ steps:
         for secret in line-bot-channel-secret line-bot-channel-access-token; do
           gcloud secrets describe "$$secret" --project='$PROJECT_ID' --quiet >/dev/null
         done
-        gcloud tasks queues describe 'projects/$PROJECT_ID/locations/${_REGION}/queues/${_QUEUE_ID}' --quiet >/dev/null
 
   - id: 'deploy-public-webhook'
     name: 'gcr.io/google.com/cloudsdktool/google-cloud-cli@sha256:18d8c484aaef27d7ef7b54dfb018f73712503d254a16f0a76b2626b4f6003af2'
