@@ -35,17 +35,17 @@ endpoints:
   - {source: messaging-api, group: aggregation-unit, operation: getAggregationUnitUsage, method: GET, path: "/v2/bot/message/aggregation/info", integration: integrated_offline, test: contract, access: review}
   - {source: messaging-api, group: aggregation-unit, operation: getAggregationUnitNameList, method: GET, path: "/v2/bot/message/aggregation/list", integration: integrated_offline, test: contract, access: review}
   - {source: messaging-api, group: users, operation: getProfile, method: GET, path: "/v2/bot/profile/{userId}", integration: integrated_offline, test: contract, access: review}
-  - {source: messaging-api, group: users, operation: getFollowers, method: GET, path: "/v2/bot/followers/ids", integration: not_integrated, test: none, access: review}
+  - {source: messaging-api, group: users, operation: getFollowers, method: GET, path: "/v2/bot/followers/ids", integration: integrated_offline, test: contract, access: review}
   - {source: messaging-api, group: bot, operation: getBotInfo, method: GET, path: "/v2/bot/info", integration: integrated_offline, test: contract, access: review}
-  - {source: messaging-api, group: group, operation: getGroupMemberProfile, method: GET, path: "/v2/bot/group/{groupId}/member/{userId}", integration: not_integrated, test: none, access: review}
-  - {source: messaging-api, group: group, operation: getRoomMemberProfile, method: GET, path: "/v2/bot/room/{roomId}/member/{userId}", integration: not_integrated, test: none, access: review}
-  - {source: messaging-api, group: group, operation: getGroupMembersIds, method: GET, path: "/v2/bot/group/{groupId}/members/ids", integration: not_integrated, test: none, access: review}
-  - {source: messaging-api, group: group, operation: getRoomMembersIds, method: GET, path: "/v2/bot/room/{roomId}/members/ids", integration: not_integrated, test: none, access: review}
+  - {source: messaging-api, group: group, operation: getGroupMemberProfile, method: GET, path: "/v2/bot/group/{groupId}/member/{userId}", integration: integrated_offline, test: contract, access: review}
+  - {source: messaging-api, group: group, operation: getRoomMemberProfile, method: GET, path: "/v2/bot/room/{roomId}/member/{userId}", integration: integrated_offline, test: contract, access: review}
+  - {source: messaging-api, group: group, operation: getGroupMembersIds, method: GET, path: "/v2/bot/group/{groupId}/members/ids", integration: integrated_offline, test: contract, access: review}
+  - {source: messaging-api, group: group, operation: getRoomMembersIds, method: GET, path: "/v2/bot/room/{roomId}/members/ids", integration: integrated_offline, test: contract, access: review}
   - {source: messaging-api, group: group, operation: leaveGroup, method: POST, path: "/v2/bot/group/{groupId}/leave", integration: not_integrated, test: none, access: review}
   - {source: messaging-api, group: group, operation: leaveRoom, method: POST, path: "/v2/bot/room/{roomId}/leave", integration: not_integrated, test: none, access: review}
-  - {source: messaging-api, group: group, operation: getGroupSummary, method: GET, path: "/v2/bot/group/{groupId}/summary", integration: not_integrated, test: none, access: review}
-  - {source: messaging-api, group: group, operation: getGroupMemberCount, method: GET, path: "/v2/bot/group/{groupId}/members/count", integration: not_integrated, test: none, access: review}
-  - {source: messaging-api, group: group, operation: getRoomMemberCount, method: GET, path: "/v2/bot/room/{roomId}/members/count", integration: not_integrated, test: none, access: review}
+  - {source: messaging-api, group: group, operation: getGroupSummary, method: GET, path: "/v2/bot/group/{groupId}/summary", integration: integrated_offline, test: contract, access: review}
+  - {source: messaging-api, group: group, operation: getGroupMemberCount, method: GET, path: "/v2/bot/group/{groupId}/members/count", integration: integrated_offline, test: contract, access: review}
+  - {source: messaging-api, group: group, operation: getRoomMemberCount, method: GET, path: "/v2/bot/room/{roomId}/members/count", integration: integrated_offline, test: contract, access: review}
   - {source: messaging-api, group: richmenu, operation: createRichMenu, method: POST, path: "/v2/bot/richmenu", integration: not_integrated, test: none, access: review}
   - {source: messaging-api, group: richmenu, operation: validateRichMenuObject, method: POST, path: "/v2/bot/richmenu/validate", integration: not_integrated, test: none, access: review}
   - {source: messaging-api, group: richmenu, operation: getRichMenuImage, method: GET, path: "/v2/bot/richmenu/{richMenuId}/content", integration: not_integrated, test: none, access: review}

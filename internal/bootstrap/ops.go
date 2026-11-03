@@ -17,6 +17,7 @@ type LINEOpsRuntime struct {
 	Profiles  *contacts.Profiles
 	Channel   *channel.Inspector
 	Menus     *engagement.RichMenuInspector
+	Contacts  *contacts.Inspector
 	outbound  *httpclient.Managed
 }
 
@@ -53,7 +54,11 @@ func NewLINEOpsRuntime(token string) (*LINEOpsRuntime, error) {
 	if err != nil {
 		return cleanup(err)
 	}
-	return &LINEOpsRuntime{Messaging: messages, Profiles: profiles, Channel: inspector, Menus: menus, outbound: transport}, nil
+	contactsInspector, err := contacts.NewInspector(sender)
+	if err != nil {
+		return cleanup(err)
+	}
+	return &LINEOpsRuntime{Messaging: messages, Profiles: profiles, Channel: inspector, Menus: menus, Contacts: contactsInspector, outbound: transport}, nil
 }
 
 func (r *LINEOpsRuntime) Close() {
