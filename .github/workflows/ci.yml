@@ -54,3 +54,48 @@ jobs:
             go.sum
           if-no-files-found: warn
           retention-days: 7
+
+  firestore-emulator:
+    name: Firestore Emulator transactions (no GCP credentials)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: '1.27.3'
+          cache: false
+      - name: Start isolated official Firestore Emulator
+        run: |
+          docker run --rm --detach --name firestore-emulator \
+            --publish 127.0.0.1:8085:8085 \
+            gcr.io/google.com/cloudsdktool/google-cloud-cli:emulators \
+            gcloud emulators firestore start --host-port=0.0.0.0:8085
+          for attempt in $(seq 1 90); do
+            if (echo > /dev/tcp/127.0.0.1/8085) >/dev/null 2>&1; then
+              exit 0
+            fi
+            if ! docker inspect --format='{{.State.Running}}' firestore-emulator 2>/dev/null | grep -qx true; then
+              docker logs firestore-emulator || true
+              echo "Local Firestore emulator exited unexpectedly" >&2
+              exit 1
+            fi
+            sleep 2
+          done
+          docker logs firestore-emulator || true
+          echo "Local Firestore emulator failed to listen on 127.0.0.1:8085" >&2
+          exit 1
+      - name: Run real Firestore SDK integration tests against local emulator
+        env:
+          FIRESTORE_EMULATOR_HOST: 127.0.0.1:8085
+          GOOGLE_CLOUD_PROJECT: demo-linebot-platform-acceptance
+        run: |
+          env -u GOOGLE_APPLICATION_CREDENTIALS \
+            go test -tags=integration -race -count=1 -timeout=4m -v ./tests/integration
+      - name: Stop and inspect local emulator
+        if: always()
+        run: |
+          docker logs --tail 80 firestore-emulator 2>/dev/null || true
+          docker rm --force firestore-emulator 2>/dev/null || true
