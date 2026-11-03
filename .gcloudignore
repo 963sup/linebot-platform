@@ -8,10 +8,8 @@
 .github/
 .agents/
 .vscode/
-docs/
 deploy/
 plugins/
-.env.example
 
 # Keep Dockerfile, go.mod, go.sum, cmd/, internal/ and tests/.
 # Never include secrets, local credentials, Terraform state or git history.
