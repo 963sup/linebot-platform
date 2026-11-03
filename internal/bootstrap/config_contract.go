@@ -41,7 +41,7 @@ const (
 var settingContract = []SettingSpec{
 	{Key: KeyAppEnv, Roles: "webhook,worker", Secret: false, Default: "local", Required: "Cloud Run 必須明確設定 staging/production", Description: "local、staging、production"},
 	{Key: KeyPort, Roles: "webhook,worker", Secret: false, Default: "8080", Required: "選用", Description: "HTTP 監聽埠，1–65535"},
-	{Key: KeyEventMode, Roles: "webhook", Secret: false, Default: "sync", Required: "Cloud Run 必須 durable", Description: "本機 sync；正式環境僅 durable"},
+	{Key: KeyEventMode, Roles: "webhook,worker", Secret: false, Default: "webhook=sync; worker=durable", Required: "正式 Webhook 必須 durable；Worker 僅允許 durable", Description: "本機 Webhook 可 sync；Worker 固定 durable"},
 	{Key: KeyLINETimeout, Roles: "webhook,worker", Secret: false, Default: "8s", Required: "選用", Description: "1s–12s，單次 LINE HTTP timeout"},
 	{Key: KeyLogLevel, Roles: "webhook,worker", Secret: false, Default: "info", Required: "選用", Description: "debug、info、warn、error"},
 	{Key: KeyLogFormat, Roles: "webhook,worker", Secret: false, Default: "local=text; others=json", Required: "選用", Description: "staging/production 強制 json"},

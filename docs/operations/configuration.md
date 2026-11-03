@@ -6,7 +6,7 @@
 |---|---|---|---|---|---|
 | `APP_ENV` | webhook,worker | 否 | local | Cloud Run 必須明確設定 staging/production | local、staging、production |
 | `PORT` | webhook,worker | 否 | 8080 | 選用 | HTTP 監聽埠，1–65535 |
-| `LINE_EVENT_MODE` | webhook | 否 | sync | Cloud Run 必須 durable | 本機 sync；正式環境僅 durable |
+| `LINE_EVENT_MODE` | webhook,worker | 否 | webhook=sync; worker=durable | 正式 Webhook 必須 durable；Worker 僅允許 durable | 本機 Webhook 可 sync；Worker 固定 durable |
 | `LINE_API_TIMEOUT` | webhook,worker | 否 | 8s | 選用 | 1s–12s，單次 LINE HTTP timeout |
 | `LOG_LEVEL` | webhook,worker | 否 | info | 選用 | debug、info、warn、error |
 | `LOG_FORMAT` | webhook,worker | 否 | local=text; others=json | 選用 | staging/production 強制 json |

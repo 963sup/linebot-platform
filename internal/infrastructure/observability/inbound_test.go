@@ -75,3 +75,35 @@ func TestInboundMethodHasBoundedLoggingCardinality(t *testing.T) {
 		})
 	}
 }
+
+func TestInboundEarlyHintsPreservesFinalStatus(t *testing.T) {
+	var out bytes.Buffer
+	logger := slog.New(slog.NewJSONHandler(&out, &slog.HandlerOptions{Level: slog.LevelDebug}))
+	instrumented := WrapInboundHTTP("worker", logger, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusEarlyHints)
+		w.WriteHeader(http.StatusUnauthorized)
+		_, _ = w.Write([]byte("unauthorized"))
+	}))
+	// The logger runs after the inner handler returns. Synchronize before
+	// reading the buffer; the real HTTP server exercises 1xx wire semantics.
+	logged := make(chan struct{})
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		instrumented.ServeHTTP(w, r)
+		close(logged)
+	}))
+	defer server.Close()
+
+	response, err := server.Client().Get(server.URL + "/tasks/line-reply")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer response.Body.Close()
+	if response.StatusCode != http.StatusUnauthorized {
+		t.Fatalf("informational status hid final authentication rejection: got %d, want %d",
+			response.StatusCode, http.StatusUnauthorized)
+	}
+	<-logged
+	if !strings.Contains(out.String(), "\"status_code\":401") {
+		t.Fatalf("terminal status missing from safe telemetry: %s", out.String())
+	}
+}

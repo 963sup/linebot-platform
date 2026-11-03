@@ -92,6 +92,10 @@ func TestSettingContractUniqueAndSecretClassified(t *testing.T) {
 		if spec.Key == "" || spec.Roles == "" || spec.Required == "" {
 			t.Fatal("incomplete setting contract")
 		}
+		if spec.Key == KeyEventMode &&
+			(spec.Roles != "webhook,worker" || spec.Default != "webhook=sync; worker=durable") {
+			t.Fatal("event mode metadata must document both runtime roles")
+		}
 		seen[spec.Key] = true
 	}
 	for _, secret := range []string{KeyChannelSecret, KeyChannelToken} {

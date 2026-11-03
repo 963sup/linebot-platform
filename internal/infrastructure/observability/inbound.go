@@ -22,6 +22,13 @@ func (w *inboundWriter) WriteHeader(status int) {
 	if w.status != 0 {
 		return
 	}
+	// HTTP may send several informational 1xx responses before its final
+	// status. Do not suppress the final 401/403/5xx response or report 103
+	// as the terminal outcome. 101 switches protocols and is final.
+	if status >= 100 && status < 200 && status != http.StatusSwitchingProtocols {
+		w.ResponseWriter.WriteHeader(status)
+		return
+	}
 	w.status = status
 	w.ResponseWriter.WriteHeader(status)
 }
