@@ -16,6 +16,8 @@
 - [ ] SDK／CI 相容性檢查
 - [ ] `go run ./cmd/codexcheck`（含 SDK Catalog 與直接依賴一致性）
 - [ ] 涉及 SDK 時同步 Catalog、README、版本與相關架構文件
+- [ ] Cleanup 前已確認引用、執行用途與依賴；保留全部核准 SDK 直接依賴與 SDK 空白骨架／`.gitkeep`
+- [ ] 保留正式 Unit、Regression、Contract、Race、安全與建置檢查；不可因名稱 `test`／`mock` 就直接刪除
 
 ## 風險與未驗證
 

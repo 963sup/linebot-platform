@@ -68,7 +68,7 @@ CLI 發送會先輸出可重用的 UUID retry key。若發生 timeout 或結果�
 
 - [docs/sdk/catalog.toml](docs/sdk/catalog.toml) 將 `go.mod` 中的全部直接依賴對應到 Provider、用途、import package 與預定的 Factory／Adapter；`go.mod` 仍是唯一版本來源。
 - [sdk-integration Skill](.agents/skills/sdk-integration/SKILL.md) 指導 Codex 按需查詢 SDK 原始碼、gopls、官方文件，再依 Hexagonal Architecture 實作與測試。
-- `go run ./cmd/codexcheck` 驗證 Catalog 與直接依賴一致、程式配置有效；CI 已納入這項檢查。這不代表其他 SDK 已初始化或取得 API 權限。
+- `go run ./cmd/codexcheck` 驗證 Catalog 與直接依賴一致、程式配置有效，並確保**已核准 SDK 依賴及預留 SDK 空白骨架不因清理而被移除**；CI 已納入這項檢查。這不代表其他 SDK 已初始化或取得 API 權限。
 - 發現新的 SDK 功能時，只需按需擴充既有 Adapter／Factory；無須建立萬用動態 SDK Client。完整流程見 [SDK 整合架構](docs/architecture/sdk-integration.md)。
 
 ## Managed LINE SDK Runtime（階段 2）
@@ -97,7 +97,7 @@ Google Tasks、Calendar 的授權詳見 [Workspace OAuth 與 API](docs/sdk/works
 ## Codex Cloud 開發環境
 
 - [`.codex/config.toml`](.codex/config.toml) 配置 gopls／Context7／OpenAI Docs MCP，並保留停用中的唯讀 GitHub MCP／Firestore Toolbox。Codex Cloud agent-phase 需允許 `developers.openai.com`，在 Republish 後的新工作階段驗證連線。
-- [五個專用 Agents](docs/ai/agents.md) 負責 DDD、LINE SDK、Cloud Platform、Go Review 和官方文件查證。
+- [六個專用 Agents](docs/ai/agents.md) 負責 DDD、LINE SDK、Cloud Platform、Go Review、官方文件查證，以及交付前的 Code Cleanup & Release Validation。
 - `bash scripts/setup-codex-cloud.sh` 是可加入 Codex Cloud **Install script** 的非互動式環境準備腳本（下載 Go modules、安裝固定版 gopls）。
 - 專案配置以 `go run ./cmd/codexcheck` 驗證，無須 Python；詳見 [Codex Cloud 建置步驟](docs/ai/codex-cloud.md)，其中的環境發布與 MCP 授權**尚未執行**。
 
@@ -107,6 +107,11 @@ Google Tasks、Calendar 的授權詳見 [Workspace OAuth 與 API](docs/sdk/works
 
 `skills-lock.json` 自 [line-bot-go](https://github.com/963sup/line-bot-go/blob/main/skills-lock.json) 精選 13 個與 Go／Cloud Run／安全／CI 有關的技能；**尚未安裝外部 skills**，詳見 [Codex Skills](docs/ai/skills.md)。
 
+
+## CI 快取與驗證完整性
+
+- GitHub Actions 使用既有 `actions/setup-go` 的內建 **Go Modules／Build Cache**（以 `go.sum` 為快取依據）。先前無快取的 [#41558587334](https://github.com/963sup/linebot-platform/actions/runs/41558587334) 中，`go vet` 約 91 秒、`go test -race` 約 144 秒，是主要耗時來源。
+- 快取用於降低重複編譯成本，**不會**跳過 `go mod tidy`／鎖定檔驗證、`gofmt`、`go vet`、`go test -race -count=1` 或 `go build`；首次冷快取仍可能耗時較長。未使用的 SDK 依賴與預留目錄不刪除。
 
 ## 開發與安全
 

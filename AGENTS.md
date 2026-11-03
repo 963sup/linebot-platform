@@ -6,7 +6,7 @@
 
 - 先讀 `README.md`、`docs/architecture/overview.md`、`docs/roadmap.md` 和相關子目錄規範。
 - 現階段有開發用同步 LINE 回覆示範，另有明確啟用才使用的 Firestore Inbox/Outbox、Cloud Tasks OIDC Worker／Reconcile 程式碼；**尚無正式部署、IAM/Firestore TTL／Cloud Scheduler 配置與 Staging 驗收**。請依實際實作情況更新文件，不得把預留目錄當成已完成功能。
-- 以最小可行、可編譯、可測試的垂直切片實作新功能。新增實作時可刪除該目錄的 `.gitkeep`；避免保留冗餘 placeholder。
+- 以最小可行、可編譯、可測試的垂直切片實作新功能。**SDK 預留空白骨架、擴充目錄及其 `.gitkeep` 必須保留**，不得因尚未接線而刪除；其他類型的占位內容，僅在確認用途、引用與授權後才可另行清理。
 - 新 SDK 或 feature 在加入前確認上游官方文件、API 版本、帳號地區資格與安全修補版本。依賴已在 `go.mod` 預先宣告，但未在 runtime 接線的不算已啟用；更新後需執行 `go mod tidy` 並提交真實 `go.sum`。
 - 使用已修補的 Go 1.27.3 工具鏈；CI／Docker 版本須一致，部署前再固定 image digest。
 
@@ -44,6 +44,7 @@
 
 - 新增或修改任何 `go.mod` 直接依賴 SDK 時，先讀 [SDK Catalog](docs/sdk/catalog.toml) 和 [SDK 整合架構](docs/architecture/sdk-integration.md)，再按需套用 [sdk-integration Skill](.agents/skills/sdk-integration/SKILL.md)。只讀相關模組，勿預載全部 SDK。
 - `go.mod` 是版本唯一來源；Catalog 用來定位 Provider／Package／Factory／Adapter 與整合狀態，不能當成完整 API 清單或實際授權證明。
+- **保留規則：所有已核准直接 SDK／工具依賴（包含尚未使用的 `garr`）、`go.sum`、`internal/infrastructure/dependencies/modules.go`、SDK Catalog 與預留 SDK 空白骨架不得因未使用而刪除；`cmd/codexcheck` 在 CI 中檢查受保護項目。**
 - 優先使用已鎖定模組的 Go 原始碼、`go list`、`go doc` 和 gopls 驗證真實 Symbol，再對照官方文件查核認證、配額、冪等性及限制；不可猜測 API。
 - 修改依賴、Factory 或 Adapter 時，連同 Catalog、架構文件、相關能力矩陣和測試一併同步；執行 `go run ./cmd/codexcheck` 與 `make check`。
 - Application 與 Domain 使用 Go 標準庫及專案自有 Port，不直接 import 外部 SDK；不建立萬用動態 SDK 呼叫器。已宣告、已整合、已經 staging 驗證是不同狀態。
@@ -51,7 +52,7 @@
 
 ## Codex Agents 與 MCP 選用（不負責安裝）
 
-- 複雜且互不依賴的任務才委派給 `domain_architect`、`line_integrator`、`cloud_platform`、`go_reviewer` 或 `docs_researcher`；同一檔案不得由多個 Agent 同時改寫，最後由主 Agent 整合、驗證。
+- 複雜且互不依賴的任務才委派給 `domain_architect`、`line_integrator`、`cloud_platform`、`go_reviewer` 或 `docs_researcher`；合併前清理與驗證則使用 `code_cleanup_release_validation`，且不得刪 SDK 預留模組／骨架或必要的回歸測試。同一檔案不得由多個 Agent 同時改寫，最後由主 Agent 整合、驗證。
 - 修改 Go 程式前，需要追查 definitions、references、型別或診斷時用 **gopls MCP**；若不可用則使用本地 Go 工具。
 - OpenAI API、Responses API、OpenAI Go SDK、Codex、Skills、MCP 或 Plugins 的更新與實作優先使用 **openaiDeveloperDocs MCP** 查閱官方文件；不得推測不存在的 API、參數或能力。若 MCP 不可用，改用 OpenAI 官方網站並標示未驗證事項。
 - 其他新版本 SDK／API 使用方式、設定或重大變更使用 **Context7 MCP**，再核對相關官方 Go／LINE／Google 文件；無法查證時明確標示。
