@@ -7,7 +7,7 @@ import sdk "github.com/modelcontextprotocol/go-sdk/mcp"
 // Authentication and transport are configured by the caller at connection time.
 func NewClient() *sdk.Client {
 	return sdk.NewClient(&sdk.Implementation{
-		Name: "linebot-platform",
+		Name:    "linebot-platform",
 		Version: "1.0.0",
 	}, nil)
 }
