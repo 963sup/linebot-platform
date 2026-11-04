@@ -32,26 +32,24 @@ startup_timeout_sec = 20
 tool_timeout_sec = 45
 
 # GitHub official remote MCP. The token is supplied only through the environment.
-# Write operations remain gated by explicit user authorization and the git_release agent.
 [mcp_servers.github]
 url = "https://api.githubcopilot.com/mcp/"
 bearer_token_env_var = "GITHUB_MCP_TOKEN"
-http_headers = { "X-MCP-Toolsets" = "repos,issues,pull_requests" }
 enabled = true
 required = false
 startup_timeout_sec = 20
 tool_timeout_sec = 45
 
 # Google MCP Toolbox for Databases (Firestore prebuilt).
-# Intentionally disabled: connecting live data needs isolated staging ADC/IAM.
-# The toolbox exposes write tools upstream; Codex only discovers read tools here.
+# Requires FIRESTORE_PROJECT, FIRESTORE_DATABASE, and GOOGLE_APPLICATION_CREDENTIALS
+# in the runtime environment.
 [mcp_servers.firestore_toolbox]
 command = "npx"
 args = ["-y", "@toolbox-sdk/server@1.14.0", "--prebuilt=firestore", "--stdio"]
 env_vars = ["FIRESTORE_PROJECT", "FIRESTORE_DATABASE", "GOOGLE_APPLICATION_CREDENTIALS"]
 enabled_tools = ["get_documents", "query_collection", "list_collections", "get_rules", "validate_rules"]
 default_tools_approval_mode = "prompt"
-enabled = false
+enabled = true
 required = false
 startup_timeout_sec = 45
 tool_timeout_sec = 45
@@ -60,14 +58,14 @@ tool_timeout_sec = 45
 # has a Google OAuth identity with staging-only, least-privilege IAM.
 [mcp_servers.google_cloud_run]
 url = "https://run.googleapis.com/mcp"
-enabled = false
+enabled = true
 required = false
 startup_timeout_sec = 20
 tool_timeout_sec = 45
 
 [mcp_servers.google_firestore]
 url = "https://firestore.googleapis.com/mcp"
-enabled = false
+enabled = true
 required = false
 startup_timeout_sec = 20
 tool_timeout_sec = 45
@@ -92,7 +90,7 @@ tool_timeout_sec = 45
 # Google-managed MCP. Requires explicit Google authentication and least-privilege access.
 [mcp_servers.google_cloud_cli]
 url = "https://cloudcli.googleapis.com/mcp"
-enabled = false
+enabled = true
 required = false
 startup_timeout_sec = 20
 tool_timeout_sec = 45
@@ -100,7 +98,7 @@ tool_timeout_sec = 45
 # Google-managed MCP. Requires explicit Google authentication and least-privilege access.
 [mcp_servers.google_cloud_logging]
 url = "https://logging.googleapis.com/mcp"
-enabled = false
+enabled = true
 required = false
 startup_timeout_sec = 20
 tool_timeout_sec = 45
@@ -108,7 +106,7 @@ tool_timeout_sec = 45
 # Google-managed MCP. Requires explicit Google authentication and least-privilege access.
 [mcp_servers.google_cloud_monitoring]
 url = "https://monitoring.googleapis.com/mcp"
-enabled = false
+enabled = true
 required = false
 startup_timeout_sec = 20
 tool_timeout_sec = 45
@@ -116,7 +114,7 @@ tool_timeout_sec = 45
 # Google-managed MCP. Requires explicit Google authentication and least-privilege access.
 [mcp_servers.google_calendar]
 url = "https://calendarmcp.googleapis.com/mcp/v1"
-enabled = false
+enabled = true
 required = false
 startup_timeout_sec = 20
 tool_timeout_sec = 45
@@ -124,7 +122,7 @@ tool_timeout_sec = 45
 # Google-managed MCP. Requires explicit Google authentication and least-privilege access.
 [mcp_servers.google_drive]
 url = "https://drivemcp.googleapis.com/mcp/v1"
-enabled = false
+enabled = true
 required = false
 startup_timeout_sec = 20
 tool_timeout_sec = 45
@@ -132,7 +130,7 @@ tool_timeout_sec = 45
 # Google-managed MCP. Requires explicit Google authentication and least-privilege access.
 [mcp_servers.google_sheets]
 url = "https://sheetsmcp.googleapis.com/mcp/v1"
-enabled = false
+enabled = true
 required = false
 startup_timeout_sec = 20
 tool_timeout_sec = 45
@@ -140,7 +138,7 @@ tool_timeout_sec = 45
 # Google-managed MCP. Requires explicit Google authentication and least-privilege access.
 [mcp_servers.google_docs]
 url = "https://docsmcp.googleapis.com/mcp/v1"
-enabled = false
+enabled = true
 required = false
 startup_timeout_sec = 20
 tool_timeout_sec = 45
@@ -148,7 +146,7 @@ tool_timeout_sec = 45
 # Google-managed MCP. Requires explicit Google authentication and least-privilege access.
 [mcp_servers.google_gmail]
 url = "https://gmailmcp.googleapis.com/mcp/v1"
-enabled = false
+enabled = true
 required = false
 startup_timeout_sec = 20
 tool_timeout_sec = 45
