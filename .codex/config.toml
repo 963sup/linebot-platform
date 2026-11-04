@@ -80,3 +80,75 @@ enabled = true
 required = false
 startup_timeout_sec = 20
 tool_timeout_sec = 45
+
+# Google-managed MCP. Documentation discovery; may require Google authentication.
+[mcp_servers.google_developer_knowledge]
+url = "https://developerknowledge.googleapis.com/mcp"
+enabled = true
+required = false
+startup_timeout_sec = 20
+tool_timeout_sec = 45
+
+# Google-managed MCP. Requires explicit Google authentication and least-privilege access.
+[mcp_servers.google_cloud_cli]
+url = "https://cloudcli.googleapis.com/mcp"
+enabled = false
+required = false
+startup_timeout_sec = 20
+tool_timeout_sec = 45
+
+# Google-managed MCP. Requires explicit Google authentication and least-privilege access.
+[mcp_servers.google_cloud_logging]
+url = "https://logging.googleapis.com/mcp"
+enabled = false
+required = false
+startup_timeout_sec = 20
+tool_timeout_sec = 45
+
+# Google-managed MCP. Requires explicit Google authentication and least-privilege access.
+[mcp_servers.google_cloud_monitoring]
+url = "https://monitoring.googleapis.com/mcp"
+enabled = false
+required = false
+startup_timeout_sec = 20
+tool_timeout_sec = 45
+
+# Google-managed MCP. Requires explicit Google authentication and least-privilege access.
+[mcp_servers.google_calendar]
+url = "https://calendarmcp.googleapis.com/mcp/v1"
+enabled = false
+required = false
+startup_timeout_sec = 20
+tool_timeout_sec = 45
+
+# Google-managed MCP. Requires explicit Google authentication and least-privilege access.
+[mcp_servers.google_drive]
+url = "https://drivemcp.googleapis.com/mcp/v1"
+enabled = false
+required = false
+startup_timeout_sec = 20
+tool_timeout_sec = 45
+
+# Google-managed MCP. Requires explicit Google authentication and least-privilege access.
+[mcp_servers.google_sheets]
+url = "https://sheetsmcp.googleapis.com/mcp/v1"
+enabled = false
+required = false
+startup_timeout_sec = 20
+tool_timeout_sec = 45
+
+# Google-managed MCP. Requires explicit Google authentication and least-privilege access.
+[mcp_servers.google_docs]
+url = "https://docsmcp.googleapis.com/mcp/v1"
+enabled = false
+required = false
+startup_timeout_sec = 20
+tool_timeout_sec = 45
+
+# Google-managed MCP. Requires explicit Google authentication and least-privilege access.
+[mcp_servers.google_gmail]
+url = "https://gmailmcp.googleapis.com/mcp/v1"
+enabled = false
+required = false
+startup_timeout_sec = 20
+tool_timeout_sec = 45
