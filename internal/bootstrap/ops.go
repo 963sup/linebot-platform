@@ -165,8 +165,11 @@ func NewLINEOpsRuntime(token string) (*LINEOpsRuntime, error) {
 	return &LINEOpsRuntime{Actions: actions, AccountLink: accountLink, Eligibility: eligibility, MenuImageReader: blobSender, Messaging: messages, Validation: validator, Profiles: profiles, Channel: inspector, WebhookAdmin: webhookAdmin, Menus: menus, MenuManager: menuManager, RichMenuImages: richMenuImages, Memberships: membership, Coupons: coupon, Contacts: contactsInspector, Content: content, Insights: inspectorInsights, Audiences: inspectorAudiences, AudienceManager: audienceManager, BulkMessaging: bulkMessenger, outbound: transport}, nil
 }
 
-func (r *LINEOpsRuntime) Close() {
+// Close satisfies the CLI runtime contract. Releasing idle HTTP connections
+// cannot report an error; the managed transport preserves idempotent cleanup.
+func (r *LINEOpsRuntime) Close() error {
 	if r != nil && r.outbound != nil {
 		r.outbound.Close()
 	}
+	return nil
 }
