@@ -62,6 +62,8 @@ func NewDrive(ctx context.Context, authorizedHTTP *http.Client) (*drive.Service,
 
 // NewForms uses an already-authorized caller-owned HTTP client.
 func NewForms(ctx context.Context, authorizedHTTP *http.Client) (*forms.Service, error) {
-	if err := validateUserClient(ctx, authorizedHTTP); err != nil { return nil, err }
+	if err := validateUserClient(ctx, authorizedHTTP); err != nil {
+		return nil, err
+	}
 	return forms.NewService(ctx, option.WithHTTPClient(authorizedHTTP))
 }

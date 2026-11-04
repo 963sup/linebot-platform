@@ -4,9 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"strings"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/963sup/linebot-platform/internal/adapter/outbound/google/api/codec"
@@ -30,15 +30,19 @@ func TestFormsPinnedSDKRoutes(t *testing.T) {
 	}))
 	defer server.Close()
 	svc, err := googleforms.NewService(context.Background(), option.WithHTTPClient(server.Client()), option.WithEndpoint(server.URL+"/"))
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	adapter, err := New(svc)
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	cases := []struct {
-		operation string
-		want string
+		operation  string
+		want       string
 		parameters map[string]json.RawMessage
-		options map[string]json.RawMessage
-		body json.RawMessage
+		options    map[string]json.RawMessage
+		body       json.RawMessage
 	}{
 		{operation: "forms.batchUpdate", want: "POST /v1/forms/form-1:batchUpdate", parameters: map[string]json.RawMessage{"formId": json.RawMessage("\"form-1\"")}, body: json.RawMessage(`{}`), options: nil},
 		{operation: "forms.create", want: "POST /v1/forms", parameters: map[string]json.RawMessage{}, body: json.RawMessage(`{}`), options: map[string]json.RawMessage{"unpublished": json.RawMessage("true")}},
@@ -55,8 +59,12 @@ func TestFormsPinnedSDKRoutes(t *testing.T) {
 		t.Run(tc.operation, func(t *testing.T) {
 			got = ""
 			req := outbound.WorkspaceRequest{Operation: tc.operation, Parameters: tc.parameters, Options: tc.options, Body: tc.body}
-			if _, err := adapter.ExecuteForms(context.Background(), req); err != nil { t.Fatal(err) }
-			if got != tc.want { t.Fatalf("got %s; want %s", got, tc.want) }
+			if _, err := adapter.ExecuteForms(context.Background(), req); err != nil {
+				t.Fatal(err)
+			}
+			if got != tc.want {
+				t.Fatalf("got %s; want %s", got, tc.want)
+			}
 		})
 	}
 	if _, err := adapter.ExecuteForms(context.Background(), outbound.WorkspaceRequest{Operation: "forms.responses.get"}); err == nil {
@@ -79,10 +87,19 @@ func TestFormsRemoteErrorHasNoResponseBody(t *testing.T) {
 	}))
 	defer server.Close()
 	svc, err := googleforms.NewService(context.Background(), option.WithHTTPClient(server.Client()), option.WithEndpoint(server.URL+"/"))
-	if err != nil { t.Fatal(err) }
-	a, err := New(svc); if err != nil { t.Fatal(err) }
-	_, err = a.ExecuteForms(context.Background(), outbound.WorkspaceRequest{Operation:"forms.get", Parameters:map[string]json.RawMessage{"formId":json.RawMessage(`"form-1"`)}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	a, err := New(svc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = a.ExecuteForms(context.Background(), outbound.WorkspaceRequest{Operation: "forms.get", Parameters: map[string]json.RawMessage{"formId": json.RawMessage(`"form-1"`)}})
 	var remote *codec.RemoteError
-	if !errors.As(err, &remote) || remote.Status != 403 || remote.API != "forms" { t.Fatalf("expected redacted Google 403, got %v", err) }
-	if err != nil && strings.Contains(err.Error(), "sensitive-user-info") { t.Fatal("provider response leaked") }
+	if !errors.As(err, &remote) || remote.Status != 403 || remote.API != "forms" {
+		t.Fatalf("expected redacted Google 403, got %v", err)
+	}
+	if err != nil && strings.Contains(err.Error(), "sensitive-user-info") {
+		t.Fatal("provider response leaked")
+	}
 }

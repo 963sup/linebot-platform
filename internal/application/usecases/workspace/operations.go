@@ -131,9 +131,13 @@ func NewOperations(cal outbound.GoogleCalendarOperator, task outbound.GoogleTask
 
 // NewOperationsWithForms leaves existing Calendar/Tasks constructors intact.
 func NewOperationsWithForms(cal outbound.GoogleCalendarOperator, tasks outbound.GoogleTasksOperator, forms outbound.GoogleFormsOperator) (*Operations, error) {
-	if forms == nil { return nil, errors.New("Forms operator is required") }
+	if forms == nil {
+		return nil, errors.New("Forms operator is required")
+	}
 	ops, err := NewOperations(cal, tasks)
-	if err != nil { return nil, err }
+	if err != nil {
+		return nil, err
+	}
 	ops.forms = forms
 	return ops, nil
 }
@@ -196,7 +200,9 @@ func (s *Operations) Execute(ctx context.Context, api string, req outbound.Works
 	case "tasks":
 		return s.tasks.ExecuteTasks(ctx, req)
 	case "forms":
-		if s.forms == nil { return nil, errors.New("Forms adapter not configured") }
+		if s.forms == nil {
+			return nil, errors.New("Forms adapter not configured")
+		}
 		return s.forms.ExecuteForms(ctx, req)
 	default:
 		return nil, fmt.Errorf("unsupported workspace provider")
