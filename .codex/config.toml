@@ -13,11 +13,79 @@ multi_agent = true
 enabled = true
 max_concurrent_threads_per_session = 3
 
+[agents.cloud_platform]
+description = "cloud platform specialist."
+config_file = "agents/cloud_platform.toml"
+
+[agents.cloud_run_release]
+description = "cloud run release specialist."
+config_file = "agents/cloud_run_release.toml"
+
+[agents.code_cleanup_release_validation]
+description = "code cleanup release validation specialist."
+config_file = "agents/code_cleanup_release_validation.toml"
+
+[agents.delivery_orchestrator]
+description = "delivery orchestrator specialist."
+config_file = "agents/delivery_orchestrator.toml"
+
+[agents.docs_researcher]
+description = "docs researcher specialist."
+config_file = "agents/docs_researcher.toml"
+
+[agents.domain_architect]
+description = "domain architect specialist."
+config_file = "agents/domain_architect.toml"
+
+[agents.git_release]
+description = "git release specialist."
+config_file = "agents/git_release.toml"
+
+[agents.github_actions_reviewer]
+description = "github actions reviewer specialist."
+config_file = "agents/github_actions_reviewer.toml"
+
+[agents.go_agents_md_author]
+description = "go agents md author specialist."
+config_file = "agents/go_agents_md_author.toml"
+
+[agents.go_architecture_reviewer]
+description = "go architecture reviewer specialist."
+config_file = "agents/go_architecture_reviewer.toml"
+
+[agents.go_feature_engineer]
+description = "go feature engineer specialist."
+config_file = "agents/go_feature_engineer.toml"
+
+[agents.go_reviewer]
+description = "go reviewer specialist."
+config_file = "agents/go_reviewer.toml"
+
+[agents.google_identity_workspace_integrator]
+description = "google identity workspace integrator specialist."
+config_file = "agents/google_identity_workspace_integrator.toml"
+
+[agents.gopls_go_refactor]
+description = "gopls go refactor specialist."
+config_file = "agents/gopls_go_refactor.toml"
+
+[agents.line_integrator]
+description = "line integrator specialist."
+config_file = "agents/line_integrator.toml"
+
+[agents.openai_docs_researcher]
+description = "openai docs researcher specialist."
+config_file = "agents/openai_docs_researcher.toml"
+
+[agents.technical_docs_writer]
+description = "technical docs writer specialist."
+config_file = "agents/technical_docs_writer.toml"
+
 # Go-language intelligence: "gopls mcp" detached stdio mode.
 # Cloud setup installs the pinned gopls binary into $HOME/.local/bin.
 [mcp_servers.gopls]
-command = "bash"
-args = ["-c", 'exec "$HOME/.local/bin/gopls" mcp']
+command = "gopls"
+args = ["mcp"]
 enabled = true
 required = false
 startup_timeout_sec = 30
@@ -35,6 +103,7 @@ tool_timeout_sec = 45
 [mcp_servers.github]
 url = "https://api.githubcopilot.com/mcp/"
 bearer_token_env_var = "GITHUB_MCP_TOKEN"
+default_tools_approval_mode = "writes"
 enabled = true
 required = false
 startup_timeout_sec = 20
@@ -57,6 +126,7 @@ tool_timeout_sec = 45
 # Google-managed remote MCP servers. They remain optional at runtime and
 # require a Google OAuth identity with least-privilege IAM.
 [mcp_servers.google_cloud_run]
+default_tools_approval_mode = "prompt"
 url = "https://run.googleapis.com/mcp"
 enabled = false
 required = false
@@ -64,6 +134,7 @@ startup_timeout_sec = 20
 tool_timeout_sec = 45
 
 [mcp_servers.google_firestore]
+default_tools_approval_mode = "prompt"
 url = "https://firestore.googleapis.com/mcp"
 enabled = false
 required = false
@@ -89,6 +160,7 @@ tool_timeout_sec = 45
 
 # Google-managed MCP. Requires explicit Google authentication and least-privilege access.
 [mcp_servers.google_cloud_cli]
+default_tools_approval_mode = "prompt"
 url = "https://cloudcli.googleapis.com/mcp"
 enabled = false
 required = false
@@ -97,6 +169,7 @@ tool_timeout_sec = 45
 
 # Google-managed MCP. Requires explicit Google authentication and least-privilege access.
 [mcp_servers.google_cloud_logging]
+default_tools_approval_mode = "prompt"
 url = "https://logging.googleapis.com/mcp"
 enabled = false
 required = false
@@ -105,6 +178,7 @@ tool_timeout_sec = 45
 
 # Google-managed MCP. Requires explicit Google authentication and least-privilege access.
 [mcp_servers.google_cloud_monitoring]
+default_tools_approval_mode = "prompt"
 url = "https://monitoring.googleapis.com/mcp"
 enabled = false
 required = false
@@ -113,6 +187,7 @@ tool_timeout_sec = 45
 
 # Google-managed MCP. Requires explicit Google authentication and least-privilege access.
 [mcp_servers.google_calendar]
+default_tools_approval_mode = "prompt"
 url = "https://calendarmcp.googleapis.com/mcp/v1"
 enabled = false
 required = false
@@ -121,6 +196,7 @@ tool_timeout_sec = 45
 
 # Google-managed MCP. Requires explicit Google authentication and least-privilege access.
 [mcp_servers.google_drive]
+default_tools_approval_mode = "prompt"
 url = "https://drivemcp.googleapis.com/mcp/v1"
 enabled = false
 required = false
@@ -129,6 +205,7 @@ tool_timeout_sec = 45
 
 # Google-managed MCP. Requires explicit Google authentication and least-privilege access.
 [mcp_servers.google_sheets]
+default_tools_approval_mode = "prompt"
 url = "https://sheetsmcp.googleapis.com/mcp/v1"
 enabled = false
 required = false
@@ -137,6 +214,7 @@ tool_timeout_sec = 45
 
 # Google-managed MCP. Requires explicit Google authentication and least-privilege access.
 [mcp_servers.google_docs]
+default_tools_approval_mode = "prompt"
 url = "https://docsmcp.googleapis.com/mcp/v1"
 enabled = false
 required = false
@@ -145,6 +223,7 @@ tool_timeout_sec = 45
 
 # Google-managed MCP. Requires explicit Google authentication and least-privilege access.
 [mcp_servers.google_gmail]
+default_tools_approval_mode = "prompt"
 url = "https://gmailmcp.googleapis.com/mcp/v1"
 enabled = false
 required = false
