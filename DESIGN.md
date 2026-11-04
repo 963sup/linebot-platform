@@ -101,15 +101,7 @@ func NewCalendar(ctx context.Context, authorizedHTTP *http.Client) (*calendar.Se
 
 ### 依賴方向的精確解讀
 
-```text
-[版本管理] go.mod ──提供──> 第三方 Module / Packages
-[原始碼]   infrastructure/*/client_factory.go ──import──> 官方 SDK
-[建立期]   cmd 或 bootstrap ──呼叫──> Factory / 官方 Constructor
-[建立期]   cmd 或 bootstrap ──注入──> Adapter ──注入──> Use Case
-[執行期]   Use Case ──呼叫──> Port ←──實作── Adapter ──使用──> SDK Client
-```
-
-不應把 `go.mod → SDK Package → Factory → Adapter → Port` 當成**單一執行時呼叫方向**；Port 是契約，不會在執行時自己呼叫 Adapter。Go 原始碼中是 Adapter import Port，Use Case import Port。
+依賴關係的**唯一規範圖、箭頭語意、import 矩陣與建立／執行流程**統一參考第 3 節，不再在其他章節維護第二份可能衝突的架構圖。
 
 ### 針對本 PR 的最小重構邊界
 
@@ -122,12 +114,54 @@ func NewCalendar(ctx context.Context, authorizedHTTP *http.Client) (*calendar.Se
 
 **查證依據（Context7）：** Go 官方 `go.dev/doc/code`、`go.dev/doc/modules/layout`、`go.dev/doc/modules/managing-dependencies` 說明 Module 與 Package 的關係及 `go mod tidy`；LINE 官方 `line-bot-sdk-go` 文件展示 `NewMessagingApiAPI` 與 `WithHTTPClient`。Google Factory 實例則依本儲存庫現有的官方 SDK `NewService` 呼叫整理，未聲稱 Context7 找到完整 Google Go Client 條目。
 
-## 3. 依賴方向（最重要的強制契約）
+## 3. 依賴方向：統一圖與實作契約
 
-### 3.1 原始碼 import 方向（不是執行順序）
+下圖是本專案的**概念關係圖**，沿用既定的節點與標籤；它同時呈現版本管理、原始碼 import、物件建立與 Port 實作關係，因此**不可把所有箭頭當成同一種 import 或執行期呼叫**。
+
+```mermaid
+flowchart TB
+    M["go.mod<br/>管理 Module 版本"]
+    SDK["官方 LINE / Google SDK"]
+    F["client_factory.go<br/>建立官方 Client"]
+    AD["Outbound Adapter<br/>必要的業務轉換"]
+    P["Application Port<br/>小型 Interface"]
+    UC["Application Use Case"]
+    D["DDD Domain"]
+    CMD["cmd / Composition Root"]
+
+    M -.->|"提供依賴版本"| SDK
+    F -->|"import"| SDK
+    CMD -->|"建立"| F
+    CMD -->|"組裝"| AD
+    CMD -->|"注入"| UC
+    AD -->|"使用"| F
+    AD -.->|"實作"| P
+    UC -->|"依賴"| P
+    UC -->|"依賴"| D
+
+    classDef core fill:#dceafe,stroke:#7398d4,color:#183b65
+    class P,UC,D core
+```
+
+### 3.1 圖中每一種箭頭的精確語意
+
+| 圖中關係 | 實際語意 | Go 程式碼依賴方向 |
+| --- | --- | --- |
+| `go.mod → SDK` | Module 版本解析，不是 runtime 呼叫 | `go.mod` 的 `require` 宣告 |
+| `Factory → SDK` | Factory 直接 import 官方 Package 並呼叫 Constructor | `infrastructure → SDK` |
+| `cmd → Factory` | Composition Root 建立 Client | `cmd → infrastructure` |
+| `cmd → Adapter / Use Case` | 手動 Constructor Injection | `cmd → adapter / application` |
+| `Adapter → Factory` | **可選**：Adapter 需要延遲建立使用者專屬 Client 時呼叫 Factory | `adapter → infrastructure`；一般情況由 `cmd` 建好 SDK Client 再注入 Adapter |
+| `Adapter → Port` | Adapter 實作 Port 的契約（圖中的虛線不是 runtime 呼叫） | Adapter 可 import Port / Domain 型別；Port **不得** import Adapter |
+| `Use Case → Port` | Use Case 呼叫注入的 Port | `application/usecase → application/port` |
+| `Use Case → Domain` | Use Case 執行領域模型與規則 | `application → domain` |
+
+**重要：** 上圖的 `AD → F` 是可選關係，不是強制多一層。若 Factory 只在啟動時使用，Adapter 只持有已注入的官方 SDK Client。若 Factory 用於每位使用者 OAuth Client 的按需建立，Adapter 可以持有一個具體 Factory 或所需的最小建構能力；但 Domain / Application 不能 import Factory。
+
+### 3.2 強制 import 依賴矩陣
 
 ```text
-cmd/{webhook,worker,ops}  [Composition Root]
+cmd/{webhook,worker,ops} [Composition Root]
     ├── application/usecases
     ├── adapter/inbound
     ├── adapter/outbound
@@ -135,32 +169,34 @@ cmd/{webhook,worker,ops}  [Composition Root]
 
 adapter/inbound ───────────> application/usecases / inbound ports
 application/usecases ──────> domain + application outbound ports
-adapter/outbound ──────────> application ports + domain (必要時) + infrastructure SDK clients
-infrastructure ────────────> 官方 SDK / 標準函式庫 / 技術元件
+adapter/outbound ──────────> application ports + domain (必要時) + SDK / infrastructure
+infrastructure ────────────> 官方 SDK + Go 標準函式庫 + 技術元件
 domain/identity/* ────────> domain/identity/* + Go 標準函式庫
 ```
 
-- **禁止** Domain import `application/`、`adapter/`、`infrastructure/`、LINE／Google／Firestore SDK。
-- **禁止** Application Use Case import 具體 Outbound Adapter 或 Infrastructure SDK Client。
-- Outbound Adapter **實作** Application/Domain 定義的 Port，Port 不得反向 import Adapter。
-- Inbound Adapter 驗證並轉換外部請求，呼叫 Application；不得繞過 Use Case 直接決定業務授權或修改 Domain 持久化。
-- Infrastructure 可以 import 官方 SDK，專注建構、認證傳輸、加密及技術資源生命週期，不持有 Domain 業務政策。
-- `cmd/` 或可選的 `internal/bootstrap/` 可 import 外側及內側元件做**手動 Constructor Injection**；組裝入口不得承擔業務授權判斷。
-- 不要求每個呼叫都穿過所有層；沒有真正業務抽象的簡單技術流程可直接使用 SDK，但不能讓 Domain/Application 依賴具體 SDK。
-- Domain 內部八個子 Package 亦需維持 **無循環依賴**。依賴的具體方向以模型責任與 `go list` 驗證，不以目錄字母順序決定。
+- **禁止** Domain import Application、Adapter、Infrastructure、LINE / Google / Firestore SDK。
+- **禁止** Application Use Case import 具體 Outbound Adapter、Client Factory、Infrastructure SDK。
+- Port 是由 Application 或 Domain 擁有的契約；Outbound Adapter 實作 Port，Port 不反向 import Adapter。
+- Inbound Adapter 驗證外部輸入並呼叫 Use Case；不可繞過 Application 執行業務授權或直接改寫 Domain 持久化。
+- Infrastructure Factory 只處理官方 SDK 建立與技術設定；不查詢 Domain Policy、不持久化 OAuth Token、不做使用者授權決策。
+- `cmd/` 是 Composition Root；`internal/bootstrap/` 僅在多個入口確實共用組裝時保留。兩者都不得承擔業務政策。
+- Domain 八個子 Package 需避免循環 import；保留目錄分類不代表每個流程必須穿過所有分類。
+- Adapter 使用 SDK 的 Request / Response 型別時可以直接 import 官方 SDK；不為了「單一 import 位置」製造一比一 Facade。
 
-### 3.2 物件建立流程與執行流程必須分開
+### 3.3 建立期與執行期分離
 
 ```text
-建立：go.mod（版本） → 官方 SDK Package（import）
-    → infrastructure/*/client_factory.go（直接呼叫官方 Constructor）
-    → cmd / bootstrap 組裝 Adapter、Port、Use Case、Handler
+版本解析：go.mod ──require──> 官方 SDK Modules
+原始碼：Factory ──import──> 官方 SDK Packages
 
-執行：HTTP / LINE Webhook → Inbound Adapter → Application Use Case
-    → Domain 規則 + Outbound Port → Outbound Adapter → SDK Client → 外部 API
+建立期：cmd / 可選 bootstrap ──> Factory / 官方 Constructor
+                              └──> Adapter ──注入──> Use Case
+
+執行期：Webhook / HTTP → Inbound Adapter → Use Case
+        → Domain 規則 + Port → 已注入的 Outbound Adapter → SDK Client → 外部 API
 ```
 
-`go.mod` 不是 Runtime Layer；`client_factory.go` 不是所有業務呼叫必經的中介層；DI 是建構動作，不是強制獨立 Package。
+Port 在執行期是介面分派的契約，**不是**一個獨立的中繼服務。Factory 通常不在執行期請求路徑中；使用者專屬 Google Client 需要延遲建立時才例外。
 
 ## 4. Domain / Identity：固定目錄與命名
 
@@ -209,11 +245,10 @@ internal/domain/identity/
 ### 5.2 LINE 依賴例
 
 ```text
-go.mod → github.com/line/line-bot-sdk-go/v8
-       → linebot/messaging_api（官方 NewMessagingApiAPI）
-       → infrastructure/line/client_factory.go
-       → adapter/outbound/line
-       → application outbound port（由 Adapter 實作）
+go.mod require github.com/line/line-bot-sdk-go/v8
+infrastructure/line/client_factory.go --import--> linebot/messaging_api
+cmd --建立 Client 並注入--> adapter/outbound/line
+adapter/outbound/line --實作--> application outbound port
 ```
 
 Webhook / httphandler：`SDK → adapter/inbound/http/line → Application`；不得硬塞入 Outbound Factory。
@@ -221,14 +256,12 @@ Webhook / httphandler：`SDK → adapter/inbound/http/line → Application`；�
 ### 5.3 Google 依賴例與使用者隔離
 
 ```text
-go.mod → golang.org/x/oauth2 + google.golang.org/api
-       → 經驗證的 LINE principal / Google OAuth state、PKCE、nonce
-       → 使用者專屬 oauth2.TokenSource
-       → oauth2.NewClient(ctx, source)（已授權 HTTP Client）
-       → infrastructure/google/api/client_factory.go
-       → calendar.NewService(ctx, option.WithHTTPClient(client))
-       → adapter/outbound/google/api/calendar
-       → application outbound port（由 Adapter 實作）
+go.mod require golang.org/x/oauth2 + google.golang.org/api
+已驗證 LINE principal / Google OAuth state、PKCE、nonce → 使用者專屬 TokenSource
+infrastructure/google/api/client_factory.go --import--> calendar/v3、option
+Factory 使用已授權 HTTP Client 呼叫 calendar.NewService(...)
+cmd / 授權後的 Adapter --建立與注入--> calendar outbound adapter
+calendar outbound adapter --實作--> application outbound port
 ```
 
 Tasks / Forms / UserInfo 使用各自官方 `NewService`；不需另外建立一層「SDK Package」。
