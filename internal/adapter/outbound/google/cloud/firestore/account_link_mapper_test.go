@@ -9,11 +9,11 @@ import (
 
 func TestAccountLinkMapperPreservesIdentityAndState(t *testing.T) {
 	conn := outbound.OAuthConnection{
-		OwnerID: "line-123",
+		OwnerID:       "line-123",
 		GoogleSubject: "google-456",
-		Scopes: []string{"scope-b", "scope-a", "scope-a"},
-		Credentials: outbound.OAuthCredentials{AccessToken: "sensitive"},
-		Active: true,
+		Scopes:        []string{"scope-b", "scope-a", "scope-a"},
+		Credentials:   outbound.OAuthCredentials{AccessToken: "sensitive"},
+		Active:        true,
 	}
 	link, err := accountLinkFromConnection(conn)
 	if err != nil {
