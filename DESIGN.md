@@ -34,6 +34,94 @@
 
 同一 Provider 的不同 API Family 可能需要不同 Constructor、認證選項與權限；**統一入口不等於強迫所有 API 具有相同簽章**。
 
+## 2A. 從 go.mod 到 client_factory.go：最短依賴路徑（Context7 / Go 官方查證）
+
+**結論：go.mod 不會直接呼叫 Factory。** `go.mod` 只記錄 Module 與版本；Factory 的 `import` 才是對官方 SDK Package 的編譯期依賴。不要再建立專案自有的「SDK Package Layer」。
+
+```text
+go.mod: require github.com/line/line-bot-sdk-go/v8 v8.23.0
+    └── infrastructure/line/client_factory.go
+          import "github.com/line/line-bot-sdk-go/v8/linebot/messaging_api"
+          return messaging_api.NewMessagingApiAPI(token, options...)
+
+go.mod: require google.golang.org/api v0.310.0
+    └── infrastructure/google/api/client_factory.go
+          import "google.golang.org/api/calendar/v3"
+          return calendar.NewService(ctx, options...)
+
+go.mod: require golang.org/x/oauth2 v0.37.0
+    └── OAuth 授權元件
+          import "golang.org/x/oauth2"
+          建立使用者專屬 TokenSource / 已授權 HTTP Client
+```
+
+版本是本 PR 查核時的現有值，非要求未來固定不升級。這裡是**版本宣告 → import → 官方 Constructor** 的關係，不是 Runtime 呼叫堆疊。
+
+### 選擇規則（依序套用，避免重複封裝）
+
+| 條件 | 應採做法 | 不應做法 |
+| --- | --- | --- |
+| 官方 Constructor 只呼叫一次，沒有共用設定 | 在 Composition Root 直接呼叫官方 Constructor | 為了命名一致新增單行 Factory Wrapper |
+| 同 Provider 多個 Client 共用設定、HTTP Transport 或驗證 | 集中至一個 `client_factory.go`，提供簡短、具體的 `NewX` | 每個 API 都建立 `client.go`、`builder.go`、`provider.go` 三層 |
+| 官方 SDK 已有 Request / Response / API 操作 | Adapter 直接使用 SDK 型別與方法；只有跨 Application Port 邊界才轉換資料 | 複製整份 SDK DTO 或重新封裝所有 API 方法 |
+| Client 依使用者授權不同 | Factory 接收已授權 `TokenSource` 或 HTTP Client，按需建立 | 全域快取帶有單一使用者 Token 的 Client |
+| Webhook 解析、驗簽已有官方功能 | Inbound Adapter 直接使用官方 Webhook / HTTP Handler | 再寫一套簽章驗證與事件解析 |
+| SDK 建立與業務授權混在一起 | 授權決策留在 Application / Domain，Factory 只建立 Client | 在 Factory 查 Firestore 或執行 Domain Policy |
+
+### 官方 SDK Constructor 直接重用範例
+
+LINE（同一個 Provider Factory 內可提供 Messaging、Blob、Insight、Audience 等**必要**的建立函式）：
+
+```go
+// infrastructure/line/client_factory.go
+func NewMessagingClient(token string, httpClient *http.Client) (*messaging_api.MessagingApiAPI, error) {
+    if strings.TrimSpace(token) == "" || httpClient == nil {
+        return nil, errors.New("LINE token and HTTP client required")
+    }
+    return messaging_api.NewMessagingApiAPI(token, messaging_api.WithHTTPClient(httpClient))
+}
+```
+
+Google（以**已授權**的 HTTP Client 作為輸入；其他服務同理）：
+
+```go
+// infrastructure/google/api/client_factory.go
+func NewCalendar(ctx context.Context, authorizedHTTP *http.Client) (*calendar.Service, error) {
+    if ctx == nil || authorizedHTTP == nil {
+        return nil, errors.New("context and authorized HTTP client required")
+    }
+    if err := ctx.Err(); err != nil {
+        return nil, err
+    }
+    return calendar.NewService(ctx, option.WithHTTPClient(authorizedHTTP))
+}
+```
+
+上面範例只展示必要函式本體，實際檔案仍需正常 import。Google 的 `authorizedHTTP` 必須由該使用者的 OAuth TokenSource 建立（例如 `oauth2.NewClient(ctx, source)`）；不可用未授權的普通 HTTP Client 取代。**同一個已授權 HTTP Client 可以供該使用者的多個 Google Service 使用，不得跨使用者共用認證狀態。**
+
+### 依賴方向的精確解讀
+
+```text
+[版本管理] go.mod ──提供──> 第三方 Module / Packages
+[原始碼]   infrastructure/*/client_factory.go ──import──> 官方 SDK
+[建立期]   cmd 或 bootstrap ──呼叫──> Factory / 官方 Constructor
+[建立期]   cmd 或 bootstrap ──注入──> Adapter ──注入──> Use Case
+[執行期]   Use Case ──呼叫──> Port ←──實作── Adapter ──使用──> SDK Client
+```
+
+不應把 `go.mod → SDK Package → Factory → Adapter → Port` 當成**單一執行時呼叫方向**；Port 是契約，不會在執行時自己呼叫 Adapter。Go 原始碼中是 Adapter import Port，Use Case import Port。
+
+### 針對本 PR 的最小重構邊界
+
+- 保留 `internal/domain/identity/` 的八個 DDD 分類，不以這次 Factory 收斂為理由更動。
+- 現有 `internal/infrastructure/line/client_factory.go` 已有 Messaging / Blob Constructor；可評估把 `audience_client.go`、`insight_client.go` 等重複初始化**整合到同一 Package / Factory 入口**，但不強制合併檔案。
+- 現有 `internal/infrastructure/google/api/client_factory.go` 已有 Calendar、Tasks、Forms、Drive、Sheets Constructor；**優先直接重用**，而不是再建立一個泛用 `ClientFactory` Struct 包住同一批函式。
+- 不要同時維護 `NewCalendar`、`Factory.Calendar`、`NewWorkspaceCalendarClient` 三種功能等價的入口。
+- `bootstrap/workspace.go` 仍可負責組裝；若要減碼，先量測並消除重複建立與配置，不是把組裝責任搬到 Domain 或 Factory。
+- 本文件只建立標準；是否達到 40% 減碼率，需以重構前後有效程式行數驗證。
+
+**查證依據（Context7）：** Go 官方 `go.dev/doc/code`、`go.dev/doc/modules/layout`、`go.dev/doc/modules/managing-dependencies` 說明 Module 與 Package 的關係及 `go mod tidy`；LINE 官方 `line-bot-sdk-go` 文件展示 `NewMessagingApiAPI` 與 `WithHTTPClient`。Google Factory 實例則依本儲存庫現有的官方 SDK `NewService` 呼叫整理，未聲稱 Context7 找到完整 Google Go Client 條目。
+
 ## 3. 依賴方向（最重要的強制契約）
 
 ### 3.1 原始碼 import 方向（不是執行順序）
