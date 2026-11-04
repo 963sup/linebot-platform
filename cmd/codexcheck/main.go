@@ -132,14 +132,14 @@ func validateConfig(path string) error {
 		}
 	}
 	for name, endpoint := range map[string]string{
-		"google_cloud_cli": "https://cloudcli.googleapis.com/mcp",
-		"google_cloud_logging": "https://logging.googleapis.com/mcp",
+		"google_cloud_cli":        "https://cloudcli.googleapis.com/mcp",
+		"google_cloud_logging":    "https://logging.googleapis.com/mcp",
 		"google_cloud_monitoring": "https://monitoring.googleapis.com/mcp",
-		"google_calendar": "https://calendarmcp.googleapis.com/mcp/v1",
-		"google_drive": "https://drivemcp.googleapis.com/mcp/v1",
-		"google_sheets": "https://sheetsmcp.googleapis.com/mcp/v1",
-		"google_docs": "https://docsmcp.googleapis.com/mcp/v1",
-		"google_gmail": "https://gmailmcp.googleapis.com/mcp/v1",
+		"google_calendar":         "https://calendarmcp.googleapis.com/mcp/v1",
+		"google_drive":            "https://drivemcp.googleapis.com/mcp/v1",
+		"google_sheets":           "https://sheetsmcp.googleapis.com/mcp/v1",
+		"google_docs":             "https://docsmcp.googleapis.com/mcp/v1",
+		"google_gmail":            "https://gmailmcp.googleapis.com/mcp/v1",
 	} {
 		server := c.MCPServers[name]
 		if server.Enabled || server.URL != endpoint || server.Command != "" ||
