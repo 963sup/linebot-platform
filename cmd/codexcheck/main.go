@@ -58,7 +58,27 @@ func readTOML(path string, into any) error {
 	if err != nil {
 		return fmt.Errorf("decode %s: %w", path, err)
 	}
-	if keys := md.Undecoded(); len(keys) != 0 {
+	keys := md.Undecoded()
+	if c, ok := into.(*config); ok {
+		// BurntSushi/toml leaves children of map[string]any marked undecoded.
+		// Validate that dynamic table explicitly before allowing only its two
+		// supported role fields; all other metadata remains subject to rejection.
+		roles, err := parseAgentRegistry(c.Agents)
+		if err != nil {
+			return fmt.Errorf("%s: %w", path, err)
+		}
+		unhandled := make([]toml.Key, 0, len(keys))
+		for _, key := range keys {
+			if len(key) == 3 && key[0] == "agents" {
+				if _, exists := roles[key[1]]; exists && (key[2] == "description" || key[2] == "config_file") {
+					continue
+				}
+			}
+			unhandled = append(unhandled, key)
+		}
+		keys = unhandled
+	}
+	if len(keys) != 0 {
 		return fmt.Errorf("%s has unsupported TOML keys: %v", path, keys)
 	}
 	return nil

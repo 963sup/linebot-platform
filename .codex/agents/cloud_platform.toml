@@ -7,7 +7,7 @@ developer_instructions = """
 先讀 deploy/README.md、docs/operations/deployment.md、docs/architecture/event-processing.md 與 AGENTS.md。
 判斷 webhook(公開) / worker(私有) 的執行邊界、Cloud Tasks OIDC、Firestore inbox/outbox、Secret Manager、Service Account 與 WIF 的最小權限。
 Cloud Build 設定只是範本，不代表已建立任何 Trigger、專案或服務。
-需要查核 SDK/Cloud Run 官方規格，優先 Context7 與正式 Cloud 文件。
+依 agent-tool-preflight 查核官方規格：優先 google_developer_knowledge，Context7 補充版本文件，再核對正式 Cloud 文件；Go symbols 用 gopls，GitHub 現況用 github。工具缺失明示 fallback；文件 MCP 不授予雲端環境權限，核准技能缺少交主 Agent 受控 setup。
 只有工作獲得明確授權、隔離的 staging 專案與受限身分確立後，才能考慮啟用 Firestore Toolbox；預設停用，禁止讀寫 production。
 不可自行執行 gcloud deploy、terraform apply/destroy、改 IAM、建立付費資源或開放未授權端點。
 交付：最小權限檢查表、部署先決條件、具體驗證與未滿足項。

@@ -1,58 +1,74 @@
-# Codex MCP 與 Plugins（正式專案設定）
+# Codex MCP、Plugins 與受控 Skills 安裝
 
-MCP 是**開發期工具**，由 [`.codex/config.toml`](../../.codex/config.toml) 宣告；LINE Bot 的 Cloud Run Runtime 仍獨立使用 Go SDK。Codex SDK 任務先讀 [SDK Catalog](../sdk/catalog.toml)，再按 [SDK Integration Skill](../../.agents/skills/sdk-integration/SKILL.md) 使用本地模組原始碼／gopls／官方文件；不需要為每個 SDK 加裝一個 MCP。根 `AGENTS.md` 僅描述何時使用工具，**不能安裝、登入或代管 MCP 憑證**。
+`.codex/config.toml` 是開發工具連線的唯一設定來源；LINE Bot runtime 仍使用 Go SDK。MCP 設定、Host 載入、認證、最小工具呼叫、雲端部署必須分別驗證。
 
-## 宣告、Host 載入與連線是三個不同狀態
+## MCP 清單與路由
 
-`.codex/config.toml` 被版本控制，代表本專案期望的 MCP 配置；它本身不會證明當前 Codex CLI／Cloud host 已載入。每個新工作階段須以實際工具清單與 `codex mcp list`（若該 host 提供 CLI）驗證有效配置；對唯讀 server 執行最小唯讀呼叫，對可寫 server 則只在使用者明確授權的目標與操作下驗證。若工具不存在、CLI 未列出 server、網路受限、`gopls` 不在預期路徑，或 OAuth／token 缺失，必須回報「未掛載／未驗證」，使用安全 fallback，不能聲稱 MCP 可用。
+| MCP | 儲存庫設定 | 用途／前置條件 |
+| --- | --- | --- |
+| `gopls` | 啟用 | setup 固定安裝到 `$HOME/.local/bin/gopls`；Go 語意分析 |
+| `context7` | 啟用 | 函式庫／SDK 版本文件；匿名額度可能受限 |
+| `github` | 啟用 | Host 提供 GITHUB_MCP_TOKEN；寫入仍需任務授權 |
+| `openaiDeveloperDocs` | 啟用 | OpenAI／Codex 官方文件，不需 OpenAI API key |
+| `google_developer_knowledge` | 啟用 | 官方文件；Host 提供 DEVELOPERKNOWLEDGE_API_KEY |
+| `firestore_toolbox` | 停用 | 固定版本與五個唯讀工具；隔離 staging／最小 ADC |
+| `google_cloud_run` | 停用 | 服務、revision 與明確授權的環境調查 |
+| `google_firestore` | 停用 | 隔離 Firestore；不與 Toolbox 無目的重複啟用 |
+| `google_cloud_cli` | 停用 | 需最小權限 Google 身分及明確任務授權 |
+| `google_cloud_logging` | 停用 | 授權環境日誌，仍需去敏與範圍限制 |
+| `google_cloud_monitoring` | 停用 | 授權環境監控查詢 |
+| `google_calendar` | 停用 | 使用者／Workspace 資料權限另行驗證 |
+| `google_drive` | 停用 | 使用者／Workspace 資料權限另行驗證 |
+| `google_sheets` | 停用 | 使用者／Workspace 資料權限另行驗證 |
+| `google_docs` | 停用 | 使用者／Workspace 資料權限另行驗證 |
+| `google_gmail` | 停用 | 使用者／Workspace 資料權限另行驗證 |
 
-## MCP 與安全預設
+共 16 個宣告，5 個啟用；停用項目是保留配置，不代表 endpoint 已在此 Host 驗證。所有 server 仍為 optional。工具失敗使用根 AGENTS 的安全 fallback，不以安裝更多 MCP 取代診斷。
 
-| MCP 名稱 | 官方實作 | 啟用狀態 | 何時使用 |
-|---|---|---|---|
-| `gopls` | [gopls MCP](https://go.dev/gopls/features/mcp)；`gopls mcp` | 開啟（需安裝） | Go symbols、definitions、references、型別／錯誤診斷、重構前分析 |
-| `context7` | [upstash/context7](https://github.com/upstash/context7)；`https://mcp.context7.com/mcp` | 開啟（遠端） | 第三方 SDK 版本、安裝和程式 API 用法，仍需核對官方資料 |
-| `openaiDeveloperDocs` | [OpenAI Docs MCP](https://developers.openai.com/learn/docs-mcp)；`https://developers.openai.com/mcp` | 開啟（遠端、唯讀） | 官方 OpenAI API、SDK、Responses API、Codex、Skills、MCP 和 Plugins 文件 |
-| `github` | [github/github-mcp-server](https://github.com/github/github-mcp-server)；`https://api.githubcopilot.com/mcp/` | 啟用（需環境 token） | 依明確授權讀取或寫入 repository、PR、Issue、commit、workflow |
-| `firestore_toolbox` | [googleapis/mcp-toolbox](https://github.com/googleapis/mcp-toolbox)；Firestore prebuilt | 停用（未配置 staging ADC） | 在**隔離測試專案**審查 Firestore collections、documents、rules |
-| `google_cloud_run` | Google Cloud Run remote MCP；`https://run.googleapis.com/mcp` | 停用（尚未配置 Google OAuth／最小 IAM） | 讀取 service、revision、部署與診斷資料 |
-| `google_firestore` | Google Firestore remote MCP；`https://firestore.googleapis.com/mcp` | 停用（尚未配置 Google OAuth／最小 IAM） | 讀取隔離 staging 的 Firestore 資料與設定 |
+`gopls` 以 HOME 明確路徑啟動，不依賴 setup shell 的 PATH 能延續到 agent phase。此契約適用 POSIX／WSL／Cloud；原生 Windows 須以 Host 相容路徑另外驗證，不能聲稱此 Bash 設定通用。Detached gopls 讀取已儲存檔案，分析時可能下載 Go modules。
 
-`gopls` detached MCP 只能看到已儲存到磁碟的內容；它可能在分析 package 時下載 Go modules，不應誤認為只是一個純離線讀檔工具。
+Google Developer Knowledge 使用 `env_http_headers` 將 `X-Goog-Api-Key` 對應到環境變數；不要把 API key、ADC 路徑或 OAuth secret 放進 repo。缺 key 不是已認證，也不能為補齊工具而自行啟用 API／建立 key。此文件 MCP 不能代替 Firestore／Calendar 的資料授權。
 
-`context7` 公開文件查詢不需專案預設寫入 token；匿名存取可能有速率限制。若要使用私有文件或較高額度，應在使用者自己的 Codex 設定／認證流程中加入憑證，**不要在這個 repo 的 TOML 硬編碼 Header**。
+GitHub 使用 `writes` approval policy，不保證 token 唯讀；權限仍由 token 與 Host 控制。本設定未加入 X-MCP-Readonly 或 X-MCP-Toolsets header，不在文件宣稱不存在的 allowlist。遠端寫入使用 expected HEAD 並驗證實際 CI。其他 Google 服務維持停用與 prompt。
 
-## GitHub MCP：可寫與權限
+## Plugin 與 Skills：可重現且不擴權
 
-- `github` 只在環境安全提供 `GITHUB_MCP_TOKEN` 時連線；不要提交 token 或為了讓它能用而在 CI 自動登入。
-- MCP 可寫不等於自動授權。commit、branch、PR、Issue 或 merge 寫入前，必須確認使用者明確授權、repository、目標 branch 與 expected head；禁止未授權 force push、merge、部署或修改 secrets。
-- `X-MCP-Toolsets` 收斂至 `repos,issues,pull_requests`；token 自身權限仍須單獨限制，且 GitHub MCP 操作需由 `git_release` 交付閘門管理。
+`.codex/plugins.lock.json` 鎖定兩個已核對來源：
 
-## Google MCP Toolbox：不是 Google Workspace API MCP
+| 來源 | 固定 commit | 本工具安裝內容 |
+| --- | --- | --- |
+| samber/cc-skills | `50a33836b20f690c668af557bd9ef9d07a8c7ef2` | 通用 Engineering & Marketing Skills；不是 Go／DDD 專用規範 |
+| google/skills | `3ae864a38b66642c761c8b3dad6b72e38ca3cd43` | retrieving-developer-knowledge 與其 references／授權文件 |
 
-`mcp-toolbox` 是資料庫工具伺服器，提供 Firestore、Cloud SQL、BigQuery 等預建工具；**不取代** Google Calendar、Sheets、Drive 的正式 Go API Client。
+安裝方式明確標記為 **skills-only fallback**，不宣稱原生 Plugin 已安裝。它避免依賴跨版本不一致的原生 Plugin 語法、浮動版本，以及 Google Plugin 自帶的重複 MCP／ON_INSTALL 認證。新工作階段仍需確認 Host 真的發現 SKILL.md。
 
-## Google 管理的遠端 MCP
+```bash
+# 預設檢查：不安裝、不認證、不呼叫遠端服務。
+bash scripts/check-codex-plugins.sh
 
-Google Cloud Run 與 Firestore 都提供 Google 管理的遠端 MCP server，分別使用 `https://run.googleapis.com/mcp` 與 `https://firestore.googleapis.com/mcp`。本專案先將它們保留為停用設定：啟用前必須在 Codex Cloud 取得 Google OAuth 身分，並在隔離 staging 專案授予最小的唯讀 IAM。不要在 TOML 放入 ADC 檔案路徑、access token 或 OAuth client secret。
+# 已授權的固定來源檔案安裝；不執行下載內容。
+bash scripts/setup-codex-plugins.sh
 
-啟用後先以官方 server 提供的最小診斷 toolset 做唯讀驗證；確認 Cloud Run service/revision 與 Firestore 查詢都只能存取預期的 staging 專案後，才考慮增加任何寫入工具。Cloud Run runtime 本身不使用這些 MCP。
+# 額外註冊 Google marketplace；只有 CLI 支援 --ref 與可驗證 listing 才執行。
+bash scripts/setup-codex-plugins.sh --register-google-marketplace
+```
 
-本專案的預留設定使用 `npx -y @toolbox-sdk/server@1.14.0 --prebuilt=firestore --stdio`，預設 `enabled = false` 且以 `enabled_tools` 只暴露 `get_documents`、`query_collection`、`list_collections`、`get_rules`、`validate_rules`。
+Wrapper 以本機 Go 建置暫存執行檔，因此編譯器可能使用 Go cache／工具鏈；「檢查不修改」指不修改技能、個人 Codex 設定、認證或外部資料。結束碼：0 表示技能檔案符合鎖定收據，2 表示缺少／阻塞，1 表示錯誤。**0 不代表 MCP 或 Host 已通過驗收。**
 
-**重要：**Toolbox 上游 Firestore 工具集本來就含新增／更新／刪除資料操作；Codex 工具 allowlist 不是 GCP IAM 的安全邊界。啟用前須使用獨立 staging 專案、最小權限憑證並確認無 production 資料；不可直接用具廣泛寫入權限的 production ADC。
+安裝器使用 bare Git fetch 的精確 commit、核對 FETCH_HEAD，再讀取 archive。拒絕路徑穿越、symlink、特殊檔與超量 archive；保留上游 LICENSE。下載內容不執行、不 checkout hooks；安裝收據記錄來源與內容 digest。重跑相同內容不重裝，不覆寫無收據、被修改或不同版本目錄。升級需先審查新的鎖定 commit 與差異，不自動追蹤 main。
 
-## 設定與驗證
+cc-skills 既有原生 Plugin 使用者應先確認 Host 是否已提供相同 Skills；主 Agent 不應再重複安裝 fallback。檔案檢查器無法完整推論各版本原生 Plugin inventory，因此未匹配收據的原生安裝不得宣稱 missing 能力或逕行覆寫。
 
-1. Cloud setup 在非互動情境安裝 `gopls v0.24.0` 至 `$HOME/.local/bin/gopls`，專案 config 用絕對 HOME 路徑執行 `gopls mcp`。
-2. 本地執行 `go run ./cmd/codexcheck` 確認 MCP 宣告、十六個 Agents 與 setup shell 語法；這不代表 host 已載入 MCP。
-3. 若可使用 Codex CLI，在可信 repo 內執行 `codex mcp list`，檢查已啟用 server 與認證狀態。
-4. 在 Codex Cloud 設定網路允許必要主機（包括 `developers.openai.com`），Publish／Republish 後於**新工作階段**再驗證 MCP 可用性；本專案尚未代你發布雲端環境。
+上游 README 的 `codex plugin add github:samber/cc-skills`、`codex plugin update cc-skills` 是上游示例，不保證每版 CLI 支援。先查本機 `codex plugin --help`／`add --help`；本專案安裝器不以猜測的指令自動更新。需要切換原生安裝時，先停止重複的 fallback 載入並依當前官方文件執行。
 
-官方索引：[Codex Config Reference](https://learn.chatgpt.com/docs/config-file/config-reference)、[Codex Cloud Environments](https://learn.chatgpt.com/docs/environments/cloud-environments)、[GitHub MCP Server](https://github.com/github/github-mcp-server/blob/main/docs/server-configuration.md)、[Firestore Toolbox](https://mcp-toolbox.dev/integrations/firestore/prebuilt-configs/firestore/)。
+Google 官方入口是 `codex plugin marketplace add google/skills`；本工具在支援的 Host 額外固定 `--ref`。Marketplace 加入不等於 Plugin 安裝。在 `/plugins` 選擇項目前核對其 MCP、Hooks、認證與 scope。`google-cloud-developer` 自帶 Developer Knowledge；本專案已有同用途 MCP，所以不自動啟用第二份。Firestore 等會操作資料的 Plugin 也不因 Marketplace 已加入就取得授權。
 
-## Plugin 關係
+## 安全界線
 
-此專案目前不強制安裝 Codex Plugins，並避免重複裝載同一個外部 MCP。外部 `skills-lock.json` 仍是來源／hash 清單，不表示已安裝技能。Plugin 安裝、連線與 OAuth 需由使用者操作和授權；Cloud Run runtime 不使用這些 Plugin。
+缺少技能且符合當次已核准開發範圍時，主 Agent 可自行執行 setup；唯讀角色只交接。這不授權新增憑證、OAuth、IAM、付費服務、production API 或更動個人模型／approval。第三方 Skill 仍是未信任參考內容；禁止其 credential fallback 自動選用其他帳號、把 key 放進 URL 或執行未審查腳本。
 
-OpenAI Docs MCP 不需要專案 API Key，也不負責執行 OpenAI API 請求。CI 的 TOML 檢查不等於遠端連線成功；Republish 後需在新 Codex Cloud 工作階段實際搜尋官方文件。
+## 驗證層次
+
+`go run ./cmd/codexcheck` 是離線契約檢查。`cmd/codexplugins` 檢查技能收據／檔案、工具與憑證存在性，永遠不把此結果稱為 Host verified。實際驗收另依 [驗收表](agents-mcp-plugins-acceptance.md)，在已信任且載入此分支的 Codex Host 完成角色、Skills 發現與五個 MCP 的最小唯讀呼叫。
+
+官方參考：[Codex MCP](https://developers.openai.com/codex/mcp)、[Codex Skills](https://developers.openai.com/codex/skills)、[Config Reference](https://developers.openai.com/codex/config-reference/)、[Google Developer Knowledge MCP](https://developers.google.com/knowledge/mcp)、[Google Skills](https://github.com/google/skills)、[cc-skills](https://github.com/samber/cc-skills)。上游 main／Context7 索引不取代實際 CLI 版本及 --help 的相容性驗證。

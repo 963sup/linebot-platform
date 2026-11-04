@@ -18,7 +18,7 @@ description = "HTTP, webhook and external integration contract compatibility rev
 config_file = "agents/api_contract_reviewer.toml"
 
 [agents.architecture_alignment_engineer]
-description = "Evidence-driven repository realignment to DESIGN.md and DIRECTORY-STRUCTURE.md"
+description = "Evidence-driven repository realignment to the sole architecture contract DESIGN.md"
 config_file = "agents/architecture_alignment_engineer.toml"
 
 [agents.cloud_platform]

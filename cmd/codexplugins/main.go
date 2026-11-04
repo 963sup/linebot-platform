@@ -383,53 +383,66 @@ func downloadSkills(s source, run commandRunner) ([]byte, error) {
 	return run("git", "-C", temp, "archive", "--format=tar", s.Commit, "--", s.SkillRoot, "LICENSE")
 }
 
-func marketplaceRecord(data []byte, name, pin string) (bool, bool) {
+// marketplaceRecords accepts only recognized listing shapes. An unknown host
+// schema is a blocker, never evidence that a marketplace is absent.
+func marketplaceRecords(data []byte) ([]map[string]any, error) {
 	var value any
-	if json.Unmarshal(data, &value) != nil {
+	if err := json.Unmarshal(data, &value); err != nil {
+		return nil, errors.New("invalid marketplace JSON")
+	}
+	if object, ok := value.(map[string]any); ok {
+		var exists bool
+		value, exists = object["marketplaces"]
+		if !exists {
+			return nil, errors.New("unsupported marketplace listing object")
+		}
+	}
+	array, ok := value.([]any)
+	if !ok {
+		return nil, errors.New("unsupported marketplace listing shape")
+	}
+	records := make([]map[string]any, 0, len(array))
+	seen := map[string]bool{}
+	for _, entry := range array {
+		record, ok := entry.(map[string]any)
+		if !ok {
+			return nil, errors.New("unsupported marketplace record")
+		}
+		name, ok := record["name"].(string)
+		if !ok || name == "" || seen[name] {
+			return nil, errors.New("missing or duplicate marketplace name")
+		}
+		seen[name] = true
+		records = append(records, record)
+	}
+	return records, nil
+}
+
+func marketplaceRecord(data []byte, name, pin string) (bool, bool) {
+	records, err := marketplaceRecords(data)
+	if err != nil {
 		return false, false
 	}
-	var contains func(any, string) bool
-	contains = func(v any, want string) bool {
-		switch x := v.(type) {
-		case string:
-			return x == want
-		case []any:
-			for _, a := range x {
-				if contains(a, want) {
-					return true
-				}
+	for _, record := range records {
+		if record["name"] != name {
+			continue
+		}
+		url, _ := record["source"].(string)
+		ref, _ := record["ref"].(string)
+		sha, _ := record["sha"].(string)
+		if source, ok := record["source"].(map[string]any); ok {
+			url, _ = source["url"].(string)
+			if sourceRef, ok := source["ref"].(string); ok {
+				ref = sourceRef
 			}
-		case map[string]any:
-			for _, a := range x {
-				if contains(a, want) {
-					return true
-				}
+			if sourceSHA, ok := source["sha"].(string); ok {
+				sha = sourceSHA
 			}
 		}
-		return false
+		approved := url == "google/skills" || url == "https://github.com/google/skills" || url == "https://github.com/google/skills.git"
+		return true, approved && (ref == pin || sha == pin)
 	}
-	var walk func(any) (bool, bool)
-	walk = func(v any) (bool, bool) {
-		switch x := v.(type) {
-		case map[string]any:
-			if x["name"] == name {
-				return true, contains(x, pin)
-			}
-			for _, a := range x {
-				if f, p := walk(a); f {
-					return f, p
-				}
-			}
-		case []any:
-			for _, a := range x {
-				if f, p := walk(a); f {
-					return f, p
-				}
-			}
-		}
-		return false, false
-	}
-	return walk(value)
+	return false, false
 }
 
 func registerGoogle(s source, run commandRunner) (string, error) {
@@ -441,8 +454,8 @@ func registerGoogle(s source, run commandRunner) (string, error) {
 	if err != nil {
 		return "unverified", err
 	}
-	if !json.Valid(listing) {
-		return "unverified", errors.New("unsupported marketplace listing format")
+	if _, err := marketplaceRecords(listing); err != nil {
+		return "unverified", err
 	}
 	if found, pinned := marketplaceRecord(listing, "google-plugins", s.Commit); found {
 		if pinned {

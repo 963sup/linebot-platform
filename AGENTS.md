@@ -4,13 +4,15 @@
 
 ## 先確認狀態
 
-- 先讀 `README.md`、`docs/architecture/overview.md`、`docs/roadmap.md` 和相關子目錄規範。
+- 先讀 `README.md`、`DESIGN.md`、`docs/architecture/overview.md`、`docs/roadmap.md` 和相關子目錄規範。
 - 現階段有開發用同步 LINE 回覆示範，另有明確啟用才使用的 Firestore Inbox/Outbox、Cloud Tasks OIDC Worker／Reconcile 程式碼；**尚無正式部署、IAM/Firestore TTL／Cloud Scheduler 配置與 Staging 驗收**。請依實際實作情況更新文件，不得把預留目錄當成已完成功能。
 - 以最小可行、可編譯、可測試的垂直切片實作新功能。**SDK 預留空白骨架、擴充目錄及其 `.gitkeep` 必須保留**，不得因尚未接線而刪除；其他類型的占位內容，僅在確認用途、引用與授權後才可另行清理。
-- 新 SDK 或 feature 在加入前確認上游官方文件、API 版本、帳號地區資格與安全修補版本。依賴已在 `go.mod` 預先宣告，但未在 runtime 接線的不算已啟用；更新後需執行 `go mod tidy` 並提交真實 `go.sum`。
+- 新 SDK 或 feature 在加入前確認上游官方文件、API 版本、帳號地區資格與安全修補版本。依賴已在 `go.mod` 預先宣告，但未在 runtime 接線的不算已啟用；更新後需執行 `go mod tidy` 並提交真實 `go.sum`，不得藉此刪除下述受保護依賴。
 - 使用已修補的 Go 1.27.3 工具鏈；CI／Docker 版本須一致，部署前再固定 image digest。
 
 ## 依賴方向
+
+`DESIGN.md` 是唯一架構標靶，含抽象目錄樹；不代表現況已遷移。下述既有目錄名稱以真實 consumer 為準，不因標靶使用 `adapters/` 等名稱就直接搬移。
 
 - `internal/domain` 不得 import `application`、`adapter`、`infrastructure` 或 LINE／Google／AI SDK。
 - `internal/application` 可 import `domain`，但不能依賴 `adapter` 與 `infrastructure`。
@@ -18,13 +20,13 @@
 - `internal/infrastructure` 負責 SDK client、認證、transport、timeout、observability。
 - `internal/bootstrap` 專責依賴組裝；`cmd/` 只負責啟動程序。
 - 不預先為所有構想建立空介面、空 `.go` 檔或用無用途的 abstraction 填滿架構。
-- Value Objects 的**目錄**使用 `internal/domain/value-objects/`，其中 Go **package 識別字**仍是 `valueobjects`；`-` 僅存在於 import path，不得寫成 `package value-objects`，也不可將目錄改回 `valueobjects/`。新增模型前先確認其 Bounded Context。
+- 既有 Value Objects 的 `value-objects/` 目錄，其 Go package 識別字仍是 `valueobjects`；不得寫成 `package value-objects`。本工具治理工作不變更既有 import path；新增模型先確認 Bounded Context，目標佈局遵守 `DESIGN.md`。
 
 ## DDD／六邊形架構重構前的必行規劃
 
 - **先規劃再修改**：跨 Domain、Application、Adapter、Infrastructure 的改造，必須先列出目標業務不變量、擬新增的具體檔案、刪除／合併的舊檔案、呼叫鏈、相容性界線與可驗證的完成條件。
 - **以目標模型主導收斂**：Domain 是業務狀態與決策的單一來源；不能只新增 Entity／Aggregate／Value Object，卻保留 Application／Adapter 的平行規則。檢查並移除舊 Policy／Specification／Factory、無引用的接口、重複驗證。
-- **命名與實作不可分離**：各 Bounded Context 的 Value Objects 目錄固定為 `value-objects/`（Go package `valueobjects`）；Entity、Aggregate、Policy、Specification、Factory、Repository、Events 僅在具體用途及測試存在時才實作，禁止空殼填滿樹。
+- **命名與實作不可分離**：既有命名遷移須依 `DESIGN.md`、consumer 與相容性測試分切片處理；Entity、Aggregate、Policy、Specification、Factory、Repository、Events 僅在具體用途及測試存在時才實作，禁止空殼填滿樹。
 - **遷移不可犧牲資料契約**：舊 OAuth／Firestore 技術 DTO 可在過渡期間保留，但必須明確註明為相容性資料載體、追蹤剩餘引用與退役條件，不能永久成為第二套業務模型。必須保護 OAuth State／PKCE／Nonce、Token 加密、CAS、Webhook／Cloud Tasks 冪等性。
 - **驗證後再交付**：Go 格式與靜態檢查、Domain／Architecture／Contract／Race Tests、CI 必須通過；新舊持久化格式混合存活未驗證時不得合併／發布。不以文件、空目錄或「CI 綠燈」單獨宣稱 DDD 遷移完成。
 
@@ -46,6 +48,7 @@
 - 外部發送、刪除、付費雲端資源與正式環境部署都須遵循授權；不自行合併 PR 或啟用 production。
 - 不將未審核的外部 skills／MCP 當作可信程式自動執行。
 - `skills-lock.json` 是從其他儲存庫精選的外部技能來源指紋，不代表已安裝或已驗證，禁止自動執行未審查的腳本。
+- `.codex/plugins.lock.json` 是受控安裝器的來源鎖定，不取代根 skills-lock，也不授予執行下載內容的權限。第三方 Skill 的 credential fallback 不得自動選用其他帳號、執行 OAuth 或把 key 放進 URL／日誌。
 - `cloudbuild.deploy.yaml` 僅允許經授權的 staging；在完善可靠性、IAM、Secret Manager 與人工核准之前，不得執行 production 部署。
 
 ## SDK 自動辨識與開發路由
@@ -58,31 +61,52 @@
 - Application 與 Domain 使用 Go 標準庫及專案自有 Port，不直接 import 外部 SDK；不建立萬用動態 SDK 呼叫器。已宣告、已整合、已經 staging 驗證是不同狀態。
 - SDK Runtime 使用明確的 Factory 與 Bootstrap 所擁有的 HTTP Transport；不要在共享 LINE Client 上直接呼叫會修改 Receiver 的 `WithContext`。錯誤需去敏且保留可供程式辨識的型別，不要預設自動重試。
 
-## Codex Agents 與 MCP 選用（不負責安裝）
+## Codex Agents、MCP 與受控安裝
 
-- 涉及專案結構重整先讀根目錄 `DESIGN.md`、`DIRECTORY-STRUCTURE.md`，委派 `architecture_alignment_engineer` 先做現況差異與分階段遷移設計；不要直接大量搬移或刪除已使用的 Go Package。兩份文件的 Identity Value Object 目錄拼法有衝突：`DESIGN.md` 固定 `value-objects/`，`DIRECTORY-STRUCTURE.md` 寫 `valueobjects/`；依前者的明確 Identity 契約執行，並在對齊工作中修訂不一致文件。其他衝突不得靜默選擇。
-- Firestore 實作交 `firestore_integrator`、Cloud Tasks 執行交 `cloud_tasks_integrator`、資料遷移交 `data_migration_engineer`、遙測實作交 `observability_engineer`；`cloud_platform` 保留 IAM／部署平台責任。安全、測試、效能與 API 契約分別交 `security_reviewer`、`go_test_engineer`、`performance_reviewer`、`api_contract_reviewer`；正式事故唯讀診斷交 `incident_responder`。避免同一檔案交兩名實作者並行編輯。
-- 已在 `.codex/config.toml` 註冊的角色仍必須由主 Agent 按工作需求委派；不得因註冊而自行取得額外權限。
+### 工作契約與角色路由
 
+- `.codex/config.toml` 管連線、角色註冊、啟用與 timeout；角色 TOML 管職責、輸入、可改範圍與交付；本檔管共用路由、架構不變量、授權與 fallback。角色文字不是沙盒或權限升級。
+- 複雜跨領域工作由唯讀 `delivery_orchestrator` 定義有序工作契約；小型單一邊界直接交實作者。主 Agent 負責整合與最後驗證；最多五個子 thread，不為湊數啟動。
+- L1 研究與 Domain 契約，L2 Go／服務整合／局部重構，必要時 L3 跨 package 語意傳播，L4 獨立審查，L5 文件與交付閘門。不是每次工作都要走完整角色鏈。
+- 需求與驗收條件由主 Agent／編排者確認；Domain 不變量交 `domain_architect`。架構對齊交 `architecture_alignment_engineer`，先讀最新版 `DESIGN.md`，建立目標／現況／consumer／遷移矩陣；不重建已刪除的第二份架構文件。
+- 函式／package 內行為保持簡化交 `go_code_refactor`；跨 package rename、DTO／Port／interface 演進、搬遷及批量 references 交 `gopls_go_refactor`。後者只傳播已確認契約，不重新決定架構。兩者交接時先停止重疊寫入。
+- Firestore、Cloud Tasks、資料遷移與遙測分別交 `firestore_integrator`、`cloud_tasks_integrator`、`data_migration_engineer`、`observability_engineer`；`cloud_platform` 保留 IAM／平台責任。
+- `line_integrator` 負責 LINE v8 的 linebot、webhook、messaging_api、liff、channel_access_token、insight、manage_audience、module、module_attach、shop、httphandler。`google_identity_workspace_integrator` 負責 oauth2、oauth2/google、idtoken、oauth2/v2、option、calendar/v3、tasks/v1、forms/v1 及相關 Workspace Adapter。
+- 跨 LINE／Google 帳號連結先確定 Domain 自有 DTO／Port，再分派整合角色。查詢 Port 按能力用 Reader／Finder／Inspector，改變外部狀態用 Manager／Command；不新增 Provider、萬用 Client／Call 或動態路由層。
+- 正確性、架構、安全、測試、效能、API 契約、CI 分別交對應 reviewer／test engineer；`incident_responder` 預設正式事故唯讀。實作者不可自我批准；同一檔案同時只能有一個寫入 owner。
+- `code_cleanup_release_validation` 僅做驗收後必要清理與交付檢查，不反向改架構。清理若改動程式，相關舊驗收即失效，必須重跑測試／審查。
 
-- **三層契約：**`.codex/config.toml` 只宣告 MCP／協作功能的連線、啟用狀態與 timeout，不能放角色工作流程或憑證；`.codex/agents/*.toml` 只定義可委派角色的責任、輸入、交付與安全邊界，不能自行啟用工具或擴權；本檔負責跨角色路由、架構不變量、驗證與 fallback。三者的相同工具名稱必須一致，設定啟用不代表此工作階段已連線成功。
-- 跨領域、跨 SDK、跨 package 或跨環境的複雜任務先由第 0 層 `delivery_orchestrator` 產出工作契約；小型單一邊界任務直接交對應角色，避免徒增 Agent 鏈。它不取代主 Agent 的整合與最終驗證責任。
-- **層級與順序：**第 1 層 `docs_researcher`、`domain_architect` 產出外部證據與領域契約；第 2 層 `go_feature_engineer`、`line_integrator`、`google_identity_workspace_integrator`、`cloud_platform` 在契約內實作或審查能力邊界；第 3 層 `gopls_go_refactor` 只傳播已確認的跨 package 語意變更；第 4 層 `go_reviewer`、`go_architecture_reviewer`、`github_actions_reviewer` 獨立檢查；第 5 層 `technical_docs_writer`、`go_agents_md_author`、`code_cleanup_release_validation`、`cloud_run_release` 產出文件、治理、交付驗證與經明確授權的發布。同一檔案不得由多個實作角色同時改寫，最後由主 Agent 整合、驗證。
-- **Git 交付閘門：**`git_release` 只在使用者明確要求 commit／push／PR／merge 時啟用；先驗證工作區、變更範圍、Go 品質閘門與 secrets，再以 fast-forward 或 GitHub MCP 的 expected head 保護更新指定分支。GitHub MCP 可寫不代表自動授權：所有寫入、PR merge、force push 與 deployment 仍需使用者明確要求；推送後必須用 GitHub MCP 驗證遠端 SHA、branch ref 與 CI 狀態，不得把 push、PR merge 或 CI 通過宣稱為 Cloud Run／staging／production 部署成功。
-- **SDK 路由標準：**所有 `github.com/line/line-bot-sdk-go/v8/linebot`、`webhook`、`messaging_api`、`liff`、`channel_access_token`、`insight`、`manage_audience`、`module`、`module_attach`、`shop`、`httphandler` 變更由 `line_integrator` 負責；所有 `golang.org/x/oauth2`、`oauth2/google`、`google.golang.org/api/idtoken`、`oauth2/v2`、`option`、`calendar/v3`、`tasks/v1`、`forms/v1` 變更由 `google_identity_workspace_integrator` 負責。它們都必須先套用 `sdk-integration` Skill、查 Catalog、以 gopls 驗證符號，並維持 Domain/Application 無 SDK import、Adapter/Infrastructure 持 SDK、Bootstrap 組裝的邊界。
-- **命名與交接標準：**由具體能力命名，查詢 Port 使用 `Reader`、`Finder` 或 `Inspector`，改變外部狀態使用 `Manager` 或 `Command`；禁止建立 `Provider`、萬用 `Client`、`Call` 或動態路由層。跨 LINE 與 Google 的帳號連結，先由 `domain_architect` 定義自有 DTO／Port，再分別交兩個整合 Agent；跨 package rename、DTO／Port 演進則交 `gopls_go_refactor`，最後由 `go_reviewer` 檢查邊界、錯誤、取消、效能與測試。
-- 跨 package rename、interface／DTO 簽名變更、Port／Adapter 搬遷、package 拆分或需批量更新 Go references 時，優先委派 **`gopls_go_refactor`**。它必須先以 gopls MCP 查 definition、references、implementations 與 diagnostics，修改後執行 gofmt、目標測試並重新檢查 diagnostics；若 gopls MCP 不可用，才以本地 Go 工具降級並回報。
-- 修改其他 Go 程式前，需要追查 definitions、references、型別或診斷時用 **gopls MCP**；若不可用則使用本地 Go 工具。
-- OpenAI API、Responses API、OpenAI Go SDK、Codex、Skills、MCP 或 Plugins 的更新與實作優先使用 **openaiDeveloperDocs MCP** 查閱官方文件；不得推測不存在的 API、參數或能力。若 MCP 不可用，改用 OpenAI 官方網站並標示未驗證事項。
-- **主動使用 Context7：**凡涉及任何函式庫、框架、SDK、API、CLI 工具、MCP 或版本／設定用法的問題，Codex 必須先使用 **Context7 MCP** 查詢最新文件與範例，再進行分析、修改或回答；不得只依賴記憶。若 Context7 不可用，必須明確說明並改查官方文件。
-- **MCP 路由固定規則：**所有 Go 語言、Go workspace、Go symbol、Go diagnostics、重構與 Go tooling 工作必須使用 `[mcp_servers.gopls]`；所有 GitHub repository、branch、commit、PR、Issue、workflow 與 CI 操作必須使用 `[mcp_servers.github]`；所有 Codex、Codex 設定、Agents、Skills、MCP 與 Plugins 的設定或文件問題必須使用 `[mcp_servers.openaiDeveloperDocs]`。不得以其他 MCP 取代上述指定路由；指定 MCP 不可用時，必須明確回報並說明 fallback。
-- **不確定時查證：**若對答案、API、版本、設定或行為沒有至少 99.99% 把握，必須先使用 `[mcp_servers.context7]` 查詢最新文件與範例，再回答或執行修改；不得以推測代替查證。
-- 其他新版本 SDK／API 使用方式、設定或重大變更使用 **Context7 MCP**，再核對相關官方 Go／LINE／Google 文件；無法查證時明確標示。
-- PR／Issue／commit／CI 狀態需要外部證據或經授權的 GitHub 寫入時，使用已啟用的 **GitHub MCP**；寫入前確認使用者授權、目標 repository、branch head 與 expected SHA。
-- **Firestore Toolbox** 只在使用者授權的隔離 staging 環境、具最小權限 ADC 時使用，不得存取或修改 production。
-- `AGENTS.md` 只負責路由規則；**不可因指示而自行安裝 MCP、產生 token、執行 OAuth 或修改個人 Codex 設定**。MCP 的啟用與安裝由 `.codex/config.toml`、Codex Cloud Install script 與使用者環境設定處理。
+### 自主選用 MCP
 
-請閱讀 [Agents 職責](docs/ai/agents.md)、[MCP 設定與權限](docs/ai/mcp-and-plugins.md)、[Codex Cloud](docs/ai/codex-cloud.md)。
+所有新舊角色使用 [agent-tool-preflight](.agents/skills/agent-tool-preflight/SKILL.md)，只查本次任務需要的工具，不把工具健康掃描當成所有工作的前置成本。
+
+| 任務 | 優先 MCP | 不可用時 |
+| --- | --- | --- |
+| Go symbols、型別、references、diagnostics、重構 | `gopls` | 鎖定 module 原始碼、go list／go doc、編譯器與測試，明示降級 |
+| 函式庫、SDK、CLI 版本與用法 | `context7` | 對應版本的第一方文件／原始碼 |
+| GitHub repo、branch、PR、Issue、workflow／CI | `github` | 已授權 Git CLI；無遠端證據不得推論狀態 |
+| OpenAI、Codex、Agents、Skills、MCP、Plugins | `openaiDeveloperDocs` | OpenAI 官方網站／原始碼，Context7 補充 |
+| Google Cloud／Workspace API 與認證規格 | `google_developer_knowledge` | Google 官方文件，Context7 補充，再以本地 Go Symbol 核對 |
+
+- 已有同版本且足夠的證據可重用；重要不確定事項或版本差異先查證，不使用「99.99% 把握」等不可驗收門檻。純文件排版不強制 gopls；工具可用時不得以記憶代替必要語意或契約查證。
+- `.codex/config.toml` 的 declared／enabled 不代表 Host 已載入、認證或 verified。實際工具清單與最小唯讀呼叫才是可用性證據；錯誤回應、空結果、缺憑證需明示，不無限重試。
+- Google Developer Knowledge 使用 Host 安全提供的 `DEVELOPERKNOWLEDGE_API_KEY` 環境映射，不寫入 repo。此文件 MCP 不代替 Calendar／Firestore／Cloud Run 服務的實際授權。
+- 停用的服務 MCP 不因文件查詢而啟用。Firestore Toolbox 僅在明確授權的隔離 staging 與最小 ADC 使用，不接觸 production。
+
+### 缺少技能或工具時
+
+- 主 Agent 可先執行 `bash scripts/check-codex-plugins.sh`。預設不安裝、不認證；缺少工具只回報狀態，不捏造成功。
+- 在當次工作已授權準備開發工具、來源符合 `.codex/plugins.lock.json`、Host／Sandbox 允許時，主 Agent 可自行執行 `bash scripts/setup-codex-plugins.sh`，不需要使用者重述安裝命令。唯讀角色只交接缺失，不直接安裝。
+- 安裝器只取得固定 commit 的技能檔案，不執行上游腳本、不覆寫既有目錄。原生 Plugin 語法／固定版本支援不明或重複 MCP 時，使用有明確標記的 skills-only fallback，不稱為原生 Plugin 已安裝。
+- Google marketplace 可用 setup 的 `--register-google-marketplace` 選項註冊；已加入 marketplace 不等於已安裝 Plugin。原生 Google Plugin 的 MCP 重複與安裝認證須另行處理，禁止暗中開啟。
+- 安裝不含建立 token、OAuth 登入、啟用付費 API、改 IAM、放寬 sandbox 或改個人模型／approval 控制。既有不同版本、修改過的內容、認證或網路錯誤必須停止該項安裝並回報，不自行覆寫／追蹤浮動分支更新。
+- gopls 安裝由已核准的 `scripts/setup-codex-cloud.sh` 處理；使用與 config 一致的 `$HOME/.local/bin/gopls`。MCP 連線另於新工作階段驗證。
+
+### Git 交付閘門
+
+`git_release` 僅於使用者明確授權 commit／push／PR／merge 時操作；先驗證工作區、範圍、品質閘門與 secrets，再使用 fast-forward 或 expected-head 保護更新指定分支。可寫 MCP 不等於操作授權；不自行 force push、merge 或 deploy。推送後驗證遠端 SHA、branch ref 與實際 CI；push／PR／CI 成功不是 Cloud Run／staging／production 部署證明。
+
+參考：[角色矩陣](docs/ai/agents.md)、[MCP／Plugins](docs/ai/mcp-and-plugins.md)、[Codex Cloud](docs/ai/codex-cloud.md)。
 
 ## 外部環境驗收邊界
 
