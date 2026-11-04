@@ -24,7 +24,7 @@ Cloud Run／Firestore／Cloud Tasks 實際資源與 IAM 均未由儲存庫自動
 
 ## 邊界
 
-- **Domain**：業務不變量，不接觸 SDK；Draft PR #28 已實作 `internal/domain/identity/`（Entities、Aggregate、Value Objects、Policies、Specifications、Factory、Repository Reader、Events），其中 `identity/value-objects/` 使用 `valueobjects` package。根目錄 `domain/value-objects/` 是原始 Scaffold 預留位置。
+- **Domain**：業務不變量，不接觸 SDK；PR #28 已合併 `internal/domain/identity/`（Entities、Aggregate、Value Objects、Policies、Specifications、Factory、Repository Reader、Events），其中 `identity/value-objects/` 使用 `valueobjects` package。根目錄 `domain/value-objects/` 是原始 Scaffold 預留位置。
 - **Application**：執行流程、命令、查詢、ports；只有協調，不含 HTTP 細節。
 - **Adapter**：HTTP/CLI 入站，SDK / Firestore / Cloud Tasks 等出站；Gemini provider 使用 `internal/adapter/outbound/genai/`。
 - **Infrastructure**：外部 client、憑證、transport、觀測與執行設定；Google Gen AI SDK client 預留於 `internal/infrastructure/google/genai/`。

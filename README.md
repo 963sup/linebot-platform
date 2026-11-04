@@ -102,7 +102,7 @@ Profile 回應包含個人資料，請勿將 stdout、Shell 紀錄或查詢結�
 
 ## 架構與限制
 
-- `domain/identity/`：在 Draft PR #28 已建立 `AccountLink` Aggregate、`GoogleConnection` Entity、`value-objects/`（Go package `valueobjects`）、Policy、Specification、Factory、Repository 讀取契約及未發布的 Domain Events。OAuth 憑證仍保存在 Adapter 的加密持久化機制，並非 Domain 狀態；其他 Bounded Context 須依真實業務不變量逐步建模。
+- `domain/identity/`：PR #28 的變更已合併至 `main`，包含 `AccountLink` Aggregate、`GoogleConnection` Entity、`value-objects/`（Go package `valueobjects`）、Policy、Specification、Factory、Repository 讀取契約及 Domain Events。OAuth 憑證仍保存在 Adapter 的加密持久化機制，並非 Domain 狀態；其他 Bounded Context 須依真實業務不變量逐步建模。
 - `application/`：Messaging Port、Reply／Push、文字回覆，以及持久 Ingestion／Worker Use Case。
 - `adapter/`：同步與持久 Webhook、具 OIDC 驗證的 Worker、Firestore、Cloud Tasks、LINE 發送。
 - `infrastructure/`：LINE 受管理 HTTP Runtime、Firestore／Cloud Tasks 的可選 Durable 業務接線，以及其餘 Provider 的原生 Typed Client Factories（`client_ready`）；SDK 已可建構不代表其真實服務已獲授權。

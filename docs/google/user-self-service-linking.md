@@ -2,8 +2,8 @@
 
 ## 範圍與狀態
 
-- **已完成離線整合**：PR #25 已合併 Calendar v3 38 項及 Tasks v1 14 項；Draft PR #27 新增 Forms v1 10 項及 Google OAuth 核心、Firestore 加密憑證與一次性 State 的程式碼及離線測試，尚未合併 `main`。
-- **尚未完成／驗證**：一般 LINE 使用者的網頁自助綁定入口與 LINE Login／LIFF 信任鏈、實際 Google OAuth 同意及 Secret Manager／Firestore IAM 驗收、各帳號獨立同步。PR #27 的 OAuth Handler 尚未掛載公開路由。
+- **已完成離線整合**：Calendar v3、Tasks v1、Forms v1 及 Google OAuth 核心、Firestore 加密憑證與一次性 State 的程式碼及離線測試已進入 `main`。
+- **尚未完成／驗證**：一般 LINE 使用者的網頁自助綁定入口與 LINE Login／LIFF 信任鏈、實際 Google OAuth 同意及 Secret Manager／Firestore IAM 驗收、各帳號獨立同步。OAuth Handler 尚未掛載公開路由。
 - 此文由 [PR #26](https://github.com/963sup/linebot-platform/pull/26) 的原始自助連結規格整合至 [PR #27](https://github.com/963sup/linebot-platform/pull/27)，作為 P2～P4 的安全／驗收契約，不代表已部署、取得 Google OAuth 審核或擁有真實使用者資料。
 - 使用者自己操作並同意授權；平台只代其執行已授權的操作，不取得 Google 密碼，也不提供管理員共用 Google 帳號。
 

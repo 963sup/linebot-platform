@@ -49,7 +49,7 @@
 
 ## 近期實作順序與四項不可退化條件（Identity Domain 遷移進行中）
 
-1. **命名與架構 Gate（Draft PR #28 已完成，尚未合併）**：所有 Bounded Context 的 Value Objects 目錄使用 `value-objects/`，Go package 為 `valueobjects`；架構測試禁止同義異名目錄。Identity 已建立八類具體元件並逐步接入 OAuth／Firestore；CI 仍需按最新 commit 逐批驗證。
+1. **命名與架構 Gate（PR #28 已合併）**：所有 Bounded Context 的 Value Objects 目錄使用 `value-objects/`，Go package 為 `valueobjects`；架構測試禁止同義異名目錄。Identity 已建立八類具體元件並逐步接入 OAuth／Firestore；後續變更仍需按最新 commit 驗證。
 2. **DDD 不退化（Identity 本批完成，其他 Context 後續）**：Identity 的 Aggregate、Entity、VO、Policy、Specification、Factory、Repository Reader、Domain Events 已實作與測試；仍待移除 OAuth 技術 DTO 的重疊欄位並設計持久事件 Outbox。Conversation/Message 在確定真實不變量後才建立 Domain Model，不把 LINE SDK DTO 當成領域模型。
 3. **Hexagonal Architecture 不退化（同一功能 PR 的 Gate）**：擴充 AST import boundary 檢查，驗證 Domain 不依賴外層、Application 不 import Adapter/Infrastructure/SDK；新增 usecase 只能透過 Port 呼叫外部效果，Bootstrap 負責 DI。
 4. **GPT／Codex 零先驗不退化（獨立可重現驗收）**：全新、無過往聊天上下文的 Codex session 從 `AGENTS.md` → `README.md` → `docs/architecture/overview.md` → `docs/sdk/catalog.toml`，只讀必要 skill 與 SDK symbol，完成 sandbox-only 微小 Domain 修改；能定位正確的 `value-objects/` 且不刪預留 SDK／依賴。將指令、測試結果、失敗與修正紀錄於 PR。
