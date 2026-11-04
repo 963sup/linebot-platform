@@ -23,6 +23,9 @@ func uuidv4() (string, error) {
 }
 
 func run(args []string, getenv func(string) string) error {
+	if len(args) > 0 && args[0] == "workspace" {
+		return runWorkspace(args[1:], getenv)
+	}
 	if len(args) > 0 && args[0] == "actions" {
 		return runActions(args[1:], getenv)
 	}
