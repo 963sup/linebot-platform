@@ -79,7 +79,7 @@ func validateConfig(path string) error {
 		c.Agents.MaxConcurrentThreadsPerSession > 3 {
 		return errors.New("multi-agent must be enabled with concurrency between 1 and 3")
 	}
-	expected := []string{"gopls", "context7", "github_readonly", "firestore_toolbox", "google_cloud_run", "google_firestore", "openaiDeveloperDocs"}
+	expected := []string{"gopls", "context7", "github_readonly", "firestore_toolbox", "google_cloud_run", "google_firestore", "openaiDeveloperDocs", "google_developer_knowledge", "google_cloud_cli", "google_cloud_logging", "google_cloud_monitoring", "google_calendar", "google_drive", "google_sheets", "google_docs", "google_gmail"}
 	keys := make([]string, 0, len(c.MCPServers))
 	for name, s := range c.MCPServers {
 		keys = append(keys, name)
@@ -130,6 +130,27 @@ func validateConfig(path string) error {
 			server.BearerTokenEnvVar != "" || len(server.HTTPHeaders) != 0 {
 			return fmt.Errorf("%s must remain a disabled, credential-free Google remote MCP", name)
 		}
+	}
+	for name, endpoint := range map[string]string{
+		"google_cloud_cli": "https://cloudcli.googleapis.com/mcp",
+		"google_cloud_logging": "https://logging.googleapis.com/mcp",
+		"google_cloud_monitoring": "https://monitoring.googleapis.com/mcp",
+		"google_calendar": "https://calendarmcp.googleapis.com/mcp/v1",
+		"google_drive": "https://drivemcp.googleapis.com/mcp/v1",
+		"google_sheets": "https://sheetsmcp.googleapis.com/mcp/v1",
+		"google_docs": "https://docsmcp.googleapis.com/mcp/v1",
+		"google_gmail": "https://gmailmcp.googleapis.com/mcp/v1",
+	} {
+		server := c.MCPServers[name]
+		if server.Enabled || server.URL != endpoint || server.Command != "" ||
+			server.BearerTokenEnvVar != "" || len(server.HTTPHeaders) != 0 {
+			return fmt.Errorf("%s must remain a disabled, credential-free Google remote MCP", name)
+		}
+	}
+	knowledge := c.MCPServers["google_developer_knowledge"]
+	if !knowledge.Enabled || knowledge.URL != "https://developerknowledge.googleapis.com/mcp" ||
+		knowledge.Command != "" || knowledge.BearerTokenEnvVar != "" || len(knowledge.HTTPHeaders) != 0 {
+		return errors.New("Google Developer Knowledge MCP must use its configured HTTPS endpoint without embedded credentials")
 	}
 	return nil
 }
@@ -214,5 +235,5 @@ func main() {
 		fmt.Fprintln(os.Stderr, "Codex config validation:", err)
 		os.Exit(1)
 	}
-	fmt.Println("Codex config OK: 15 agents, 7 MCP entries, SDK catalog and reserved SDKs; no Python source files")
+	fmt.Println("Codex config OK: 15 agents, 16 MCP entries, SDK catalog and reserved SDKs; no Python source files")
 }
