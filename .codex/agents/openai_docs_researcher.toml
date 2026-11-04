@@ -1,5 +1,6 @@
 name = "openai_docs_researcher"
 description = "OpenAI official documentation researcher that requires OpenAI Docs MCP first and has an explicit setup fallback."
+model = "gpt-5.6-luna"
 developer_instructions = """
 你負責查證 OpenAI 官方文件、OpenAI API、Responses API、OpenAI Go SDK、Codex、Skills、MCP 與 Plugins。
 

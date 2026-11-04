@@ -14,8 +14,10 @@ project_doc_max_bytes = 65536
 multi_agent = true
 
 [agents]
+# Role-specific models are configured in agents/*.toml. Reasoning effort is
+# intentionally omitted so each model uses its own adaptive/default behavior.
 enabled = true
-max_concurrent_threads_per_session = 3
+max_concurrent_threads_per_session = 5
 
 # Custom specialist role registrations. Paths are relative to .codex/.
 # Roles are delegated on demand; defining a role does not run or elevate it.
@@ -176,7 +178,6 @@ tool_timeout_sec = 45
 [mcp_servers.google_cloud_run]
 default_tools_approval_mode = "prompt"
 url = "https://run.googleapis.com/mcp"
-default_tools_approval_mode = "prompt"
 enabled = false
 required = false
 startup_timeout_sec = 20
@@ -185,7 +186,6 @@ tool_timeout_sec = 45
 [mcp_servers.google_firestore]
 default_tools_approval_mode = "prompt"
 url = "https://firestore.googleapis.com/mcp"
-default_tools_approval_mode = "prompt"
 enabled = false
 required = false
 startup_timeout_sec = 20
@@ -212,7 +212,6 @@ tool_timeout_sec = 45
 [mcp_servers.google_cloud_cli]
 default_tools_approval_mode = "prompt"
 url = "https://cloudcli.googleapis.com/mcp"
-default_tools_approval_mode = "prompt"
 enabled = false
 required = false
 startup_timeout_sec = 20
@@ -222,7 +221,6 @@ tool_timeout_sec = 45
 [mcp_servers.google_cloud_logging]
 default_tools_approval_mode = "prompt"
 url = "https://logging.googleapis.com/mcp"
-default_tools_approval_mode = "prompt"
 enabled = false
 required = false
 startup_timeout_sec = 20
@@ -232,7 +230,6 @@ tool_timeout_sec = 45
 [mcp_servers.google_cloud_monitoring]
 default_tools_approval_mode = "prompt"
 url = "https://monitoring.googleapis.com/mcp"
-default_tools_approval_mode = "prompt"
 enabled = false
 required = false
 startup_timeout_sec = 20
@@ -242,7 +239,6 @@ tool_timeout_sec = 45
 [mcp_servers.google_calendar]
 default_tools_approval_mode = "prompt"
 url = "https://calendarmcp.googleapis.com/mcp/v1"
-default_tools_approval_mode = "prompt"
 enabled = false
 required = false
 startup_timeout_sec = 20
@@ -252,7 +248,6 @@ tool_timeout_sec = 45
 [mcp_servers.google_drive]
 default_tools_approval_mode = "prompt"
 url = "https://drivemcp.googleapis.com/mcp/v1"
-default_tools_approval_mode = "prompt"
 enabled = false
 required = false
 startup_timeout_sec = 20
@@ -262,7 +257,6 @@ tool_timeout_sec = 45
 [mcp_servers.google_sheets]
 default_tools_approval_mode = "prompt"
 url = "https://sheetsmcp.googleapis.com/mcp/v1"
-default_tools_approval_mode = "prompt"
 enabled = false
 required = false
 startup_timeout_sec = 20
@@ -272,7 +266,6 @@ tool_timeout_sec = 45
 [mcp_servers.google_docs]
 default_tools_approval_mode = "prompt"
 url = "https://docsmcp.googleapis.com/mcp/v1"
-default_tools_approval_mode = "prompt"
 enabled = false
 required = false
 startup_timeout_sec = 20
@@ -282,7 +275,6 @@ tool_timeout_sec = 45
 [mcp_servers.google_gmail]
 default_tools_approval_mode = "prompt"
 url = "https://gmailmcp.googleapis.com/mcp/v1"
-default_tools_approval_mode = "prompt"
 enabled = false
 required = false
 startup_timeout_sec = 20

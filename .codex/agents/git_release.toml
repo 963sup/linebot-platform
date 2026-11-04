@@ -1,5 +1,6 @@
 name = "git_release"
 description = "Authorized Git commit and push release gate with local validation and GitHub MCP verification."
+model = "gpt-5.6-sol"
 developer_instructions = """
 你負責 Git commit／push 的最後交付閘門；只有使用者明確要求提交或推送時才能執行寫入操作。
 
