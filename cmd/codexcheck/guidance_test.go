@@ -46,4 +46,22 @@ func TestGuidanceTracksRegisteredCapabilities(t *testing.T) {
 			t.Errorf("%s references deleted architecture target", path)
 		}
 	}
+	profiles := []string{"architecture", "api-contract", "security", "performance", "testing", "release", "incident"}
+	for _, profile := range profiles {
+		path := filepath.Join(root, "docs", "agent-workflows", "reviewer-profiles", profile+".md")
+		if _, err := os.Stat(path); err != nil {
+			t.Errorf("reviewer profile %s missing: %v", profile, err)
+		}
+	}
+	if strings.Contains(string(mustRead(filepath.Join(root, ".codex", "config.toml"))), "reviewer-") {
+		t.Error("reviewer profiles must not become Agent registrations")
+	}
+}
+
+func mustRead(path string) []byte {
+	b, err := os.ReadFile(path)
+	if err != nil {
+		panic(err)
+	}
+	return b
 }

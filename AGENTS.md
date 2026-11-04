@@ -16,6 +16,8 @@ The primary session is the orchestrator. Delegate only to the eight registered r
 
 Use one write owner per file. Do not spawn agents for trivial localized changes. Reviewers are independent and do not modify the implementation they review.
 
+Reviewer specialization uses profiles under `docs/agent-workflows/reviewer-profiles/`: `architecture`, `api-contract`, `security`, `performance`, `testing`, `release`, and `incident`. Profiles are checklists only; they do not create new Agents, permissions, MCPs, concurrency, or delegation depth. Never add `reviewer-*` Agent TOMLs.
+
 ## Tools and evidence
 
 - Use gopls for Go definitions, references, implementations and diagnostics.

@@ -40,3 +40,7 @@ Use one write owner per file. Do not delegate trivial localized changes. Every h
 ## Environment policy
 
 `environment` may repair only pinned local tools, PATH, rebuildable caches and approved Skill files. It must never auto-login OAuth, create credentials, grant IAM, change network policy, deploy resources, write production data or overwrite user-level Codex configuration. It reports `READY`, `DEGRADED` or `BLOCKED` with command evidence.
+
+## Reviewer profiles
+
+`reviewer` supports the profiles `architecture`, `api-contract`, `security`, `performance`, `testing`, `release`, and `incident`. Profiles are checklists and routing metadata, not additional Agent registrations. Do not create `reviewer-*` TOML files.
