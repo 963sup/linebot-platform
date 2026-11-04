@@ -328,7 +328,7 @@ Tasks / Forms / UserInfo 使用各自官方 `NewService`；不需另外建立一
 7. 架構測試應檢查 Domain / Application 禁止 import 的依賴、循環依賴與業務不變條件；不要把檔案數量或 Wrapper 數量當成品質指標。
 8. 若以減少 40% 以上程式碼為目標，先定義量測範圍：**SDK 初始化與組裝的專案自有有效程式行數**。比較重構前後，排除第三方 SDK、註解、空白、測試與 Domain 業務邏輯；不得未量測就宣稱達標。
 
-## 9. Codex 一致性驗收補充
+## 8. Codex 一致性驗收與決策規則
 
 **Factory 優先順序：**先查既有 Factory；已有能力就重用。沒有既有 Factory 時，若官方 Constructor 足夠且只用一次，就在 Composition Root 直接使用。只有多處重複初始化、Transport、Options 或使用者專屬 Client 建立策略，才在既有 Provider Package 的 `client_factory.go` 新增具體 `NewX` 函式。不要為每個 API 建立空的 Factory Struct 或等價 Wrapper。
 
@@ -340,7 +340,7 @@ Tasks / Forms / UserInfo 使用各自官方 `NewService`；不需另外建立一
 
 **文件一致性：**第 9 節是前文模糊條件的最終判定規則；其餘章節應按此解讀。Codex 不得自行更動其他文件、MCP 設定或 CI 以迴避驗收。
 
-## 8. 參考與驗證界限
+## 9. 參考與驗證界限
 
 - gopls 官方文件：https://go.dev/gopls
 - Go 官方 Module Layout：https://go.dev/doc/modules/layout
