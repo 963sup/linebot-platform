@@ -14,27 +14,27 @@ import (
 // LINEOpsRuntime owns the HTTP transport used by explicit, local CLI actions.
 // It is never exposed on the unauthenticated webhook process.
 type LINEOpsRuntime struct {
-	Messaging      *messaging.Service
-	Validation     *messaging.ValidationService
-	Profiles       *contacts.Profiles
-	Channel        *channel.Inspector
-	WebhookAdmin   *channel.WebhookConfigurator
-	Menus          *engagement.RichMenuInspector
-	MenuManager    *engagement.MenuManager
-	Memberships    *engagement.MembershipInspector
-	Coupons        *engagement.CouponInspector
-	Contacts       *contacts.Inspector
-	Insights       *insights.Inspector
-	Audiences      *engagement.AudienceInspector
+	Messaging       *messaging.Service
+	Validation      *messaging.ValidationService
+	Profiles        *contacts.Profiles
+	Channel         *channel.Inspector
+	WebhookAdmin    *channel.WebhookConfigurator
+	Menus           *engagement.RichMenuInspector
+	MenuManager     *engagement.MenuManager
+	Memberships     *engagement.MembershipInspector
+	Coupons         *engagement.CouponInspector
+	Contacts        *contacts.Inspector
+	Insights        *insights.Inspector
+	Audiences       *engagement.AudienceInspector
 	AudienceManager *engagement.AudienceOperations
-	BulkMessaging  *messaging.BulkSender
-	Content        *contacts.ContentInspector
-	RichMenuImages *engagement.RichMenuImageManager
-	Actions        *messaging.ConversationActions
-	AccountLink    *contacts.AccountLinker
-	Eligibility    *engagement.EligibilityOperations
+	BulkMessaging   *messaging.BulkSender
+	Content         *contacts.ContentInspector
+	RichMenuImages  *engagement.RichMenuImageManager
+	Actions         *messaging.ConversationActions
+	AccountLink     *contacts.AccountLinker
+	Eligibility     *engagement.EligibilityOperations
 	MenuImageReader *line.BlobSender
-	outbound       *httpclient.Managed
+	outbound        *httpclient.Managed
 }
 
 func NewLINEOpsRuntime(token string) (*LINEOpsRuntime, error) {
@@ -123,11 +123,17 @@ func NewLINEOpsRuntime(token string) (*LINEOpsRuntime, error) {
 		return cleanup(err)
 	}
 	audienceBlobClient, err := lineinfra.NewAudienceBlobClientWithHTTPClient(token, transport.Client)
-	if err != nil { return cleanup(err) }
+	if err != nil {
+		return cleanup(err)
+	}
 	audienceManagerAdapter, err := line.NewAudienceManager(audienceClient, audienceBlobClient)
-	if err != nil { return cleanup(err) }
+	if err != nil {
+		return cleanup(err)
+	}
 	audienceManager, err := engagement.NewAudienceOperations(audienceManagerAdapter)
-	if err != nil { return cleanup(err) }
+	if err != nil {
+		return cleanup(err)
+	}
 	menuManager, err := engagement.NewMenuManager(sender)
 	if err != nil {
 		return cleanup(err)
@@ -145,11 +151,17 @@ func NewLINEOpsRuntime(token string) (*LINEOpsRuntime, error) {
 		return cleanup(err)
 	}
 	actions, err := messaging.NewConversationActions(sender)
-	if err != nil { return cleanup(err) }
+	if err != nil {
+		return cleanup(err)
+	}
 	accountLink, err := contacts.NewAccountLinker(sender)
-	if err != nil { return cleanup(err) }
+	if err != nil {
+		return cleanup(err)
+	}
 	eligibility, err := engagement.NewEligibilityOperations(sender)
-	if err != nil { return cleanup(err) }
+	if err != nil {
+		return cleanup(err)
+	}
 	return &LINEOpsRuntime{Actions: actions, AccountLink: accountLink, Eligibility: eligibility, MenuImageReader: blobSender, Messaging: messages, Validation: validator, Profiles: profiles, Channel: inspector, WebhookAdmin: webhookAdmin, Menus: menus, MenuManager: menuManager, RichMenuImages: richMenuImages, Memberships: membership, Coupons: coupon, Contacts: contactsInspector, Content: content, Insights: inspectorInsights, Audiences: inspectorAudiences, AudienceManager: audienceManager, BulkMessaging: bulkMessenger, outbound: transport}, nil
 }
 

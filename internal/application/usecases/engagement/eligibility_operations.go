@@ -13,8 +13,8 @@ import (
 // EligibilityCommand is operator-only. The caller must verify entitlement to
 // the specific LINE feature before invoking this use case.
 type EligibilityCommand struct {
-	Action string
-	ID string
+	Action  string
+	ID      string
 	Payload json.RawMessage
 }
 
@@ -23,7 +23,9 @@ type EligibilityOperations struct {
 }
 
 func NewEligibilityOperations(o outbound.EligibilityOperations) (*EligibilityOperations, error) {
-	if o == nil { return nil, errors.New("eligibility operations are required") }
+	if o == nil {
+		return nil, errors.New("eligibility operations are required")
+	}
 	return &EligibilityOperations{operations: o}, nil
 }
 
@@ -54,9 +56,15 @@ func ValidateEligibilityCommand(c EligibilityCommand) error {
 }
 
 func (s *EligibilityOperations) Execute(ctx context.Context, c EligibilityCommand) (json.RawMessage, error) {
-	if ctx == nil { return nil, errors.New("context is required") }
-	if err := ctx.Err(); err != nil { return nil, err }
-	if err := ValidateEligibilityCommand(c); err != nil { return nil, err }
+	if ctx == nil {
+		return nil, errors.New("context is required")
+	}
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	if err := ValidateEligibilityCommand(c); err != nil {
+		return nil, err
+	}
 	switch c.Action {
 	case "push-phone":
 		return nil, s.operations.PushMessagesByPhone(ctx, c.Payload)

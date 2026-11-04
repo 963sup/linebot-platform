@@ -18,19 +18,27 @@ func runActions(args []string, getenv func(string) string) error {
 	request := flags.String("request", "", "JSON file containing the request; no secrets in CLI arguments")
 	apply := flags.Bool("apply", false, "authorize a remote write")
 	confirm := flags.String("confirm", "", "must exactly match --action")
-	if err := flags.Parse(args); err != nil { return err }
+	if err := flags.Parse(args); err != nil {
+		return err
+	}
 	if len(flags.Args()) != 0 || !*apply || *confirm == "" || *confirm != *action || getenv == nil {
 		return errors.New("actions requires --apply --confirm ACTION and no extra arguments")
 	}
 	cmd := messaging.ConversationActionCommand{Action: *action, ID: *id}
 	if *request != "" {
 		payload, err := readPrivateBounded(*request, 256<<10)
-		if err != nil { return err }
+		if err != nil {
+			return err
+		}
 		cmd.Payload = json.RawMessage(payload)
 	}
-	if err := messaging.ValidateConversationAction(cmd); err != nil { return err }
+	if err := messaging.ValidateConversationAction(cmd); err != nil {
+		return err
+	}
 	r, err := bootstrap.NewLINEOpsRuntime(getenv(bootstrap.KeyChannelToken))
-	if err != nil { return err }
+	if err != nil {
+		return err
+	}
 	defer r.Close()
 	ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
 	defer cancel()

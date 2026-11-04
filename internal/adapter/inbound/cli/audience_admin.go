@@ -24,7 +24,9 @@ func runAudienceAdmin(args []string, getenv func(string) string, output io.Write
 	ifa := flags.Bool("ifa", false, "explicit IFA audience choice")
 	apply := flags.Bool("apply", false, "authorize mutation")
 	confirm := flags.String("confirm", "", "must match action")
-	if err := flags.Parse(args); err != nil { return err }
+	if err := flags.Parse(args); err != nil {
+		return err
+	}
 	if len(flags.Args()) != 0 || getenv == nil || output == nil ||
 		!*apply || *confirm == "" || *confirm != *action {
 		return errors.New("audience-admin requires --apply --confirm ACTION")
@@ -35,22 +37,34 @@ func runAudienceAdmin(args []string, getenv func(string) string, output io.Write
 	}
 	if *request != "" {
 		b, err := readPrivateBounded(*request, 256<<10)
-		if err != nil { return err }
+		if err != nil {
+			return err
+		}
 		cmd.Request = json.RawMessage(b)
 	}
 	if *file != "" {
 		b, err := readPrivateBounded(*file, 20<<20)
-		if err != nil { return err }
+		if err != nil {
+			return err
+		}
 		cmd.File = b
 	}
-	if err := engagement.ValidateAudienceCommand(cmd); err != nil { return err }
+	if err := engagement.ValidateAudienceCommand(cmd); err != nil {
+		return err
+	}
 	r, err := bootstrap.NewLINEOpsRuntime(getenv(bootstrap.KeyChannelToken))
-	if err != nil { return err }
+	if err != nil {
+		return err
+	}
 	defer r.Close()
 	ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
 	defer cancel()
 	result, err := r.AudienceManager.Execute(ctx, cmd)
-	if err != nil { return err }
-	if len(result) > 0 { _, err = fmt.Fprintln(output, string(result)) }
+	if err != nil {
+		return err
+	}
+	if len(result) > 0 {
+		_, err = fmt.Fprintln(output, string(result))
+	}
 	return err
 }

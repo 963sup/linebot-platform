@@ -24,14 +24,18 @@ type TokenCommand struct {
 type TokenOperations struct{ manager outbound.ChannelTokenManager }
 
 func NewTokenOperations(m outbound.ChannelTokenManager) (*TokenOperations, error) {
-	if m == nil { return nil, errors.New("channel token manager is required") }
+	if m == nil {
+		return nil, errors.New("channel token manager is required")
+	}
 	return &TokenOperations{manager: m}, nil
 }
 
 func ValidateTokenCommand(c TokenCommand) error {
-	fields := []string{c.GrantType,c.ClientID,c.ClientSecret,c.ClientAssertionType,c.ClientAssertion,c.AccessToken}
+	fields := []string{c.GrantType, c.ClientID, c.ClientSecret, c.ClientAssertionType, c.ClientAssertion, c.AccessToken}
 	for _, value := range fields {
-		if value != strings.TrimSpace(value) { return errors.New("invalid channel token request field") }
+		if value != strings.TrimSpace(value) {
+			return errors.New("invalid channel token request field")
+		}
 	}
 	bothAssertion := c.ClientAssertionType != "" && c.ClientAssertion != ""
 	bothSecret := c.ClientID != "" && c.ClientSecret != ""
@@ -71,27 +75,33 @@ func ValidateTokenCommand(c TokenCommand) error {
 // Execute performs exactly one SDK operation. No retry is permitted for an
 // unknown token issuance/revocation outcome.
 func (s *TokenOperations) Execute(ctx context.Context, c TokenCommand) (json.RawMessage, error) {
-	if ctx == nil { return nil, errors.New("context is required") }
-	if err := ctx.Err(); err != nil { return nil, err }
-	if err := ValidateTokenCommand(c); err != nil { return nil, err }
+	if ctx == nil {
+		return nil, errors.New("context is required")
+	}
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	if err := ValidateTokenCommand(c); err != nil {
+		return nil, err
+	}
 	switch c.Action {
 	case "issue-stateless":
-		return s.manager.IssueStateless(ctx,c.GrantType,c.ClientAssertionType,c.ClientAssertion,c.ClientID,c.ClientSecret)
+		return s.manager.IssueStateless(ctx, c.GrantType, c.ClientAssertionType, c.ClientAssertion, c.ClientID, c.ClientSecret)
 	case "key-ids":
-		return s.manager.ValidKeyIDs(ctx,c.ClientAssertionType,c.ClientAssertion)
+		return s.manager.ValidKeyIDs(ctx, c.ClientAssertionType, c.ClientAssertion)
 	case "issue-jwt":
-		return s.manager.IssueJWT(ctx,c.GrantType,c.ClientAssertionType,c.ClientAssertion)
+		return s.manager.IssueJWT(ctx, c.GrantType, c.ClientAssertionType, c.ClientAssertion)
 	case "verify-jwt":
-		return s.manager.VerifyJWT(ctx,c.AccessToken)
+		return s.manager.VerifyJWT(ctx, c.AccessToken)
 	case "revoke-jwt":
-		return nil,s.manager.RevokeJWT(ctx,c.ClientID,c.ClientSecret,c.AccessToken)
+		return nil, s.manager.RevokeJWT(ctx, c.ClientID, c.ClientSecret, c.AccessToken)
 	case "issue-short":
-		return s.manager.IssueShortLived(ctx,c.GrantType,c.ClientID,c.ClientSecret)
+		return s.manager.IssueShortLived(ctx, c.GrantType, c.ClientID, c.ClientSecret)
 	case "verify-short":
-		return s.manager.VerifyShortLived(ctx,c.AccessToken)
+		return s.manager.VerifyShortLived(ctx, c.AccessToken)
 	case "revoke-short":
-		return nil,s.manager.RevokeShortLived(ctx,c.AccessToken)
+		return nil, s.manager.RevokeShortLived(ctx, c.AccessToken)
 	default:
-		return nil,errors.New("unsupported channel token action")
+		return nil, errors.New("unsupported channel token action")
 	}
 }

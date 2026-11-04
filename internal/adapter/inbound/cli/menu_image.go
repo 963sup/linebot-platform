@@ -14,16 +14,22 @@ func runMenuImage(args []string, getenv func(string) string) error {
 	id := flags.String("menu-id", "", "rich menu ID")
 	out := flags.String("out", "", "new private output file")
 	read := flags.Bool("read", false, "authorize retrieving the menu image")
-	if err := flags.Parse(args); err != nil { return err }
+	if err := flags.Parse(args); err != nil {
+		return err
+	}
 	if len(flags.Args()) != 0 || !*read || *id == "" || *out == "" || getenv == nil {
 		return errors.New("menu-image requires --menu-id --out --read")
 	}
 	r, err := bootstrap.NewLINEOpsRuntime(getenv(bootstrap.KeyChannelToken))
-	if err != nil { return err }
+	if err != nil {
+		return err
+	}
 	defer r.Close()
 	ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
 	defer cancel()
 	data, err := r.MenuImageReader.RichMenuImage(ctx, *id)
-	if err != nil { return err }
+	if err != nil {
+		return err
+	}
 	return writePrivateFile(*out, data.Data)
 }

@@ -24,7 +24,9 @@ type AudienceCommand struct {
 type AudienceOperations struct{ manager outbound.AudienceManager }
 
 func NewAudienceOperations(m outbound.AudienceManager) (*AudienceOperations, error) {
-	if m == nil { return nil, errors.New("audience manager is required") }
+	if m == nil {
+		return nil, errors.New("audience manager is required")
+	}
 	return &AudienceOperations{manager: m}, nil
 }
 
@@ -72,9 +74,15 @@ func ValidateAudienceCommand(c AudienceCommand) error {
 }
 
 func (s *AudienceOperations) Execute(ctx context.Context, c AudienceCommand) (json.RawMessage, error) {
-	if ctx == nil { return nil, errors.New("context is required") }
-	if err := ctx.Err(); err != nil { return nil, err }
-	if err := ValidateAudienceCommand(c); err != nil { return nil, err }
+	if ctx == nil {
+		return nil, errors.New("context is required")
+	}
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	if err := ValidateAudienceCommand(c); err != nil {
+		return nil, err
+	}
 	switch c.Action {
 	case "create":
 		return s.manager.CreateAudienceGroup(ctx, c.Request)

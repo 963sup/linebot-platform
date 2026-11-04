@@ -23,7 +23,9 @@ func runEligibility(args []string, getenv func(string) string, output io.Writer)
 	read := flags.Bool("read", false, "authorize query")
 	confirm := flags.String("confirm", "", "must equal the remote write action")
 	reviewed := flags.Bool("eligibility-reviewed", false, "acknowledge channel/region entitlement review")
-	if err := flags.Parse(args); err != nil { return err }
+	if err := flags.Parse(args); err != nil {
+		return err
+	}
 	if len(flags.Args()) != 0 || !*reviewed || getenv == nil || output == nil {
 		return errors.New("eligibility requires --eligibility-reviewed and no extra arguments")
 	}
@@ -37,17 +39,25 @@ func runEligibility(args []string, getenv func(string) string, output io.Writer)
 	cmd := engagement.EligibilityCommand{Action: *action, ID: *id}
 	if *request != "" {
 		payload, err := readPrivateBounded(*request, 256<<10)
-		if err != nil { return err }
+		if err != nil {
+			return err
+		}
 		cmd.Payload = json.RawMessage(payload)
 	}
-	if err := engagement.ValidateEligibilityCommand(cmd); err != nil { return err }
+	if err := engagement.ValidateEligibilityCommand(cmd); err != nil {
+		return err
+	}
 	r, err := bootstrap.NewLINEOpsRuntime(getenv(bootstrap.KeyChannelToken))
-	if err != nil { return err }
+	if err != nil {
+		return err
+	}
 	defer r.Close()
 	ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
 	defer cancel()
 	data, err := r.Eligibility.Execute(ctx, cmd)
-	if err != nil { return err }
+	if err != nil {
+		return err
+	}
 	if len(data) > 0 {
 		_, err = fmt.Fprintln(output, string(data))
 	}

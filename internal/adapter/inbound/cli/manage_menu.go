@@ -52,14 +52,20 @@ func runManageMenu(args []string, getenv func(string) string) error {
 		if *action != "upload-image" || *requestFile != "" || strings.TrimSpace(*menu) == "" {
 			return errors.New("image-file is only valid for upload-image with --menu-id")
 		}
-		if *imageType != "image/png" && *imageType != "image/jpeg" { return errors.New("image-type must be image/png or image/jpeg") }
+		if *imageType != "image/png" && *imageType != "image/jpeg" {
+			return errors.New("image-type must be image/png or image/jpeg")
+		}
 		_, err := os.Stat(filepath.Clean(*imageFile))
-		if err != nil { return errors.New("image upload file is not accessible") }
+		if err != nil {
+			return errors.New("image upload file is not accessible")
+		}
 	}
 	cmd := engagement.MenuCommand{Action: *action, RichMenuID: *menu, UserID: *user, AliasID: *alias, Payload: payload}
 	if *action == "upload-image" && *imageFile != "" {
-		data, err := readPrivateBounded(*imageFile, 20 << 20)
-		if err != nil { return err }
+		data, err := readPrivateBounded(*imageFile, 20<<20)
+		if err != nil {
+			return err
+		}
 		cmd.Image = data
 		cmd.ContentType = *imageType
 	}

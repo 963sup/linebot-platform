@@ -16,17 +16,23 @@ import (
 )
 
 func tokenRequestFromPrivateFile(path string) (channel.TokenCommand, error) {
-	if path == "" { return channel.TokenCommand{}, errors.New("private token request file is required") }
+	if path == "" {
+		return channel.TokenCommand{}, errors.New("private token request file is required")
+	}
 	info, err := os.Lstat(filepath.Clean(path))
 	if err != nil || !info.Mode().IsRegular() || info.Mode().Perm()&0o077 != 0 {
 		return channel.TokenCommand{}, errors.New("token request must be a regular file readable only by its owner")
 	}
 	data, err := readPrivateBounded(path, 256<<10)
-	if err != nil { return channel.TokenCommand{}, err }
+	if err != nil {
+		return channel.TokenCommand{}, err
+	}
 	var cmd channel.TokenCommand
 	dec := json.NewDecoder(bytes.NewReader(data))
 	dec.DisallowUnknownFields()
-	if err := dec.Decode(&cmd); err != nil { return channel.TokenCommand{}, errors.New("invalid private token request JSON") }
+	if err := dec.Decode(&cmd); err != nil {
+		return channel.TokenCommand{}, errors.New("invalid private token request JSON")
+	}
 	var additional any
 	if err := dec.Decode(&additional); err != io.EOF {
 		return channel.TokenCommand{}, errors.New("extra token request content")
@@ -45,7 +51,9 @@ func runChannelTokens(args []string) error {
 	read := flags.Bool("read", false, "authorize query")
 	apply := flags.Bool("apply", false, "authorize issuance or revocation")
 	confirm := flags.String("confirm", "", "must equal action for mutation")
-	if err := flags.Parse(args); err != nil { return err }
+	if err := flags.Parse(args); err != nil {
+		return err
+	}
 	if len(flags.Args()) != 0 || *request == "" {
 		return errors.New("channel-tokens requires --request and no extra arguments")
 	}
@@ -58,23 +66,33 @@ func runChannelTokens(args []string) error {
 	} else if !*apply || *read || *confirm == "" || *confirm != *action {
 		return errors.New("token mutation requires --apply --confirm ACTION")
 	}
-	if isRevoke && *out != "" { return errors.New("revoke does not produce an output file") }
-	if !isRead && !isRevoke && *out == "" { return errors.New("issued token requires private --out") }
-	cmd, err := tokenRequestFromPrivateFile(*request)
-	if err != nil { return err }
-	cmd.Action = *action
-	if err := channel.ValidateTokenCommand(cmd); err != nil { return err }
-	invoke := func() ([]byte,error) {
-		rt, err := bootstrap.NewLINETokenOpsRuntime()
-		if err != nil { return nil, err }
-		defer rt.Close()
-		ctx,cancel := context.WithTimeout(context.Background(), 12*time.Second)
-		defer cancel()
-		return rt.Tokens.Execute(ctx,cmd)
+	if isRevoke && *out != "" {
+		return errors.New("revoke does not produce an output file")
 	}
-	if isRevoke {
-		_,err := invoke()
+	if !isRead && !isRevoke && *out == "" {
+		return errors.New("issued token requires private --out")
+	}
+	cmd, err := tokenRequestFromPrivateFile(*request)
+	if err != nil {
 		return err
 	}
-	return writePrivateOperation(*out,invoke)
+	cmd.Action = *action
+	if err := channel.ValidateTokenCommand(cmd); err != nil {
+		return err
+	}
+	invoke := func() ([]byte, error) {
+		rt, err := bootstrap.NewLINETokenOpsRuntime()
+		if err != nil {
+			return nil, err
+		}
+		defer rt.Close()
+		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
+		defer cancel()
+		return rt.Tokens.Execute(ctx, cmd)
+	}
+	if isRevoke {
+		_, err := invoke()
+		return err
+	}
+	return writePrivateOperation(*out, invoke)
 }
