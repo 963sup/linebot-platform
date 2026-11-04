@@ -16,6 +16,7 @@
 
 | 服務 | 唯讀 OAuth Scope | 寫入 Scope（按需） |
 |---|---|---|
+| Google Forms | `https://www.googleapis.com/auth/forms.body.readonly`、`https://www.googleapis.com/auth/forms.responses.readonly` | `https://www.googleapis.com/auth/forms.body`（表單編輯／發布） |
 | Google Tasks | `https://www.googleapis.com/auth/tasks.readonly` | `https://www.googleapis.com/auth/tasks` |
 | Google Calendar Events | `https://www.googleapis.com/auth/calendar.events.readonly` | `https://www.googleapis.com/auth/calendar.events` |
 | Google Sheets | `https://www.googleapis.com/auth/spreadsheets.readonly` | `https://www.googleapis.com/auth/spreadsheets` |
@@ -59,3 +60,7 @@ calendarClient, err := api.NewCalendar(ctx, authorizedHTTP)
 - 不需要執行真實 API 才能驗證 Adapter 的 HTTP Route；先執行 `make check`，再以獨立授權測試帳號驗證。
 
 > **本次整合狀態**：Calendar／Tasks 52 項方法已完成離線接線；Drive／Sheets 仍僅具 Client Factory，因此模組共用 Catalog 的 `client_ready` 不能代表四個服務都未整合，也不能代表完整 OAuth 已完成。詳見 `docs/google/README.md`。
+
+## Forms API（新增）
+
+Forms v1 的 10 個官方方法沿用現有 Workspace Typed SDK 及操作確認規則。使用 `NewForms(ctx, authorizedHTTP)`，不複製另一套 OAuth Transport 或直接呼叫 REST HTTP。Watches 只先支援離線 API 契約；真正 Pub/Sub 訂閱、Renew、IAM 及 Staging 另行驗證。

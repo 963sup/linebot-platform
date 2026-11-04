@@ -37,7 +37,7 @@ func workspacePrivateFile(path string, limit int64) ([]byte, error) {
 // secure persistent token repository are separate infrastructure stages.
 func runWorkspace(args []string, getenv func(string) string) error {
 	flags := flag.NewFlagSet("workspace", flag.ContinueOnError)
-	api := flags.String("api", "", "calendar|tasks")
+	api := flags.String("api", "", "calendar|tasks|forms")
 	requestFile := flags.String("request", "", "0600 JSON file with operation/parameters/options/body")
 	tokenFile := flags.String("token-file", "", "0600 file containing a short-lived OAuth access token")
 	output := flags.String("out", "", "new private result JSON file")
@@ -55,8 +55,8 @@ func runWorkspace(args []string, getenv func(string) string) error {
 	if getenv("K_SERVICE") != "" || getenv("APP_ENV") != "local" {
 		return errors.New("workspace operator requires explicit local environment")
 	}
-	if *api != "calendar" && *api != "tasks" {
-		return errors.New("workspace API must be calendar or tasks")
+	if *api != "calendar" && *api != "tasks" && *api != "forms" {
+		return errors.New("workspace API must be calendar, tasks or forms")
 	}
 	data, err := workspacePrivateFile(*requestFile, 1<<20)
 	if err != nil {

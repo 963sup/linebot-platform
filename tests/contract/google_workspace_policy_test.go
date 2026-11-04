@@ -11,14 +11,14 @@ import (
 
 func TestWorkspacePoliciesMatchPinnedDiscovery(t *testing.T) {
 	all := workspace.Supported()
-	if len(all) != 52 {
-		t.Fatalf("got %d static operation policies, want 52", len(all))
+	if len(all) != 62 {
+		t.Fatalf("got %d static operation policies, want 62", len(all))
 	}
 	found := map[string]workspace.Policy{}
 	for _, p := range all {
 		found[p.API+"."+p.Operation] = p
 	}
-	for _, name := range []string{"calendar", "tasks"} {
+	for _, name := range []string{"calendar", "tasks", "forms"} {
 		data, err := os.ReadFile(filepath.Join("..", "..", "docs", "google", name+"-endpoints.json"))
 		if err != nil {
 			t.Fatal(err)
