@@ -1,0 +1,186 @@
+# DESIGN.md — Go DDD + Hexagonal Architecture 設計契約
+
+> 適用範圍：本儲存庫所有 Go 程式、SDK 整合、CI 與未來擴充。這是架構規範，不代表目前所有功能已完成。維持 Pragmatic DDD、Lightweight Hexagonal Architecture 與 Idiomatic Go；不為形式製造額外 Wrapper 或 Package。
+
+## 1. 不可退化原則
+
+1. **DDD 邊界**：Domain 管理業務不變條件、Aggregate、Entity、Value Object、Policy、Specification、Factory、Repository 契約及 Domain Event；不依賴外部 SDK。
+2. **依賴方向**：Source-code imports 朝向 Domain / Application 契約；具體 SDK 與資料庫實作位於外側。
+3. **SDK 優先重用**：官方 SDK 已提供的 Client、Constructor、Options、HTTP Transport、API Request/Response、Webhook 驗證與 OAuth 元件，直接重用；只有跨越業務邊界、必要的安全控制或重複初始化才新增程式。
+4. **Go Idioms**：單一 Go Module、明確建構、組合優於繼承、小型消費者導向介面、context 傳遞、顯式錯誤；避免全域 Service Locator、DI Framework 與沒有行為的 Wrapper。
+5. **最小必要變更**：保留既有加密資料、Firestore 文件識別、Token Refresh CAS、OAuth 安全規則與公開 API 契約。重構必須以測試證明相容。
+6. **保留 Identity DDD 分類**：不得為了減少 Package 數而擅自合併下述八個目錄。
+
+## 2. Module、Package 與 SDK：三個不同概念
+
+- 根目錄 `go.mod` 定義 **一個 Go Module**（`github.com/963sup/linebot-platform`）及版本依賴；`go.sum` 保存模組校驗資訊。
+- `import` 使用 **Package 路徑**，例如 `google.golang.org/api/calendar/v3`；多個 Package 可以來自同一個 Module `google.golang.org/api`。
+- SDK Package 是第三方已存在的程式庫，**不是**專案需要另外建立的中介層。
+- `internal/` 包含專案私有 Package；`cmd/` 是可執行入口。不要為每個 Domain 或 SDK 建立第二個 `go.mod`，除非確實需要獨立發布與版本生命週期。
+- `go mod tidy`、`go list -m all`、`go list -deps ./...` 用於核對依賴。直接／間接依賴的分類依 Go Module Graph 與實際 Package imports 判定；不可把未使用的 SDK 宣稱為正在執行的能力。
+- `docs/sdk/catalog.toml` 可記錄「使用中／已核准預留／規劃中」，與 `go.mod` 的現有直接依賴分開理解。現有 retention gate 的預留策略在另行授權修改前必須維持；未來若調整，應連同 CI 與 Catalog 一起修改，不可暗中刪除依賴。
+
+### 已使用或預留的 Module 與 Package 對應
+
+| Go Module | 官方 Package 範例 | Factory / 使用位置 |
+| --- | --- | --- |
+| `github.com/line/line-bot-sdk-go/v8` | `linebot/messaging_api`, `liff`, `channel_access_token`, `insight`, `manage_audience`, `module`, `module_attach`, `shop` | `internal/infrastructure/line/client_factory.go` 及必要的授權元件 |
+| 同上 | `linebot/webhook`, `linebot/httphandler` | Inbound HTTP Adapter；不是 Outbound Client Factory |
+| 同上 | `linebot` | 依實際 SDK 功能直接 import；不為根 Package 創造空 Wrapper |
+| `golang.org/x/oauth2` | `oauth2`, `oauth2/google` | OAuth Flow / TokenSource，使用者授權 HTTP Client |
+| `google.golang.org/api` | `idtoken`, `oauth2/v2`, `option`, `calendar/v3`, `tasks/v1`, `forms/v1` | Identity Verifier / Google Client Factory |
+| `cloud.google.com/go/firestore` | Firestore SDK | Firestore Adapter / Client 建立 |
+| `cloud.google.com/go/cloudtasks` | Cloud Tasks SDK | Cloud Tasks Adapter / Client 建立 |
+
+同一 Provider 的不同 API Family 可能需要不同 Constructor、認證選項與權限；**統一入口不等於強迫所有 API 具有相同簽章**。
+
+## 3. 依賴方向（最重要的強制契約）
+
+### 3.1 原始碼 import 方向（不是執行順序）
+
+```text
+cmd/{webhook,worker,ops}  [Composition Root]
+    ├── application/usecases
+    ├── adapter/inbound
+    ├── adapter/outbound
+    └── infrastructure/{line,google,...}
+
+adapter/inbound ───────────> application/usecases / inbound ports
+application/usecases ──────> domain + application outbound ports
+adapter/outbound ──────────> application ports + domain (必要時) + infrastructure SDK clients
+infrastructure ────────────> 官方 SDK / 標準函式庫 / 技術元件
+domain/identity/* ────────> domain/identity/* + Go 標準函式庫
+```
+
+- **禁止** Domain import `application/`、`adapter/`、`infrastructure/`、LINE／Google／Firestore SDK。
+- **禁止** Application Use Case import 具體 Outbound Adapter 或 Infrastructure SDK Client。
+- Outbound Adapter **實作** Application/Domain 定義的 Port，Port 不得反向 import Adapter。
+- Inbound Adapter 驗證並轉換外部請求，呼叫 Application；不得繞過 Use Case 直接決定業務授權或修改 Domain 持久化。
+- Infrastructure 可以 import 官方 SDK，專注建構、認證傳輸、加密及技術資源生命週期，不持有 Domain 業務政策。
+- `cmd/` 或可選的 `internal/bootstrap/` 可 import 外側及內側元件做**手動 Constructor Injection**；組裝入口不得承擔業務授權判斷。
+- 不要求每個呼叫都穿過所有層；沒有真正業務抽象的簡單技術流程可直接使用 SDK，但不能讓 Domain/Application 依賴具體 SDK。
+- Domain 內部八個子 Package 亦需維持 **無循環依賴**。依賴的具體方向以模型責任與 `go list` 驗證，不以目錄字母順序決定。
+
+### 3.2 物件建立流程與執行流程必須分開
+
+```text
+建立：go.mod（版本） → 官方 SDK Package（import）
+    → infrastructure/*/client_factory.go（直接呼叫官方 Constructor）
+    → cmd / bootstrap 組裝 Adapter、Port、Use Case、Handler
+
+執行：HTTP / LINE Webhook → Inbound Adapter → Application Use Case
+    → Domain 規則 + Outbound Port → Outbound Adapter → SDK Client → 外部 API
+```
+
+`go.mod` 不是 Runtime Layer；`client_factory.go` 不是所有業務呼叫必經的中介層；DI 是建構動作，不是強制獨立 Package。
+
+## 4. Domain / Identity：固定目錄與命名
+
+```text
+internal/domain/identity/
+├── aggregates/account_link.go
+├── entities/google_connection.go
+├── value-objects/
+│   ├── line_user_id.go
+│   ├── google_account_id.go
+│   ├── connection_id.go
+│   ├── oauth_scope.go
+│   └── connection_status.go
+├── policies/
+│   ├── linking_policy.go
+│   └── unlinking_policy.go
+├── specifications/connection_eligibility.go
+├── factories/connection_factory.go
+├── repositories/connection_repository.go
+└── events/
+    ├── account_linked.go
+    └── account_unlinked.go
+```
+
+- 目錄名稱保留 `value-objects/`；Go package 識別字為 `valueobjects`，import 時可用別名。
+- Aggregate Root `AccountLink` 控制一致性與狀態轉換；`GoogleConnection` 是 Aggregate 內的 Entity，不得形成平行的授權真相。
+- Value Object 驗證資料、封裝不變性；不得依賴 OAuth SDK。
+- Policy / Specification 封裝可測試的純業務規則；Factory 建立／還原有效模型。**分類目錄必須保留，但禁止製造重複的業務判斷或無意義轉接**。
+- Repository Interface 定義 Domain 所需能力，具體 Firestore 實作在 Adapter；可另用 Application consumer-owned 小介面處理 Token Store 等技術需求。
+- Domain Event 在狀態變更時記錄；只有持久化成功後才能對外發布。若需要可靠交付，必須另行設計 Outbox。
+- LINE User ID 必須來自已驗證身分；Google Account ID 應使用已驗證的 Google `sub`，不是 Email。
+
+## 5. Client Factory 標準：直接重用官方 SDK
+
+### 5.1 一個 Provider 一個主要 Client Factory
+
+- `internal/infrastructure/line/client_factory.go`：集中 LINE Messaging、Blob、LIFF、Insight、Audience、Module、ModuleAttach、Shop 等**實際需要**的官方 Client 建立；Token 管理由授權元件負責。
+- `internal/infrastructure/google/api/client_factory.go`：集中 Google UserInfo、Calendar、Tasks、Forms，以及專案已使用的 Drive、Sheets 官方 `NewService`；只建立需要的 Client。
+- 其他 SDK（Firestore、Cloud Tasks 等）只有多處初始化或需要共用生命週期時才建立 Factory，否則直接使用官方 Constructor。
+- Factory 應回傳官方 Client 具體型別及 error，不建立一比一的 `SDKClientWrapper`、`Manager`、`Provider`、`Builder`。
+- 不為所有 Factory 建立 Interface；只有消費端需要替換能力（例如測試）才定義最小介面。
+- 共用 Transport、Timeout、Retry、Logger、Client Options 與配置驗證；不要在多個 Adapter 重複初始化。
+- 不使用反射、Service Locator、泛型大工廠或字串驅動的 API Client 選擇器。SDK Constructor 不同時，以簡短且明確的方法保留差異。
+- Factory 不呼叫 Domain Policy，不持久化 Token，不決定使用者是否獲授權；這些分別由 Application、OAuth 元件與 Adapter 管理。
+
+### 5.2 LINE 依賴例
+
+```text
+go.mod → github.com/line/line-bot-sdk-go/v8
+       → linebot/messaging_api（官方 NewMessagingApiAPI）
+       → infrastructure/line/client_factory.go
+       → adapter/outbound/line
+       → application outbound port（由 Adapter 實作）
+```
+
+Webhook / httphandler：`SDK → adapter/inbound/http/line → Application`；不得硬塞入 Outbound Factory。
+
+### 5.3 Google 依賴例與使用者隔離
+
+```text
+go.mod → golang.org/x/oauth2 + google.golang.org/api
+       → 經驗證的 LINE principal / Google OAuth state、PKCE、nonce
+       → 使用者專屬 oauth2.TokenSource
+       → oauth2.NewClient(ctx, source)（已授權 HTTP Client）
+       → infrastructure/google/api/client_factory.go
+       → calendar.NewService(ctx, option.WithHTTPClient(client))
+       → adapter/outbound/google/api/calendar
+       → application outbound port（由 Adapter 實作）
+```
+
+Tasks / Forms / UserInfo 使用各自官方 `NewService`；不需另外建立一層「SDK Package」。
+
+**認證安全**：
+- Google 使用者的 Calendar / Tasks / Forms 不得使用 Cloud Run Service Account / ADC 取代使用者 OAuth。
+- `option.WithHTTPClient(client)` 必須收到**已授權**的 HTTP Client；若使用 `option.WithTokenSource(source)`，不得又傳入會覆蓋認證行為的普通 HTTP Client。
+- 每個使用者的 TokenSource / 認證 HTTP Client 必須隔離；可以共用安全的底層網路資源，但不可跨使用者共用授權狀態。
+- 授權 scopes、owner/subject、active 狀態由 Application + Domain 驗證；Factory 只接收已授權的建立參數。
+- Token Refresh 必須安全持久化、保留 CAS/transaction 保護，避免多個 Cloud Run 實例競爭。
+- 不在 Domain、Log、URL 中保存 Access Token / Refresh Token；Firestore 既有加密 JSON、文件 ID、版本欄位與相容性契約不可擅改。
+
+## 6. 組裝入口與命名一致性
+
+- `cmd/<process>/main.go` 是合法 Composition Root；當 webhook / worker / ops 有**實際共用**的組裝流程時，可保留 `internal/bootstrap/`，但不要求每個功能必經 Bootstrap。
+- `client_factory.go`：Provider 層集中建立官方 SDK Client。
+- `*_adapter.go` 或業務命名檔案：外部能力轉換、錯誤映射與 Port 實作；不再重複 SDK Constructor。
+- `*_repository.go`：持久化契約或實作，依所在 Layer 判定；不可用 Repository 名稱掩蓋純 SDK API 呼叫。
+- `*_policy.go`：業務決策；`*_factory.go`（Domain）：領域物件建立；兩者不得與 Infrastructure Client Factory 混淆。
+- Go Package 名稱簡短、小寫、無底線；檔案採 `snake_case.go`；型別使用 `MixedCaps`；公開 API 名稱描述行為，不重複 Package 名稱。
+- 依賴注入優先使用 `NewX(deps...)`；Context 不保存於長壽命 Struct，應於請求／操作方法傳遞。
+- 相同邏輯只存在一處；禁止為符合檔案樹而製造重複 DTO、Mapper、Interface 或 Wrapper。
+
+## 7. 變更流程與 CI 驗收
+
+1. 從 `go.mod` 核對 Module 及版本，查官方 SDK Package / Constructor / Options；先確認是否已提供所需功能。
+2. 搜尋現有 `client_factory.go` 與 Adapter，重用既有初始化；只在缺少實際能力時擴充 Factory。
+3. 定義必要的 Application Port 與 Domain 規則，檢查 import 方向；保留 Identity 八個分類目錄。
+4. 用手動 Constructor Injection 組裝；不要建立無效的 Bootstrap 轉接層。
+5. 檢查 OAuth、LINE Webhook 驗證、Firestore 相容性、Token Refresh CAS 與使用者隔離。
+6. 執行 `gofmt`、`go vet ./...`、`go test ./...`、`go test -race ./...`、`go build ./...`、`go mod tidy` 並檢查 `git diff -- go.mod go.sum`。依現有 CI 保留已授權的 SDK retention 規則。
+7. 架構測試應檢查 Domain / Application 禁止 import 的依賴、循環依賴與業務不變條件；不要把檔案數量或 Wrapper 數量當成品質指標。
+8. 若以減少 40% 以上程式碼為目標，先定義量測範圍：**SDK 初始化與組裝的專案自有有效程式行數**。比較重構前後，排除第三方 SDK、註解、空白、測試與 Domain 業務邏輯；不得未量測就宣稱達標。
+
+## 8. 參考與驗證界限
+
+- Go 官方 Module Layout：https://go.dev/doc/modules/layout
+- Go Module Reference：https://go.dev/ref/mod
+- Go Code Review Comments：https://go.dev/wiki/CodeReviewComments
+- LINE SDK：https://github.com/line/line-bot-sdk-go
+- Google API Go Client：https://github.com/googleapis/google-api-go-client
+
+Go 官方沒有強制規定 DDD／Hexagonal 的唯一目錄結構；本文件是本儲存庫採用的架構契約。文件更新不等於已完成程式重構、Firestore Emulator 驗證、OAuth 外部驗證或 Cloud Run 部署。
