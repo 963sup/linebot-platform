@@ -2,18 +2,30 @@
 
 本目錄 `.codex/agents/*.toml` 採用 [Codex custom agents 官方格式](https://learn.chatgpt.com/docs/agent-configuration/subagents)。各檔案必須包含 `name`、`description`、`developer_instructions`，並繼承主工作階段的 MCP、權限、供應商與工具。**Agent instructions 不是獨立的只讀沙盒或權限機制**。
 
-## 責任分工
+## 層級與責任分工
 
-| Agent | 職責 | MCP 選擇 | 實作權限 |
+```mermaid
+flowchart TD
+    O["L0 delivery_orchestrator\n工作契約與順序"] --> E["L1 證據與架構\ndocs_researcher + domain_architect"]
+    E --> I["L2 能力整合\nLINE + Google Identity/Workspace + Cloud"]
+    I --> R["L3 gopls_go_refactor\n僅傳播已確認語意變更"]
+    R --> Q["L4 go_reviewer\n獨立保證"]
+    Q --> G["L5 code_cleanup_release_validation\n交付閘門"]
+```
+
+這是**工作流與決策順序**，不是權限繼承樹：所有角色仍受主工作階段的 sandbox、工具與核准限制。`delivery_orchestrator` 只在跨領域工作建立順序與檔案所有權；主 Agent 保有整合與最後決策權。第 1 層的兩個角色可平行進行只讀查證；任何會修改相同檔案的工作必須串行。小型單一邊界工作直接交給相應角色。
+
+| 層級 | Agent | 職責 | MCP 選擇 | 實作權限 |
 |---|---|---|---|
-| `domain_architect` | Bounded Context、Aggregate、Value Object、Port 邊界 | gopls | 預設設計分析 |
-| `line_integrator` | Messaging API Webhook／Reply／Push／Flex、事件安全 | gopls、Context7、LINE 官方來源 | 被委派後可修改相應檔案 |
-| `google_identity_workspace_integrator` | Google OAuth／ID token、使用者 token、Calendar／Tasks／Forms 的每使用者存取 | gopls、Context7、Google 官方來源 | 被委派後可修改相應檔案；不可自行開 OAuth、部署或改 IAM |
-| `cloud_platform` | Cloud Run、Firestore、Cloud Tasks、WIF、IAM | Context7，隔離 staging 才允許 Toolbox | 預設只審查；不可自行部署 |
-| `go_reviewer` | Go correctness、Race、CI、PR 安全審查 | gopls、授權 GitHub（唯讀） | 只審查 |
-| `gopls_go_refactor` | 跨 package rename、interface／DTO 演進、Port／Adapter 搬遷與語意批量修改 | gopls | 被委派後可修改 Go 檔案 |
-| `docs_researcher` | SDK 版本、Go module、API 參數、Codex 規格；LINE Developers 文件來源 | SDK Catalog、gopls、Context7、OpenAI Docs、LINE 文件來源、官方來源 | 只查證 |
-| `code_cleanup_release_validation` | 驗收後範圍檢查、引用追蹤、清理、受保護 SDK 及正式測試保留、發行驗證 | gopls、Go 工具鏈、CI、SDK Catalog | 經授權才可修改；不可自行合併或部署 |
+| L0 | `delivery_orchestrator` | 跨領域工作契約、順序、檔案 owner 與驗收關卡 | AGENTS、Agent 設計、相關規範 | 只編排，不改程式／設定／部署 |
+| L1 | `docs_researcher` | SDK／API／Codex 規格與 LINE Developers 文件來源 | SDK Catalog、gopls、Context7、OpenAI Docs、官方來源 | 只查證 |
+| L1 | `domain_architect` | Bounded Context、Aggregate、Value Object、Port 邊界 | gopls | 預設設計分析 |
+| L2 | `line_integrator` | LINE SDK v8：Webhook、Messaging、LIFF、token、audience、module、shop | gopls、Context7、LINE 官方來源 | 被委派後可修改相應檔案 |
+| L2 | `google_identity_workspace_integrator` | Google OAuth／ID token、使用者 token、Calendar／Tasks／Forms 的每使用者存取 | gopls、Context7、Google 官方來源 | 被委派後可修改相應檔案；不可自行開 OAuth、部署或改 IAM |
+| L2 | `cloud_platform` | Cloud Run、Firestore、Cloud Tasks、WIF、IAM | Context7，隔離 staging 才允許 Toolbox | 預設只審查；不可自行部署 |
+| L3 | `gopls_go_refactor` | 跨 package rename、interface／DTO 演進、Port／Adapter 搬遷與語意批量修改 | gopls | 被委派後可修改 Go 檔案 |
+| L4 | `go_reviewer` | Go correctness、Race、CI、PR 安全審查 | gopls、授權 GitHub（唯讀） | 只審查 |
+| L5 | `code_cleanup_release_validation` | 驗收後範圍檢查、引用追蹤、清理、受保護 SDK 及正式測試保留、發行驗證 | gopls、Go 工具鏈、CI、SDK Catalog | 經授權才可修改；不可自行合併或部署 |
 
 Codex 內建 `worker`、`explorer` 可處理一般任務，不再額外建立通用 agent。主 Agent 負責拆分任務、避免併發編輯同一檔案、整合與最後驗證。只有實際互不依賴的工作才並行委派；建議最多三個子 Agent。
 
@@ -21,6 +33,7 @@ SDK 功能開發仍以 [sdk-integration Skill](../../.agents/skills/sdk-integrat
 
 ## 使用範例
 
+- 跨 LINE Account Linking、Google OAuth 與 Cloud Run：先由 `delivery_orchestrator` 產出串行工作契約；L1 定義證據與 DTO／Port，L2 分別實作 LINE、Google 與 IAM 邊界，必要時 L3 更新參照，再經 L4 審查和 L5 交付驗證。
 - 修改 Conversation 聚合：先由 `domain_architect` 釐清不變量，再交給內建 `worker` 實作；`go_reviewer` 審查。
 - 新增 LINE Flex／Webhook event：由 `docs_researcher` 核對版本、`line_integrator` 實作、`go_reviewer` 驗證。
 - 查 LINE 平台規格或文件差異：由 `docs_researcher` 讀取 [line-developers-docs-source](https://github.com/line/line-developers-docs-source) 與已發布的 LINE Developers 頁面，再交 `line_integrator` 依鎖定 SDK 實作；不另建重疊的文件 Agent。

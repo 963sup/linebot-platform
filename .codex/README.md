@@ -4,7 +4,7 @@
 
 | 內容 | 路徑 | 用途 |
 |---|---|---|
-| Agents | [`.codex/agents/`](agents/) | 八個專用角色（每個一個 TOML） |
+| Agents | [`.codex/agents/`](agents/) | 九個有層級的專用角色（每個一個 TOML） |
 | MCP | [`config.toml`](config.toml) | gopls、Context7、OpenAI Docs、GitHub 唯讀、Firestore Toolbox |
 | Cloud setup | [`scripts/setup-codex-cloud.sh`](../scripts/setup-codex-cloud.sh) | 非互動式下載 Go modules、安裝固定版 gopls |
 | 規範 | [`AGENTS.md`](../AGENTS.md) | 判斷什麼任務用哪個 MCP／Agent，不負責安裝 |
