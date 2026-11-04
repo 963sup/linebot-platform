@@ -24,9 +24,9 @@ This branch establishes the **target domain first**, not a directory-only refact
 7. Preserve deployed Firestore/Cloud Tasks contracts through backward-compatible migration.
 
 ## Migration slices
-1. **Current commit:** introduce actual identity value objects, aggregate, policy, factory, repository contract and isolated tests. Do not rewire production OAuth prematurely.
-2. Adapt existing Firestore account-link store through mappers while keeping its encryption, transactions and version checks.
-3. Refactor OAuth LinkService to delegate link lifecycle to the aggregate; retain user-scoped OAuth client isolation.
+1. **Completed:** introduce actual Identity value objects, aggregate, policy, factory, repository contract and isolated tests.
+2. **Completed:** adapt Firestore account-link storage through a private legacy JSON codec while preserving encryption, transaction and version contracts.
+3. **Completed:** refactor OAuth LinkService and TokenSource around Domain `AccountLink` while retaining user-scoped OAuth client isolation.
 4. Add business-shaped Calendar/Tasks/Forms ports as real business use cases emerge; keep audited raw operations isolated for administrative use.
 5. Expand Conversation/Audience bounded contexts only after identifying invariants. Add architecture checks and retire legacy DTOs once all callers migrate.
 
@@ -37,7 +37,7 @@ Run `go test ./internal/domain/...`, `go test ./tests/architecture/...`, `go tes
 - `LinkService.Begin` validates identity and requested scopes with domain value objects before creating OAuth state.
 - `LinkService.Complete` constructs the AccountLink aggregate after OAuth verification, and maps the aggregate back to the existing technical persistence contract.
 - `Disconnect` validates the stored link and delegates state transition to AccountLink before the existing atomic Firestore deactivation.
-- Firestore validates legacy OAuthConnection DTOs through the domain mapper on active read/write paths, while keeping existing ciphertext, collection names, document IDs, version numbers and token refresh behavior.
+- **Historical intermediate step, superseded by Slice 4:** Firestore previously validated application-level OAuthConnection DTOs through a separate mapper; the current implementation uses a private legacy codec and a Domain aggregate.
 - No token or OAuth secret is stored in AccountLink; no data migration or Cloud Run release is part of this slice.
 
 ## Slice 3: Explicit domain ownership and consolidation
@@ -47,7 +47,7 @@ Run `go test ./internal/domain/...`, `go test ./tests/architecture/...`, `go tes
 - Operational connection eligibility moved to `specifications.CanUseGoogleAPI`.
 - `factories.NewVerifiedLink` is for first verified linking; `factories.RestoreLink` is for database rehydration and does **not** create AccountLinked events.
 - The Firestore adapter implements `repositories.ConnectionReader` using existing encrypted state; Bootstrap checks domain eligibility before issuing a user-scoped token source.
-- The existing `outbound.OAuthConnection` remains a **temporary technical credential envelope** for token refresh and backward-compatible Firestore ciphertext. Its `OwnerID`, `GoogleSubject`, `Scopes`, and `Active` fields must no longer be used to decide business policy directly in new code. Retirement requires a separate credential-store contract and compatibility tests across existing callers.
+- **Superseded by Slice 4:** the application-level `outbound.OAuthConnection` was removed. Only the private Firestore `legacyOAuthConnection` record retains the old encrypted JSON keys for backwards-compatible reads and writes.
 - Domain events are staged in memory but deliberately **not published** before transaction commit. Integrating a durable event publisher must be a separately tested slice.
 
 ## Slice 4: retire duplicate application OAuthConnection (PR #28)
@@ -59,3 +59,7 @@ Run `go test ./internal/domain/...`, `go test ./tests/architecture/...`, `go tes
 - Next step is to narrow the technical credential-store interface into separate read/write concerns without adding a second business model. This is distinct from removing the already retired DTO.
 
 - The previous four-method global authorization repository interface is removed. The linking and token-refresh consumers now declare their own minimal 3-method and 2-method interfaces, respectively.
+
+## CI acceptance for legacy code removal
+- In addition to ordinary race tests, `make check` compiles `//go:build integration` tests (`-run '^$'`) so the Firestore migration contract cannot silently rot behind build tags. Actual Firestore emulator transaction validation remains an explicit separate environment gate.
+- The Identity architecture test rejects reintroduction of the old application DTO, broad repository interface, or deleted duplicate mapper files.

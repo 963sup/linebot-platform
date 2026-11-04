@@ -1,10 +1,10 @@
-.PHONY: bootstrap check config-check config-docs dev fmt-check vet test build run-webhook run-worker run-ops
+.PHONY: bootstrap check config-check config-docs dev fmt-check vet test integration-compile build run-webhook run-worker run-ops
 
 bootstrap:
 	go mod tidy
 	go mod download
 
-check: config-check fmt-check vet test build
+check: config-check fmt-check vet test integration-compile build
 
 config-check:
 	go run ./cmd/configcheck --check
@@ -24,6 +24,10 @@ vet:
 
 test:
 	go test -race -count=1 ./...
+
+# Compile build-tagged Firestore integration tests without requiring an emulator.
+integration-compile:
+	go test -tags=integration -run '^$' ./tests/integration
 
 build:
 	go build ./...

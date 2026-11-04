@@ -3,6 +3,7 @@ package architecture
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -40,6 +41,22 @@ func TestIdentityContract(t *testing.T) {
 	} {
 		if _, err := os.Stat(filepath.Join(root, p)); !os.IsNotExist(err) {
 			t.Errorf("obsolete duplicated implementation still present: %s", p)
+		}
+	}
+
+	// The former application-level parallel business model must stay removed.
+	port := filepath.Join("..", "..", "internal", "application", "ports", "outbound", "google_oauth.go")
+	content, err := os.ReadFile(port)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, obsolete := range []string{
+		"type OAuthConnection struct",
+		"type OAuthConnectionRepository interface",
+		"type OAuthAuthorizationRepository interface",
+	} {
+		if strings.Contains(string(content), obsolete) {
+			t.Errorf("obsolete OAuth business DTO/interface reintroduced: %s", obsolete)
 		}
 	}
 
