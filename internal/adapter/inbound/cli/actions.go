@@ -18,11 +18,15 @@ func runActions(args []string, getenv func(string) string) error {
 	request := flags.String("request", "", "JSON file containing the request; no secrets in CLI arguments")
 	apply := flags.Bool("apply", false, "authorize a remote write")
 	confirm := flags.String("confirm", "", "must exactly match --action")
+	eligibilityReviewed := flags.Bool("eligibility-reviewed", false, "required for restricted mark-read operation")
 	if err := flags.Parse(args); err != nil {
 		return err
 	}
 	if len(flags.Args()) != 0 || !*apply || *confirm == "" || *confirm != *action || getenv == nil {
 		return errors.New("actions requires --apply --confirm ACTION and no extra arguments")
+	}
+	if *action == "mark-read" && !*eligibilityReviewed {
+		return errors.New("mark-read requires --eligibility-reviewed")
 	}
 	cmd := messaging.ConversationActionCommand{Action: *action, ID: *id}
 	if *request != "" {
