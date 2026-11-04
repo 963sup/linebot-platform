@@ -5,8 +5,6 @@ import (
 	"errors"
 	"flag"
 	"time"
-
-	"github.com/963sup/linebot-platform/internal/bootstrap"
 )
 
 func runMenuImage(args []string, getenv func(string) string) error {
@@ -20,14 +18,17 @@ func runMenuImage(args []string, getenv func(string) string) error {
 	if len(flags.Args()) != 0 || !*read || *id == "" || *out == "" || getenv == nil {
 		return errors.New("menu-image requires --menu-id --out --read")
 	}
-	r, err := bootstrap.NewLINEOpsRuntime(getenv(bootstrap.KeyChannelToken))
+	if menuImageRuntimeFactory == nil {
+		return errors.New("menu image runtime is not configured")
+	}
+	r, err := menuImageRuntimeFactory(getenv(channelTokenEnv))
 	if err != nil {
 		return err
 	}
 	defer r.Close()
 	ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
 	defer cancel()
-	data, err := r.MenuImageReader.RichMenuImage(ctx, *id)
+	data, err := r.RichMenuImage(ctx, *id)
 	if err != nil {
 		return err
 	}

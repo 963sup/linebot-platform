@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/963sup/linebot-platform/internal/application/usecases/contacts"
-	"github.com/963sup/linebot-platform/internal/bootstrap"
 )
 
 func runContacts(args []string, getenv func(string) string, output io.Writer) error {
@@ -33,14 +32,17 @@ func runContacts(args []string, getenv func(string) string, output io.Writer) er
 	if err := contacts.ValidateInspection(q); err != nil {
 		return err
 	}
-	rt, err := bootstrap.NewLINEOpsRuntime(getenv(bootstrap.KeyChannelToken))
+	if contactsRuntimeFactory == nil {
+		return errors.New("contacts runtime is not configured")
+	}
+	rt, err := contactsRuntimeFactory(getenv(channelTokenEnv))
 	if err != nil {
 		return err
 	}
 	defer rt.Close()
 	ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
 	defer cancel()
-	result, err := rt.Contacts.Inspect(ctx, q)
+	result, err := rt.Inspect(ctx, q)
 	if err != nil {
 		return err
 	}

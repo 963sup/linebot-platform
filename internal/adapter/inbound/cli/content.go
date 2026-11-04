@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/963sup/linebot-platform/internal/application/usecases/contacts"
-	"github.com/963sup/linebot-platform/internal/bootstrap"
 )
 
 func runContent(args []string, getenv func(string) string, output io.Writer) error {
@@ -27,14 +26,17 @@ func runContent(args []string, getenv func(string) string, output io.Writer) err
 	if (*kind == "content" || *kind == "preview") && *out == "" {
 		return errors.New("binary content requires --out")
 	}
-	r, err := bootstrap.NewLINEOpsRuntime(getenv(bootstrap.KeyChannelToken))
+	if contentRuntimeFactory == nil {
+		return errors.New("content runtime is not configured")
+	}
+	r, err := contentRuntimeFactory(getenv(channelTokenEnv))
 	if err != nil {
 		return err
 	}
 	defer r.Close()
 	ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
 	defer cancel()
-	b, j, err := r.Content.Inspect(ctx, contacts.ContentQuery{Kind: *kind, MessageID: *id})
+	b, j, err := r.Inspect(ctx, contacts.ContentQuery{Kind: *kind, MessageID: *id})
 	if err != nil {
 		return err
 	}

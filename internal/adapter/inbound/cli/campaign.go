@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/963sup/linebot-platform/internal/application/ports/outbound"
-	"github.com/963sup/linebot-platform/internal/bootstrap"
 	"github.com/google/uuid"
 )
 
@@ -72,7 +71,10 @@ func runCampaign(args []string, getenv func(string) string) error {
 		}
 		*key = id.String()
 	}
-	rt, err := bootstrap.NewLINEOpsRuntime(getenv(bootstrap.KeyChannelToken))
+	if bulkMessagingRuntimeFactory == nil {
+		return errors.New("bulk messaging runtime is not configured")
+	}
+	rt, err := bulkMessagingRuntimeFactory(getenv(channelTokenEnv))
 	if err != nil {
 		return err
 	}
@@ -82,10 +84,10 @@ func runCampaign(args []string, getenv func(string) string) error {
 	msgs := []outbound.Message{{Kind: outbound.KindText, Text: *message}}
 	fmt.Fprintln(os.Stderr, "LINE campaign retry key:", *key)
 	if *kind == "narrowcast" {
-		return rt.BulkMessaging.Narrowcast(ctx, payload, *key)
+		return rt.Narrowcast(ctx, payload, *key)
 	}
 	if *kind == "broadcast" {
-		return rt.BulkMessaging.Broadcast(ctx, msgs, *key)
+		return rt.Broadcast(ctx, msgs, *key)
 	}
-	return rt.BulkMessaging.Multicast(ctx, users, msgs, *key)
+	return rt.Multicast(ctx, users, msgs, *key)
 }

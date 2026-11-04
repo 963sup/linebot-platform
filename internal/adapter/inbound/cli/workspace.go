@@ -14,7 +14,6 @@ import (
 
 	"github.com/963sup/linebot-platform/internal/application/ports/outbound"
 	"github.com/963sup/linebot-platform/internal/application/usecases/workspace"
-	"github.com/963sup/linebot-platform/internal/bootstrap"
 	"golang.org/x/oauth2"
 )
 
@@ -88,10 +87,13 @@ func runWorkspace(args []string, getenv func(string) string) error {
 		return errors.New("invalid OAuth access token file")
 	}
 	return writePrivateOperation(*output, func() ([]byte, error) {
+		if workspaceRuntimeFactory == nil {
+			return nil, errors.New("workspace runtime is not configured")
+		}
 		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 		defer cancel()
 		source := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token, TokenType: "Bearer"})
-		ops, err := bootstrap.NewWorkspaceOperations(ctx, source)
+		ops, err := workspaceRuntimeFactory(ctx, source)
 		if err != nil {
 			return nil, err
 		}

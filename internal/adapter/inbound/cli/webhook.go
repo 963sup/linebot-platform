@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/963sup/linebot-platform/internal/application/usecases/channel"
-	"github.com/963sup/linebot-platform/internal/bootstrap"
 )
 
 // Mutating webhook configuration is only permitted through a manually
@@ -32,7 +31,10 @@ func runWebhookAdmin(args []string, getenv func(string) string, output io.Writer
 	if err := channel.ValidateWebhookURL(*endpoint); err != nil {
 		return err
 	}
-	rt, err := bootstrap.NewLINEOpsRuntime(getenv(bootstrap.KeyChannelToken))
+	if webhookRuntimeFactory == nil {
+		return errors.New("webhook runtime is not configured")
+	}
+	rt, err := webhookRuntimeFactory(getenv(channelTokenEnv))
 	if err != nil {
 		return err
 	}
@@ -40,9 +42,9 @@ func runWebhookAdmin(args []string, getenv func(string) string, output io.Writer
 	ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
 	defer cancel()
 	if *action == "set" {
-		return rt.WebhookAdmin.Set(ctx, *endpoint)
+		return rt.Set(ctx, *endpoint)
 	}
-	result, err := rt.WebhookAdmin.Test(ctx, *endpoint)
+	result, err := rt.Test(ctx, *endpoint)
 	if err != nil {
 		return err
 	}

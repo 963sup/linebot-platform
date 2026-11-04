@@ -11,8 +11,9 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/963sup/linebot-platform/internal/application/ports/outbound"
-	"github.com/963sup/linebot-platform/internal/bootstrap"
 )
+
+const channelTokenEnv = "LINE_CHANNEL_ACCESS_TOKEN"
 
 func uuidv4() (string, error) {
 	id, err := uuid.NewRandom()
@@ -127,14 +128,17 @@ func run(args []string, getenv func(string) string) error {
 		}
 		*key = parsed.String()
 	}
-	runtime, err := bootstrap.NewLINEOpsRuntime(getenv(bootstrap.KeyChannelToken))
+	if pushRuntimeFactory == nil {
+		return errors.New("push runtime is not configured")
+	}
+	runtime, err := pushRuntimeFactory(getenv(channelTokenEnv))
 	if err != nil {
 		return err
 	}
 	defer runtime.Close()
 	// Printed before sending so an uncertain result can be retried with the same key.
 	fmt.Fprintln(os.Stderr, "LINE push retry key:", *key)
-	return runtime.Messaging.Push(context.Background(), *to, []outbound.Message{message}, *key)
+	return runtime.Push(context.Background(), *to, []outbound.Message{message}, *key)
 }
 
 // Run dispatches operator commands without leaking CLI logic into cmd/ops.

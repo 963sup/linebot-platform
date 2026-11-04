@@ -5,8 +5,6 @@ import (
 	"errors"
 	"flag"
 	"time"
-
-	"github.com/963sup/linebot-platform/internal/bootstrap"
 )
 
 // Link tokens are credentials. Never print them to terminal output.
@@ -23,13 +21,16 @@ func runLinkToken(args []string, getenv func(string) string) error {
 		return errors.New("link-token requires --user --out --apply --confirm issue-link-token")
 	}
 	return writePrivateOperation(*out, func() ([]byte, error) {
-		r, err := bootstrap.NewLINEOpsRuntime(getenv(bootstrap.KeyChannelToken))
+		if linkTokenRuntimeFactory == nil {
+			return nil, errors.New("link-token runtime is not configured")
+		}
+		r, err := linkTokenRuntimeFactory(getenv(channelTokenEnv))
 		if err != nil {
 			return nil, err
 		}
 		defer r.Close()
 		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
 		defer cancel()
-		return r.AccountLink.IssueLinkToken(ctx, *user)
+		return r.IssueLinkToken(ctx, *user)
 	})
 }

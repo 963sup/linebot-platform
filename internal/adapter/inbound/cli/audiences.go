@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/963sup/linebot-platform/internal/application/usecases/engagement"
-	"github.com/963sup/linebot-platform/internal/bootstrap"
 )
 
 func runAudiences(args []string, getenv func(string) string, output io.Writer) error {
@@ -32,14 +31,17 @@ func runAudiences(args []string, getenv func(string) string, output io.Writer) e
 	if err := engagement.ValidateAudienceQuery(q); err != nil {
 		return err
 	}
-	rt, err := bootstrap.NewLINEOpsRuntime(getenv(bootstrap.KeyChannelToken))
+	if audienceRuntimeFactory == nil {
+		return errors.New("audience runtime is not configured")
+	}
+	rt, err := audienceRuntimeFactory(getenv(channelTokenEnv))
 	if err != nil {
 		return err
 	}
 	defer rt.Close()
 	ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
 	defer cancel()
-	result, err := rt.Audiences.Inspect(ctx, q)
+	result, err := rt.Inspect(ctx, q)
 	if err != nil {
 		return err
 	}

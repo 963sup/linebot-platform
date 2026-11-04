@@ -11,8 +11,9 @@ import (
 	"time"
 
 	"github.com/963sup/linebot-platform/internal/application/ports/outbound"
-	"github.com/963sup/linebot-platform/internal/bootstrap"
 )
+
+const stagingProjectEnv = "LINEBOT_STAGING_PROJECT"
 
 // runEvents only reads staging Firestore. It cannot enqueue work or call LINE.
 func runEvents(args []string, getenv func(string) string) error {
@@ -37,13 +38,16 @@ func runEvents(args []string, getenv func(string) string) error {
 	if !selected.Valid() || *limit < 0 || *limit > 100 || *pendingAge <= 0 || *expiredMax < -1 {
 		return errors.New("invalid outbox state or alert thresholds")
 	}
-	allowed := strings.TrimSpace(getenv(bootstrap.KeyOpsStagingProject))
+	allowed := strings.TrimSpace(getenv(stagingProjectEnv))
 	if *project == "" || allowed == "" || *project != allowed {
 		return errors.New("project must match nonempty LINEBOT_STAGING_PROJECT")
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
-	runtime, err := bootstrap.NewStatusRuntime(ctx, *project)
+	if statusRuntimeFactory == nil {
+		return errors.New("status runtime is not configured")
+	}
+	runtime, err := statusRuntimeFactory(ctx, *project)
 	if err != nil {
 		return err
 	}
@@ -52,7 +56,7 @@ func runEvents(args []string, getenv func(string) string) error {
 	if *check {
 		samples = 0 // periodic monitoring never prints correlatable keys
 	}
-	report, err := runtime.Reader.Inspect(ctx, selected, samples, time.Now().UTC())
+	report, err := runtime.Inspect(ctx, selected, samples, time.Now().UTC())
 	if err != nil {
 		return err
 	}

@@ -50,3 +50,34 @@ func TestDependencyDirection(t *testing.T) {
 		}
 	}
 }
+
+func TestInboundCLIDoesNotDependOnCompositionRoot(t *testing.T) {
+	const cliRoot = "../../internal/adapter/inbound/cli"
+	const module = "github.com/963sup/linebot-platform/internal/"
+
+	err := filepath.WalkDir(cliRoot, func(path string, entry fs.DirEntry, walkErr error) error {
+		if walkErr != nil {
+			return walkErr
+		}
+		if entry.IsDir() || !strings.HasSuffix(path, ".go") {
+			return nil
+		}
+		file, err := parser.ParseFile(token.NewFileSet(), path, nil, parser.ImportsOnly)
+		if err != nil {
+			return err
+		}
+		for _, imp := range file.Imports {
+			pkg, err := strconv.Unquote(imp.Path.Value)
+			if err != nil {
+				return err
+			}
+			if strings.HasPrefix(pkg, module+"bootstrap") || strings.HasPrefix(pkg, module+"infrastructure") {
+				t.Errorf("%s must not depend on composition or infrastructure package %s", path, pkg)
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+}

@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/963sup/linebot-platform/internal/application/ports/outbound"
-	"github.com/963sup/linebot-platform/internal/bootstrap"
 )
 
 func runValidate(args []string, getenv func(string) string) error {
@@ -27,12 +26,15 @@ func runValidate(args []string, getenv func(string) string) error {
 	if *kind != "reply" && *kind != "push" && *kind != "multicast" && *kind != "narrowcast" && *kind != "broadcast" {
 		return errors.New("unsupported validation kind")
 	}
-	rt, err := bootstrap.NewLINEOpsRuntime(getenv(bootstrap.KeyChannelToken))
+	if validationRuntimeFactory == nil {
+		return errors.New("validation runtime is not configured")
+	}
+	rt, err := validationRuntimeFactory(getenv(channelTokenEnv))
 	if err != nil {
 		return err
 	}
 	defer rt.Close()
 	ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
 	defer cancel()
-	return rt.Validation.Validate(ctx, *kind, []outbound.Message{{Kind: outbound.KindText, Text: *text}})
+	return rt.Validate(ctx, *kind, []outbound.Message{{Kind: outbound.KindText, Text: *text}})
 }

@@ -8,8 +8,6 @@ import (
 	"io"
 	"strings"
 	"time"
-
-	"github.com/963sup/linebot-platform/internal/bootstrap"
 )
 
 // runProfile is intentionally CLI-only: no public HTTP route or automatic
@@ -33,14 +31,20 @@ func runProfile(args []string, getenv func(string) string, output io.Writer) err
 	if getenv == nil || output == nil {
 		return errors.New("profile runtime is not configured")
 	}
-	runtime, err := bootstrap.NewLINEOpsRuntime(getenv(bootstrap.KeyChannelToken))
+	if getenv(channelTokenEnv) == "" {
+		return errors.New("access token is required")
+	}
+	if profileRuntimeFactory == nil {
+		return errors.New("profile runtime is not configured")
+	}
+	runtime, err := profileRuntimeFactory(getenv(channelTokenEnv))
 	if err != nil {
 		return err
 	}
 	defer runtime.Close()
 	ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
 	defer cancel()
-	profile, err := runtime.Profiles.Get(ctx, *userID)
+	profile, err := runtime.Get(ctx, *userID)
 	if err != nil {
 		return err
 	}

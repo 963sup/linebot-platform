@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/963sup/linebot-platform/internal/application/usecases/engagement"
-	"github.com/963sup/linebot-platform/internal/bootstrap"
 )
 
 // Eligibility-gated APIs must never be accessible from the public webhook.
@@ -47,14 +46,17 @@ func runEligibility(args []string, getenv func(string) string, output io.Writer)
 	if err := engagement.ValidateEligibilityCommand(cmd); err != nil {
 		return err
 	}
-	r, err := bootstrap.NewLINEOpsRuntime(getenv(bootstrap.KeyChannelToken))
+	if eligibilityRuntimeFactory == nil {
+		return errors.New("eligibility runtime is not configured")
+	}
+	r, err := eligibilityRuntimeFactory(getenv(channelTokenEnv))
 	if err != nil {
 		return err
 	}
 	defer r.Close()
 	ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
 	defer cancel()
-	data, err := r.Eligibility.Execute(ctx, cmd)
+	data, err := r.Execute(ctx, cmd)
 	if err != nil {
 		return err
 	}

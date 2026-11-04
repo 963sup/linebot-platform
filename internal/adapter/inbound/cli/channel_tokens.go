@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/963sup/linebot-platform/internal/application/usecases/channel"
-	"github.com/963sup/linebot-platform/internal/bootstrap"
 )
 
 func tokenRequestFromPrivateFile(path string) (channel.TokenCommand, error) {
@@ -81,14 +80,17 @@ func runChannelTokens(args []string) error {
 		return err
 	}
 	invoke := func() ([]byte, error) {
-		rt, err := bootstrap.NewLINETokenOpsRuntime()
+		if tokenRuntimeFactory == nil {
+			return nil, errors.New("token runtime is not configured")
+		}
+		rt, err := tokenRuntimeFactory()
 		if err != nil {
 			return nil, err
 		}
 		defer rt.Close()
 		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
 		defer cancel()
-		return rt.Tokens.Execute(ctx, cmd)
+		return rt.Execute(ctx, cmd)
 	}
 	if isRevoke {
 		_, err := invoke()

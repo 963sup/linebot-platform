@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/963sup/linebot-platform/internal/application/usecases/engagement"
-	"github.com/963sup/linebot-platform/internal/bootstrap"
 )
 
 func runMemberships(args []string, getenv func(string) string, output io.Writer) error {
@@ -38,14 +37,17 @@ func runMemberships(args []string, getenv func(string) string, output io.Writer)
 	if err := engagement.ValidateMembershipQuery(q); err != nil {
 		return err
 	}
-	rt, err := bootstrap.NewLINEOpsRuntime(getenv(bootstrap.KeyChannelToken))
+	if membershipsRuntimeFactory == nil {
+		return errors.New("memberships runtime is not configured")
+	}
+	rt, err := membershipsRuntimeFactory(getenv(channelTokenEnv))
 	if err != nil {
 		return err
 	}
 	defer rt.Close()
 	ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
 	defer cancel()
-	result, err := rt.Memberships.Inspect(ctx, q)
+	result, err := rt.Inspect(ctx, q)
 	if err != nil {
 		return err
 	}

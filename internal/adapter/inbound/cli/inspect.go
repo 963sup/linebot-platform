@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/963sup/linebot-platform/internal/application/usecases/channel"
-	"github.com/963sup/linebot-platform/internal/bootstrap"
 )
 
 func runInspect(args []string, getenv func(string) string, output io.Writer) error {
@@ -35,14 +34,17 @@ func runInspect(args []string, getenv func(string) string, output io.Writer) err
 	if err := channel.ValidateInspection(query); err != nil {
 		return err
 	}
-	runtime, err := bootstrap.NewLINEOpsRuntime(getenv(bootstrap.KeyChannelToken))
+	if channelInspectionRuntimeFactory == nil {
+		return errors.New("channel inspection runtime is not configured")
+	}
+	runtime, err := channelInspectionRuntimeFactory(getenv(channelTokenEnv))
 	if err != nil {
 		return err
 	}
 	defer runtime.Close()
 	ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
 	defer cancel()
-	data, err := runtime.Channel.Inspect(ctx, query)
+	data, err := runtime.Inspect(ctx, query)
 	if err != nil {
 		return err
 	}

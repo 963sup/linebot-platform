@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/963sup/linebot-platform/internal/application/usecases/insights"
-	"github.com/963sup/linebot-platform/internal/bootstrap"
 )
 
 func runInsights(args []string, getenv func(string) string, output io.Writer) error {
@@ -35,14 +34,17 @@ func runInsights(args []string, getenv func(string) string, output io.Writer) er
 	if err := insights.ValidateQuery(q); err != nil {
 		return err
 	}
-	rt, err := bootstrap.NewLINEOpsRuntime(getenv(bootstrap.KeyChannelToken))
+	if insightsRuntimeFactory == nil {
+		return errors.New("insights runtime is not configured")
+	}
+	rt, err := insightsRuntimeFactory(getenv(channelTokenEnv))
 	if err != nil {
 		return err
 	}
 	defer rt.Close()
 	ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
 	defer cancel()
-	result, err := rt.Insights.Inspect(ctx, q)
+	result, err := rt.Inspect(ctx, q)
 	if err != nil {
 		return err
 	}

@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/963sup/linebot-platform/internal/application/usecases/engagement"
-	"github.com/963sup/linebot-platform/internal/bootstrap"
 )
 
 func runMenus(args []string, getenv func(string) string, output io.Writer) error {
@@ -30,14 +29,17 @@ func runMenus(args []string, getenv func(string) string, output io.Writer) error
 	if err := engagement.ValidateRichMenuQuery(q); err != nil {
 		return err
 	}
-	rt, err := bootstrap.NewLINEOpsRuntime(getenv(bootstrap.KeyChannelToken))
+	if menusRuntimeFactory == nil {
+		return errors.New("menus runtime is not configured")
+	}
+	rt, err := menusRuntimeFactory(getenv(channelTokenEnv))
 	if err != nil {
 		return err
 	}
 	defer rt.Close()
 	ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
 	defer cancel()
-	result, err := rt.Menus.Inspect(ctx, q)
+	result, err := rt.Inspect(ctx, q)
 	if err != nil {
 		return err
 	}

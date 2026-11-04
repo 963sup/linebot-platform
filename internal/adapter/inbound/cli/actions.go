@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/963sup/linebot-platform/internal/application/usecases/messaging"
-	"github.com/963sup/linebot-platform/internal/bootstrap"
 )
 
 func runActions(args []string, getenv func(string) string) error {
@@ -39,12 +38,15 @@ func runActions(args []string, getenv func(string) string) error {
 	if err := messaging.ValidateConversationAction(cmd); err != nil {
 		return err
 	}
-	r, err := bootstrap.NewLINEOpsRuntime(getenv(bootstrap.KeyChannelToken))
+	if actionsRuntimeFactory == nil {
+		return errors.New("actions runtime is not configured")
+	}
+	r, err := actionsRuntimeFactory(getenv(channelTokenEnv))
 	if err != nil {
 		return err
 	}
 	defer r.Close()
 	ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
 	defer cancel()
-	return r.Actions.Execute(ctx, cmd)
+	return r.Execute(ctx, cmd)
 }

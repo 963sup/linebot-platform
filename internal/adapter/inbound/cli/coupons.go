@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/963sup/linebot-platform/internal/application/usecases/engagement"
-	"github.com/963sup/linebot-platform/internal/bootstrap"
 )
 
 // runCoupons offers a separate command without breaking the legacy membership alias.
@@ -36,14 +35,20 @@ func inspectCoupon(q engagement.CouponQuery, getenv func(string) string, output 
 	if err := engagement.ValidateCouponQuery(q); err != nil {
 		return err
 	}
-	rt, err := bootstrap.NewLINEOpsRuntime(getenv(bootstrap.KeyChannelToken))
+	if getenv(channelTokenEnv) == "" {
+		return errors.New("access token is required")
+	}
+	if couponsRuntimeFactory == nil {
+		return errors.New("coupons runtime is not configured")
+	}
+	rt, err := couponsRuntimeFactory(getenv(channelTokenEnv))
 	if err != nil {
 		return err
 	}
 	defer rt.Close()
 	ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
 	defer cancel()
-	result, err := rt.Coupons.Inspect(ctx, q)
+	result, err := rt.Inspect(ctx, q)
 	if err != nil {
 		return err
 	}

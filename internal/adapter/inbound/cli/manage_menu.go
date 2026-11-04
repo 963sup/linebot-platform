@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/963sup/linebot-platform/internal/application/usecases/engagement"
-	"github.com/963sup/linebot-platform/internal/bootstrap"
 )
 
 // All Rich Menu mutations demand an explicit action-specific confirmation.
@@ -72,15 +71,26 @@ func runManageMenu(args []string, getenv func(string) string) error {
 	if err := engagement.ValidateMenuCommand(cmd); err != nil {
 		return err
 	}
-	runtime, err := bootstrap.NewLINEOpsRuntime(getenv(bootstrap.KeyChannelToken))
+	ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
+	defer cancel()
+	if *action == "upload-image" {
+		if menuImageUploadRuntimeFactory == nil {
+			return errors.New("menu image upload runtime is not configured")
+		}
+		runtime, err := menuImageUploadRuntimeFactory(getenv(channelTokenEnv))
+		if err != nil {
+			return err
+		}
+		defer runtime.Close()
+		return runtime.Upload(ctx, cmd.RichMenuID, cmd.ContentType, cmd.Image)
+	}
+	if menuManagementRuntimeFactory == nil {
+		return errors.New("menu management runtime is not configured")
+	}
+	runtime, err := menuManagementRuntimeFactory(getenv(channelTokenEnv))
 	if err != nil {
 		return err
 	}
 	defer runtime.Close()
-	ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
-	defer cancel()
-	if *action == "upload-image" {
-		return runtime.RichMenuImages.Upload(ctx, cmd.RichMenuID, cmd.ContentType, cmd.Image)
-	}
-	return runtime.MenuManager.Execute(ctx, cmd)
+	return runtime.Execute(ctx, cmd)
 }
