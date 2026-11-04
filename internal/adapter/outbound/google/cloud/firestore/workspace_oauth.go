@@ -14,8 +14,6 @@ import (
 
 	sdk "cloud.google.com/go/firestore"
 	"github.com/963sup/linebot-platform/internal/application/ports/outbound"
-	"github.com/963sup/linebot-platform/internal/domain/identity/aggregates"
-	"github.com/963sup/linebot-platform/internal/domain/identity/factories"
 	"github.com/963sup/linebot-platform/internal/infrastructure/google/api/oauth"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
