@@ -56,7 +56,7 @@ calendarClient, err := api.NewCalendar(ctx, authorizedHTTP)
 - `internal/adapter/outbound/google/api/{calendar,tasks}` 以明確 `switch` 呼叫原生 Go SDK，保留資源／方法、必要參數、常見查詢參數及 JSON body；不使用任意 HTTP Endpoint 或反射。
 - `internal/application/usecases/workspace` 強制唯讀／寫入／危險操作的明確授權；不允許公有 Webhook 呼叫管理功能。
 - `cmd/ops workspace` 僅限明確 `APP_ENV=local` 且無 `K_SERVICE` 的操作，從 owner-only `0600` 檔案載入**外部已核發的短期使用者 Access Token**，結果寫入新的 `0600` 私有檔案；這不是完整 OAuth Consent 或長期 Token 更新方案。
-- Draft PR #27 已新增 OAuth Authorization Code + PKCE、加密 Token Repository、一次性 State 與撤銷的**離線程式碼**；LINE 使用者瀏覽器再驗證、OAuth 路由掛載與真實 Google 授權／IAM 驗收未完成，不得直接部署為公共連結介面。
+- Draft PR #28 的 Identity Domain 已與 OAuth Use Case、Firestore 加密 Token Repository 與 TokenSource 接線，並收斂重複的 `OAuthConnection` DTO。一次性 State、PKCE、撤銷與 Token CAS 的離線檢查已納入 CI；**LINE 使用者瀏覽器再驗證、OAuth 路由掛載與真實 Google 授權／IAM 驗收仍未完成**，不得直接部署為公共綁定介面。
 - 不需要執行真實 API 才能驗證 Adapter 的 HTTP Route；先執行 `make check`，再以獨立授權測試帳號驗證。
 
 > **本次整合狀態**：Calendar／Tasks 52 項方法已完成離線接線；Drive／Sheets 仍僅具 Client Factory，因此模組共用 Catalog 的 `client_ready` 不能代表四個服務都未整合，也不能代表完整 OAuth 已完成。詳見 `docs/google/README.md`。
@@ -68,3 +68,16 @@ Forms v1 的 10 個官方方法沿用現有 Workspace Typed SDK 及操作確認�
 ## 自助綁定規格（來源 PR #26，整合至 PR #27）
 
 [Google 自助綁定安全規格](../google/user-self-service-linking.md) 是 P2–P4 的驗收契約，包含可轉傳連結防護、LINE Login／LIFF 再驗證、Channel／LINE 使用者／Google `sub` 隔離、Token 綁定與每位使用者同步。帳號／Firestore Client 已經存在不等於上述跨服務授權已得到驗證。
+
+## Identity 全鏈依賴／Go Module 對照（PR #28）
+
+`cmd/` 與 `bootstrap/` 只有組裝與啟動責任；`internal/application/usecases/workspace/AuthorizeLinkedGoogleAccount` 驗證 Domain ID、連結狀態與 Scope。Firestore Adapter 實作 Domain `ConnectionReader`，Google OAuth Adapter 與 Infrastructure 提供使用者授權 TokenSource。
+
+| Module（`go.mod`） | 負責的 Import Packages | 現況 |
+| --- | --- | --- |
+| `golang.org/x/oauth2` | `oauth2`、`oauth2/google` | Authorization Code、PKCE、使用者專屬 TokenSource |
+| `google.golang.org/api` | `idtoken`、`oauth2/v2`、`option`、`calendar/v3`、`tasks/v1`、`forms/v1` | 身分驗證／Workspace SDK；`oauth2/v2` 的 UserInfo 業務路由仍為可選能力，不能當作已接入 |
+| `cloud.google.com/go/firestore` | `firestore` | 加密 OAuth State／Connection、CAS、交易 |
+| `cloud.google.com/go/secretmanager` | `secretmanager/apiv1` | 外部金鑰取得能力；實際 IAM／Staging 尚未驗證 |
+
+此表以 Module 為單位；`go.mod` 不應為上述每個 Package 新增一條獨立的 require。由於目前兩個核心 OAuth Module 仍直接使用，沒有理由刪除或重新選版本。CI 的 `go mod tidy` 與 `git diff --exit-code -- go.mod go.sum` 驗證鎖定檔維持一致。

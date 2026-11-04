@@ -77,12 +77,18 @@ type oauthTokenFactory interface {
 type PersistedTokenSource struct {
 	ctx     context.Context
 	flow    oauthTokenFactory
-	store   outbound.OAuthConnectionRepository
+	store   authorizationTokenStore
 	owner   string
 	subject string
 }
 
-func NewPersistedTokenSource(ctx context.Context, flow oauthTokenFactory, store outbound.OAuthConnectionRepository, owner, subject string) (*PersistedTokenSource, error) {
+// authorizationTokenStore is private to the refresh consumer, not a global four-method port.
+type authorizationTokenStore interface {
+	GetConnection(context.Context, string, string) (outbound.OAuthAuthorization, error)
+	UpdateCredentials(context.Context, outbound.OAuthAuthorization, int64) error
+}
+
+func NewPersistedTokenSource(ctx context.Context, flow oauthTokenFactory, store authorizationTokenStore, owner, subject string) (*PersistedTokenSource, error) {
 	if ctx == nil || flow == nil || store == nil || owner == "" || subject == "" {
 		return nil, errors.New("linked Google account identity, store and flow required")
 	}
@@ -103,7 +109,7 @@ func (p *PersistedTokenSource) Token() (*oauth2.Token, error) {
 	if err != nil {
 		return nil, errors.New("Google account not linked")
 	}
-	if !current.Active {
+	if !current.Link.IsActive() {
 		return nil, errors.New("Google account disabled")
 	}
 	original := &oauth2.Token{
@@ -137,7 +143,7 @@ func (p *PersistedTokenSource) Token() (*oauth2.Token, error) {
 		// After another replica refreshes the token, a stale writer MUST NOT
 		// overwrite it. Reload the newest version; if unavailable fail closed.
 		latest, readErr := p.store.GetConnection(p.ctx, p.owner, p.subject)
-		if readErr != nil || !latest.Active || latest.Version <= current.Version ||
+		if readErr != nil || !latest.Link.IsActive() || latest.Version <= current.Version ||
 			latest.Credentials.AccessToken == "" || !latest.Credentials.Expiry.After(time.Now().Add(30*time.Second)) {
 			return nil, errors.New("Google OAuth token refresh persistence uncertain")
 		}

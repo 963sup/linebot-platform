@@ -12,37 +12,53 @@ import (
 	"testing"
 )
 
-// TestValueObjectsDirectoryContract prevents tooling and future agents
-// from silently reverting the agreed domain directory naming.
+// TestValueObjectsDirectoryContract checks every bounded context, not just
+// the original root scaffold, for the agreed value-objects/ directory name.
 func TestValueObjectsDirectoryContract(t *testing.T) {
 	domain := filepath.Join("..", "..", "internal", "domain")
-	valueDir := filepath.Join(domain, "value-objects")
-	info, err := os.Stat(valueDir)
-	if err != nil || !info.IsDir() {
-		t.Fatalf("value object directory must exist at %s: %v", valueDir, err)
+	rootValueDir := filepath.Join(domain, "value-objects")
+	if info, err := os.Stat(rootValueDir); err != nil || !info.IsDir() {
+		t.Fatalf("value object scaffold must exist at %s: %v", rootValueDir, err)
 	}
-	legacyDir := filepath.Join(domain, "valueobjects")
-	if _, err := os.Stat(legacyDir); !errors.Is(err, os.ErrNotExist) {
-		t.Fatalf("legacy directory must not exist at %s: %v", legacyDir, err)
+	identityValueDir := filepath.Join(domain, "identity", "value-objects")
+	if info, err := os.Stat(identityValueDir); err != nil || !info.IsDir() {
+		t.Fatalf("identity value objects must exist at %s: %v", identityValueDir, err)
 	}
-	err = filepath.WalkDir(valueDir, func(path string, entry fs.DirEntry, walkErr error) error {
+	err := filepath.WalkDir(domain, func(path string, entry fs.DirEntry, walkErr error) error {
 		if walkErr != nil {
 			return walkErr
 		}
-		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".go") {
+		if !entry.IsDir() {
 			return nil
 		}
-		file, err := parser.ParseFile(token.NewFileSet(), path, nil, parser.PackageClauseOnly)
-		if err != nil {
-			return fmt.Errorf("parse package in %s: %w", path, err)
+		switch entry.Name() {
+		case "valueobjects", "value_objects":
+			return fmt.Errorf("forbidden value object directory %s: use value-objects", path)
+		case "value-objects":
+			return filepath.WalkDir(path, func(filePath string, file fs.DirEntry, fileErr error) error {
+				if fileErr != nil {
+					return fileErr
+				}
+				if file.IsDir() || !strings.HasSuffix(file.Name(), ".go") {
+					return nil
+				}
+				parsed, err := parser.ParseFile(token.NewFileSet(), filePath, nil, parser.PackageClauseOnly)
+				if err != nil {
+					return fmt.Errorf("parse package in %s: %w", filePath, err)
+				}
+				expected := "valueobjects"
+				if strings.HasSuffix(file.Name(), "_test.go") && parsed.Name.Name == "valueobjects_test" {
+					return nil
+				}
+				if parsed.Name.Name != expected {
+					return fmt.Errorf("%s declares package %q, want %s", filePath, parsed.Name.Name, expected)
+				}
+				return nil
+			})
 		}
-		if file.Name.Name == "valueobjects" ||
-			(strings.HasSuffix(entry.Name(), "_test.go") && file.Name.Name == "valueobjects_test") {
-			return nil
-		}
-		return fmt.Errorf("%s declares package %q, want valueobjects", path, file.Name.Name)
+		return nil
 	})
-	if err != nil {
+	if err != nil && !errors.Is(err, os.ErrNotExist) {
 		t.Fatal(err)
 	}
 }

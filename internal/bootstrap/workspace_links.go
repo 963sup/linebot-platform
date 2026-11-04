@@ -16,8 +16,8 @@ import (
 // Identity verification and protected credentials must be provided by callers.
 type WorkspaceLinkRuntime struct {
 	Links *workspace.LinkService
-	Store *fsadapter.OAuthStore
-	Flow  *oauthinfra.Flow
+	store *fsadapter.OAuthStore
+	flow  *oauthinfra.Flow
 }
 
 func NewWorkspaceLinkRuntime(ctx context.Context, client *firestore.Client, keys *oauthinfra.Keyring,
@@ -44,22 +44,23 @@ func NewWorkspaceLinkRuntime(ctx context.Context, client *firestore.Client, keys
 	if err != nil {
 		return nil, err
 	}
-	return &WorkspaceLinkRuntime{Links: service, Store: store, Flow: flow}, nil
+	return &WorkspaceLinkRuntime{Links: service, store: store, flow: flow}, nil
 }
 
 // NewWorkspaceOperationsForAccount refuses unlinked/disabled Google accounts.
 // Refresh uses a Firestore transaction/version guard across Cloud Run replicas.
 func NewWorkspaceOperationsForAccount(ctx context.Context, rt *WorkspaceLinkRuntime, owner, subject string) (*workspace.Operations, error) {
-	if rt == nil || rt.Store == nil || rt.Flow == nil {
+	if rt == nil || rt.store == nil || rt.flow == nil {
 		return nil, errors.New("Google workspace runtime missing")
 	}
 	if ctx == nil {
 		return nil, errors.New("Google workspace request context required")
 	}
-	if _, err := rt.Store.GetConnection(ctx, owner, subject); err != nil {
+	id, err := workspace.AuthorizeLinkedGoogleAccount(ctx, rt.store, owner, subject, nil)
+	if err != nil {
 		return nil, errors.New("Google account not linked or disabled")
 	}
-	source, err := authadapter.NewPersistedTokenSource(ctx, rt.Flow, rt.Store, owner, subject)
+	source, err := authadapter.NewPersistedTokenSource(ctx, rt.flow, rt.store, id.Owner().String(), id.GoogleAccount().String())
 	if err != nil {
 		return nil, err
 	}

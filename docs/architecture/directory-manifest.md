@@ -2,7 +2,7 @@
 
 下表保留最初 scaffold 的 123 個目錄；已有實際檔案的目錄會移除 `.gitkeep`，仍為空的目錄則繼續保留 `.gitkeep`。Go／CI／Terraform 等檔案依階段實作，不能因目錄存在就視為功能完成。`value-objects/` 是 Value Object 目錄，Go package 識別名稱為 `valueobjects`；`genai` 對應 Google Gen AI SDK 的實作邊界。
 
-原 scaffold 為 123 個目錄，後續加入 Codex Agents、SDK Catalog／Skills、SDK Infrastructure 以及 Task OIDC 驗證目錄。以下依照最新 Git Tree 列出 **130 個目錄**；目錄存在不代表功能已部署。
+原 scaffold 為 123 個目錄。以下依照 Draft PR #28 的 `refactor/ddd-hexagonal-foundation` 分支 Git Tree 列出 **149 個目錄**；其中 `internal/domain/identity/` 的八個分類子目錄已有真實程式碼與測試。目錄存在不代表功能已部署。
 
 ```text
 .agents
@@ -33,6 +33,7 @@ assets/prompts
 assets/richmenus
 cmd
 cmd/codexcheck
+cmd/configcheck
 cmd/ops
 cmd/webhook
 cmd/worker
@@ -46,6 +47,7 @@ docs
 docs/adr
 docs/ai
 docs/architecture
+docs/google
 docs/line
 docs/operations
 docs/quality
@@ -55,6 +57,8 @@ internal/adapter
 internal/adapter/inbound
 internal/adapter/inbound/cli
 internal/adapter/inbound/http
+internal/adapter/inbound/http/google
+internal/adapter/inbound/http/google/oauth
 internal/adapter/inbound/http/health
 internal/adapter/inbound/http/line
 internal/adapter/inbound/http/middleware
@@ -66,8 +70,12 @@ internal/adapter/outbound/genai
 internal/adapter/outbound/google
 internal/adapter/outbound/google/api
 internal/adapter/outbound/google/api/calendar
+internal/adapter/outbound/google/api/codec
 internal/adapter/outbound/google/api/drive
+internal/adapter/outbound/google/api/forms
+internal/adapter/outbound/google/api/oauth
 internal/adapter/outbound/google/api/sheets
+internal/adapter/outbound/google/api/tasks
 internal/adapter/outbound/google/cloud
 internal/adapter/outbound/google/cloud/cloudtasks
 internal/adapter/outbound/google/cloud/firestore
@@ -93,12 +101,22 @@ internal/application/usecases/insights
 internal/application/usecases/integrations
 internal/application/usecases/media
 internal/application/usecases/messaging
+internal/application/usecases/workspace
 internal/bootstrap
 internal/domain
 internal/domain/aggregates
 internal/domain/entities
 internal/domain/events
 internal/domain/factories
+internal/domain/identity
+internal/domain/identity/aggregates
+internal/domain/identity/entities
+internal/domain/identity/events
+internal/domain/identity/factories
+internal/domain/identity/policies
+internal/domain/identity/repositories
+internal/domain/identity/specifications
+internal/domain/identity/value-objects
 internal/domain/policies
 internal/domain/repositories
 internal/domain/specifications
@@ -120,6 +138,7 @@ internal/infrastructure/google/cloud/tasksauth
 internal/infrastructure/google/genai
 internal/infrastructure/httpclient
 internal/infrastructure/line
+internal/infrastructure/mcp
 internal/infrastructure/observability
 internal/infrastructure/openai
 internal/infrastructure/resilience

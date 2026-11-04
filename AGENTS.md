@@ -20,6 +20,14 @@
 - 不預先為所有構想建立空介面、空 `.go` 檔或用無用途的 abstraction 填滿架構。
 - Value Objects 的**目錄**使用 `internal/domain/value-objects/`，其中 Go **package 識別字**仍是 `valueobjects`；`-` 僅存在於 import path，不得寫成 `package value-objects`，也不可將目錄改回 `valueobjects/`。新增模型前先確認其 Bounded Context。
 
+## DDD／六邊形架構重構前的必行規劃
+
+- **先規劃再修改**：跨 Domain、Application、Adapter、Infrastructure 的改造，必須先列出目標業務不變量、擬新增的具體檔案、刪除／合併的舊檔案、呼叫鏈、相容性界線與可驗證的完成條件。
+- **以目標模型主導收斂**：Domain 是業務狀態與決策的單一來源；不能只新增 Entity／Aggregate／Value Object，卻保留 Application／Adapter 的平行規則。檢查並移除舊 Policy／Specification／Factory、無引用的接口、重複驗證。
+- **命名與實作不可分離**：各 Bounded Context 的 Value Objects 目錄固定為 `value-objects/`（Go package `valueobjects`）；Entity、Aggregate、Policy、Specification、Factory、Repository、Events 僅在具體用途及測試存在時才實作，禁止空殼填滿樹。
+- **遷移不可犧牲資料契約**：舊 OAuth／Firestore 技術 DTO 可在過渡期間保留，但必須明確註明為相容性資料載體、追蹤剩餘引用與退役條件，不能永久成為第二套業務模型。必須保護 OAuth State／PKCE／Nonce、Token 加密、CAS、Webhook／Cloud Tasks 冪等性。
+- **驗證後再交付**：Go 格式與靜態檢查、Domain／Architecture／Contract／Race Tests、CI 必須通過；新舊持久化格式混合存活未驗證時不得合併／發布。不以文件、空目錄或「CI 綠燈」單獨宣稱 DDD 遷移完成。
+
 ## LINE webhook 與發送
 
 - 必須使用 LINE raw request body 驗證簽章，驗證前不得更改內容。
