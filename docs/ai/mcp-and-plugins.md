@@ -11,6 +11,8 @@ MCP 是**開發期工具**，由 [`.codex/config.toml`](../../.codex/config.toml
 | `openaiDeveloperDocs` | [OpenAI Docs MCP](https://developers.openai.com/learn/docs-mcp)；`https://developers.openai.com/mcp` | 開啟（遠端、唯讀） | 官方 OpenAI API、SDK、Responses API、Codex、Skills、MCP 和 Plugins 文件 |
 | `github_readonly` | [github/github-mcp-server](https://github.com/github/github-mcp-server)；`https://api.githubcopilot.com/mcp/` | 啟用（需環境 token） | 依授權讀取 PR、Issue、commit、workflow 等，不寫入 |
 | `firestore_toolbox` | [googleapis/mcp-toolbox](https://github.com/googleapis/mcp-toolbox)；Firestore prebuilt | 停用（未配置 staging ADC） | 在**隔離測試專案**審查 Firestore collections、documents、rules |
+| `google_cloud_run` | Google Cloud Run remote MCP；`https://run.googleapis.com/mcp` | 停用（尚未配置 Google OAuth／最小 IAM） | 讀取 service、revision、部署與診斷資料 |
+| `google_firestore` | Google Firestore remote MCP；`https://firestore.googleapis.com/mcp` | 停用（尚未配置 Google OAuth／最小 IAM） | 讀取隔離 staging 的 Firestore 資料與設定 |
 
 `gopls` detached MCP 只能看到已儲存到磁碟的內容；它可能在分析 package 時下載 Go modules，不應誤認為只是一個純離線讀檔工具。
 
@@ -24,6 +26,12 @@ MCP 是**開發期工具**，由 [`.codex/config.toml`](../../.codex/config.toml
 ## Google MCP Toolbox：不是 Google Workspace API MCP
 
 `mcp-toolbox` 是資料庫工具伺服器，提供 Firestore、Cloud SQL、BigQuery 等預建工具；**不取代** Google Calendar、Sheets、Drive 的正式 Go API Client。
+
+## Google 管理的遠端 MCP
+
+Google Cloud Run 與 Firestore 都提供 Google 管理的遠端 MCP server，分別使用 `https://run.googleapis.com/mcp` 與 `https://firestore.googleapis.com/mcp`。本專案先將它們保留為停用設定：啟用前必須在 Codex Cloud 取得 Google OAuth 身分，並在隔離 staging 專案授予最小的唯讀 IAM。不要在 TOML 放入 ADC 檔案路徑、access token 或 OAuth client secret。
+
+啟用後先以官方 server 提供的最小診斷 toolset 做唯讀驗證；確認 Cloud Run service/revision 與 Firestore 查詢都只能存取預期的 staging 專案後，才考慮增加任何寫入工具。Cloud Run runtime 本身不使用這些 MCP。
 
 本專案的預留設定使用 `npx -y @toolbox-sdk/server@1.14.0 --prebuilt=firestore --stdio`，預設 `enabled = false` 且以 `enabled_tools` 只暴露 `get_documents`、`query_collection`、`list_collections`、`get_rules`、`validate_rules`。
 

@@ -54,6 +54,22 @@ required = false
 startup_timeout_sec = 45
 tool_timeout_sec = 45
 
+# Google-managed remote MCP servers. They remain disabled until Codex Cloud
+# has a Google OAuth identity with staging-only, least-privilege IAM.
+[mcp_servers.google_cloud_run]
+url = "https://run.googleapis.com/mcp"
+enabled = false
+required = false
+startup_timeout_sec = 20
+tool_timeout_sec = 45
+
+[mcp_servers.google_firestore]
+url = "https://firestore.googleapis.com/mcp"
+enabled = false
+required = false
+startup_timeout_sec = 20
+tool_timeout_sec = 45
+
 # Official OpenAI Developer Documentation MCP (read-only).
 # Agent-phase network access to developers.openai.com is required.
 [mcp_servers.openaiDeveloperDocs]

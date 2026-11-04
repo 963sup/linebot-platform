@@ -79,7 +79,7 @@ func validateConfig(path string) error {
 		c.Agents.MaxConcurrentThreadsPerSession > 3 {
 		return errors.New("multi-agent must be enabled with concurrency between 1 and 3")
 	}
-	expected := []string{"gopls", "context7", "github_readonly", "firestore_toolbox", "openaiDeveloperDocs"}
+	expected := []string{"gopls", "context7", "github_readonly", "firestore_toolbox", "google_cloud_run", "google_firestore", "openaiDeveloperDocs"}
 	keys := make([]string, 0, len(c.MCPServers))
 	for name, s := range c.MCPServers {
 		keys = append(keys, name)
@@ -120,6 +120,16 @@ func validateConfig(path string) error {
 			"get_documents", "query_collection", "list_collections", "get_rules", "validate_rules",
 		}) {
 		return errors.New("Firestore Toolbox must remain disabled with a restricted tool list")
+	}
+	for name, endpoint := range map[string]string{
+		"google_cloud_run": "https://run.googleapis.com/mcp",
+		"google_firestore": "https://firestore.googleapis.com/mcp",
+	} {
+		server := c.MCPServers[name]
+		if server.Enabled || server.URL != endpoint || server.Command != "" ||
+			server.BearerTokenEnvVar != "" || len(server.HTTPHeaders) != 0 {
+			return fmt.Errorf("%s must remain a disabled, credential-free Google remote MCP", name)
+		}
 	}
 	return nil
 }
