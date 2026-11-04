@@ -348,7 +348,77 @@ Tasks / Forms / UserInfo 使用各自官方 `NewService`；不需另外建立一
 
 **衝突處理**：先判斷架構規則、既有公開 API 相容性與安全不變量；無法同時滿足時回報具體衝突，不得靜默更改 `AGENTS.md`、`.codex/config.toml`、CI 或資料格式。此文件不能保證 Codex 自動讀取或 MCP 自動連線；執行時須確認。
 
-## 9. 參考與驗證界限
+## 9. Mermaid 圖表選型與語意規範（Context7 查證）
+
+**原則：先判定要表達的資訊，再選 Mermaid 圖型。** Mermaid 是文字化視覺工具，不能替代 Go 原始碼、測試或真實執行結果。任何圖表都要標示其視角（原始碼依賴／執行流程／狀態／時序／資料關聯）、範圍與驗證狀態；避免將不同箭頭語意混成單一呼叫鏈。第 3 節的依賴 Mermaid 仍是本專案**唯一權威依賴圖**；本節的範例只示範其他圖型，不建立第二份競爭的依賴契約。
+
+| 要表達的問題 | Mermaid 圖型 | 本專案典型用途 | 不適用情況 |
+| --- | --- | --- | --- |
+| 步驟、分支、決策與錯誤處理 | `flowchart TB` / `flowchart LR` | Codex 開發 Gate、OAuth 授權流程、Webhook 處理 | 不適合表達多方呼叫的時間順序 |
+| 狀態與合法轉換 | `stateDiagram-v2` | `AccountLink`、Token 連線狀態、任務狀態 | 不要把狀態圖當作 SDK 呼叫流程 |
+| 參與者之間的時間順序 | `sequenceDiagram` | LINE → App → Google OAuth → Firestore、Token Refresh | 不適合描述靜態 Package import |
+| 類別、介面、型別關係 | `classDiagram` | Aggregate、Entity、Port、Adapter 的型別關係 | 不要誤認為 Go 必須採用繼承；Go Interface 是隱式實作 |
+| 資料實體與基數 | `erDiagram` | Firestore Document、AccountLink、Connection 的資料關聯 | 不代表 Firestore 原生具有 SQL Foreign Key |
+| 系統／容器邊界 | `C4Context` / `C4Container` | LINE、Cloud Run、Google APIs、Firestore 的系統上下文 | Mermaid C4 語法與渲染支援須先確認；簡單圖可用 flowchart |
+| 版本控制分支與合併 | `gitGraph` | PR、分支與 Release 工作流程 | 不代表即時 Git 歷史，除非從真實 commits 產生 |
+| 任務時間線 | `gantt` | 分階段交付與里程碑 | 不要在缺少真實日期時編造時程 |
+| 概念拆解 | `mindmap` | SDK 能力盤點與功能分類 | 不適合依賴方向、狀態或驗收判斷 |
+
+### 9.1 標準示例：Domain 狀態
+
+下例**僅示範圖型**；實際狀態名稱、允許轉換與不變量必須以 `domain/identity/` 的程式與測試為準，不可直接照圖新增未確認的狀態。
+
+```mermaid
+stateDiagram-v2
+    [*] --> Unlinked
+    Unlinked --> Linked: 綁定成功
+    Linked --> Unlinked: 解除綁定
+```
+
+### 9.2 標準示例：跨服務時序
+
+此圖是示意性的 OAuth 流程；具體 callback、驗證、持久化順序應以安全設計及實際程式碼為準。
+
+```mermaid
+sequenceDiagram
+    participant User as LINE 使用者
+    participant App as Cloud Run App
+    participant Google as Google OAuth
+    participant Store as Token Store
+    User->>App: 發起綁定
+    App->>Google: 授權請求（state / PKCE）
+    Google-->>App: 授權回呼
+    App->>App: 驗證 state 與身分
+    App->>Store: 安全儲存授權
+    App-->>User: 綁定結果
+```
+
+### 9.3 標準示例：資料關聯
+
+僅表達邏輯關聯，不宣稱 Firestore 實作 SQL 約束：
+
+```mermaid
+erDiagram
+    LINE_ACCOUNT ||--o{ GOOGLE_CONNECTION : links
+    GOOGLE_CONNECTION {
+        string connection_id
+        string google_subject
+    }
+```
+
+### 9.4 Codex 繪圖決策與驗收
+
+1. 先說明「要回答什麼問題」，選最能表達該資訊的單一圖型；若純文字或表格已清楚，不強制產生 Mermaid。
+2. **依賴方向只能以第 3 節為權威**；其他 `flowchart` 必須標註「執行流程」、「建構流程」或「示意」，不可將 `go.mod` 畫成 runtime layer。
+3. 狀態圖的每個狀態與轉換都需對應 Domain 規則／測試；時序圖的參與者、回呼及失敗分支需對應實際 Use Case；ER 圖的欄位與關聯需對應儲存格式。
+4. 型別圖需遵守 Go Interface 的隱式實作，不使用繼承箭頭暗示 Go 有 class inheritance。
+5. 避免過度顏色、裝飾、未確認的時間、假資料與複製多張意義相同的圖；標籤簡短，方向一致，圖例只在必要時加入。
+6. 驗證 Mermaid 語法與目標 Markdown Renderer 相容性；可用時使用 Mermaid CLI 或 Renderer 預覽，不能渲染時標示「未驗證渲染」，不得宣稱圖已通過驗證。
+7. 圖表修改若影響依賴契約，須同步檢查第 3 節文字與表格；只改示意圖時，不得順帶改動 Domain 或 SDK 規則。
+
+**Context7 文件依據**：Mermaid 官方語法（`stateDiagram-v2`、`sequenceDiagram`、`classDiagram`、`erDiagram`、`gitGraph`）及 Mermaid C4 語法；參考 https://mermaid.js.org/intro/ 。不同 Mermaid 版本與 GitHub Renderer 對實驗性圖型的支援可能不同，必須實測。
+
+## 10. 參考與驗證界限
 
 - gopls 官方文件：https://go.dev/gopls
 - Go 官方 Module Layout：https://go.dev/doc/modules/layout
@@ -358,3 +428,19 @@ Tasks / Forms / UserInfo 使用各自官方 `NewService`；不需另外建立一
 - Google API Go Client：https://github.com/googleapis/google-api-go-client
 
 Go 官方沒有強制規定 DDD／Hexagonal 的唯一目錄結構；本文件是本儲存庫採用的架構契約。文件更新不等於已完成程式重構、Firestore Emulator 驗證、OAuth 外部驗證或 Cloud Run 部署。
+
+## 附錄 A：原有安全與重構規則保留確認
+
+以下規則沿用 PR #28 原始文件，屬於不可因精簡而刪除的保護：
+
+- `go mod tidy`、`go list -m all`、`go list -deps ./...` 可核對依賴；現有 SDK retention gate 在未授權變更前保留，不得為了讓 tidy 乾淨而暗中移除預留 SDK。
+- `internal/domain/identity/` 八個分類及 `value-objects/` 路徑保持不變；Value Object 驗證不變量，Aggregate Root 管理狀態，Domain Event 僅在持久化成功後對外發布，可靠交付需要另行設計 Outbox。
+- LINE 使用者身分必須驗證，Google Account ID 應使用經驗證的 `sub` 而非 Email；OAuth state、PKCE、nonce、Webhook 驗簽不得因簡化而省略。
+- Google 使用者專屬 Client 不可使用 Cloud Run ADC 取代個人 OAuth；`option.WithHTTPClient` 必須傳入已授權 Client，避免與普通 HTTP Client 或 `WithTokenSource` 混用導致認證覆蓋。
+- 不跨使用者共用 TokenSource 或帶認證的 HTTP Client；Token Refresh 必須維持安全持久化與 CAS / Transaction，並保留 Firestore 加密 JSON、Document ID、版本欄位及相容性。
+- `client_factory.go` 只建立 SDK Client，不執行 Domain Policy、使用者授權決策或 Token 持久化；SDK 已有的 Request / Response / Webhook 解析與 Constructor 應直接重用。
+- `cmd/` 或必要的 `bootstrap/` 負責手動依賴組裝，不使用全域 Service Locator、反射或強制 DI Framework；Context 隨操作傳遞，不保存在長壽命物件。
+- 架構測試驗證依賴方向、循環依賴與業務不變量，不以檔案數、Wrapper 數或 Mermaid 圖數衡量品質。
+- Codex 的 `[mcp_servers.gopls]` 是優先語意分析工具；實際連線必須確認，工具不可用時降級並記錄未驗證項目，不能宣稱已使用。
+- 未量測不得宣稱達到 40% 減碼；僅計算 SDK 初始化與組裝的專案自有有效程式行數，排除測試、註解、空白、第三方 SDK 與 Domain 業務邏輯。
+
