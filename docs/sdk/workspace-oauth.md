@@ -48,3 +48,12 @@ calendarClient, err := api.NewCalendar(ctx, authorizedHTTP)
 - https://developers.google.com/calendar/api/auth
 - https://pkg.go.dev/google.golang.org/api/tasks/v1
 - https://pkg.go.dev/google.golang.org/api/calendar/v3
+
+## Calendar／Tasks API 靜態整合（Draft PR #25）
+
+- `docs/google/calendar-endpoints.json` 釘選 Calendar v3 38 項，`tasks-endpoints.json` 釘選 Tasks v1 14 項，SDK `v0.310.0`。
+- `internal/adapter/outbound/google/api/{calendar,tasks}` 以明確 `switch` 呼叫原生 Go SDK，保留資源／方法、必要參數、常見查詢參數及 JSON body；不使用任意 HTTP Endpoint 或反射。
+- `internal/application/usecases/workspace` 強制唯讀／寫入／危險操作的明確授權；不允許公有 Webhook 呼叫管理功能。
+- `cmd/ops workspace` 僅限明確 `APP_ENV=local` 且無 `K_SERVICE` 的操作，從 owner-only `0600` 檔案載入**外部已核發的短期使用者 Access Token**，結果寫入新的 `0600` 私有檔案；這不是完整 OAuth Consent 或長期 Token 更新方案。
+- OAuth Authorization Code + PKCE + 安全保管 Refresh Token、帳號驗證、多使用者隔離與撤銷流程仍未完成，不得直接部署為公共連結介面。
+- 不需要執行真實 API 才能驗證 Adapter 的 HTTP Route；先執行 `make check`，再以獨立授權測試帳號驗證。

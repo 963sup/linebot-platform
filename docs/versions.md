@@ -29,14 +29,14 @@ Go module 已加入，`go.mod`／`go.sum` 由 Go 工具鏈與 CI 管理；此表
 | `cloud.google.com/go/storage` | v1.70.0 | Client Factory 已建，業務 Adapter 未接線 |
 | `cloud.google.com/go/cloudtasks` | v1.21.1 | 原生 Client Factory、背景任務 Queue Adapter、OIDC Worker 與 Reconcile 程式碼已實作；尚未正式部署 |
 | `cloud.google.com/go/secretmanager` | v1.23.1 | Client Factory 已建，尚未使用正式憑證 |
-| `google.golang.org/api` | v0.310.0 | Drive、Sheets、Calendar、Google Tasks 原生 Factory 已建；尚無使用者 OAuth Consent／Token 管理／業務 Adapter |
-| `go.linecorp.com/garr` | v0.1.1 | Worker pool / retry / circuit breaker 選用、未啟用 |
+| `google.golang.org/api` | v0.310.0 | Drive、Sheets Factory 保留；Calendar 38、Tasks 14 項操作於本次 Draft PR 加入 Adapter 與 CLI；完整使用者 OAuth Consent／Token Repository 尚未完成 |
+| `golang.org/x/oauth2` | v0.37.0 | 先前為間接依賴；本次將既有模組列為直接依賴，供共用 Workspace User TokenSource 使用，未新增 Go Module |\n| `go.linecorp.com/garr` | v0.1.1 | Worker pool / retry / circuit breaker 選用、未啟用 |
 | `google.golang.org/grpc` | v1.84.0 | Firestore／Cloud Tasks 狀態碼與 gRPC 錯誤處理的直接依賴（原間接依賴升級分類，未新增下載） |
 
 Google Tasks API 使用現有模組的 `google.golang.org/api/tasks/v1`，**沒有新增 Go Module**；Google Cloud Tasks 則使用獨立的 `cloud.google.com/go/cloudtasks`。
 
 PR #8 實作的 Firestore／Cloud Tasks Adapter 直接使用 `google.golang.org/grpc/codes`／`status`，因此 `go mod tidy` 將既有 gRPC module 轉為直接依賴；`go.sum` 不新增未經驗證的 checksum。
 
-**上述 12 個直接依賴及 SDK 預留空白骨架是經核准的開發基礎，不得因目前 runtime 未啟用就移除。** `integrated` 表示程式碼已接線，不表示 IAM／OAuth／部署完成。詳見 [main 基礎設施狀態](architecture/infrastructure-status.md) 與 [SDK Catalog](sdk/catalog.toml)。
+**原有 12 個直接依賴加上本次直接使用的 OAuth2，共 13 個直接依賴；SDK 預留空白骨架是經核准的開發基礎，不得因目前 runtime 未啟用就移除。** `integrated` 表示程式碼已接線，不表示 IAM／OAuth／部署完成。詳見 [main 基礎設施狀態](architecture/infrastructure-status.md) 與 [SDK Catalog](sdk/catalog.toml)。
 
 Go 版本鎖定為 **1.27.3**。若 `go mod tidy` 因間接依賴調整版本，應以實際可重現建置結果重新審查本表。Google Cloud Client Libraries 的多 module 架構不等於只安裝一個 `google-cloud-go` root module。
