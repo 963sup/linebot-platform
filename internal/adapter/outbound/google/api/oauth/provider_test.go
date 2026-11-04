@@ -23,8 +23,8 @@ func (f fakeTokenSourceFactory) TokenSource(context.Context, *oauth2.Token) (oau
 }
 
 type memoryConnectionStore struct {
-	mu sync.Mutex
-	value outbound.OAuthConnection
+	mu     sync.Mutex
+	value  outbound.OAuthConnection
 	closed bool
 }
 
@@ -78,12 +78,20 @@ func TestPersistedTokenSourceRefreshAndCAS(t *testing.T) {
 	store := makeStoredAccount()
 	next := &oauth2.Token{AccessToken: "new-access", Expiry: time.Now().Add(time.Hour), TokenType: "Bearer"}
 	source, err := NewPersistedTokenSource(context.Background(), fakeTokenSourceFactory{next: next}, store, "verified-line", "verified-google")
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	token, err := source.Token()
-	if err != nil { t.Fatal(err) }
-	if token.AccessToken != "new-access" { t.Fatal("refreshed access token not returned") }
+	if err != nil {
+		t.Fatal(err)
+	}
+	if token.AccessToken != "new-access" {
+		t.Fatal("refreshed access token not returned")
+	}
 	saved, err := store.GetConnection(context.Background(), "verified-line", "verified-google")
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	if saved.Version != 8 || saved.Credentials.RefreshToken != "long-lived-refresh" {
 		t.Fatal("CAS update lost refresh credential or version")
 	}
@@ -94,17 +102,27 @@ func TestPersistedTokenSourceRefreshAndCAS(t *testing.T) {
 		t.Fatal("valid configuration rejected")
 	}
 	blocked, _ := NewPersistedTokenSource(context.Background(), fakeTokenSourceFactory{next: next}, store, "verified-line", "other-google")
-	if _, err := blocked.Token(); err == nil { t.Fatal("cross-account token lookup succeeded") }
-	if err := store.DeactivateConnection(context.Background(), "verified-line", "verified-google"); err != nil { t.Fatal(err) }
-	if _, err := source.Token(); err == nil { t.Fatal("deactivated account allowed access") }
+	if _, err := blocked.Token(); err == nil {
+		t.Fatal("cross-account token lookup succeeded")
+	}
+	if err := store.DeactivateConnection(context.Background(), "verified-line", "verified-google"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := source.Token(); err == nil {
+		t.Fatal("deactivated account allowed access")
+	}
 }
 
 func TestRevokeProviderDoesNotLeakCredentials(t *testing.T) {
 	var gotMethod, gotToken string
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		gotMethod = r.Method
-		if r.URL.Query().Get("token") != "" { t.Fatal("token leaked to URL") }
-		if err := r.ParseForm(); err != nil { t.Error(err) }
+		if r.URL.Query().Get("token") != "" {
+			t.Fatal("token leaked to URL")
+		}
+		if err := r.ParseForm(); err != nil {
+			t.Error(err)
+		}
 		gotToken = r.PostForm.Get("token")
 		w.WriteHeader(http.StatusBadRequest)
 		_, _ = w.Write([]byte("provider-secret-error"))
@@ -112,8 +130,12 @@ func TestRevokeProviderDoesNotLeakCredentials(t *testing.T) {
 	defer server.Close()
 	provider := &Provider{http: server.Client(), revokeEndpoint: server.URL}
 	err := provider.Revoke(context.Background(), "sensitive-token")
-	if err == nil { t.Fatal("failed revocation reported as success") }
-	if gotToken != "sensitive-token" || gotMethod != http.MethodPost { t.Fatal("incorrect revocation transport") }
+	if err == nil {
+		t.Fatal("failed revocation reported as success")
+	}
+	if gotToken != "sensitive-token" || gotMethod != http.MethodPost {
+		t.Fatal("incorrect revocation transport")
+	}
 	if strings.Contains(err.Error(), "provider-secret") || strings.Contains(err.Error(), "sensitive-token") {
 		t.Fatal("sensitive token or provider error leaked")
 	}

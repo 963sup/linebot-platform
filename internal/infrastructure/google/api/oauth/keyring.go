@@ -12,7 +12,7 @@ import (
 // Inject keys from a protected secret source, never from the repository.
 type Keyring struct {
 	active string
-	keys map[string]cipher.AEAD
+	keys   map[string]cipher.AEAD
 }
 
 func NewKeyring(active string, raw map[string][]byte) (*Keyring, error) {

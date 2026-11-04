@@ -45,8 +45,8 @@ type VerifiedUser struct {
 }
 
 type ExchangeResult struct {
-	User  VerifiedUser
-	Token *oauth2.Token
+	User          VerifiedUser
+	Token         *oauth2.Token
 	GrantedScopes []string
 }
 
@@ -180,6 +180,8 @@ func (f *Flow) TokenSource(ctx context.Context, token *oauth2.Token) (oauth2.Tok
 	if f == nil || ctx == nil || token == nil {
 		return nil, errors.New("OAuth token source configuration required")
 	}
-	if err := ctx.Err(); err != nil { return nil, err }
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
 	return f.config.TokenSource(ctx, token), nil
 }

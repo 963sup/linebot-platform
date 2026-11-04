@@ -26,16 +26,16 @@ type LinkActions interface {
 }
 
 type Handler struct {
-	links LinkActions
+	links     LinkActions
 	principal TrustedLINEIdentity
-	scopes []string
+	scopes    []string
 }
 
 func NewHandler(links LinkActions, principal TrustedLINEIdentity, scopes []string) (*Handler, error) {
 	if links == nil || principal == nil || len(scopes) == 0 {
 		return nil, errors.New("Google OAuth handler requires a trusted LINE identity provider and scopes")
 	}
-	return &Handler{links:links,principal:principal,scopes:append([]string(nil),scopes...)},nil
+	return &Handler{links: links, principal: principal, scopes: append([]string(nil), scopes...)}, nil
 }
 
 func noStore(w http.ResponseWriter) {
@@ -48,73 +48,73 @@ func noStore(w http.ResponseWriter) {
 func (h *Handler) Start(w http.ResponseWriter, r *http.Request) {
 	noStore(w)
 	if r.Method != http.MethodGet {
-		http.Error(w,"method not allowed",http.StatusMethodNotAllowed)
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 	owner, err := h.principal(r)
 	if err != nil || owner == "" {
-		http.Error(w,"authentication required",http.StatusUnauthorized)
+		http.Error(w, "authentication required", http.StatusUnauthorized)
 		return
 	}
 	redirect, err := h.links.Begin(r.Context(), owner, h.scopes)
 	if err != nil {
-		http.Error(w,"unable to start Google authorization",http.StatusServiceUnavailable)
+		http.Error(w, "unable to start Google authorization", http.StatusServiceUnavailable)
 		return
 	}
 	u, err := url.Parse(redirect)
 	if err != nil || u.Scheme != "https" || u.Hostname() != "accounts.google.com" {
-		http.Error(w,"invalid Google authorization endpoint",http.StatusServiceUnavailable)
+		http.Error(w, "invalid Google authorization endpoint", http.StatusServiceUnavailable)
 		return
 	}
 	state := u.Query().Get("state")
 	if len(state) != 43 {
-		http.Error(w,"invalid Google authorization state",http.StatusServiceUnavailable)
+		http.Error(w, "invalid Google authorization state", http.StatusServiceUnavailable)
 		return
 	}
-	http.SetCookie(w,&http.Cookie{
-		Name:oauthCSRFCookie,Value:state,Path:"/",MaxAge:600,
-		Expires:time.Now().Add(10*time.Minute),Secure:true,HttpOnly:true,
-		SameSite:http.SameSiteLaxMode,
+	http.SetCookie(w, &http.Cookie{
+		Name: oauthCSRFCookie, Value: state, Path: "/", MaxAge: 600,
+		Expires: time.Now().Add(10 * time.Minute), Secure: true, HttpOnly: true,
+		SameSite: http.SameSiteLaxMode,
 	})
-	http.Redirect(w,r,redirect,http.StatusFound)
+	http.Redirect(w, r, redirect, http.StatusFound)
 }
 
 func clearStateCookie(w http.ResponseWriter) {
-	http.SetCookie(w,&http.Cookie{
-		Name:oauthCSRFCookie,Value:"",Path:"/",MaxAge:-1,
-		Secure:true,HttpOnly:true,SameSite:http.SameSiteLaxMode,
+	http.SetCookie(w, &http.Cookie{
+		Name: oauthCSRFCookie, Value: "", Path: "/", MaxAge: -1,
+		Secure: true, HttpOnly: true, SameSite: http.SameSiteLaxMode,
 	})
 }
 
 func (h *Handler) Callback(w http.ResponseWriter, r *http.Request) {
 	noStore(w)
 	if r.Method != http.MethodGet {
-		http.Error(w,"method not allowed",http.StatusMethodNotAllowed)
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 	clearStateCookie(w)
 	q := r.URL.Query()
 	if len(q["state"]) != 1 || len(q["code"]) != 1 || q.Get("error") != "" {
-		http.Error(w,"invalid Google callback",http.StatusBadRequest)
+		http.Error(w, "invalid Google callback", http.StatusBadRequest)
 		return
 	}
-	state, code := q.Get("state"),q.Get("code")
+	state, code := q.Get("state"), q.Get("code")
 	if len(state) != 43 || code == "" || len(code) > 2048 {
-		http.Error(w,"invalid Google callback",http.StatusBadRequest)
+		http.Error(w, "invalid Google callback", http.StatusBadRequest)
 		return
 	}
-	cookie,err:=r.Cookie(oauthCSRFCookie)
-	if err!=nil || len(cookie.Value)!=43 ||
-		subtle.ConstantTimeCompare([]byte(cookie.Value),[]byte(state))!=1 {
-		http.Error(w,"Google authorization state mismatch",http.StatusBadRequest)
+	cookie, err := r.Cookie(oauthCSRFCookie)
+	if err != nil || len(cookie.Value) != 43 ||
+		subtle.ConstantTimeCompare([]byte(cookie.Value), []byte(state)) != 1 {
+		http.Error(w, "Google authorization state mismatch", http.StatusBadRequest)
 		return
 	}
-	_,err=h.links.Complete(r.Context(),state,code)
-	if err!=nil {
-		http.Error(w,"Google account connection could not be completed",http.StatusBadRequest)
+	_, err = h.links.Complete(r.Context(), state, code)
+	if err != nil {
+		http.Error(w, "Google account connection could not be completed", http.StatusBadRequest)
 		return
 	}
-	w.Header().Set("Content-Type","text/plain; charset=utf-8")
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
-	_,_=w.Write([]byte("Google account linked."))
+	_, _ = w.Write([]byte("Google account linked."))
 }

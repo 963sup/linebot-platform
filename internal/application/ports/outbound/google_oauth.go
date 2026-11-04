@@ -8,31 +8,31 @@ import (
 // OAuthSession is a one-time, short-lived binding between an already
 // authenticated LINE principal and a Google authorization flow.
 type OAuthSession struct {
-	OwnerID string
-	Verifier string
-	Nonce string
-	Scopes []string
+	OwnerID   string
+	Verifier  string
+	Nonce     string
+	Scopes    []string
 	ExpiresAt time.Time
 }
 
 type OAuthCredentials struct {
-	AccessToken string
+	AccessToken  string
 	RefreshToken string
-	TokenType string
-	Expiry time.Time
+	TokenType    string
+	Expiry       time.Time
 }
 
 type OAuthConnection struct {
-	OwnerID string
+	OwnerID       string
 	GoogleSubject string
-	Scopes []string
-	Credentials OAuthCredentials
-	Version int64
-	Active bool
+	Scopes        []string
+	Credentials   OAuthCredentials
+	Version       int64
+	Active        bool
 }
 
 type GoogleIdentity struct {
-	Subject string
+	Subject       string
 	VerifiedEmail string
 	GrantedScopes []string
 }
