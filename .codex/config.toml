@@ -1,6 +1,8 @@
 #:schema https://developers.openai.com/codex/config-schema.json
 
-# Project-local configuration. Codex loads it only in a trusted repository.
+# Project-local connection and availability configuration. Codex loads it only
+# in a trusted repository. Agent roles belong in .codex/agents/*.toml; project
+# routing and verification rules belong in AGENTS.md.
 # Do not store access tokens, ADC keys, passwords, or host-specific paths here.
 # No global model or approval setting: inherit the signed-in user's controls.
 

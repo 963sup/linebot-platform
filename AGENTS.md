@@ -52,6 +52,7 @@
 
 ## Codex Agents 與 MCP 選用（不負責安裝）
 
+- **三層契約：**`.codex/config.toml` 只宣告 MCP／協作功能的連線、啟用狀態與 timeout，不能放角色工作流程或憑證；`.codex/agents/*.toml` 只定義可委派角色的責任、輸入、交付與安全邊界，不能自行啟用工具或擴權；本檔負責跨角色路由、架構不變量、驗證與 fallback。三者的相同工具名稱必須一致，設定啟用不代表此工作階段已連線成功。
 - 複雜且互不依賴的任務才委派給 `domain_architect`、`line_integrator`、`google_identity_workspace_integrator`、`cloud_platform`、`go_reviewer`、`docs_researcher` 或 `gopls_go_refactor`；合併前清理與驗證則使用 `code_cleanup_release_validation`，且不得刪 SDK 預留模組／骨架或必要的回歸測試。同一檔案不得由多個 Agent 同時改寫，最後由主 Agent 整合、驗證。
 - **SDK 路由標準：**所有 `github.com/line/line-bot-sdk-go/v8/linebot`、`webhook`、`messaging_api`、`liff`、`channel_access_token`、`insight`、`manage_audience`、`module`、`module_attach`、`shop`、`httphandler` 變更由 `line_integrator` 負責；所有 `golang.org/x/oauth2`、`oauth2/google`、`google.golang.org/api/idtoken`、`oauth2/v2`、`option`、`calendar/v3`、`tasks/v1`、`forms/v1` 變更由 `google_identity_workspace_integrator` 負責。它們都必須先套用 `sdk-integration` Skill、查 Catalog、以 gopls 驗證符號，並維持 Domain/Application 無 SDK import、Adapter/Infrastructure 持 SDK、Bootstrap 組裝的邊界。
 - **命名與交接標準：**由具體能力命名，查詢 Port 使用 `Reader`、`Finder` 或 `Inspector`，改變外部狀態使用 `Manager` 或 `Command`；禁止建立 `Provider`、萬用 `Client`、`Call` 或動態路由層。跨 LINE 與 Google 的帳號連結，先由 `domain_architect` 定義自有 DTO／Port，再分別交兩個整合 Agent；跨 package rename、DTO／Port 演進則交 `gopls_go_refactor`，最後由 `go_reviewer` 檢查邊界、錯誤、取消、效能與測試。
