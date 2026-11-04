@@ -1,36 +1,57 @@
 package aggregates_test
 
 import (
- "testing"
- "github.com/963sup/linebot-platform/internal/domain/identity/aggregates"
- "github.com/963sup/linebot-platform/internal/domain/identity/factories"
- "github.com/963sup/linebot-platform/internal/domain/identity/value-objects"
+	"github.com/963sup/linebot-platform/internal/domain/identity/aggregates"
+	"github.com/963sup/linebot-platform/internal/domain/identity/factories"
+	"github.com/963sup/linebot-platform/internal/domain/identity/value-objects"
+	"testing"
 )
+
 func TestAccountLinkLifecycle(t *testing.T) {
- link,err:=factories.NewVerifiedLink("U123","google-subject",[]string{"scope-b","scope-a","scope-a"})
- if err!=nil { t.Fatal(err) }
- if !link.IsActive() || len(link.Scopes())!=2 { t.Fatalf("unexpected new link: %#v",link) }
- copyScopes:=link.Scopes();copyScopes[0]="tampered"
- if link.Scopes()[0]=="tampered" { t.Fatal("scope backing data leaked") }
- if err:=link.Disconnect();err!=nil { t.Fatal(err) }
- if err:=link.Disconnect();err!=nil { t.Fatal("disconnect must be idempotent:",err) }
- if link.IsActive() { t.Fatal("disconnected link must be inactive") }
+	link, err := factories.NewVerifiedLink("U123", "google-subject", []string{"scope-b", "scope-a", "scope-a"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !link.IsActive() || len(link.Scopes()) != 2 {
+		t.Fatalf("unexpected new link: %#v", link)
+	}
+	copyScopes := link.Scopes()
+	copyScopes[0] = "tampered"
+	if link.Scopes()[0] == "tampered" {
+		t.Fatal("scope backing data leaked")
+	}
+	if err := link.Disconnect(); err != nil {
+		t.Fatal(err)
+	}
+	if err := link.Disconnect(); err != nil {
+		t.Fatal("disconnect must be idempotent:", err)
+	}
+	if link.IsActive() {
+		t.Fatal("disconnected link must be inactive")
+	}
 }
 func TestRestoreRejectsUnknownStatus(t *testing.T) {
- owner,_:=valueobjects.NewLineUserID("U123")
- subject,_:=valueobjects.NewGoogleAccountID("google-subject")
- scopes,_:=valueobjects.NewOAuthScopes([]string{"scope"})
- if _,err:=aggregates.RestoreAccountLink(owner,subject,scopes,"unknown");err==nil { t.Fatal("invalid status accepted") }
+	owner, _ := valueobjects.NewLineUserID("U123")
+	subject, _ := valueobjects.NewGoogleAccountID("google-subject")
+	scopes, _ := valueobjects.NewOAuthScopes([]string{"scope"})
+	if _, err := aggregates.RestoreAccountLink(owner, subject, scopes, "unknown"); err == nil {
+		t.Fatal("invalid status accepted")
+	}
 }
 func TestFactoryRejectsInvalidClaims(t *testing.T) {
- cases:=[]struct{owner,subject string;scopes []string}{
-  {"","google-subject",[]string{"scope"}},
-  {" U123 ","google-subject",[]string{"scope"}},
-  {"U123","",[]string{"scope"}},
-  {"U123","google-subject",nil},
-  {"U123","google-subject",[]string{"invalid scope"}},
- }
- for _,tc:=range cases {
-  if _,err:=factories.NewVerifiedLink(tc.owner,tc.subject,tc.scopes);err==nil { t.Fatalf("invalid input accepted: %+v",tc) }
- }
+	cases := []struct {
+		owner, subject string
+		scopes         []string
+	}{
+		{"", "google-subject", []string{"scope"}},
+		{" U123 ", "google-subject", []string{"scope"}},
+		{"U123", "", []string{"scope"}},
+		{"U123", "google-subject", nil},
+		{"U123", "google-subject", []string{"invalid scope"}},
+	}
+	for _, tc := range cases {
+		if _, err := factories.NewVerifiedLink(tc.owner, tc.subject, tc.scopes); err == nil {
+			t.Fatalf("invalid input accepted: %+v", tc)
+		}
+	}
 }
