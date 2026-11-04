@@ -14,26 +14,30 @@ import (
 
 func TestAllCalendarSDKOperationsUsePinnedRoutes(t *testing.T) {
 	var got string
-	server:=httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter,r *http.Request){
-		got=r.Method+" "+r.URL.Path
-		w.Header().Set("Content-Type","application/json")
-		if r.Method==http.MethodDelete || r.Method==http.MethodPost && r.URL.Path=="/calendar/v3/channels/stop" {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		got = r.Method + " " + r.URL.Path
+		w.Header().Set("Content-Type", "application/json")
+		if r.Method == http.MethodDelete || r.Method == http.MethodPost && r.URL.Path == "/calendar/v3/channels/stop" {
 			// A generated API method may return a structured or empty result.
-			_,_=w.Write([]byte("{}"))
+			_, _ = w.Write([]byte("{}"))
 			return
 		}
-		_,_=w.Write([]byte("{}"))
+		_, _ = w.Write([]byte("{}"))
 	}))
 	defer server.Close()
 	client, err := googlecalendar.NewService(context.Background(), option.WithHTTPClient(server.Client()), option.WithEndpoint(server.URL+"/calendar/v3/"))
-	if err!=nil{t.Fatal(err)}
+	if err != nil {
+		t.Fatal(err)
+	}
 	adapter, err := New(client)
-	if err!=nil{t.Fatal(err)}
-	cases:=[]struct{
+	if err != nil {
+		t.Fatal(err)
+	}
+	cases := []struct {
 		operation string
-		want string
-		body json.RawMessage
-		params map[string]json.RawMessage
+		want      string
+		body      json.RawMessage
+		params    map[string]json.RawMessage
 	}{
 		{operation: "acl.delete", want: "DELETE /calendar/v3/calendars/test/acl/test", body: nil, params: map[string]json.RawMessage{"calendarId": json.RawMessage(`"test"`), "ruleId": json.RawMessage(`"test"`)}},
 		{operation: "acl.get", want: "GET /calendar/v3/calendars/test/acl/test", body: nil, params: map[string]json.RawMessage{"calendarId": json.RawMessage(`"test"`), "ruleId": json.RawMessage(`"test"`)}},
@@ -74,15 +78,19 @@ func TestAllCalendarSDKOperationsUsePinnedRoutes(t *testing.T) {
 		{operation: "settings.list", want: "GET /calendar/v3/users/me/settings", body: nil, params: map[string]json.RawMessage{}},
 		{operation: "settings.watch", want: "POST /calendar/v3/users/me/settings/watch", body: json.RawMessage(`{}`), params: map[string]json.RawMessage{}},
 	}
-	for _,tc:=range cases{
-		t.Run(tc.operation,func(t *testing.T){
-			got=""
-			req:=outbound.WorkspaceRequest{
-				Operation:tc.operation,Parameters:tc.params,Body:tc.body,
+	for _, tc := range cases {
+		t.Run(tc.operation, func(t *testing.T) {
+			got = ""
+			req := outbound.WorkspaceRequest{
+				Operation: tc.operation, Parameters: tc.params, Body: tc.body,
 			}
-			_,err:=adapter.ExecuteCalendar(context.Background(),req)
-			if err!=nil{t.Fatalf("SDK request: %v",err)}
-			if got!=tc.want {t.Fatalf("SDK route=%q, want %q",got,tc.want)}
+			_, err := adapter.ExecuteCalendar(context.Background(), req)
+			if err != nil {
+				t.Fatalf("SDK request: %v", err)
+			}
+			if got != tc.want {
+				t.Fatalf("SDK route=%q, want %q", got, tc.want)
+			}
 		})
 	}
 }

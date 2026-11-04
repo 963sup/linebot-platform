@@ -13,9 +13,9 @@ import (
 // Policy is intentionally static and pinned to the audited Google Discovery
 // snapshot. No reflection or dynamic Google API invoker is involved.
 type Policy struct {
-	API string
+	API       string
 	Operation string
-	Mode string
+	Mode      string
 	Dangerous bool
 }
 
@@ -77,22 +77,25 @@ var tasksPolicies = []Policy{
 	{API: "tasks", Operation: "tasks.update", Mode: "write", Dangerous: false},
 }
 
-
 func Supported() []Policy {
-	all:=make([]Policy,0,len(calendarPolicies)+len(tasksPolicies))
-	all=append(all,calendarPolicies...)
-	return append(all,tasksPolicies...)
+	all := make([]Policy, 0, len(calendarPolicies)+len(tasksPolicies))
+	all = append(all, calendarPolicies...)
+	return append(all, tasksPolicies...)
 }
 
-func Lookup(api,operation string)(Policy,bool){
-	for _,p:=range Supported(){if p.API==api&&p.Operation==operation{return p,true}}
-	return Policy{},false
+func Lookup(api, operation string) (Policy, bool) {
+	for _, p := range Supported() {
+		if p.API == api && p.Operation == operation {
+			return p, true
+		}
+	}
+	return Policy{}, false
 }
 
 type Approval struct {
-	Read bool
-	Apply bool
-	Confirm string
+	Read             bool
+	Apply            bool
+	Confirm          string
 	ConfirmDangerous string
 }
 
@@ -101,53 +104,74 @@ type Approval struct {
 // publicly accessible LINE webhook.
 type Operations struct {
 	calendar outbound.GoogleCalendarOperator
-	tasks outbound.GoogleTasksOperator
+	tasks    outbound.GoogleTasksOperator
 }
 
-func NewOperations(cal outbound.GoogleCalendarOperator, task outbound.GoogleTasksOperator)(*Operations,error){
-	if cal==nil || task==nil{return nil,errors.New("Calendar and Tasks operators are required")}
-	return &Operations{calendar:cal,tasks:task},nil
+func NewOperations(cal outbound.GoogleCalendarOperator, task outbound.GoogleTasksOperator) (*Operations, error) {
+	if cal == nil || task == nil {
+		return nil, errors.New("Calendar and Tasks operators are required")
+	}
+	return &Operations{calendar: cal, tasks: task}, nil
 }
 
-func Validate(api string,req outbound.WorkspaceRequest,approval Approval)error{
-	p,ok:=Lookup(api,req.Operation)
-	if !ok{return errors.New("unsupported Google Workspace operation")}
-	if strings.TrimSpace(req.Operation)!=req.Operation {return errors.New("invalid operation name")}
-	if len(req.Parameters)>12 || len(req.Options)>32 || len(req.Body)>1<<20 {
+func Validate(api string, req outbound.WorkspaceRequest, approval Approval) error {
+	p, ok := Lookup(api, req.Operation)
+	if !ok {
+		return errors.New("unsupported Google Workspace operation")
+	}
+	if strings.TrimSpace(req.Operation) != req.Operation {
+		return errors.New("invalid operation name")
+	}
+	if len(req.Parameters) > 12 || len(req.Options) > 32 || len(req.Body) > 1<<20 {
 		return errors.New("workspace request exceeds bounds")
 	}
-	if p.Mode=="read" {
-		if !approval.Read || approval.Apply || approval.Confirm!="" || approval.ConfirmDangerous!=""{
+	if p.Mode == "read" {
+		if !approval.Read || approval.Apply || approval.Confirm != "" || approval.ConfirmDangerous != "" {
 			return errors.New("read requires explicit --read without write confirmation")
 		}
 	} else {
-		if !approval.Apply || approval.Read || approval.Confirm!=req.Operation {
+		if !approval.Apply || approval.Read || approval.Confirm != req.Operation {
 			return errors.New("write requires --apply --confirm OPERATION")
 		}
-		if p.Dangerous && approval.ConfirmDangerous!=req.Operation {
+		if p.Dangerous && approval.ConfirmDangerous != req.Operation {
 			return errors.New("dangerous write requires explicit additional confirmation")
 		}
-		if !p.Dangerous && approval.ConfirmDangerous!="" {
+		if !p.Dangerous && approval.ConfirmDangerous != "" {
 			return errors.New("unneeded dangerous confirmation")
 		}
 	}
-	for _,v:=range req.Parameters{
-		if !json.Valid(v){return errors.New("invalid operation parameter")}
+	for _, v := range req.Parameters {
+		if !json.Valid(v) {
+			return errors.New("invalid operation parameter")
+		}
 	}
-	for _,v:=range req.Options{
-		if !json.Valid(v){return errors.New("invalid operation option")}
+	for _, v := range req.Options {
+		if !json.Valid(v) {
+			return errors.New("invalid operation option")
+		}
 	}
-	if len(req.Body)>0 && !json.Valid(req.Body){return errors.New("invalid operation body")}
+	if len(req.Body) > 0 && !json.Valid(req.Body) {
+		return errors.New("invalid operation body")
+	}
 	return nil
 }
 
-func(s *Operations) Execute(ctx context.Context,api string,req outbound.WorkspaceRequest,approval Approval)(json.RawMessage,error){
-	if ctx==nil{return nil,errors.New("context is required")}
-	if err:=ctx.Err();err!=nil{return nil,err}
-	if err:=Validate(api,req,approval);err!=nil{return nil,err}
-	switch api{
-	case "calendar":return s.calendar.ExecuteCalendar(ctx,req)
-	case "tasks":return s.tasks.ExecuteTasks(ctx,req)
-	default:return nil,fmt.Errorf("unsupported workspace provider")
+func (s *Operations) Execute(ctx context.Context, api string, req outbound.WorkspaceRequest, approval Approval) (json.RawMessage, error) {
+	if ctx == nil {
+		return nil, errors.New("context is required")
+	}
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	if err := Validate(api, req, approval); err != nil {
+		return nil, err
+	}
+	switch api {
+	case "calendar":
+		return s.calendar.ExecuteCalendar(ctx, req)
+	case "tasks":
+		return s.tasks.ExecuteTasks(ctx, req)
+	default:
+		return nil, fmt.Errorf("unsupported workspace provider")
 	}
 }
