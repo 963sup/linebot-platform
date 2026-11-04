@@ -69,6 +69,7 @@
 - 跨 package rename、interface／DTO 簽名變更、Port／Adapter 搬遷、package 拆分或需批量更新 Go references 時，優先委派 **`gopls_go_refactor`**。它必須先以 gopls MCP 查 definition、references、implementations 與 diagnostics，修改後執行 gofmt、目標測試並重新檢查 diagnostics；若 gopls MCP 不可用，才以本地 Go 工具降級並回報。
 - 修改其他 Go 程式前，需要追查 definitions、references、型別或診斷時用 **gopls MCP**；若不可用則使用本地 Go 工具。
 - OpenAI API、Responses API、OpenAI Go SDK、Codex、Skills、MCP 或 Plugins 的更新與實作優先使用 **openaiDeveloperDocs MCP** 查閱官方文件；不得推測不存在的 API、參數或能力。若 MCP 不可用，改用 OpenAI 官方網站並標示未驗證事項。
+- **主動使用 Context7：**凡涉及任何函式庫、框架、SDK、API、CLI 工具、MCP 或版本／設定用法的問題，Codex 必須先使用 **Context7 MCP** 查詢最新文件與範例，再進行分析、修改或回答；不得只依賴記憶。若 Context7 不可用，必須明確說明並改查官方文件。
 - 其他新版本 SDK／API 使用方式、設定或重大變更使用 **Context7 MCP**，再核對相關官方 Go／LINE／Google 文件；無法查證時明確標示。
 - PR／Issue／commit／CI 狀態需要外部證據或經授權的 GitHub 寫入時，使用已啟用的 **GitHub MCP**；寫入前確認使用者授權、目標 repository、branch head 與 expected SHA。
 - **Firestore Toolbox** 只在使用者授權的隔離 staging 環境、具最小權限 ADC 時使用，不得存取或修改 production。
