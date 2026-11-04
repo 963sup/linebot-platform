@@ -73,7 +73,7 @@ type storedConnection struct {
 	Active     bool      `firestore:"active"`
 	Version    int64     `firestore:"version"`
 	UpdatedAt  time.Time `firestore:"updated_at"`
-	ExpiresAt  time.Time `firestore:"expires_at,omitempty"`
+	ExpiresAt  *time.Time `firestore:"expires_at,omitempty"`
 }
 
 func (s *OAuthStore) CreateSession(ctx context.Context, state string, session outbound.OAuthSession) error {
