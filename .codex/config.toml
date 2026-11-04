@@ -13,6 +13,116 @@ multi_agent = true
 enabled = true
 max_concurrent_threads_per_session = 3
 
+# Custom specialist role registrations. Paths are relative to .codex/.
+# Roles are delegated on demand; defining a role does not run or elevate it.
+[agents.api_contract_reviewer]
+description = "HTTP, webhook and external integration contract compatibility reviewer"
+config_file = "agents/api_contract_reviewer.toml"
+
+[agents.architecture_alignment_engineer]
+description = "Evidence-driven repository realignment to DESIGN.md and DIRECTORY-STRUCTURE.md"
+config_file = "agents/architecture_alignment_engineer.toml"
+
+[agents.cloud_platform]
+description = "Existing project specialist"
+config_file = "agents/cloud_platform.toml"
+
+[agents.cloud_run_release]
+description = "Existing project specialist"
+config_file = "agents/cloud_run_release.toml"
+
+[agents.cloud_tasks_integrator]
+description = "Cloud Tasks asynchronous execution, retry and idempotency specialist"
+config_file = "agents/cloud_tasks_integrator.toml"
+
+[agents.code_cleanup_release_validation]
+description = "Existing project specialist"
+config_file = "agents/code_cleanup_release_validation.toml"
+
+[agents.data_migration_engineer]
+description = "Firestore and OAuth persistence migration specialist with rollback and compatibility gates"
+config_file = "agents/data_migration_engineer.toml"
+
+[agents.delivery_orchestrator]
+description = "Existing project specialist"
+config_file = "agents/delivery_orchestrator.toml"
+
+[agents.docs_researcher]
+description = "Existing project specialist"
+config_file = "agents/docs_researcher.toml"
+
+[agents.domain_architect]
+description = "Existing project specialist"
+config_file = "agents/domain_architect.toml"
+
+[agents.firestore_integrator]
+description = "Firestore persistence and consistency implementation specialist"
+config_file = "agents/firestore_integrator.toml"
+
+[agents.git_release]
+description = "Existing project specialist"
+config_file = "agents/git_release.toml"
+
+[agents.github_actions_reviewer]
+description = "Existing project specialist"
+config_file = "agents/github_actions_reviewer.toml"
+
+[agents.go_agents_md_author]
+description = "Existing project specialist"
+config_file = "agents/go_agents_md_author.toml"
+
+[agents.go_architecture_reviewer]
+description = "Existing project specialist"
+config_file = "agents/go_architecture_reviewer.toml"
+
+[agents.go_feature_engineer]
+description = "Existing project specialist"
+config_file = "agents/go_feature_engineer.toml"
+
+[agents.go_reviewer]
+description = "Existing project specialist"
+config_file = "agents/go_reviewer.toml"
+
+[agents.go_test_engineer]
+description = "Go test design and coverage specialist for behavioral, contract, integration, race and regression evidence"
+config_file = "agents/go_test_engineer.toml"
+
+[agents.google_identity_workspace_integrator]
+description = "Existing project specialist"
+config_file = "agents/google_identity_workspace_integrator.toml"
+
+[agents.gopls_go_refactor]
+description = "Existing project specialist"
+config_file = "agents/gopls_go_refactor.toml"
+
+[agents.incident_responder]
+description = "Read-only production incident triage and recovery planning specialist"
+config_file = "agents/incident_responder.toml"
+
+[agents.line_integrator]
+description = "Existing project specialist"
+config_file = "agents/line_integrator.toml"
+
+[agents.observability_engineer]
+description = "Production observability and diagnostic instrumentation specialist"
+config_file = "agents/observability_engineer.toml"
+
+[agents.openai_docs_researcher]
+description = "Existing project specialist"
+config_file = "agents/openai_docs_researcher.toml"
+
+[agents.performance_reviewer]
+description = "Read-only Go concurrency, latency, throughput and cloud-cost performance reviewer"
+config_file = "agents/performance_reviewer.toml"
+
+[agents.security_reviewer]
+description = "Independent security and privacy reviewer for LINE, OAuth, Google Cloud and webhook trust boundaries"
+config_file = "agents/security_reviewer.toml"
+
+[agents.technical_docs_writer]
+description = "Existing project specialist"
+config_file = "agents/technical_docs_writer.toml"
+
 # Go-language intelligence: "gopls mcp" detached stdio mode.
 # Cloud setup installs the pinned gopls binary into $HOME/.local/bin.
 [mcp_servers.gopls]

@@ -60,6 +60,11 @@
 
 ## Codex Agents 與 MCP 選用（不負責安裝）
 
+- 涉及專案結構重整先讀根目錄 `DESIGN.md`、`DIRECTORY-STRUCTURE.md`，委派 `architecture_alignment_engineer` 先做現況差異與分階段遷移設計；不要直接大量搬移或刪除已使用的 Go Package。兩份文件的 Identity Value Object 目錄拼法有衝突：`DESIGN.md` 固定 `value-objects/`，`DIRECTORY-STRUCTURE.md` 寫 `valueobjects/`；依前者的明確 Identity 契約執行，並在對齊工作中修訂不一致文件。其他衝突不得靜默選擇。
+- Firestore 實作交 `firestore_integrator`、Cloud Tasks 執行交 `cloud_tasks_integrator`、資料遷移交 `data_migration_engineer`、遙測實作交 `observability_engineer`；`cloud_platform` 保留 IAM／部署平台責任。安全、測試、效能與 API 契約分別交 `security_reviewer`、`go_test_engineer`、`performance_reviewer`、`api_contract_reviewer`；正式事故唯讀診斷交 `incident_responder`。避免同一檔案交兩名實作者並行編輯。
+- 已在 `.codex/config.toml` 註冊的角色仍必須由主 Agent 按工作需求委派；不得因註冊而自行取得額外權限。
+
+
 - **三層契約：**`.codex/config.toml` 只宣告 MCP／協作功能的連線、啟用狀態與 timeout，不能放角色工作流程或憑證；`.codex/agents/*.toml` 只定義可委派角色的責任、輸入、交付與安全邊界，不能自行啟用工具或擴權；本檔負責跨角色路由、架構不變量、驗證與 fallback。三者的相同工具名稱必須一致，設定啟用不代表此工作階段已連線成功。
 - 跨領域、跨 SDK、跨 package 或跨環境的複雜任務先由第 0 層 `delivery_orchestrator` 產出工作契約；小型單一邊界任務直接交對應角色，避免徒增 Agent 鏈。它不取代主 Agent 的整合與最終驗證責任。
 - **層級與順序：**第 1 層 `docs_researcher`、`domain_architect` 產出外部證據與領域契約；第 2 層 `go_feature_engineer`、`line_integrator`、`google_identity_workspace_integrator`、`cloud_platform` 在契約內實作或審查能力邊界；第 3 層 `gopls_go_refactor` 只傳播已確認的跨 package 語意變更；第 4 層 `go_reviewer`、`go_architecture_reviewer`、`github_actions_reviewer` 獨立檢查；第 5 層 `technical_docs_writer`、`go_agents_md_author`、`code_cleanup_release_validation`、`cloud_run_release` 產出文件、治理、交付驗證與經明確授權的發布。同一檔案不得由多個實作角色同時改寫，最後由主 Agent 整合、驗證。
