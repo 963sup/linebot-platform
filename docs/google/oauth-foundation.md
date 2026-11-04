@@ -36,3 +36,24 @@
 - https://pkg.go.dev/golang.org/x/oauth2/google
 - https://pkg.go.dev/google.golang.org/api/idtoken
 - https://developers.google.com/identity/protocols/oauth2/web-server
+
+
+## P2 implementation status (PR #27, offline only)
+
+- Google OAuth flow / PKCE / nonce / ID Token signature+issuer+audience validation and requested-vs-granted scope verification: implemented and covered by offline unit tests.
+- `internal/application/usecases/workspace/link.go`: orchestrates Begin / one-time Complete / Disconnect; requires a **trusted** already-authenticated LINE owner.
+- `internal/adapter/outbound/google/cloud/firestore/workspace_oauth.go`: transactional single-use State, encrypted connection repository, versioned token updates and disconnected tombstones.
+- `internal/infrastructure/google/api/oauth/keyring.go`: AES-256-GCM with document-associated data and key version support. `internal/infrastructure/google/cloud/secretmanager/oauth_keys.go` loads pinned key versions from an injected authorized Secret Manager client.
+- `internal/adapter/outbound/google/api/oauth/provider.go`: Google OAuth provider adapter, fixed revocation endpoint and persist-before-use TokenSource. Across replicas, stale CAS updates are rejected and latest persisted credentials are reread; **this is not proof of zero token-refresh races during a real Google outage**.
+- `internal/adapter/inbound/http/google/oauth/handler.go`: requires injected trusted LINE principal resolver, HTTPS Google authorization endpoint, secure host-only CSRF Cookie and one-time callback state; currently **not registered** on the public webhook.
+- `internal/bootstrap/workspace_links.go`: explicit opt-in DI using injected Firestore client, keyring, Google OAuth client credentials and owned HTTP transport; no credentials automatically read from Git or an unsafe public endpoint.
+- Local Go CI checks are separate from `tests/integration/google_oauth_firestore_test.go` which requires `FIRESTORE_EMULATOR_HOST` and additional runtime verification.
+
+### Prerequisites remaining before public use
+
+1. Verify the LINE principal with Messaging Account Linking or LINE Login before issuing authorization URLs; never accept a user ID copied from HTTP parameters.
+2. Provision dedicated GCP staging project, restricted Firestore permissions, TTL policy and pinned Secret Manager encryption versions; validate revocation and key rotation.
+3. Demonstrate Firestore Emulator transaction races, secret-manager IAM and real Google OAuth consent/refresh/revoke on a separate test Google account. Define a reauthorization fallback for concurrent or revoked refresh tokens.
+4. Bind the HTTPS start/callback routes to a reviewed identity gate; enforce session and consent policy, use staging OAuth client IDs, and record redacted audit and recovery evidence.
+5. Forms Watches require actual Pub/Sub topic permissions and renewal schedule. Calendar syncToken 410 invalidation and Tasks updatedMin full scan need independent durable checkpoints.
+6. Do not mark P3/P4 or production readiness complete merely because offline CI succeeds.
