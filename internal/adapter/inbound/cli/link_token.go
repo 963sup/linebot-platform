@@ -20,12 +20,12 @@ func runLinkToken(args []string, getenv func(string) string) error {
 	if len(flags.Args()) != 0 || !*apply || *confirm != "issue-link-token" || *user == "" || *out == "" || getenv == nil {
 		return errors.New("link-token requires --user --out --apply --confirm issue-link-token")
 	}
-	r, err := bootstrap.NewLINEOpsRuntime(getenv(bootstrap.KeyChannelToken))
-	if err != nil { return err }
-	defer r.Close()
-	ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
-	defer cancel()
-	data, err := r.AccountLink.IssueLinkToken(ctx, *user)
-	if err != nil { return err }
-	return writePrivateFile(*out, data)
+	return writePrivateOperation(*out, func() ([]byte, error) {
+		r, err := bootstrap.NewLINEOpsRuntime(getenv(bootstrap.KeyChannelToken))
+		if err != nil { return nil, err }
+		defer r.Close()
+		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
+		defer cancel()
+		return r.AccountLink.IssueLinkToken(ctx, *user)
+	})
 }

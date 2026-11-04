@@ -35,3 +35,21 @@ func writePrivateFile(path string, content []byte) (err error) {
 	if err != nil { return errors.New("cannot write private output file") }
 	return nil
 }
+
+// writePrivateOperation reserves the output file BEFORE invoking an external
+// token issuance API. This avoids issuing a secret that cannot be persisted.
+func writePrivateOperation(path string, operation func() ([]byte, error)) (err error) {
+	if path == "" || operation == nil { return errors.New("private operation requires output file and callback") }
+	clean := filepath.Clean(path)
+	f, err := os.OpenFile(clean, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o600)
+	if err != nil { return errors.New("cannot reserve private output file") }
+	defer func() {
+		if e := f.Close(); err == nil && e != nil { err = errors.New("cannot close private output file") }
+		if err != nil { _ = os.Remove(clean) }
+	}()
+	data, err := operation()
+	if err != nil { return err }
+	if len(data) == 0 { return errors.New("empty private operation result") }
+	if _, err = f.Write(data); err != nil { return errors.New("cannot store private operation result") }
+	return nil
+}

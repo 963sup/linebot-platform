@@ -26,6 +26,7 @@ type LINEOpsRuntime struct {
 	Contacts       *contacts.Inspector
 	Insights       *insights.Inspector
 	Audiences      *engagement.AudienceInspector
+	AudienceManager *engagement.AudienceOperations
 	BulkMessaging  *messaging.BulkSender
 	Content        *contacts.ContentInspector
 	RichMenuImages *engagement.RichMenuImageManager
@@ -121,6 +122,12 @@ func NewLINEOpsRuntime(token string) (*LINEOpsRuntime, error) {
 	if err != nil {
 		return cleanup(err)
 	}
+	audienceBlobClient, err := lineinfra.NewAudienceBlobClientWithHTTPClient(token, transport.Client)
+	if err != nil { return cleanup(err) }
+	audienceManagerAdapter, err := line.NewAudienceManager(audienceClient, audienceBlobClient)
+	if err != nil { return cleanup(err) }
+	audienceManager, err := engagement.NewAudienceOperations(audienceManagerAdapter)
+	if err != nil { return cleanup(err) }
 	menuManager, err := engagement.NewMenuManager(sender)
 	if err != nil {
 		return cleanup(err)
@@ -143,7 +150,7 @@ func NewLINEOpsRuntime(token string) (*LINEOpsRuntime, error) {
 	if err != nil { return cleanup(err) }
 	eligibility, err := engagement.NewEligibilityOperations(sender)
 	if err != nil { return cleanup(err) }
-	return &LINEOpsRuntime{Actions: actions, AccountLink: accountLink, Eligibility: eligibility, MenuImageReader: blobSender, Messaging: messages, Validation: validator, Profiles: profiles, Channel: inspector, WebhookAdmin: webhookAdmin, Menus: menus, MenuManager: menuManager, RichMenuImages: richMenuImages, Memberships: membership, Coupons: coupon, Contacts: contactsInspector, Content: content, Insights: inspectorInsights, Audiences: inspectorAudiences, BulkMessaging: bulkMessenger, outbound: transport}, nil
+	return &LINEOpsRuntime{Actions: actions, AccountLink: accountLink, Eligibility: eligibility, MenuImageReader: blobSender, Messaging: messages, Validation: validator, Profiles: profiles, Channel: inspector, WebhookAdmin: webhookAdmin, Menus: menus, MenuManager: menuManager, RichMenuImages: richMenuImages, Memberships: membership, Coupons: coupon, Contacts: contactsInspector, Content: content, Insights: inspectorInsights, Audiences: inspectorAudiences, AudienceManager: audienceManager, BulkMessaging: bulkMessenger, outbound: transport}, nil
 }
 
 func (r *LINEOpsRuntime) Close() {
