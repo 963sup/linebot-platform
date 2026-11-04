@@ -3,8 +3,8 @@ package factories_test
 import (
 	"testing"
 
-	"github.com/963sup/linebot-platform/internal/domain/identity/factories"
 	"github.com/963sup/linebot-platform/internal/domain/identity/events"
+	"github.com/963sup/linebot-platform/internal/domain/identity/factories"
 	valueobjects "github.com/963sup/linebot-platform/internal/domain/identity/value-objects"
 )
 

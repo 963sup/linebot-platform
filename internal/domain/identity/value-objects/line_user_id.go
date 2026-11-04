@@ -16,4 +16,4 @@ func NewLineUserID(value string) (LineUserID, error) {
 }
 
 func (id LineUserID) String() string { return id.value }
-func (id LineUserID) Valid() bool   { return id.value != "" }
+func (id LineUserID) Valid() bool    { return id.value != "" }

@@ -16,7 +16,7 @@ func NewConnectionID(owner LineUserID, subject GoogleAccountID) (ConnectionID, e
 	return ConnectionID{owner: owner, subject: subject}, nil
 }
 
-func (id ConnectionID) Owner() LineUserID         { return id.owner }
+func (id ConnectionID) Owner() LineUserID              { return id.owner }
 func (id ConnectionID) GoogleAccount() GoogleAccountID { return id.subject }
 func (id ConnectionID) Valid() bool {
 	return id.owner.Valid() && id.subject.Valid()

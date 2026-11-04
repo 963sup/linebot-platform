@@ -2,8 +2,8 @@ package aggregates_test
 
 import (
 	"github.com/963sup/linebot-platform/internal/domain/identity/aggregates"
-	"github.com/963sup/linebot-platform/internal/domain/identity/factories"
 	"github.com/963sup/linebot-platform/internal/domain/identity/events"
+	"github.com/963sup/linebot-platform/internal/domain/identity/factories"
 	"github.com/963sup/linebot-platform/internal/domain/identity/value-objects"
 	"testing"
 )

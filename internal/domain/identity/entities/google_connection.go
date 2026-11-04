@@ -27,9 +27,9 @@ func RestoreGoogleConnection(subject valueobjects.GoogleAccountID, scopes valueo
 }
 
 func (c GoogleConnection) AccountID() valueobjects.GoogleAccountID { return c.subject }
-func (c GoogleConnection) Scopes() []string                         { return c.scopes.Values() }
-func (c GoogleConnection) Status() valueobjects.ConnectionStatus    { return c.status }
-func (c GoogleConnection) IsActive() bool                           { return c.status == valueobjects.ConnectionActive }
+func (c GoogleConnection) Scopes() []string                        { return c.scopes.Values() }
+func (c GoogleConnection) Status() valueobjects.ConnectionStatus   { return c.status }
+func (c GoogleConnection) IsActive() bool                          { return c.status == valueobjects.ConnectionActive }
 
 // Disconnect returns true only for the first state transition.
 func (c *GoogleConnection) Disconnect() (bool, error) {

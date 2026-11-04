@@ -27,8 +27,8 @@ func NewAccountLink(owner valueobjects.LineUserID, subject valueobjects.GoogleAc
 		return AccountLink{}, err
 	}
 	return AccountLink{
-		owner: owner,
-		google: google,
+		owner:   owner,
+		google:  google,
 		pending: []events.IdentityEvent{events.AccountLinked{ID: id}},
 	}, nil
 }
@@ -42,11 +42,11 @@ func RestoreAccountLink(owner valueobjects.LineUserID, subject valueobjects.Goog
 	return AccountLink{owner: owner, google: google}, nil
 }
 
-func (a AccountLink) Owner() valueobjects.LineUserID             { return a.owner }
+func (a AccountLink) Owner() valueobjects.LineUserID              { return a.owner }
 func (a AccountLink) GoogleAccount() valueobjects.GoogleAccountID { return a.google.AccountID() }
-func (a AccountLink) Scopes() []string                           { return a.google.Scopes() }
-func (a AccountLink) Status() valueobjects.ConnectionStatus      { return a.google.Status() }
-func (a AccountLink) IsActive() bool                             { return a.owner.Valid() && a.google.IsActive() }
+func (a AccountLink) Scopes() []string                            { return a.google.Scopes() }
+func (a AccountLink) Status() valueobjects.ConnectionStatus       { return a.google.Status() }
+func (a AccountLink) IsActive() bool                              { return a.owner.Valid() && a.google.IsActive() }
 func (a AccountLink) ConnectionID() (valueobjects.ConnectionID, error) {
 	return valueobjects.NewConnectionID(a.owner, a.google.AccountID())
 }

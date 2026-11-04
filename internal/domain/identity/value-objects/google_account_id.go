@@ -16,4 +16,4 @@ func NewGoogleAccountID(value string) (GoogleAccountID, error) {
 }
 
 func (id GoogleAccountID) String() string { return id.value }
-func (id GoogleAccountID) Valid() bool   { return id.value != "" }
+func (id GoogleAccountID) Valid() bool    { return id.value != "" }
