@@ -1,3 +1,11 @@
+package firestore
+
+import (
+	"github.com/963sup/linebot-platform/internal/application/ports/outbound"
+	"github.com/963sup/linebot-platform/internal/domain/identity/aggregates"
+	"github.com/963sup/linebot-platform/internal/domain/identity/factories"
+)
+
 // accountLinkFromConnection maps the existing technical persistence DTO into
 // the domain model without leaking OAuth credentials or Firestore metadata.
 // The legacy wire/storage representation stays unchanged during migration.
