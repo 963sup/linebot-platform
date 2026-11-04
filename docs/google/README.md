@@ -17,7 +17,7 @@
 - https://github.com/googleapis/google-api-go-client/blob/v0.310.0/tasks/v1/tasks-api.json
 - https://github.com/googleapis/google-api-go-client/blob/v0.310.0/tasks/v1/tasks-gen.go
 
-## 離線整合進度（Draft PR #25）
+## 離線整合進度（PR #25 已合併）
 
 - Calendar v3：38/38；Tasks v1：14/14。合計 52/52 項 `integrated_offline`，以 `google.golang.org/api v0.310.0` 為準。
 - `freebusy.query` 雖使用 HTTP POST，但**不修改資料**，Operator 應以 `--read` 操作；其他寫入與 Watch 註冊需明確 `--apply --confirm`。

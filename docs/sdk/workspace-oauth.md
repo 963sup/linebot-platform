@@ -49,7 +49,7 @@ calendarClient, err := api.NewCalendar(ctx, authorizedHTTP)
 - https://pkg.go.dev/google.golang.org/api/tasks/v1
 - https://pkg.go.dev/google.golang.org/api/calendar/v3
 
-## Calendar／Tasks API 靜態整合（Draft PR #25）
+## Calendar／Tasks API 靜態整合（PR #25 已合併）
 
 - `docs/google/calendar-endpoints.json` 釘選 Calendar v3 38 項，`tasks-endpoints.json` 釘選 Tasks v1 14 項，SDK `v0.310.0`。
 - `internal/adapter/outbound/google/api/{calendar,tasks}` 以明確 `switch` 呼叫原生 Go SDK，保留資源／方法、必要參數、常見查詢參數及 JSON body；不使用任意 HTTP Endpoint 或反射。
