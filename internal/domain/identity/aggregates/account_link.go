@@ -3,7 +3,7 @@ package aggregates
 
 import (
  "errors"
- "github.com/963sup/linebot-platform/internal/domain/identity/valueobjects"
+ "github.com/963sup/linebot-platform/internal/domain/identity/value-objects"
 )
 
 // AccountLink relates a verified LINE user to a verified Google subject.

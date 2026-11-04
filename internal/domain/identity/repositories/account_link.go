@@ -4,7 +4,7 @@ package repositories
 import (
  "context"
  "github.com/963sup/linebot-platform/internal/domain/identity/aggregates"
- "github.com/963sup/linebot-platform/internal/domain/identity/valueobjects"
+ "github.com/963sup/linebot-platform/internal/domain/identity/value-objects"
 )
 // AccountLinks implementations must enforce (owner,subject) uniqueness
 // and prevent concurrent lost updates atomically.

@@ -3,7 +3,7 @@ package factories
 
 import (
  "github.com/963sup/linebot-platform/internal/domain/identity/aggregates"
- "github.com/963sup/linebot-platform/internal/domain/identity/valueobjects"
+ "github.com/963sup/linebot-platform/internal/domain/identity/value-objects"
 )
 // NewVerifiedLink requires an authenticated LINE owner and a verified Google subject.
 // OAuth verification occurs outside the domain.

@@ -2,6 +2,10 @@
 
 This branch establishes the **target domain first**, not a directory-only refactor.
 
+## Naming contract
+- Every bounded context stores value objects in `value-objects/`, never `valueobjects/` or `value_objects/`. The Go package identifier is `valueobjects`; the hyphen exists only in the import path.
+- The architecture test walks all domain subdirectories to enforce this rule, not just the root scaffold.
+
 ## Dependency rules
 - Identity domain owns account-link lifecycle, validated IDs, granted scopes and status decisions.
 - Domain must never import LINE, Google, Firestore, application DTOs or infrastructure packages.

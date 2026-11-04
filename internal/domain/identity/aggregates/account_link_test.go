@@ -4,7 +4,7 @@ import (
  "testing"
  "github.com/963sup/linebot-platform/internal/domain/identity/aggregates"
  "github.com/963sup/linebot-platform/internal/domain/identity/factories"
- "github.com/963sup/linebot-platform/internal/domain/identity/valueobjects"
+ "github.com/963sup/linebot-platform/internal/domain/identity/value-objects"
 )
 func TestAccountLinkLifecycle(t *testing.T) {
  link,err:=factories.NewVerifiedLink("U123","google-subject",[]string{"scope-b","scope-a","scope-a"})
