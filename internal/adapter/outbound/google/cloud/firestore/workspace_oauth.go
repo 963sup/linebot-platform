@@ -14,6 +14,8 @@ import (
 
 	sdk "cloud.google.com/go/firestore"
 	"github.com/963sup/linebot-platform/internal/application/ports/outbound"
+	"github.com/963sup/linebot-platform/internal/domain/identity/aggregates"
+	"github.com/963sup/linebot-platform/internal/domain/identity/factories"
 	"github.com/963sup/linebot-platform/internal/infrastructure/google/api/oauth"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -174,6 +176,9 @@ func (s *OAuthStore) decodeConnection(id string, saved storedConnection) (outbou
 	}
 	conn.Version = saved.Version
 	conn.Active = saved.Active
+	if _, err := accountLinkFromConnection(conn); err != nil {
+		return outbound.OAuthConnection{}, errors.New("invalid persisted Google connection")
+	}
 	return conn, nil
 }
 
@@ -196,7 +201,10 @@ func (s *OAuthStore) SaveConnection(ctx context.Context, conn outbound.OAuthConn
 	if err != nil {
 		return err
 	}
-	if !conn.Active || conn.Credentials.AccessToken == "" || len(conn.Scopes) == 0 {
+	if _, err := accountLinkFromConnection(conn); err != nil {
+		return errors.New("invalid Google OAuth connection")
+	}
+	if !conn.Active || conn.Credentials.AccessToken == "" {
 		return errors.New("invalid Google OAuth connection")
 	}
 	err = s.client.RunTransaction(ctx, func(ctx context.Context, tx *sdk.Transaction) error {
@@ -289,6 +297,9 @@ func (s *OAuthStore) UpdateCredentials(ctx context.Context, conn outbound.OAuthC
 	}
 	if expectedVersion <= 0 || conn.Credentials.AccessToken == "" {
 		return errors.New("invalid OAuth refresh")
+	}
+	if _, err := accountLinkFromConnection(conn); err != nil {
+		return errors.New("invalid Google OAuth connection")
 	}
 	err = s.client.RunTransaction(ctx, func(ctx context.Context, tx *sdk.Transaction) error {
 		snap, err := tx.Get(ref)

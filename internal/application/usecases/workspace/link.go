@@ -9,6 +9,8 @@ import (
 	"time"
 
 	"github.com/963sup/linebot-platform/internal/application/ports/outbound"
+	"github.com/963sup/linebot-platform/internal/domain/identity/factories"
+	"github.com/963sup/linebot-platform/internal/domain/identity/value-objects"
 )
 
 const oauthSessionTTL = 10 * time.Minute
@@ -46,9 +48,18 @@ func secureNonce() (string, error) {
 // Begin receives a verified LINE owner from a separately authenticated
 // entrypoint. A persisted, one-time state is required before URL exposure.
 func (s *LinkService) Begin(ctx context.Context, verifiedOwner string, scopes []string) (string, error) {
-	if ctx == nil || verifiedOwner == "" || verifiedOwner != strings.TrimSpace(verifiedOwner) || len(scopes) == 0 {
+	if ctx == nil {
 		return "", errors.New("verified owner and Google scopes required")
 	}
+	owner, err := valueobjects.NewLineUserID(verifiedOwner)
+	if err != nil {
+		return "", errors.New("verified owner and Google scopes required")
+	}
+	requestedScopes, err := valueobjects.NewOAuthScopes(scopes)
+	if err != nil {
+		return "", errors.New("verified owner and Google scopes required")
+	}
+	_ = owner
 	if err := ctx.Err(); err != nil {
 		return "", err
 	}
@@ -64,7 +75,7 @@ func (s *LinkService) Begin(ctx context.Context, verifiedOwner string, scopes []
 	if err != nil {
 		return "", err
 	}
-	url, err := s.provider.AuthorizationURL(state, verifier, nonce, scopes)
+	url, err := s.provider.AuthorizationURL(state, verifier, nonce, requestedScopes.Values())
 	if err != nil {
 		return "", err
 	}
@@ -72,7 +83,7 @@ func (s *LinkService) Begin(ctx context.Context, verifiedOwner string, scopes []
 		OwnerID:   verifiedOwner,
 		Verifier:  verifier,
 		Nonce:     nonce,
-		Scopes:    append([]string(nil), scopes...),
+		Scopes:    requestedScopes.Values(),
 		ExpiresAt: s.now().UTC().Add(oauthSessionTTL),
 	}
 	if err := s.sessions.CreateSession(ctx, state, session); err != nil {
@@ -113,12 +124,18 @@ func (s *LinkService) Complete(ctx context.Context, state, code string) (LinkedA
 			return LinkedAccount{}, errors.New("Google authorization missing required scope")
 		}
 	}
+	// Domain owns the account-link invariant; credentials remain an
+	// application/technical DTO and never enter the aggregate.
+	accountLink, err := factories.NewVerifiedLink(session.OwnerID, identity.Subject, session.Scopes)
+	if err != nil {
+		return LinkedAccount{}, errors.New("invalid verified account link")
+	}
 	link := outbound.OAuthConnection{
-		OwnerID:       session.OwnerID,
-		GoogleSubject: identity.Subject,
-		Scopes:        append([]string(nil), session.Scopes...),
+		OwnerID:       accountLink.Owner().String(),
+		GoogleSubject: accountLink.GoogleAccount().String(),
+		Scopes:        accountLink.Scopes(),
 		Credentials:   token,
-		Active:        true,
+		Active:        accountLink.IsActive(),
 	}
 	if err := s.connections.SaveConnection(ctx, link); err != nil {
 		return LinkedAccount{}, errors.New("unable to persist Google connection")
@@ -138,6 +155,15 @@ func (s *LinkService) Disconnect(ctx context.Context, verifiedOwner, googleSubje
 	link, err := s.connections.GetConnection(ctx, verifiedOwner, googleSubject)
 	if err != nil {
 		return errors.New("Google connection unavailable")
+	}
+	// Validate the stored identity and allowed state transition in the
+	// aggregate before the repository performs its atomic deactivation.
+	accountLink, err := factories.NewVerifiedLink(link.OwnerID, link.GoogleSubject, link.Scopes)
+	if err != nil || link.OwnerID != verifiedOwner || link.GoogleSubject != googleSubject || !link.Active {
+		return errors.New("invalid Google connection state")
+	}
+	if err := accountLink.Disconnect(); err != nil {
+		return err
 	}
 	if err := s.connections.DeactivateConnection(ctx, verifiedOwner, googleSubject); err != nil {
 		return errors.New("unable to deactivate Google connection")

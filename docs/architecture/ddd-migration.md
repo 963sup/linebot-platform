@@ -32,3 +32,10 @@ This branch establishes the **target domain first**, not a directory-only refact
 
 ## Validation
 Run `go test ./internal/domain/...`, `go test ./tests/architecture/...`, `go test ./...`, `go vet ./...` and GitHub Actions using the repository toolchain. No Cloud Run deployment or data migration is authorized by this slice.
+
+## Slice 2: Identity integration (compatibility)
+- `LinkService.Begin` validates identity and requested scopes with domain value objects before creating OAuth state.
+- `LinkService.Complete` constructs the AccountLink aggregate after OAuth verification, and maps the aggregate back to the existing technical persistence contract.
+- `Disconnect` validates the stored link and delegates state transition to AccountLink before the existing atomic Firestore deactivation.
+- Firestore validates legacy OAuthConnection DTOs through the domain mapper on active read/write paths, while keeping existing ciphertext, collection names, document IDs, version numbers and token refresh behavior.
+- No token or OAuth secret is stored in AccountLink; no data migration or Cloud Run release is part of this slice.

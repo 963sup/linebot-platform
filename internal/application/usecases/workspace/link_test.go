@@ -162,3 +162,18 @@ func TestLinkServiceDisconnectFailClosed(t *testing.T) {
 		t.Fatal("link was not disabled")
 	}
 }
+
+func TestLinkServiceDomainRejectsInvalidScopeBeforeStateCreation(t *testing.T) {
+	p := &fakeGoogleProvider{}
+	db := newFakeOAuthStore()
+	s, err := NewLinkService(p, db, db)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.Begin(context.Background(), "line", []string{"invalid scope"}); err == nil {
+		t.Fatal("invalid domain OAuth scope accepted")
+	}
+	if len(db.sessions) != 0 {
+		t.Fatal("invalid scope created an OAuth session")
+	}
+}
