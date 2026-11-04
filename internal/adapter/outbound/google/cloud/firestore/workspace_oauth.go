@@ -14,6 +14,10 @@ import (
 
 	sdk "cloud.google.com/go/firestore"
 	"github.com/963sup/linebot-platform/internal/application/ports/outbound"
+	"github.com/963sup/linebot-platform/internal/domain/identity/aggregates"
+	"github.com/963sup/linebot-platform/internal/domain/identity/factories"
+	"github.com/963sup/linebot-platform/internal/domain/identity/repositories"
+	valueobjects "github.com/963sup/linebot-platform/internal/domain/identity/value-objects"
 	"github.com/963sup/linebot-platform/internal/infrastructure/google/api/oauth"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -160,49 +164,93 @@ func (s *OAuthStore) linkDoc(owner, subject string) (*sdk.DocumentRef, string, e
 	return s.client.Collection(oauthLinksCollection).Doc(id), id, nil
 }
 
-func (s *OAuthStore) decodeConnection(id string, saved storedConnection) (outbound.OAuthConnection, error) {
+// legacyOAuthConnection is the exact encrypted JSON shape that existing
+// Firestore documents use. It is private to the persistence adapter.
+type legacyOAuthConnection struct {
+	OwnerID       string
+	GoogleSubject string
+	Scopes        []string
+	Credentials   outbound.OAuthCredentials
+	Version       int64
+	Active        bool
+}
+
+func authorizationFromLegacy(record legacyOAuthConnection) (outbound.OAuthAuthorization, error) {
+	status := valueobjects.ConnectionDisconnected
+	if record.Active {
+		status = valueobjects.ConnectionActive
+	}
+	link, err := factories.RestoreLink(record.OwnerID, record.GoogleSubject, record.Scopes, status)
+	if err != nil {
+		return outbound.OAuthAuthorization{}, err
+	}
+	return outbound.OAuthAuthorization{Link: link, Credentials: record.Credentials, Version: record.Version}, nil
+}
+
+func legacyFromAuthorization(auth outbound.OAuthAuthorization) (legacyOAuthConnection, error) {
+	id, err := auth.Link.ConnectionID()
+	if err != nil {
+		return legacyOAuthConnection{}, err
+	}
+	return legacyOAuthConnection{
+		OwnerID:       id.Owner().String(),
+		GoogleSubject: id.GoogleAccount().String(),
+		Scopes:        auth.Link.Scopes(),
+		Credentials:   auth.Credentials,
+		Version:       auth.Version,
+		Active:        auth.Link.IsActive(),
+	}, nil
+}
+
+func (s *OAuthStore) decodeConnection(id string, saved storedConnection) (outbound.OAuthAuthorization, error) {
 	if !saved.Active {
-		return outbound.OAuthConnection{}, errors.New("Google connection disabled")
+		return outbound.OAuthAuthorization{}, errors.New("Google connection disabled")
 	}
 	plain, err := s.keys.Open("link:"+id, saved.KeyID, saved.Ciphertext)
 	if err != nil {
-		return outbound.OAuthConnection{}, err
+		return outbound.OAuthAuthorization{}, err
 	}
-	var conn outbound.OAuthConnection
-	if err := json.Unmarshal(plain, &conn); err != nil {
-		return outbound.OAuthConnection{}, errors.New("invalid encrypted Google connection")
+	var legacy legacyOAuthConnection
+	if err := json.Unmarshal(plain, &legacy); err != nil {
+		return outbound.OAuthAuthorization{}, errors.New("invalid encrypted Google connection")
 	}
-	conn.Version = saved.Version
-	conn.Active = saved.Active
-	if _, err := accountLinkFromConnection(conn); err != nil {
-		return outbound.OAuthConnection{}, errors.New("invalid persisted Google connection")
+	legacy.Version = saved.Version
+	legacy.Active = saved.Active
+	auth, err := authorizationFromLegacy(legacy)
+	if err != nil {
+		return outbound.OAuthAuthorization{}, errors.New("invalid persisted Google connection")
 	}
-	return conn, nil
+	return auth, nil
 }
 
-func (s *OAuthStore) encodeConnection(id string, conn outbound.OAuthConnection) (string, []byte, error) {
-	plain, err := json.Marshal(conn)
+func (s *OAuthStore) encodeConnection(id string, auth outbound.OAuthAuthorization) (string, []byte, error) {
+	legacy, err := legacyFromAuthorization(auth)
+	if err != nil {
+		return "", nil, errors.New("invalid Google connection payload")
+	}
+	plain, err := json.Marshal(legacy)
 	if err != nil {
 		return "", nil, errors.New("invalid Google connection payload")
 	}
 	return s.keys.Seal("link:"+id, plain)
 }
 
-func (s *OAuthStore) SaveConnection(ctx context.Context, conn outbound.OAuthConnection) error {
+func (s *OAuthStore) SaveConnection(ctx context.Context, conn outbound.OAuthAuthorization) error {
 	if ctx == nil {
 		return errors.New("context required")
 	}
 	if err := ctx.Err(); err != nil {
 		return err
 	}
-	ref, id, err := s.linkDoc(conn.OwnerID, conn.GoogleSubject)
+	legacy, err := legacyFromAuthorization(conn)
+	if err != nil {
+		return errors.New("invalid Google OAuth connection")
+	}
+	ref, id, err := s.linkDoc(legacy.OwnerID, legacy.GoogleSubject)
 	if err != nil {
 		return err
 	}
-	if _, err := accountLinkFromConnection(conn); err != nil {
-		return errors.New("invalid Google OAuth connection")
-	}
-	if !conn.Active || conn.Credentials.AccessToken == "" {
+	if !conn.Link.IsActive() || conn.Credentials.AccessToken == "" {
 		return errors.New("invalid Google OAuth connection")
 	}
 	err = s.client.RunTransaction(ctx, func(ctx context.Context, tx *sdk.Transaction) error {
@@ -232,7 +280,7 @@ func (s *OAuthStore) SaveConnection(ctx context.Context, conn outbound.OAuthConn
 			if err != nil {
 				return err
 			}
-			if previous.OwnerID != conn.OwnerID || previous.GoogleSubject != conn.GoogleSubject {
+			if previous.Link.Owner() != conn.Link.Owner() || previous.Link.GoogleAccount() != conn.Link.GoogleAccount() {
 				return errors.New("connection identity conflict")
 			}
 			next.Credentials.RefreshToken = previous.Credentials.RefreshToken
@@ -253,51 +301,52 @@ func (s *OAuthStore) SaveConnection(ctx context.Context, conn outbound.OAuthConn
 	return nil
 }
 
-func (s *OAuthStore) GetConnection(ctx context.Context, owner, subject string) (outbound.OAuthConnection, error) {
+func (s *OAuthStore) GetConnection(ctx context.Context, owner, subject string) (outbound.OAuthAuthorization, error) {
 	if ctx == nil {
-		return outbound.OAuthConnection{}, errors.New("context required")
+		return outbound.OAuthAuthorization{}, errors.New("context required")
 	}
 	if err := ctx.Err(); err != nil {
-		return outbound.OAuthConnection{}, err
+		return outbound.OAuthAuthorization{}, err
 	}
 	ref, id, err := s.linkDoc(owner, subject)
 	if err != nil {
-		return outbound.OAuthConnection{}, err
+		return outbound.OAuthAuthorization{}, err
 	}
 	snap, err := ref.Get(ctx)
 	if err != nil {
-		return outbound.OAuthConnection{}, errors.New("Google connection unavailable")
+		return outbound.OAuthAuthorization{}, errors.New("Google connection unavailable")
 	}
 	var saved storedConnection
 	if err := snap.DataTo(&saved); err != nil {
-		return outbound.OAuthConnection{}, errors.New("invalid Google connection record")
+		return outbound.OAuthAuthorization{}, errors.New("invalid Google connection record")
 	}
 	conn, err := s.decodeConnection(id, saved)
 	if err != nil {
-		return outbound.OAuthConnection{}, err
+		return outbound.OAuthAuthorization{}, err
 	}
-	if conn.OwnerID != owner || conn.GoogleSubject != subject {
-		return outbound.OAuthConnection{}, errors.New("Google connection identity mismatch")
+	if conn.Link.Owner().String() != owner || conn.Link.GoogleAccount().String() != subject {
+		return outbound.OAuthAuthorization{}, errors.New("Google connection identity mismatch")
 	}
 	return conn, nil
 }
 
-func (s *OAuthStore) UpdateCredentials(ctx context.Context, conn outbound.OAuthConnection, expectedVersion int64) error {
+func (s *OAuthStore) UpdateCredentials(ctx context.Context, conn outbound.OAuthAuthorization, expectedVersion int64) error {
 	if ctx == nil {
 		return errors.New("context required")
 	}
 	if err := ctx.Err(); err != nil {
 		return err
 	}
-	ref, id, err := s.linkDoc(conn.OwnerID, conn.GoogleSubject)
+	legacy, err := legacyFromAuthorization(conn)
+	if err != nil || !conn.Link.IsActive() {
+		return errors.New("invalid Google OAuth connection")
+	}
+	ref, id, err := s.linkDoc(legacy.OwnerID, legacy.GoogleSubject)
 	if err != nil {
 		return err
 	}
 	if expectedVersion <= 0 || conn.Credentials.AccessToken == "" {
 		return errors.New("invalid OAuth refresh")
-	}
-	if _, err := accountLinkFromConnection(conn); err != nil {
-		return errors.New("invalid Google OAuth connection")
 	}
 	err = s.client.RunTransaction(ctx, func(ctx context.Context, tx *sdk.Transaction) error {
 		snap, err := tx.Get(ref)
@@ -315,15 +364,16 @@ func (s *OAuthStore) UpdateCredentials(ctx context.Context, conn outbound.OAuthC
 		if err != nil {
 			return err
 		}
-		if old.OwnerID != conn.OwnerID || old.GoogleSubject != conn.GoogleSubject {
+		if old.Link.Owner() != conn.Link.Owner() || old.Link.GoogleAccount() != conn.Link.GoogleAccount() {
 			return errors.New("connection identity changed")
 		}
 		// Refresh is never an opportunity to silently expand authorized scopes.
-		if len(conn.Scopes) != len(old.Scopes) {
+		oldScopes, newScopes := old.Link.Scopes(), conn.Link.Scopes()
+		if len(oldScopes) != len(newScopes) {
 			return ErrConnectionConflict
 		}
-		for i, scope := range old.Scopes {
-			if conn.Scopes[i] != scope {
+		for i, scope := range oldScopes {
+			if newScopes[i] != scope {
 				return ErrConnectionConflict
 			}
 		}
@@ -332,7 +382,6 @@ func (s *OAuthStore) UpdateCredentials(ctx context.Context, conn outbound.OAuthC
 			next.Credentials.RefreshToken = old.Credentials.RefreshToken
 		}
 		next.Version = expectedVersion + 1
-		next.Active = true
 		key, sealed, err := s.encodeConnection(id, next)
 		if err != nil {
 			return err
@@ -352,6 +401,20 @@ func (s *OAuthStore) UpdateCredentials(ctx context.Context, conn outbound.OAuthC
 	}
 	return nil
 }
+
+// FindConnection provides the domain-owned read contract without exposing credentials.
+func (s *OAuthStore) FindConnection(ctx context.Context, id valueobjects.ConnectionID) (aggregates.AccountLink, error) {
+	if !id.Valid() {
+		return aggregates.AccountLink{}, errors.New("invalid connection ID")
+	}
+	auth, err := s.GetConnection(ctx, id.Owner().String(), id.GoogleAccount().String())
+	if err != nil {
+		return aggregates.AccountLink{}, err
+	}
+	return auth.Link, nil
+}
+
+var _ repositories.ConnectionReader = (*OAuthStore)(nil)
 
 func (s *OAuthStore) DeactivateConnection(ctx context.Context, owner, subject string) error {
 	if ctx == nil {

@@ -3,6 +3,8 @@ package outbound
 import (
 	"context"
 	"time"
+
+	"github.com/963sup/linebot-platform/internal/domain/identity/aggregates"
 )
 
 // OAuthSession is a one-time, short-lived binding between an already
@@ -22,13 +24,12 @@ type OAuthCredentials struct {
 	Expiry       time.Time
 }
 
-type OAuthConnection struct {
-	OwnerID       string
-	GoogleSubject string
-	Scopes        []string
-	Credentials   OAuthCredentials
-	Version       int64
-	Active        bool
+// OAuthAuthorization couples the domain aggregate to technical credentials.
+// Identity, scopes and lifecycle state exist only in Link, never duplicated here.
+type OAuthAuthorization struct {
+	Link        aggregates.AccountLink
+	Credentials OAuthCredentials
+	Version     int64
 }
 
 type GoogleIdentity struct {
@@ -48,9 +49,3 @@ type OAuthSessionRepository interface {
 	ConsumeSession(context.Context, string) (OAuthSession, error)
 }
 
-type OAuthConnectionRepository interface {
-	SaveConnection(context.Context, OAuthConnection) error
-	GetConnection(context.Context, string, string) (OAuthConnection, error)
-	UpdateCredentials(context.Context, OAuthConnection, int64) error
-	DeactivateConnection(context.Context, string, string) error
-}

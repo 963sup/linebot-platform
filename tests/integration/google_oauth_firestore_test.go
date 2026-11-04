@@ -16,6 +16,7 @@ import (
 	sdk "cloud.google.com/go/firestore"
 	fsadapter "github.com/963sup/linebot-platform/internal/adapter/outbound/google/cloud/firestore"
 	"github.com/963sup/linebot-platform/internal/application/ports/outbound"
+	"github.com/963sup/linebot-platform/internal/domain/identity/factories"
 	oauth "github.com/963sup/linebot-platform/internal/infrastructure/google/api/oauth"
 )
 
@@ -70,9 +71,12 @@ func TestOAuthSessionsAndConnectionsWithFirestoreEmulator(t *testing.T) {
 		t.Fatal("replayed OAuth state accepted")
 	}
 
-	account := outbound.OAuthConnection{
-		OwnerID: "verified-user", GoogleSubject: "google-subject", Active: true,
-		Scopes: []string{"openid"},
+	link, err := factories.NewVerifiedLink("verified-user", "google-subject", []string{"openid"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	account := outbound.OAuthAuthorization{
+		Link: link,
 		Credentials: outbound.OAuthCredentials{
 			AccessToken: "sensitive-access-token", RefreshToken: "sensitive-refresh-token",
 			TokenType: "Bearer", Expiry: time.Now().Add(time.Hour),

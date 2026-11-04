@@ -39,11 +39,11 @@ func (f *fakeGoogleProvider) Revoke(context.Context, string) error { return f.re
 type fakeOAuthStore struct {
 	mu       sync.Mutex
 	sessions map[string]outbound.OAuthSession
-	links    map[string]outbound.OAuthConnection
+	links    map[string]outbound.OAuthAuthorization
 }
 
 func newFakeOAuthStore() *fakeOAuthStore {
-	return &fakeOAuthStore{sessions: map[string]outbound.OAuthSession{}, links: map[string]outbound.OAuthConnection{}}
+	return &fakeOAuthStore{sessions: map[string]outbound.OAuthSession{}, links: map[string]outbound.OAuthAuthorization{}}
 }
 func (f *fakeOAuthStore) CreateSession(_ context.Context, state string, s outbound.OAuthSession) error {
 	f.mu.Lock()
@@ -64,27 +64,27 @@ func (f *fakeOAuthStore) ConsumeSession(_ context.Context, state string) (outbou
 	delete(f.sessions, state)
 	return v, nil
 }
-func (f *fakeOAuthStore) SaveConnection(_ context.Context, c outbound.OAuthConnection) error {
+func (f *fakeOAuthStore) SaveConnection(_ context.Context, c outbound.OAuthAuthorization) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
-	f.links[c.OwnerID+"|"+c.GoogleSubject] = c
+	f.links[c.Link.Owner().String()+"|"+c.Link.GoogleAccount().String()] = c
 	return nil
 }
-func (f *fakeOAuthStore) GetConnection(_ context.Context, owner, subject string) (outbound.OAuthConnection, error) {
+func (f *fakeOAuthStore) GetConnection(_ context.Context, owner, subject string) (outbound.OAuthAuthorization, error) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	c, ok := f.links[owner+"|"+subject]
-	if !ok || !c.Active {
-		return outbound.OAuthConnection{}, errors.New("not found")
+	if !ok || !c.Link.IsActive() {
+		return outbound.OAuthAuthorization{}, errors.New("not found")
 	}
 	return c, nil
 }
-func (f *fakeOAuthStore) UpdateCredentials(_ context.Context, c outbound.OAuthConnection, expected int64) error {
+func (f *fakeOAuthStore) UpdateCredentials(_ context.Context, c outbound.OAuthAuthorization, expected int64) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
-	k := c.OwnerID + "|" + c.GoogleSubject
+	k := c.Link.Owner().String() + "|" + c.Link.GoogleAccount().String()
 	old := f.links[k]
-	if !old.Active || old.Version != expected {
+	if !old.Link.IsActive() || old.Version != expected {
 		return errors.New("version conflict")
 	}
 	c.Version = expected + 1
@@ -99,7 +99,9 @@ func (f *fakeOAuthStore) DeactivateConnection(_ context.Context, owner, subject 
 	if !ok {
 		return errors.New("not found")
 	}
-	c.Active = false
+	if err := c.Link.Disconnect(); err != nil {
+		return err
+	}
 	c.Credentials = outbound.OAuthCredentials{}
 	c.Version++
 	f.links[k] = c
@@ -131,7 +133,7 @@ func TestLinkServiceConsumeExactlyOnceAndScopeBinding(t *testing.T) {
 		t.Fatal("identity mismatch")
 	}
 	c, err := db.GetConnection(context.Background(), "line-verified", "google-sub")
-	if err != nil || len(c.Scopes) != 1 {
+	if err != nil || len(c.Link.Scopes()) != 1 {
 		t.Fatal("scope or identity lost")
 	}
 	if _, err := db.GetConnection(context.Background(), "other-line", "google-sub"); err == nil {

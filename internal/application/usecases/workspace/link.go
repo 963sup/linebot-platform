@@ -21,7 +21,7 @@ const oauthSessionTTL = 10 * time.Minute
 type LinkService struct {
 	provider    outbound.GoogleOAuthProvider
 	sessions    outbound.OAuthSessionRepository
-	connections outbound.OAuthConnectionRepository
+	connections oauthLinkStore
 	now         func() time.Time
 }
 
@@ -31,7 +31,14 @@ type LinkedAccount struct {
 	VerifiedEmail string
 }
 
-func NewLinkService(provider outbound.GoogleOAuthProvider, sessions outbound.OAuthSessionRepository, connections outbound.OAuthConnectionRepository) (*LinkService, error) {
+// oauthLinkStore is the minimal persistence capability required by linking.
+type oauthLinkStore interface {
+	SaveConnection(context.Context, outbound.OAuthAuthorization) error
+	GetConnection(context.Context, string, string) (outbound.OAuthAuthorization, error)
+	DeactivateConnection(context.Context, string, string) error
+}
+
+func NewLinkService(provider outbound.GoogleOAuthProvider, sessions outbound.OAuthSessionRepository, connections oauthLinkStore) (*LinkService, error) {
 	if provider == nil || sessions == nil || connections == nil {
 		return nil, errors.New("OAuth provider, state and connection repositories are required")
 	}
@@ -125,13 +132,7 @@ func (s *LinkService) Complete(ctx context.Context, state, code string) (LinkedA
 	if err != nil {
 		return LinkedAccount{}, errors.New("invalid verified account link")
 	}
-	link := outbound.OAuthConnection{
-		OwnerID:       accountLink.Owner().String(),
-		GoogleSubject: accountLink.GoogleAccount().String(),
-		Scopes:        accountLink.Scopes(),
-		Credentials:   token,
-		Active:        accountLink.IsActive(),
-	}
+	link := outbound.OAuthAuthorization{Link: accountLink, Credentials: token}
 	if err := s.connections.SaveConnection(ctx, link); err != nil {
 		return LinkedAccount{}, errors.New("unable to persist Google connection")
 	}
@@ -151,16 +152,8 @@ func (s *LinkService) Disconnect(ctx context.Context, verifiedOwner, googleSubje
 	if err != nil {
 		return errors.New("Google connection unavailable")
 	}
-	// Validate the stored identity and allowed state transition in the
-	// aggregate before the repository performs its atomic deactivation.
-	status := valueobjects.ConnectionDisconnected
-	if link.Active {
-		status = valueobjects.ConnectionActive
-	}
-	accountLink, err := factories.RestoreLink(link.OwnerID, link.GoogleSubject, link.Scopes, status)
-	if err != nil {
-		return errors.New("invalid Google connection state")
-	}
+	// Domain state is the only source of authorization and lifecycle rules.
+	accountLink := link.Link
 	owner, err := valueobjects.NewLineUserID(verifiedOwner)
 	if err != nil {
 		return errors.New("invalid LINE account identity")

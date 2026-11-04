@@ -49,3 +49,13 @@ Run `go test ./internal/domain/...`, `go test ./tests/architecture/...`, `go tes
 - The Firestore adapter implements `repositories.ConnectionReader` using existing encrypted state; Bootstrap checks domain eligibility before issuing a user-scoped token source.
 - The existing `outbound.OAuthConnection` remains a **temporary technical credential envelope** for token refresh and backward-compatible Firestore ciphertext. Its `OwnerID`, `GoogleSubject`, `Scopes`, and `Active` fields must no longer be used to decide business policy directly in new code. Retirement requires a separate credential-store contract and compatibility tests across existing callers.
 - Domain events are staged in memory but deliberately **not published** before transaction commit. Integrating a durable event publisher must be a separately tested slice.
+
+## Slice 4: retire duplicate application OAuthConnection (PR #28)
+- Deleted the duplicated `outbound.OAuthConnection` DTO and replaced it with `OAuthAuthorization{Link aggregates.AccountLink, Credentials, Version}`.
+- The only owner/subject/scopes/active status in application is the Domain Aggregate; use cases and OAuth TokenSource no longer read parallel primitive business fields.
+- Deleted `account_link_mapper.go` and its generic mapper test. The sole persistence codec now exists inside `workspace_oauth.go`, using a private `legacyOAuthConnection` wire struct to read/write the **identical** previously encrypted JSON keys.
+- Added legacy JSON and encrypted payload contract tests; verified inactive records stay inaccessible and token refresh still uses transactional version checks.
+- Existing `SaveConnection`, `GetConnection`, `UpdateCredentials`, `DeactivateConnection` method names and Firestore collection/field names are deliberately preserved so existing callers and stored data continue to work.
+- Next step is to narrow the technical credential-store interface into separate read/write concerns without adding a second business model. This is distinct from removing the already retired DTO.
+
+- The previous four-method global authorization repository interface is removed. The linking and token-refresh consumers now declare their own minimal 3-method and 2-method interfaces, respectively.

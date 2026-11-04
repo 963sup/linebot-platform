@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/963sup/linebot-platform/internal/application/ports/outbound"
+	"github.com/963sup/linebot-platform/internal/domain/identity/factories"
 	"golang.org/x/oauth2"
 )
 
@@ -24,27 +25,27 @@ func (f fakeTokenSourceFactory) TokenSource(context.Context, *oauth2.Token) (oau
 
 type memoryConnectionStore struct {
 	mu     sync.Mutex
-	value  outbound.OAuthConnection
+	value  outbound.OAuthAuthorization
 	closed bool
 }
 
-func (s *memoryConnectionStore) SaveConnection(_ context.Context, v outbound.OAuthConnection) error {
+func (s *memoryConnectionStore) SaveConnection(_ context.Context, v outbound.OAuthAuthorization) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.value = v
 	return nil
 }
 
-func (s *memoryConnectionStore) GetConnection(_ context.Context, owner, subject string) (outbound.OAuthConnection, error) {
+func (s *memoryConnectionStore) GetConnection(_ context.Context, owner, subject string) (outbound.OAuthAuthorization, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if s.closed || !s.value.Active || s.value.OwnerID != owner || s.value.GoogleSubject != subject {
-		return outbound.OAuthConnection{}, errors.New("no connection")
+	if s.closed || !s.value.Link.IsActive() || s.value.Link.Owner().String() != owner || s.value.Link.GoogleAccount().String() != subject {
+		return outbound.OAuthAuthorization{}, errors.New("no connection")
 	}
 	return s.value, nil
 }
 
-func (s *memoryConnectionStore) UpdateCredentials(_ context.Context, v outbound.OAuthConnection, version int64) error {
+func (s *memoryConnectionStore) UpdateCredentials(_ context.Context, v outbound.OAuthAuthorization, version int64) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if s.closed || version != s.value.Version {
@@ -62,11 +63,16 @@ func (s *memoryConnectionStore) DeactivateConnection(_ context.Context, _, _ str
 	return nil
 }
 
-func makeStoredAccount() *memoryConnectionStore {
-	return &memoryConnectionStore{value: outbound.OAuthConnection{
-		OwnerID: "verified-line", GoogleSubject: "verified-google",
-		Active: true, Version: 7,
-		Scopes: []string{"openid", "https://www.googleapis.com/auth/tasks.readonly"},
+func makeStoredAccount(t *testing.T) *memoryConnectionStore {
+	t.Helper()
+	link, err := factories.NewVerifiedLink("verified-line", "verified-google", []string{
+		"openid", "https://www.googleapis.com/auth/tasks.readonly",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	return &memoryConnectionStore{value: outbound.OAuthAuthorization{
+		Link: link, Version: 7,
 		Credentials: outbound.OAuthCredentials{
 			AccessToken: "expired-access", RefreshToken: "long-lived-refresh",
 			TokenType: "Bearer", Expiry: time.Now().Add(-time.Hour),
@@ -75,7 +81,7 @@ func makeStoredAccount() *memoryConnectionStore {
 }
 
 func TestPersistedTokenSourceRefreshAndCAS(t *testing.T) {
-	store := makeStoredAccount()
+	store := makeStoredAccount(t)
 	next := &oauth2.Token{AccessToken: "new-access", Expiry: time.Now().Add(time.Hour), TokenType: "Bearer"}
 	source, err := NewPersistedTokenSource(context.Background(), fakeTokenSourceFactory{next: next}, store, "verified-line", "verified-google")
 	if err != nil {

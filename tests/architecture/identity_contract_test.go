@@ -42,4 +42,14 @@ func TestIdentityContract(t *testing.T) {
 			t.Errorf("obsolete duplicated implementation still present: %s", p)
 		}
 	}
+
+	for _, path := range []string{
+		filepath.Join("..", "..", "internal", "adapter", "outbound", "google", "cloud", "firestore", "account_link_mapper.go"),
+		filepath.Join("..", "..", "internal", "adapter", "outbound", "google", "cloud", "firestore", "account_link_mapper_test.go"),
+	} {
+		if _, err := os.Stat(path); !os.IsNotExist(err) {
+			t.Errorf("obsolete identity mapper still exists: %s", path)
+		}
+	}
 }
+
