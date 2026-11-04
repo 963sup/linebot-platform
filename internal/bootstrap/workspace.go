@@ -5,6 +5,7 @@ import (
 	"errors"
 
 	caladapter "github.com/963sup/linebot-platform/internal/adapter/outbound/google/api/calendar"
+	formadapter "github.com/963sup/linebot-platform/internal/adapter/outbound/google/api/forms"
 	taskadapter "github.com/963sup/linebot-platform/internal/adapter/outbound/google/api/tasks"
 	"github.com/963sup/linebot-platform/internal/application/usecases/workspace"
 	api "github.com/963sup/linebot-platform/internal/infrastructure/google/api"
@@ -38,5 +39,13 @@ func NewWorkspaceOperations(ctx context.Context, source oauth2.TokenSource) (*wo
 	if err != nil {
 		return nil, err
 	}
-	return workspace.NewOperations(calendarAdapter, tasksAdapter)
+	formsClient, err := api.NewForms(ctx, client)
+	if err != nil {
+		return nil, err
+	}
+	formsAdapter, err := formadapter.New(formsClient)
+	if err != nil {
+		return nil, err
+	}
+	return workspace.NewOperationsWithForms(calendarAdapter, tasksAdapter, formsAdapter)
 }

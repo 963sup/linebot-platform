@@ -42,3 +42,19 @@ reviewed staging operation. The emulator can accept queries without enforcing
 cloud index availability; **CI passing cannot establish production index or
 TTL readiness**. TTL deletion is asynchronous and must not replace a domain
 unsend/erasure tombstone.
+
+
+## Google OAuth State / Token Collections (planned staging verification)
+
+The OAuth code path uses **separate** collections from LINE inbox/outbox:
+
+| Collection | Document ID | Persisted fields | TTL |
+|---|---|---|---|
+| `google_oauth_states_v1` | SHA-256 digest of 32-byte random state | AES-GCM encrypted owner / PKCE verifier / nonce / requested scopes, key version and expires_at | 10 minutes |
+| `google_oauth_connections_v1` | SHA-256 digest of owner + Google subject | AES-GCM encrypted OAuth credentials / identity / scopes; active, version and updated_at | 30-day inactive tombstone via expires_at |
+
+Records are bound to their Firestore document ID as AES-GCM authenticated associated data. The first callback to atomically consume a state deletes it in a Firestore transaction; further callbacks cannot use that state. Connection updates use versioned transactional CAS and revoked accounts clear their ciphertext so a stale token refresh cannot reactivate them.
+
+**Before authorized staging use:** Configure the `expires_at` Firestore TTL field for both collection groups, provision pinned 32-byte encryption keys in Secret Manager with least-privilege IAM and rotation, validate runtime `APP_ENV` / OAuth callback URL, and test concurrent consumes, refresh CAS and disconnect using Firestore Emulator and then isolated staging. TTL is asynchronous and never substitutes for checking expiry and active flags in code.
+
+No Google OAuth keys, user OAuth tokens, or persistent app credentials are shipped in repository or CI. The new OAuth libraries are opt-in and are not mounted on the public LINE webhook by default.

@@ -77,10 +77,24 @@ var tasksPolicies = []Policy{
 	{API: "tasks", Operation: "tasks.update", Mode: "write", Dangerous: false},
 }
 
+var formsPolicies = []Policy{
+	{API: "forms", Operation: "forms.batchUpdate", Mode: "write", Dangerous: true},
+	{API: "forms", Operation: "forms.create", Mode: "write", Dangerous: false},
+	{API: "forms", Operation: "forms.get", Mode: "read", Dangerous: false},
+	{API: "forms", Operation: "forms.setPublishSettings", Mode: "write", Dangerous: true},
+	{API: "forms", Operation: "forms.responses.get", Mode: "read", Dangerous: false},
+	{API: "forms", Operation: "forms.responses.list", Mode: "read", Dangerous: false},
+	{API: "forms", Operation: "forms.watches.create", Mode: "write", Dangerous: false},
+	{API: "forms", Operation: "forms.watches.delete", Mode: "write", Dangerous: true},
+	{API: "forms", Operation: "forms.watches.list", Mode: "read", Dangerous: false},
+	{API: "forms", Operation: "forms.watches.renew", Mode: "write", Dangerous: false},
+}
+
 func Supported() []Policy {
-	all := make([]Policy, 0, len(calendarPolicies)+len(tasksPolicies))
+	all := make([]Policy, 0, len(calendarPolicies)+len(tasksPolicies)+len(formsPolicies))
 	all = append(all, calendarPolicies...)
-	return append(all, tasksPolicies...)
+	all = append(all, tasksPolicies...)
+	return append(all, formsPolicies...)
 }
 
 func Lookup(api, operation string) (Policy, bool) {
@@ -105,6 +119,7 @@ type Approval struct {
 type Operations struct {
 	calendar outbound.GoogleCalendarOperator
 	tasks    outbound.GoogleTasksOperator
+	forms    outbound.GoogleFormsOperator
 }
 
 func NewOperations(cal outbound.GoogleCalendarOperator, task outbound.GoogleTasksOperator) (*Operations, error) {
@@ -112,6 +127,19 @@ func NewOperations(cal outbound.GoogleCalendarOperator, task outbound.GoogleTask
 		return nil, errors.New("Calendar and Tasks operators are required")
 	}
 	return &Operations{calendar: cal, tasks: task}, nil
+}
+
+// NewOperationsWithForms leaves existing Calendar/Tasks constructors intact.
+func NewOperationsWithForms(cal outbound.GoogleCalendarOperator, tasks outbound.GoogleTasksOperator, forms outbound.GoogleFormsOperator) (*Operations, error) {
+	if forms == nil {
+		return nil, errors.New("Forms operator is required")
+	}
+	ops, err := NewOperations(cal, tasks)
+	if err != nil {
+		return nil, err
+	}
+	ops.forms = forms
+	return ops, nil
 }
 
 func Validate(api string, req outbound.WorkspaceRequest, approval Approval) error {
@@ -171,6 +199,11 @@ func (s *Operations) Execute(ctx context.Context, api string, req outbound.Works
 		return s.calendar.ExecuteCalendar(ctx, req)
 	case "tasks":
 		return s.tasks.ExecuteTasks(ctx, req)
+	case "forms":
+		if s.forms == nil {
+			return nil, errors.New("Forms adapter not configured")
+		}
+		return s.forms.ExecuteForms(ctx, req)
 	default:
 		return nil, fmt.Errorf("unsupported workspace provider")
 	}

@@ -9,6 +9,7 @@ import (
 
 	"google.golang.org/api/calendar/v3"
 	"google.golang.org/api/drive/v3"
+	"google.golang.org/api/forms/v1"
 	"google.golang.org/api/option"
 	"google.golang.org/api/sheets/v4"
 	"google.golang.org/api/tasks/v1"
@@ -57,4 +58,12 @@ func NewDrive(ctx context.Context, authorizedHTTP *http.Client) (*drive.Service,
 		return nil, err
 	}
 	return drive.NewService(ctx, option.WithHTTPClient(authorizedHTTP))
+}
+
+// NewForms uses an already-authorized caller-owned HTTP client.
+func NewForms(ctx context.Context, authorizedHTTP *http.Client) (*forms.Service, error) {
+	if err := validateUserClient(ctx, authorizedHTTP); err != nil {
+		return nil, err
+	}
+	return forms.NewService(ctx, option.WithHTTPClient(authorizedHTTP))
 }

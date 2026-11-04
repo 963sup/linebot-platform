@@ -16,6 +16,7 @@
 
 | 服務 | 唯讀 OAuth Scope | 寫入 Scope（按需） |
 |---|---|---|
+| Google Forms | `https://www.googleapis.com/auth/forms.body.readonly`、`https://www.googleapis.com/auth/forms.responses.readonly` | `https://www.googleapis.com/auth/forms.body`（表單編輯／發布） |
 | Google Tasks | `https://www.googleapis.com/auth/tasks.readonly` | `https://www.googleapis.com/auth/tasks` |
 | Google Calendar Events | `https://www.googleapis.com/auth/calendar.events.readonly` | `https://www.googleapis.com/auth/calendar.events` |
 | Google Sheets | `https://www.googleapis.com/auth/spreadsheets.readonly` | `https://www.googleapis.com/auth/spreadsheets` |
@@ -49,13 +50,21 @@ calendarClient, err := api.NewCalendar(ctx, authorizedHTTP)
 - https://pkg.go.dev/google.golang.org/api/tasks/v1
 - https://pkg.go.dev/google.golang.org/api/calendar/v3
 
-## Calendar／Tasks API 靜態整合（Draft PR #25）
+## Calendar／Tasks API 靜態整合（PR #25 已合併）
 
 - `docs/google/calendar-endpoints.json` 釘選 Calendar v3 38 項，`tasks-endpoints.json` 釘選 Tasks v1 14 項，SDK `v0.310.0`。
 - `internal/adapter/outbound/google/api/{calendar,tasks}` 以明確 `switch` 呼叫原生 Go SDK，保留資源／方法、必要參數、常見查詢參數及 JSON body；不使用任意 HTTP Endpoint 或反射。
 - `internal/application/usecases/workspace` 強制唯讀／寫入／危險操作的明確授權；不允許公有 Webhook 呼叫管理功能。
 - `cmd/ops workspace` 僅限明確 `APP_ENV=local` 且無 `K_SERVICE` 的操作，從 owner-only `0600` 檔案載入**外部已核發的短期使用者 Access Token**，結果寫入新的 `0600` 私有檔案；這不是完整 OAuth Consent 或長期 Token 更新方案。
-- OAuth Authorization Code + PKCE + 安全保管 Refresh Token、帳號驗證、多使用者隔離與撤銷流程仍未完成，不得直接部署為公共連結介面。
+- Draft PR #27 已新增 OAuth Authorization Code + PKCE、加密 Token Repository、一次性 State 與撤銷的**離線程式碼**；LINE 使用者瀏覽器再驗證、OAuth 路由掛載與真實 Google 授權／IAM 驗收未完成，不得直接部署為公共連結介面。
 - 不需要執行真實 API 才能驗證 Adapter 的 HTTP Route；先執行 `make check`，再以獨立授權測試帳號驗證。
 
 > **本次整合狀態**：Calendar／Tasks 52 項方法已完成離線接線；Drive／Sheets 仍僅具 Client Factory，因此模組共用 Catalog 的 `client_ready` 不能代表四個服務都未整合，也不能代表完整 OAuth 已完成。詳見 `docs/google/README.md`。
+
+## Forms API（新增）
+
+Forms v1 的 10 個官方方法沿用現有 Workspace Typed SDK 及操作確認規則。使用 `NewForms(ctx, authorizedHTTP)`，不複製另一套 OAuth Transport 或直接呼叫 REST HTTP。Watches 只先支援離線 API 契約；真正 Pub/Sub 訂閱、Renew、IAM 及 Staging 另行驗證。
+
+## 自助綁定規格（來源 PR #26，整合至 PR #27）
+
+[Google 自助綁定安全規格](../google/user-self-service-linking.md) 是 P2–P4 的驗收契約，包含可轉傳連結防護、LINE Login／LIFF 再驗證、Channel／LINE 使用者／Google `sub` 隔離、Token 綁定與每位使用者同步。帳號／Firestore Client 已經存在不等於上述跨服務授權已得到驗證。

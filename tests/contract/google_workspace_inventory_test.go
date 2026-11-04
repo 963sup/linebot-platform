@@ -34,6 +34,7 @@ func TestWorkspacePinnedEndpointInventory(t *testing.T) {
 	}{
 		{"calendar", 38},
 		{"tasks", 14},
+		{"forms", 10},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			data, err := os.ReadFile(filepath.Join("..", "..", "docs", "google", tc.name+"-endpoints.json"))
