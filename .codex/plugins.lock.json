@@ -1,0 +1,14 @@
+[
+  {
+    "name": "cc-skills",
+    "repository": "https://github.com/samber/cc-skills.git",
+    "commit": "50a33836b20f690c668af557bd9ef9d07a8c7ef2",
+    "skill_root": "skills"
+  },
+  {
+    "name": "google-developer-knowledge",
+    "repository": "https://github.com/google/skills.git",
+    "commit": "3ae864a38b66642c761c8b3dad6b72e38ca3cd43",
+    "skill_root": "plugins/cloud/google-cloud-developer/skills/retrieving-developer-knowledge"
+  }
+]

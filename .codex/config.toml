@@ -1,26 +1,18 @@
 #:schema https://developers.openai.com/codex/config-schema.json
-
-# Project-local connection and availability configuration. Codex loads it only
-# in a trusted repository. Agent roles belong in .codex/agents/*.toml; project
-# routing and verification rules belong in AGENTS.md.
-# Do not store access tokens, ADC keys, passwords, or host-specific paths here.
-# No global model, sandbox, or CLI approval override: inherit the user's controls.
-# External write operations still require explicit user authorization.
-
-# Load the entire repository-level AGENTS.md on projects with long guidance.
+# Trusted project-local configuration. Connection declarations are not runtime proof.
+# Inherit the user's global model, sandbox, provider and approval controls.
+# Do not store tokens, API keys, passwords or machine-specific absolute paths.
 project_doc_max_bytes = 65536
 
 [features]
 multi_agent = true
 
 [agents]
-# Role-specific models are configured in agents/*.toml. Reasoning effort is
-# intentionally omitted so each model uses its own adaptive/default behavior.
+# Existing role models stay in their role files. New roles may inherit the host.
+# Omit model_reasoning_effort; do not invent an "auto" value.
 enabled = true
 max_concurrent_threads_per_session = 5
 
-# Custom specialist role registrations. Paths are relative to .codex/.
-# Roles are delegated on demand; defining a role does not run or elevate it.
 [agents.api_contract_reviewer]
 description = "HTTP, webhook and external integration contract compatibility reviewer"
 config_file = "agents/api_contract_reviewer.toml"
@@ -81,6 +73,10 @@ config_file = "agents/go_agents_md_author.toml"
 description = "Reviews DDD and Hexagonal dependency boundaries across Go packages"
 config_file = "agents/go_architecture_reviewer.toml"
 
+[agents.go_code_refactor]
+description = "Behavior-preserving Go code quality refactoring; local simplification without architecture or API changes"
+config_file = "agents/go_code_refactor.toml"
+
 [agents.go_feature_engineer]
 description = "Implements small, testable Go features within the approved application architecture"
 config_file = "agents/go_feature_engineer.toml"
@@ -129,17 +125,16 @@ config_file = "agents/security_reviewer.toml"
 description = "Updates technical documentation and implementation status based on verified code"
 config_file = "agents/technical_docs_writer.toml"
 
-# Go-language intelligence: install the pinned gopls version on PATH in each environment.
-# Preflight with `gopls version` and `gopls mcp` before relying on this MCP.
+# POSIX/WSL/Cloud: use the setup-installed binary, independent of shell PATH.
+# Native Windows hosts require an explicitly validated local override.
 [mcp_servers.gopls]
-command = "gopls"
-args = ["mcp"]
+command = "bash"
+args = ["-c", 'exec "$HOME/.local/bin/gopls" mcp']
 enabled = true
 required = false
 startup_timeout_sec = 30
 tool_timeout_sec = 60
 
-# Current SDK documentation. Anonymous HTTP access may be rate-limited.
 [mcp_servers.context7]
 url = "https://mcp.context7.com/mcp"
 enabled = true
@@ -147,7 +142,6 @@ required = false
 startup_timeout_sec = 20
 tool_timeout_sec = 45
 
-# GitHub official remote MCP. The token is supplied only through the environment.
 [mcp_servers.github]
 url = "https://api.githubcopilot.com/mcp/"
 bearer_token_env_var = "GITHUB_MCP_TOKEN"
@@ -157,10 +151,7 @@ required = false
 startup_timeout_sec = 20
 tool_timeout_sec = 45
 
-# Google MCP Toolbox for Databases (Firestore prebuilt).
-# Keep disabled by default; do not enable alongside google_firestore without purpose.
-# Requires FIRESTORE_PROJECT, FIRESTORE_DATABASE, and GOOGLE_APPLICATION_CREDENTIALS
-# in the runtime environment.
+# Optional staging-only database tools. Do not enable alongside google_firestore without purpose.
 [mcp_servers.firestore_toolbox]
 command = "npx"
 args = ["-y", "@toolbox-sdk/server@1.14.0", "--prebuilt=firestore", "--stdio"]
@@ -172,27 +163,24 @@ required = false
 startup_timeout_sec = 45
 tool_timeout_sec = 45
 
-# Google-managed remote MCP servers. Tools default to explicit approval when enabled.
-# They remain optional at runtime and
-# require a Google OAuth identity with least-privilege IAM.
+# Disabled until explicit environment authorization and authentication.
 [mcp_servers.google_cloud_run]
-default_tools_approval_mode = "prompt"
 url = "https://run.googleapis.com/mcp"
-enabled = false
-required = false
-startup_timeout_sec = 20
-tool_timeout_sec = 45
-
-[mcp_servers.google_firestore]
 default_tools_approval_mode = "prompt"
-url = "https://firestore.googleapis.com/mcp"
 enabled = false
 required = false
 startup_timeout_sec = 20
 tool_timeout_sec = 45
 
-# Official OpenAI Developer Documentation MCP (read-only).
-# Agent-phase network access to developers.openai.com is required.
+# Disabled until explicit environment authorization and authentication.
+[mcp_servers.google_firestore]
+url = "https://firestore.googleapis.com/mcp"
+default_tools_approval_mode = "prompt"
+enabled = false
+required = false
+startup_timeout_sec = 20
+tool_timeout_sec = 45
+
 [mcp_servers.openaiDeveloperDocs]
 url = "https://developers.openai.com/mcp"
 enabled = true
@@ -200,82 +188,84 @@ required = false
 startup_timeout_sec = 20
 tool_timeout_sec = 45
 
-# Google-managed MCP. Documentation discovery; may require Google authentication.
+# Documentation API key only; no OAuth. Supply this variable securely in the host.
 [mcp_servers.google_developer_knowledge]
 url = "https://developerknowledge.googleapis.com/mcp"
+env_http_headers = { "X-Goog-Api-Key" = "DEVELOPERKNOWLEDGE_API_KEY" }
 enabled = true
 required = false
 startup_timeout_sec = 20
 tool_timeout_sec = 45
 
-# Google-managed MCP. Requires explicit Google authentication and least-privilege access.
+# Disabled until explicit environment authorization and authentication.
 [mcp_servers.google_cloud_cli]
-default_tools_approval_mode = "prompt"
 url = "https://cloudcli.googleapis.com/mcp"
+default_tools_approval_mode = "prompt"
 enabled = false
 required = false
 startup_timeout_sec = 20
 tool_timeout_sec = 45
 
-# Google-managed MCP. Requires explicit Google authentication and least-privilege access.
+# Disabled until explicit environment authorization and authentication.
 [mcp_servers.google_cloud_logging]
-default_tools_approval_mode = "prompt"
 url = "https://logging.googleapis.com/mcp"
+default_tools_approval_mode = "prompt"
 enabled = false
 required = false
 startup_timeout_sec = 20
 tool_timeout_sec = 45
 
-# Google-managed MCP. Requires explicit Google authentication and least-privilege access.
+# Disabled until explicit environment authorization and authentication.
 [mcp_servers.google_cloud_monitoring]
-default_tools_approval_mode = "prompt"
 url = "https://monitoring.googleapis.com/mcp"
+default_tools_approval_mode = "prompt"
 enabled = false
 required = false
 startup_timeout_sec = 20
 tool_timeout_sec = 45
 
-# Google-managed MCP. Requires explicit Google authentication and least-privilege access.
+# Disabled until explicit environment authorization and authentication.
 [mcp_servers.google_calendar]
-default_tools_approval_mode = "prompt"
 url = "https://calendarmcp.googleapis.com/mcp/v1"
+default_tools_approval_mode = "prompt"
 enabled = false
 required = false
 startup_timeout_sec = 20
 tool_timeout_sec = 45
 
-# Google-managed MCP. Requires explicit Google authentication and least-privilege access.
+# Disabled until explicit environment authorization and authentication.
 [mcp_servers.google_drive]
-default_tools_approval_mode = "prompt"
 url = "https://drivemcp.googleapis.com/mcp/v1"
+default_tools_approval_mode = "prompt"
 enabled = false
 required = false
 startup_timeout_sec = 20
 tool_timeout_sec = 45
 
-# Google-managed MCP. Requires explicit Google authentication and least-privilege access.
+# Disabled until explicit environment authorization and authentication.
 [mcp_servers.google_sheets]
-default_tools_approval_mode = "prompt"
 url = "https://sheetsmcp.googleapis.com/mcp/v1"
+default_tools_approval_mode = "prompt"
 enabled = false
 required = false
 startup_timeout_sec = 20
 tool_timeout_sec = 45
 
-# Google-managed MCP. Requires explicit Google authentication and least-privilege access.
+# Disabled until explicit environment authorization and authentication.
 [mcp_servers.google_docs]
-default_tools_approval_mode = "prompt"
 url = "https://docsmcp.googleapis.com/mcp/v1"
+default_tools_approval_mode = "prompt"
 enabled = false
 required = false
 startup_timeout_sec = 20
 tool_timeout_sec = 45
 
-# Google-managed MCP. Requires explicit Google authentication and least-privilege access.
+# Disabled until explicit environment authorization and authentication.
 [mcp_servers.google_gmail]
-default_tools_approval_mode = "prompt"
 url = "https://gmailmcp.googleapis.com/mcp/v1"
+default_tools_approval_mode = "prompt"
 enabled = false
 required = false
 startup_timeout_sec = 20
 tool_timeout_sec = 45
+
