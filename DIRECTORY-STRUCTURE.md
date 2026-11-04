@@ -10,7 +10,7 @@ linebot-platform/
 │   │   ├── identity/
 │   │   │   ├── entities/
 │   │   │   ├── aggregates/
-│   │   │   ├── valueobjects/
+│   │   │   ├── value-objects/
 │   │   │   ├── policies/
 │   │   │   ├── specifications/
 │   │   │   ├── factories/
