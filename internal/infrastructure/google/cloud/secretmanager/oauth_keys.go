@@ -16,13 +16,15 @@ func LoadOAuthKeyring(ctx context.Context, client *sdk.Client, active string, ve
 	if ctx == nil || client == nil || active == "" || len(versions) == 0 {
 		return nil, errors.New("OAuth keyring requires Secret Manager client and versions")
 	}
-	if err := ctx.Err(); err != nil { return nil, err }
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
 	keys := make(map[string][]byte, len(versions))
 	for id, resource := range versions {
 		if id == "" || !isPinnedSecretVersion(resource) {
 			return nil, errors.New("OAuth encryption key must use a pinned secret version")
 		}
-		reply, err := client.AccessSecretVersion(ctx, &pb.AccessSecretVersionRequest{Name:resource})
+		reply, err := client.AccessSecretVersion(ctx, &pb.AccessSecretVersionRequest{Name: resource})
 		if err != nil || reply == nil || reply.Payload == nil || len(reply.Payload.Data) != 32 {
 			return nil, errors.New("OAuth encryption secret is missing, inaccessible or invalid")
 		}
@@ -30,7 +32,11 @@ func LoadOAuthKeyring(ctx context.Context, client *sdk.Client, active string, ve
 	}
 	ring, err := oauth.NewKeyring(active, keys)
 	// Forget intermediate raw key slices when key schedule has been created.
-	for _, key := range keys { for i := range key { key[i] = 0 } }
+	for _, key := range keys {
+		for i := range key {
+			key[i] = 0
+		}
+	}
 	return ring, err
 }
 
@@ -44,7 +50,13 @@ func isPinnedSecretVersion(name string) bool {
 			return false
 		}
 	}
-	if parts[5] == "latest" { return false }
-	for _, char := range parts[5] { if char < '0' || char > '9' { return false } }
+	if parts[5] == "latest" {
+		return false
+	}
+	for _, char := range parts[5] {
+		if char < '0' || char > '9' {
+			return false
+		}
+	}
 	return true
 }
