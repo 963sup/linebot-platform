@@ -52,4 +52,3 @@ func TestIdentityContract(t *testing.T) {
 		}
 	}
 }
-

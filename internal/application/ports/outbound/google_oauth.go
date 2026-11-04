@@ -48,4 +48,3 @@ type OAuthSessionRepository interface {
 	CreateSession(context.Context, string, OAuthSession) error
 	ConsumeSession(context.Context, string) (OAuthSession, error)
 }
-
