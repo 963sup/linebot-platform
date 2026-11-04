@@ -59,3 +59,7 @@ calendarClient, err := api.NewCalendar(ctx, authorizedHTTP)
 - 不需要執行真實 API 才能驗證 Adapter 的 HTTP Route；先執行 `make check`，再以獨立授權測試帳號驗證。
 
 > **本次整合狀態**：Calendar／Tasks 52 項方法已完成離線接線；Drive／Sheets 仍僅具 Client Factory，因此模組共用 Catalog 的 `client_ready` 不能代表四個服務都未整合，也不能代表完整 OAuth 已完成。詳見 `docs/google/README.md`。
+
+## 使用者自行綁定（未實作）
+
+目標為 LINE 使用者從 Bot 安全進入 Google OAuth Consent，同意後綁定自己的 Google 身分，依授予 Scope 存取自己的 Calendar／Tasks。不可從使用者任意填寫的 LINE ID 或單純持有轉傳連結來認定綁定者；必須在授權完成前重新驗證 LINE 身分。與本機短期 Token Operator CLI 不同，完整流程需要單次 state、PKCE、伺服器端 Code Exchange、Google OIDC `sub`、加密 Token Repository、Refresh Token 生命週期、解除連結與使用者隔離。詳見 [使用者自行綁定設計](../google/user-self-service-linking.md)。
