@@ -49,7 +49,7 @@ func main() {
 			return statusRuntime{runtime}, nil
 		},
 		WorkspaceRuntime: func(ctx context.Context, source oauth2.TokenSource) (cli.WorkspaceRuntime, error) {
-			return bootstrap.NewWorkspaceOperations(ctx, source)
+			return newWorkspaceRuntime(ctx, source)
 		},
 		LinkTokenRuntime: func(token string) (cli.LinkTokenRuntime, error) {
 			runtime, err := bootstrap.NewLINEOpsRuntime(token)
