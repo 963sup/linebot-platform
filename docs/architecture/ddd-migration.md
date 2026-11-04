@@ -63,3 +63,30 @@ Run `go test ./internal/domain/...`, `go test ./tests/architecture/...`, `go tes
 ## CI acceptance for legacy code removal
 - In addition to ordinary race tests, `make check` compiles `//go:build integration` tests (`-run '^$'`) so the Firestore migration contract cannot silently rot behind build tags. Actual Firestore emulator transaction validation remains an explicit separate environment gate.
 - The Identity architecture test rejects reintroduction of the old application DTO, broad repository interface, or deleted duplicate mapper files.
+
+## Identity full-chain closure plan (PR #28)
+
+**Scope:** `Domain → Application → Adapter → Infrastructure → Bootstrap → cmd → go.mod / go.sum / SDK Catalog / CI`.
+
+### End-to-end ownership and deletion decisions
+
+| Layer | Owns | Concrete cleanup | Compatibility / gate |
+| --- | --- | --- | --- |
+| Domain | ConnectionID, AccountLink, GoogleConnection, scope policy, eligibility, state transitions | Keep only actual business behavior; do not duplicate it in Bootstrap | No SDK or credential imports |
+| Application | Verify ownership and access in an explicit use case | Move AccountID parsing, linked-status and scope decisions out of `bootstrap/workspace_links.go` | A mismatched repository response must be rejected even if the adapter is faulty |
+| Inbound | Only authorized LINE identity and explicit Google OAuth callback | No public route enabled without a real verified LINE principal | `TrustedLINEIdentity` may not be silently replaced with URL parameters |
+| Outbound | Google OAuth Provider and Firestore OAuth Store | Keep private `legacyOAuthConnection` wire compatibility, avoid duplicate Application DTO | Existing ciphertext, collection keys, version/CAS, refresh token and revoke fail-closed tests |
+| Infrastructure | OAuth Flow, Keyring, native API clients | Do not create another OAuth Factory or copy transport logic | No credentials in Domain, logs, or URL |
+| Bootstrap/cmd | Dependency construction and process lifecycle only | Delegate eligibility decisions to Application | Local token-only operations are **not** Google self-service account linking |
+| go.mod/go.sum | Module versions and checksums, not Go import package paths | Audit direct `golang.org/x/oauth2` and `google.golang.org/api`; preserve preapproved SDKs | `go mod tidy` must leave lockfiles unchanged in CI; no forced Go module deletion |
+| Catalog/CI | Package inventory and architecture gates | Record Identity package use; forbid Bootstrap authorization policy | `make check` plus tagged integration compilation |
+
+### Planned verification before declaring closure
+1. Focused Application tests: valid link, absent link, cross-owner result, scope mismatch, disabled status, canceled context.
+2. New architecture gate: no Domain policy or identity Value Object decision in the Bootstrap wiring file.
+3. SDK catalog and protected Go module consistency, including `golang.org/x/oauth2`.
+4. `gofmt`, `go vet`, `go test -race ./...`, `go build ./...`, tagged integration compile, and GitHub Actions on the final head.
+5. Require a separate Firestore Emulator run to claim real transactional correctness; passing compile-only integration tests is not enough.
+
+### External acceptance blocker
+The Google OAuth inbound HTTP handler is intentionally not mounted in a public `cmd/` service, because there is no verified LINE Login / LIFF / Messaging API account-link principal provider connected to the route. Do not weaken this security boundary merely to make the call graph look complete. Runtime-eligible means built and testable by dependency injection; publicly enabled requires authorized identity, staging acceptance and explicit deployment.
