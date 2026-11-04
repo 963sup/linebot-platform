@@ -27,7 +27,7 @@ test:
 
 # Compile build-tagged Firestore integration tests without requiring an emulator.
 integration-compile:
-	go test -tags=integration -run '^$' ./tests/integration
+	go test -tags=integration -run '^_compile_only_' ./tests/integration
 
 build:
 	go build ./...
