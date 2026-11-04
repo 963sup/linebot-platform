@@ -35,6 +35,17 @@ flowchart TD
 | L5 | `git_release` | Git commit、branch、PR／merge 交付閘門與遠端驗證 | GitHub MCP、Git、Go 品質工具 | 明確授權後才可寫入；不可自行部署 |
 | L1 | `openai_docs_researcher` | OpenAI 官方文件、API、SDK、Codex、Skills、MCP 與 Plugins 查證 | OpenAI Docs MCP；明確授權後可嘗試 Codex MCP setup；官方 fallback | 只查證，不修改產品程式 |
 
+| L2 | `firestore_integrator` | Firestore persistence and consistency implementation specialist | gopls、Context7／相關官方文件（按需） | 依委派工作契約；預設不得操作 production |
+| L2 | `cloud_tasks_integrator` | Cloud Tasks asynchronous execution, retry and idempotency specialist | gopls、Context7／相關官方文件（按需） | 依委派工作契約；預設不得操作 production |
+| L4 | `security_reviewer` | Independent security and privacy reviewer for LINE, OAuth, Google Cloud and webhook trust boundaries | gopls、Context7／相關官方文件（按需） | 依委派工作契約；預設不得操作 production |
+| L4 | `go_test_engineer` | Go test design and coverage specialist for behavioral, contract, integration, race and regression evidence | gopls、Context7／相關官方文件（按需） | 依委派工作契約；預設不得操作 production |
+| L2 | `observability_engineer` | Production observability and diagnostic instrumentation specialist | gopls、Context7／相關官方文件（按需） | 依委派工作契約；預設不得操作 production |
+| L4 | `performance_reviewer` | Read-only Go concurrency, latency, throughput and cloud-cost performance reviewer | gopls、Context7／相關官方文件（按需） | 依委派工作契約；預設不得操作 production |
+| L4 | `api_contract_reviewer` | HTTP, webhook and external integration contract compatibility reviewer | gopls、Context7／相關官方文件（按需） | 依委派工作契約；預設不得操作 production |
+| L2 | `data_migration_engineer` | Firestore and OAuth persistence migration specialist with rollback and compatibility gates | gopls、Context7／相關官方文件（按需） | 依委派工作契約；預設不得操作 production |
+| L4 | `incident_responder` | Read-only production incident triage and recovery planning specialist | gopls、Context7／相關官方文件（按需） | 依委派工作契約；預設不得操作 production |
+| L2/L3 | `architecture_alignment_engineer` | Evidence-driven repository realignment to DESIGN.md and DIRECTORY-STRUCTURE.md | gopls、Context7／相關官方文件（按需） | 依委派工作契約；預設不得操作 production |
+
 Codex 內建 `worker`、`explorer` 可處理一般任務，不再額外建立通用 agent。主 Agent 負責拆分任務、避免併發編輯同一檔案、整合與最後驗證。只有實際互不依賴的工作才並行委派；建議最多三個子 Agent。
 
 SDK 功能開發仍以 [sdk-integration Skill](../../.agents/skills/sdk-integration/SKILL.md) 按需查證。LINE 的十一個 v8 package 統一交 `line_integrator`，Google OAuth／Workspace 的八個 package 統一交 `google_identity_workspace_integrator`；不可依 import path 建立互相重疊的角色。兩者都必須將 SDK 型別留在 Adapter／Infrastructure、由 Bootstrap 組裝，並以自有 DTO／小型 Port 隔開 Domain 與 Application。`gopls_go_refactor` 專責 Go 語意批量修改，`code_cleanup_release_validation` 專責交付前清理與驗證。`go.mod` 預先核准的 SDK 直接依賴及其預留空白骨架不得因尚未使用被刪除，Catalog 的能力標籤只是搜尋提示。
@@ -59,3 +70,12 @@ SDK 功能開發仍以 [sdk-integration Skill](../../.agents/skills/sdk-integrat
 - 不要把 production 的 LINE 密鑰、Google ADC 或 GitHub PAT 放到 GitHub、TOML、skill 或 Agent instructions。
 - MCP 寫入能力受外部帳號權限控制；即使 Agent 文本說「唯讀」，也不是技術隔離。正式環境權限需由 IAM／MCP allowlist 控制。
 - Codex CLI／IDE 官方支援專案 Agent 檔；Codex Cloud 的工作階段是否載入該角色及 MCP 仍須在**已發布的雲端環境**實測，不以檔案存在保證。
+
+
+## 架構對齊與新增專家路由（2026-11）
+
+針對 `DESIGN.md` 與 `DIRECTORY-STRUCTURE.md` 的整體收斂，委派 `architecture_alignment_engineer` 先完成現況差異、依賴圖、可回復切片與驗收條件，不可直接大量移動檔案；跨 package 變更委派 `gopls_go_refactor`。兩份標靶對 Identity 目錄名稱不一致：`DESIGN.md` 明定 `value-objects/`，目錄圖寫 `valueobjects/`，在文件修正前以明確的 DESIGN Identity 契約為判斷依據，並在差異報告註明；不默默更動資料契約。
+
+Firestore 實作交 `firestore_integrator`、Cloud Tasks 工作交 `cloud_tasks_integrator`、需要資料演進才交 `data_migration_engineer`、遙測實作交 `observability_engineer`。安全交 `security_reviewer`、測試設計與獨立測試檔交 `go_test_engineer`、效能交 `performance_reviewer`、HTTP/Webhook 契約交 `api_contract_reviewer`、事故診斷交 `incident_responder`。既有 `cloud_platform` 保持 IAM／Google Cloud 平台審查 owner，`go_reviewer` 保持最終 Go 正確性審查。
+
+在受信任的 Codex 工作區，`.codex/config.toml` 使用 `[agents.<name>]` 與 `config_file = "agents/<name>.toml"` 註冊所有角色；註冊不是已啟動或已獲取外部服務權限。新增角色後同步更新 `cmd/codexcheck` 的允許名單與註冊檢查。

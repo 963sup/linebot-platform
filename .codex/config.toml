@@ -4,7 +4,11 @@
 # in a trusted repository. Agent roles belong in .codex/agents/*.toml; project
 # routing and verification rules belong in AGENTS.md.
 # Do not store access tokens, ADC keys, passwords, or host-specific paths here.
-# No global model or approval setting: inherit the signed-in user's controls.
+# No global model, sandbox, or CLI approval override: inherit the user's controls.
+# External write operations still require explicit user authorization.
+
+# Load the entire repository-level AGENTS.md on projects with long guidance.
+project_doc_max_bytes = 65536
 
 [features]
 multi_agent = true
@@ -13,76 +17,118 @@ multi_agent = true
 enabled = true
 max_concurrent_threads_per_session = 3
 
+# Custom specialist role registrations. Paths are relative to .codex/.
+# Roles are delegated on demand; defining a role does not run or elevate it.
+[agents.api_contract_reviewer]
+description = "HTTP, webhook and external integration contract compatibility reviewer"
+config_file = "agents/api_contract_reviewer.toml"
+
+[agents.architecture_alignment_engineer]
+description = "Evidence-driven repository realignment to DESIGN.md and DIRECTORY-STRUCTURE.md"
+config_file = "agents/architecture_alignment_engineer.toml"
+
 [agents.cloud_platform]
-description = "cloud platform specialist."
+description = "Google Cloud IAM, networking, deployment infrastructure and runtime configuration specialist"
 config_file = "agents/cloud_platform.toml"
 
 [agents.cloud_run_release]
-description = "cloud run release specialist."
+description = "Cloud Run release planning, deployment safety and post-release verification specialist"
 config_file = "agents/cloud_run_release.toml"
 
+[agents.cloud_tasks_integrator]
+description = "Cloud Tasks asynchronous execution, retry and idempotency specialist"
+config_file = "agents/cloud_tasks_integrator.toml"
+
 [agents.code_cleanup_release_validation]
-description = "code cleanup release validation specialist."
+description = "Code cleanup, release readiness and final verification specialist"
 config_file = "agents/code_cleanup_release_validation.toml"
 
+[agents.data_migration_engineer]
+description = "Firestore and OAuth persistence migration specialist with rollback and compatibility gates"
+config_file = "agents/data_migration_engineer.toml"
+
 [agents.delivery_orchestrator]
-description = "delivery orchestrator specialist."
+description = "Coordinates cross-domain work, delegated ownership, handoffs and final validation"
 config_file = "agents/delivery_orchestrator.toml"
 
 [agents.docs_researcher]
-description = "docs researcher specialist."
+description = "Researches and verifies official SDK, API and architecture documentation"
 config_file = "agents/docs_researcher.toml"
 
 [agents.domain_architect]
-description = "domain architect specialist."
+description = "Defines domain boundaries, invariants, aggregates and application ports"
 config_file = "agents/domain_architect.toml"
 
+[agents.firestore_integrator]
+description = "Firestore persistence and consistency implementation specialist"
+config_file = "agents/firestore_integrator.toml"
+
 [agents.git_release]
-description = "git release specialist."
+description = "Handles explicitly authorized Git commits, pushes and release changes"
 config_file = "agents/git_release.toml"
 
 [agents.github_actions_reviewer]
-description = "github actions reviewer specialist."
+description = "Reviews GitHub Actions permissions, workflows, CI security and consistency"
 config_file = "agents/github_actions_reviewer.toml"
 
 [agents.go_agents_md_author]
-description = "go agents md author specialist."
+description = "Maintains concise AGENTS.md guidance and agent instruction alignment"
 config_file = "agents/go_agents_md_author.toml"
 
 [agents.go_architecture_reviewer]
-description = "go architecture reviewer specialist."
+description = "Reviews DDD and Hexagonal dependency boundaries across Go packages"
 config_file = "agents/go_architecture_reviewer.toml"
 
 [agents.go_feature_engineer]
-description = "go feature engineer specialist."
+description = "Implements small, testable Go features within the approved application architecture"
 config_file = "agents/go_feature_engineer.toml"
 
 [agents.go_reviewer]
-description = "go reviewer specialist."
+description = "Independently reviews Go correctness, concurrency, errors and tests"
 config_file = "agents/go_reviewer.toml"
 
+[agents.go_test_engineer]
+description = "Go test design and coverage specialist for behavioral, contract, integration, race and regression evidence"
+config_file = "agents/go_test_engineer.toml"
+
 [agents.google_identity_workspace_integrator]
-description = "google identity workspace integrator specialist."
+description = "Integrates Google OAuth, identity, Calendar and Workspace SDK adapters"
 config_file = "agents/google_identity_workspace_integrator.toml"
 
 [agents.gopls_go_refactor]
-description = "gopls go refactor specialist."
+description = "Performs symbol-aware Go refactoring using gopls and reference validation"
 config_file = "agents/gopls_go_refactor.toml"
 
+[agents.incident_responder]
+description = "Read-only production incident triage and recovery planning specialist"
+config_file = "agents/incident_responder.toml"
+
 [agents.line_integrator]
-description = "line integrator specialist."
+description = "Integrates LINE Messaging API SDK, webhook handling and channel-specific behavior"
 config_file = "agents/line_integrator.toml"
 
+[agents.observability_engineer]
+description = "Production observability and diagnostic instrumentation specialist"
+config_file = "agents/observability_engineer.toml"
+
 [agents.openai_docs_researcher]
-description = "openai docs researcher specialist."
+description = "Verifies OpenAI APIs, Codex configuration and official SDK documentation"
 config_file = "agents/openai_docs_researcher.toml"
 
+[agents.performance_reviewer]
+description = "Read-only Go concurrency, latency, throughput and cloud-cost performance reviewer"
+config_file = "agents/performance_reviewer.toml"
+
+[agents.security_reviewer]
+description = "Independent security and privacy reviewer for LINE, OAuth, Google Cloud and webhook trust boundaries"
+config_file = "agents/security_reviewer.toml"
+
 [agents.technical_docs_writer]
-description = "technical docs writer specialist."
+description = "Updates technical documentation and implementation status based on verified code"
 config_file = "agents/technical_docs_writer.toml"
 
-# Go-language intelligence: "gopls mcp" detached stdio mode.
-# Cloud setup installs the pinned gopls binary into $HOME/.local/bin.
+# Go-language intelligence: install the pinned gopls version on PATH in each environment.
+# Preflight with `gopls version` and `gopls mcp` before relying on this MCP.
 [mcp_servers.gopls]
 command = "gopls"
 args = ["mcp"]
@@ -110,6 +156,7 @@ startup_timeout_sec = 20
 tool_timeout_sec = 45
 
 # Google MCP Toolbox for Databases (Firestore prebuilt).
+# Keep disabled by default; do not enable alongside google_firestore without purpose.
 # Requires FIRESTORE_PROJECT, FIRESTORE_DATABASE, and GOOGLE_APPLICATION_CREDENTIALS
 # in the runtime environment.
 [mcp_servers.firestore_toolbox]
@@ -123,11 +170,13 @@ required = false
 startup_timeout_sec = 45
 tool_timeout_sec = 45
 
-# Google-managed remote MCP servers. They remain optional at runtime and
+# Google-managed remote MCP servers. Tools default to explicit approval when enabled.
+# They remain optional at runtime and
 # require a Google OAuth identity with least-privilege IAM.
 [mcp_servers.google_cloud_run]
 default_tools_approval_mode = "prompt"
 url = "https://run.googleapis.com/mcp"
+default_tools_approval_mode = "prompt"
 enabled = false
 required = false
 startup_timeout_sec = 20
@@ -136,6 +185,7 @@ tool_timeout_sec = 45
 [mcp_servers.google_firestore]
 default_tools_approval_mode = "prompt"
 url = "https://firestore.googleapis.com/mcp"
+default_tools_approval_mode = "prompt"
 enabled = false
 required = false
 startup_timeout_sec = 20
@@ -162,6 +212,7 @@ tool_timeout_sec = 45
 [mcp_servers.google_cloud_cli]
 default_tools_approval_mode = "prompt"
 url = "https://cloudcli.googleapis.com/mcp"
+default_tools_approval_mode = "prompt"
 enabled = false
 required = false
 startup_timeout_sec = 20
@@ -171,6 +222,7 @@ tool_timeout_sec = 45
 [mcp_servers.google_cloud_logging]
 default_tools_approval_mode = "prompt"
 url = "https://logging.googleapis.com/mcp"
+default_tools_approval_mode = "prompt"
 enabled = false
 required = false
 startup_timeout_sec = 20
@@ -180,6 +232,7 @@ tool_timeout_sec = 45
 [mcp_servers.google_cloud_monitoring]
 default_tools_approval_mode = "prompt"
 url = "https://monitoring.googleapis.com/mcp"
+default_tools_approval_mode = "prompt"
 enabled = false
 required = false
 startup_timeout_sec = 20
@@ -189,6 +242,7 @@ tool_timeout_sec = 45
 [mcp_servers.google_calendar]
 default_tools_approval_mode = "prompt"
 url = "https://calendarmcp.googleapis.com/mcp/v1"
+default_tools_approval_mode = "prompt"
 enabled = false
 required = false
 startup_timeout_sec = 20
@@ -198,6 +252,7 @@ tool_timeout_sec = 45
 [mcp_servers.google_drive]
 default_tools_approval_mode = "prompt"
 url = "https://drivemcp.googleapis.com/mcp/v1"
+default_tools_approval_mode = "prompt"
 enabled = false
 required = false
 startup_timeout_sec = 20
@@ -207,6 +262,7 @@ tool_timeout_sec = 45
 [mcp_servers.google_sheets]
 default_tools_approval_mode = "prompt"
 url = "https://sheetsmcp.googleapis.com/mcp/v1"
+default_tools_approval_mode = "prompt"
 enabled = false
 required = false
 startup_timeout_sec = 20
@@ -216,6 +272,7 @@ tool_timeout_sec = 45
 [mcp_servers.google_docs]
 default_tools_approval_mode = "prompt"
 url = "https://docsmcp.googleapis.com/mcp/v1"
+default_tools_approval_mode = "prompt"
 enabled = false
 required = false
 startup_timeout_sec = 20
@@ -225,6 +282,7 @@ tool_timeout_sec = 45
 [mcp_servers.google_gmail]
 default_tools_approval_mode = "prompt"
 url = "https://gmailmcp.googleapis.com/mcp/v1"
+default_tools_approval_mode = "prompt"
 enabled = false
 required = false
 startup_timeout_sec = 20
