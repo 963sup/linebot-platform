@@ -1,0 +1,25 @@
+# 文件索引
+
+- [架構概覽](architecture/overview.md)
+- [SDK 整合與 Codex 開發流程](architecture/sdk-integration.md)
+- [SDK Catalog（直接依賴與接線狀態）](sdk/catalog.toml)
+- [main 基礎設施狀態／依賴與歷史殘留稽核](architecture/infrastructure-status.md)
+- [Google Tasks／Calendar／Sheets／Drive OAuth 與 Client](sdk/workspace-oauth.md)
+- [事件處理（同步／持久模式與限制）](architecture/event-processing.md)
+- [Durable Worker Staging／OIDC／Cloud Scheduler 要求](operations/durable-worker.md)
+- [Firestore Inbox／Outbox TTL 與隱私](../deploy/firestore/README.md)
+- [本機開發](operations/local-development.md)
+- [測試策略](quality/test-strategy.md)
+- [Cloud Build／Cloud Run 配置雛形](operations/deployment.md)
+- [目錄清單](architecture/directory-manifest.md)
+- [技術來源與使用分工](sources.md)
+- [LINE 能力矩陣](line/feature-matrix.md)
+- [Codex 開發指南](ai/codex.md)
+- [Codex 專用 Agents](ai/agents.md)
+- [Codex Cloud 安裝與驗證](ai/codex-cloud.md)
+- [Skills](ai/skills.md)
+- [MCP 與 Plugins](ai/mcp-and-plugins.md)
+- [開發路線圖](roadmap.md)
+- [版本決策](versions.md)
+
+其他目錄目前由 `.gitkeep` 保留，對應功能仍待實作與補完。

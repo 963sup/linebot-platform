@@ -1,0 +1,89 @@
+# Manual production deployment for the Line Bot Cloud Run services.
+# It creates or updates services from immutable images and removes legacy
+# environment variables from both services.
+substitutions:
+  _APPROVE_DEPLOYMENT: 'false'
+  _REGION: 'asia-east1'
+  _PUBLIC_SERVICE: 'line-bot-public'
+  _PRIVATE_SERVICE: 'line-bot-private'
+  _AR_REPOSITORY: 'line-bot'
+  _PUBLIC_IMAGE_URI: ''
+  _PRIVATE_IMAGE_URI: ''
+  _QUEUE_ID: 'line-bot-events'
+  _LINE_BOT_DESTINATION: ''
+  _TASK_INVOKER_EMAIL: 'line-bot-scheduler@bubbly-area-513305-s0.iam.gserviceaccount.com'
+
+serviceAccount: 'projects/bubbly-area-513305-s0/serviceAccounts/line-bot-build@bubbly-area-513305-s0.iam.gserviceaccount.com'
+
+steps:
+  - id: 'preflight-production'
+    name: 'gcr.io/google.com/cloudsdktool/google-cloud-cli@sha256:18d8c484aaef27d7ef7b54dfb018f73712503d254a16f0a76b2626b4f6003af2'
+    entrypoint: 'bash'
+    args:
+      - '-ceu'
+      - |
+        if [ '${_APPROVE_DEPLOYMENT}' != 'true' ]; then
+          echo 'Deployment disabled. Require explicit _APPROVE_DEPLOYMENT=true.' >&2
+          exit 2
+        fi
+        if [ '$PROJECT_ID' != 'bubbly-area-513305-s0' ]; then
+          echo 'This deployment configuration only targets bubbly-area-513305-s0.' >&2
+          exit 2
+        fi
+        if ! printf '%s' '${_LINE_BOT_DESTINATION}' | grep -Eq '^U[0-9a-f]{32}$'; then
+          echo 'Specify _LINE_BOT_DESTINATION as a LINE user ID.' >&2
+          exit 2
+        fi
+        for image in '${_PUBLIC_IMAGE_URI}' '${_PRIVATE_IMAGE_URI}'; do
+          case "$$image" in
+            '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPOSITORY}/'*'@sha256:'*) ;;
+            *) echo 'Specify a target-repository image pinned by @sha256:.' >&2; exit 2 ;;
+          esac
+          gcloud artifacts docker images describe "$$image" --project='$PROJECT_ID' --quiet >/dev/null
+        done
+        for secret in line-bot-channel-secret line-bot-channel-access-token; do
+          gcloud secrets describe "$$secret" --project='$PROJECT_ID' --quiet >/dev/null
+        done
+
+  - id: 'deploy-public-webhook'
+    name: 'gcr.io/google.com/cloudsdktool/google-cloud-cli@sha256:18d8c484aaef27d7ef7b54dfb018f73712503d254a16f0a76b2626b4f6003af2'
+    waitFor: ['preflight-production']
+    entrypoint: 'gcloud'
+    args:
+      - 'run'
+      - 'deploy'
+      - '${_PUBLIC_SERVICE}'
+      - '--image=${_PUBLIC_IMAGE_URI}'
+      - '--region=${_REGION}'
+      - '--project=$PROJECT_ID'
+      - '--service-account=line-bot-runtime@bubbly-area-513305-s0.iam.gserviceaccount.com'
+      - '--no-invoker-iam-check'
+      - '--update-env-vars=APP_ENV=production,LINE_EVENT_MODE=durable,LINE_API_TIMEOUT=8s,LOG_LEVEL=info,LOG_FORMAT=json,LINE_BOT_DESTINATION=${_LINE_BOT_DESTINATION},GCP_PROJECT_ID=$PROJECT_ID,TASK_QUEUE_NAME=projects/$PROJECT_ID/locations/${_REGION}/queues/${_QUEUE_ID},TASK_WORKER_URL=https://line-bot-private-185354881750.asia-east1.run.app/tasks/line-reply,TASK_OIDC_AUDIENCE=https://line-bot-private-185354881750.asia-east1.run.app,TASK_INVOKER_EMAIL=${_TASK_INVOKER_EMAIL}'
+      - '--update-secrets=LINE_CHANNEL_SECRET=line-bot-channel-secret:latest'
+      - '--remove-env-vars=GOOGLE_CLOUD_PROJECT,FIRESTORE_DATABASE,OPENAI_MODEL,AUTO_TASKS,AUTO_CALENDAR,CALENDAR_SERVICE_ACCOUNT'
+      - '--remove-secrets=LINE_CHANNEL_ACCESS_TOKEN,OPENAI_API_KEY'
+      - '--quiet'
+
+  - id: 'deploy-private-worker'
+    name: 'gcr.io/google.com/cloudsdktool/google-cloud-cli@sha256:18d8c484aaef27d7ef7b54dfb018f73712503d254a16f0a76b2626b4f6003af2'
+    waitFor: ['preflight-production']
+    entrypoint: 'gcloud'
+    args:
+      - 'run'
+      - 'deploy'
+      - '${_PRIVATE_SERVICE}'
+      - '--image=${_PRIVATE_IMAGE_URI}'
+      - '--region=${_REGION}'
+      - '--project=$PROJECT_ID'
+      - '--service-account=line-bot-runtime@bubbly-area-513305-s0.iam.gserviceaccount.com'
+      - '--no-allow-unauthenticated'
+      - '--update-env-vars=APP_ENV=production,LINE_EVENT_MODE=durable,LINE_API_TIMEOUT=8s,LOG_LEVEL=info,LOG_FORMAT=json,LINE_BOT_DESTINATION=${_LINE_BOT_DESTINATION},GCP_PROJECT_ID=$PROJECT_ID,TASK_QUEUE_NAME=projects/$PROJECT_ID/locations/${_REGION}/queues/${_QUEUE_ID},TASK_WORKER_URL=https://line-bot-private-185354881750.asia-east1.run.app/tasks/line-reply,TASK_OIDC_AUDIENCE=https://line-bot-private-185354881750.asia-east1.run.app,TASK_INVOKER_EMAIL=${_TASK_INVOKER_EMAIL}'
+      - '--update-secrets=LINE_CHANNEL_ACCESS_TOKEN=line-bot-channel-access-token:latest'
+      - '--remove-env-vars=WORKER_MODE,GOOGLE_CLOUD_PROJECT,FIRESTORE_DATABASE,AUTO_TASKS,AUTO_CALENDAR,CALENDAR_SERVICE_ACCOUNT'
+      - '--remove-secrets=LINE_CHANNEL_SECRET,OPENAI_API_KEY'
+      - '--quiet'
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+
+timeout: '900s'

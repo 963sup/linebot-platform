@@ -1,0 +1,14 @@
+.git
+.github
+.agents
+.codex
+.vscode
+docs
+tests
+.env
+.env.*
+bin
+dist
+coverage.out
+*.tfstate
+*.tfvars

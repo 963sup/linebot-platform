@@ -1,0 +1,92 @@
+#:schema https://developers.openai.com/codex/config-schema.json
+# V3 project configuration. Registration is not runtime proof of connectivity.
+project_doc_max_bytes = 65536
+
+[features]
+multi_agent = true
+
+[agents]
+enabled = true
+max_concurrent_threads_per_session = 4
+max_depth = 1
+
+[agents.architect]
+description = "Designs Go DDD and Hexagonal boundaries, ports and architecture decisions"
+config_file = "agents/architect.toml"
+[agents.researcher]
+description = "Verifies current Go, SDK, CLI, Google, OpenAI and Codex documentation"
+config_file = "agents/researcher.toml"
+[agents.domain]
+description = "Defines domain entities, aggregates, value objects and invariants"
+config_file = "agents/domain.toml"
+[agents.application]
+description = "Implements use cases, commands, queries and consumer-owned ports"
+config_file = "agents/application.toml"
+[agents.integration]
+description = "Implements external API, persistence, messaging and SDK adapters"
+config_file = "agents/integration.toml"
+[agents.platform]
+description = "Plans Cloud Run, IAM, configuration, observability and release infrastructure"
+config_file = "agents/platform.toml"
+[agents.environment]
+description = "Prepares and verifies local and Codex Cloud tools, MCPs and approved skills"
+config_file = "agents/environment.toml"
+[agents.reviewer]
+description = "Independently validates Go correctness, architecture, security, performance and tests"
+config_file = "agents/reviewer.toml"
+
+[mcp_servers.gopls]
+command = "gopls"
+args = ["mcp"]
+enabled = true
+required = false
+startup_timeout_sec = 30
+tool_timeout_sec = 60
+[mcp_servers.context7]
+url = "https://mcp.context7.com/mcp"
+enabled = true
+required = false
+startup_timeout_sec = 20
+tool_timeout_sec = 45
+[mcp_servers.github]
+url = "https://api.githubcopilot.com/mcp/"
+bearer_token_env_var = "GITHUB_MCP_TOKEN"
+default_tools_approval_mode = "writes"
+enabled = true
+required = false
+startup_timeout_sec = 20
+tool_timeout_sec = 45
+[mcp_servers.openaiDeveloperDocs]
+url = "https://developers.openai.com/mcp"
+enabled = true
+required = false
+startup_timeout_sec = 20
+tool_timeout_sec = 45
+[mcp_servers.google_developer_knowledge]
+url = "https://developerknowledge.googleapis.com/mcp"
+env_http_headers = { "X-Goog-Api-Key" = "DEVELOPERKNOWLEDGE_API_KEY" }
+enabled = true
+required = false
+startup_timeout_sec = 20
+tool_timeout_sec = 45
+
+# High-risk Google Cloud operations remain disabled until separately authorized.
+[mcp_servers.google_cloud_cli]
+url = "https://cloudcli.googleapis.com/mcp"
+default_tools_approval_mode = "prompt"
+enabled = false
+required = false
+startup_timeout_sec = 20
+tool_timeout_sec = 45
+
+# Staging-only Firestore tools remain disabled by default.
+[mcp_servers.firestore_toolbox]
+command = "npx"
+args = ["-y", "@toolbox-sdk/server@1.14.0", "--prebuilt=firestore", "--stdio"]
+env_vars = ["FIRESTORE_PROJECT", "FIRESTORE_DATABASE", "GOOGLE_APPLICATION_CREDENTIALS"]
+enabled_tools = ["get_documents", "query_collection", "list_collections", "get_rules", "validate_rules"]
+default_tools_approval_mode = "prompt"
+enabled = false
+required = false
+startup_timeout_sec = 45
+tool_timeout_sec = 45

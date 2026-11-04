@@ -1,0 +1,113 @@
+# Pinned, auditable LINE OpenAPI endpoint snapshot. No API calls are generated from this file.
+# integration: integrated_offline = reachable through application code + offline contract test; never means production-ready.
+# access: review = verify channel scopes/terms before enabling; required_eligibility_review = additional regional/account review.
+# SDK support must be separately verified against go.mod and the exact version when adding an endpoint.
+schema_version: 1
+source_repository: "https://github.com/line/line-openapi"
+source_revision: "967498a4e192914679ad0571d5845b29aa9755de"
+sdk_module: "github.com/line/line-bot-sdk-go/v8"
+sdk_version: "v8.23.0"
+live_channel_verified: false
+endpoints:
+  - {source: messaging-api, group: webhook, operation: getWebhookEndpoint, method: GET, path: "/v2/bot/channel/webhook/endpoint", integration: integrated_offline, test: contract, access: review}
+  - {source: messaging-api, group: webhook, operation: setWebhookEndpoint, method: PUT, path: "/v2/bot/channel/webhook/endpoint", integration: integrated_offline, test: contract, access: review}
+  - {source: messaging-api, group: webhook, operation: testWebhookEndpoint, method: POST, path: "/v2/bot/channel/webhook/test", integration: integrated_offline, test: contract, access: review}
+  - {source: messaging-api, group: webhook-content, operation: getMessageContent, method: GET, path: "/v2/bot/message/{messageId}/content", integration: integrated_offline, test: contract, access: review}
+  - {source: messaging-api, group: webhook-content, operation: getMessageContentPreview, method: GET, path: "/v2/bot/message/{messageId}/content/preview", integration: integrated_offline, test: contract, access: review}
+  - {source: messaging-api, group: webhook-content, operation: getMessageContentTranscodingByMessageId, method: GET, path: "/v2/bot/message/{messageId}/content/transcoding", integration: integrated_offline, test: contract, access: review}
+  - {source: messaging-api, group: messaging, operation: replyMessage, method: POST, path: "/v2/bot/message/reply", integration: integrated_offline, test: contract, access: review}
+  - {source: messaging-api, group: messaging, operation: pushMessage, method: POST, path: "/v2/bot/message/push", integration: integrated_offline, test: contract, access: review}
+  - {source: messaging-api, group: messaging, operation: multicast, method: POST, path: "/v2/bot/message/multicast", integration: integrated_offline, test: contract, access: review}
+  - {source: messaging-api, group: messaging, operation: narrowcast, method: POST, path: "/v2/bot/message/narrowcast", integration: integrated_offline, test: contract, access: review}
+  - {source: messaging-api, group: messaging, operation: getNarrowcastProgress, method: GET, path: "/v2/bot/message/progress/narrowcast", integration: integrated_offline, test: contract, access: review}
+  - {source: messaging-api, group: messaging, operation: broadcast, method: POST, path: "/v2/bot/message/broadcast", integration: integrated_offline, test: contract, access: review}
+  - {source: messaging-api, group: quota, operation: getMessageQuota, method: GET, path: "/v2/bot/message/quota", integration: integrated_offline, test: contract, access: review}
+  - {source: messaging-api, group: quota, operation: getMessageQuotaConsumption, method: GET, path: "/v2/bot/message/quota/consumption", integration: integrated_offline, test: contract, access: review}
+  - {source: messaging-api, group: delivery, operation: getNumberOfSentReplyMessages, method: GET, path: "/v2/bot/message/delivery/reply", integration: integrated_offline, test: contract, access: review}
+  - {source: messaging-api, group: delivery, operation: getNumberOfSentPushMessages, method: GET, path: "/v2/bot/message/delivery/push", integration: integrated_offline, test: contract, access: review}
+  - {source: messaging-api, group: delivery, operation: getNumberOfSentMulticastMessages, method: GET, path: "/v2/bot/message/delivery/multicast", integration: integrated_offline, test: contract, access: review}
+  - {source: messaging-api, group: delivery, operation: getNumberOfSentBroadcastMessages, method: GET, path: "/v2/bot/message/delivery/broadcast", integration: integrated_offline, test: contract, access: review}
+  - {source: messaging-api, group: message-validation, operation: validateReply, method: POST, path: "/v2/bot/message/validate/reply", integration: integrated_offline, test: contract, access: review}
+  - {source: messaging-api, group: message-validation, operation: validatePush, method: POST, path: "/v2/bot/message/validate/push", integration: integrated_offline, test: contract, access: review}
+  - {source: messaging-api, group: message-validation, operation: validateMulticast, method: POST, path: "/v2/bot/message/validate/multicast", integration: integrated_offline, test: contract, access: review}
+  - {source: messaging-api, group: message-validation, operation: validateNarrowcast, method: POST, path: "/v2/bot/message/validate/narrowcast", integration: integrated_offline, test: contract, access: review}
+  - {source: messaging-api, group: message-validation, operation: validateBroadcast, method: POST, path: "/v2/bot/message/validate/broadcast", integration: integrated_offline, test: contract, access: review}
+  - {source: messaging-api, group: aggregation-unit, operation: getAggregationUnitUsage, method: GET, path: "/v2/bot/message/aggregation/info", integration: integrated_offline, test: contract, access: review}
+  - {source: messaging-api, group: aggregation-unit, operation: getAggregationUnitNameList, method: GET, path: "/v2/bot/message/aggregation/list", integration: integrated_offline, test: contract, access: review}
+  - {source: messaging-api, group: users, operation: getProfile, method: GET, path: "/v2/bot/profile/{userId}", integration: integrated_offline, test: contract, access: review}
+  - {source: messaging-api, group: users, operation: getFollowers, method: GET, path: "/v2/bot/followers/ids", integration: integrated_offline, test: contract, access: review}
+  - {source: messaging-api, group: bot, operation: getBotInfo, method: GET, path: "/v2/bot/info", integration: integrated_offline, test: contract, access: review}
+  - {source: messaging-api, group: group, operation: getGroupMemberProfile, method: GET, path: "/v2/bot/group/{groupId}/member/{userId}", integration: integrated_offline, test: contract, access: review}
+  - {source: messaging-api, group: group, operation: getRoomMemberProfile, method: GET, path: "/v2/bot/room/{roomId}/member/{userId}", integration: integrated_offline, test: contract, access: review}
+  - {source: messaging-api, group: group, operation: getGroupMembersIds, method: GET, path: "/v2/bot/group/{groupId}/members/ids", integration: integrated_offline, test: contract, access: review}
+  - {source: messaging-api, group: group, operation: getRoomMembersIds, method: GET, path: "/v2/bot/room/{roomId}/members/ids", integration: integrated_offline, test: contract, access: review}
+  - {source: messaging-api, group: group, operation: leaveGroup, method: POST, path: "/v2/bot/group/{groupId}/leave", integration: integrated_offline, test: contract, access: review}
+  - {source: messaging-api, group: group, operation: leaveRoom, method: POST, path: "/v2/bot/room/{roomId}/leave", integration: integrated_offline, test: contract, access: review}
+  - {source: messaging-api, group: group, operation: getGroupSummary, method: GET, path: "/v2/bot/group/{groupId}/summary", integration: integrated_offline, test: contract, access: review}
+  - {source: messaging-api, group: group, operation: getGroupMemberCount, method: GET, path: "/v2/bot/group/{groupId}/members/count", integration: integrated_offline, test: contract, access: review}
+  - {source: messaging-api, group: group, operation: getRoomMemberCount, method: GET, path: "/v2/bot/room/{roomId}/members/count", integration: integrated_offline, test: contract, access: review}
+  - {source: messaging-api, group: richmenu, operation: createRichMenu, method: POST, path: "/v2/bot/richmenu", integration: integrated_offline, test: contract, access: review}
+  - {source: messaging-api, group: richmenu, operation: validateRichMenuObject, method: POST, path: "/v2/bot/richmenu/validate", integration: integrated_offline, test: contract, access: review}
+  - {source: messaging-api, group: richmenu, operation: getRichMenuImage, method: GET, path: "/v2/bot/richmenu/{richMenuId}/content", integration: integrated_offline, test: contract, access: review}
+  - {source: messaging-api, group: richmenu, operation: setRichMenuImage, method: POST, path: "/v2/bot/richmenu/{richMenuId}/content", integration: integrated_offline, test: contract, access: review}
+  - {source: messaging-api, group: richmenu, operation: getRichMenu, method: GET, path: "/v2/bot/richmenu/{richMenuId}", integration: integrated_offline, test: contract, access: review}
+  - {source: messaging-api, group: richmenu, operation: deleteRichMenu, method: DELETE, path: "/v2/bot/richmenu/{richMenuId}", integration: integrated_offline, test: contract, access: review}
+  - {source: messaging-api, group: richmenu, operation: getRichMenuList, method: GET, path: "/v2/bot/richmenu/list", integration: integrated_offline, test: contract, access: review}
+  - {source: messaging-api, group: default-richmenu, operation: setDefaultRichMenu, method: POST, path: "/v2/bot/user/all/richmenu/{richMenuId}", integration: integrated_offline, test: contract, access: review}
+  - {source: messaging-api, group: default-richmenu, operation: getDefaultRichMenuId, method: GET, path: "/v2/bot/user/all/richmenu", integration: integrated_offline, test: contract, access: review}
+  - {source: messaging-api, group: default-richmenu, operation: cancelDefaultRichMenu, method: DELETE, path: "/v2/bot/user/all/richmenu", integration: integrated_offline, test: contract, access: review}
+  - {source: messaging-api, group: richmenu-alias, operation: createRichMenuAlias, method: POST, path: "/v2/bot/richmenu/alias", integration: integrated_offline, test: contract, access: review}
+  - {source: messaging-api, group: richmenu-alias, operation: getRichMenuAlias, method: GET, path: "/v2/bot/richmenu/alias/{richMenuAliasId}", integration: integrated_offline, test: contract, access: review}
+  - {source: messaging-api, group: richmenu-alias, operation: updateRichMenuAlias, method: POST, path: "/v2/bot/richmenu/alias/{richMenuAliasId}", integration: integrated_offline, test: contract, access: review}
+  - {source: messaging-api, group: richmenu-alias, operation: deleteRichMenuAlias, method: DELETE, path: "/v2/bot/richmenu/alias/{richMenuAliasId}", integration: integrated_offline, test: contract, access: review}
+  - {source: messaging-api, group: richmenu-alias, operation: getRichMenuAliasList, method: GET, path: "/v2/bot/richmenu/alias/list", integration: integrated_offline, test: contract, access: review}
+  - {source: messaging-api, group: user-richmenu, operation: getRichMenuIdOfUser, method: GET, path: "/v2/bot/user/{userId}/richmenu", integration: integrated_offline, test: contract, access: review}
+  - {source: messaging-api, group: user-richmenu, operation: unlinkRichMenuIdFromUser, method: DELETE, path: "/v2/bot/user/{userId}/richmenu", integration: integrated_offline, test: contract, access: review}
+  - {source: messaging-api, group: user-richmenu, operation: linkRichMenuIdToUser, method: POST, path: "/v2/bot/user/{userId}/richmenu/{richMenuId}", integration: integrated_offline, test: contract, access: review}
+  - {source: messaging-api, group: user-richmenu, operation: linkRichMenuIdToUsers, method: POST, path: "/v2/bot/richmenu/bulk/link", integration: integrated_offline, test: contract, access: review}
+  - {source: messaging-api, group: user-richmenu, operation: unlinkRichMenuIdFromUsers, method: POST, path: "/v2/bot/richmenu/bulk/unlink", integration: integrated_offline, test: contract, access: review}
+  - {source: messaging-api, group: user-richmenu, operation: richMenuBatch, method: POST, path: "/v2/bot/richmenu/batch", integration: integrated_offline, test: contract, access: review}
+  - {source: messaging-api, group: user-richmenu, operation: validateRichMenuBatchRequest, method: POST, path: "/v2/bot/richmenu/validate/batch", integration: integrated_offline, test: contract, access: review}
+  - {source: messaging-api, group: user-richmenu, operation: getRichMenuBatchProgress, method: GET, path: "/v2/bot/richmenu/progress/batch", integration: integrated_offline, test: contract, access: review}
+  - {source: messaging-api, group: account-link, operation: issueLinkToken, method: POST, path: "/v2/bot/user/{userId}/linkToken", integration: integrated_offline, test: contract, access: review}
+  - {source: messaging-api, group: optional-apis, operation: markMessagesAsRead, method: POST, path: "/v2/bot/message/markAsRead", integration: integrated_offline, test: contract, access: required_eligibility_review}
+  - {source: messaging-api, group: optional-apis, operation: pushMessagesByPhone, method: POST, path: "/bot/pnp/push", integration: integrated_offline, test: contract, access: required_eligibility_review}
+  - {source: messaging-api, group: optional-apis, operation: pushTemplatedMessagesByPhone, method: POST, path: "/v2/bot/message/pnp/templated/push", integration: integrated_offline, test: contract, access: required_eligibility_review}
+  - {source: messaging-api, group: optional-apis, operation: getPNPMessageStatistics, method: GET, path: "/v2/bot/message/delivery/pnp", integration: integrated_offline, test: contract, access: required_eligibility_review}
+  - {source: messaging-api, group: optional-apis, operation: getPNPTemplatedMessageStatistics, method: GET, path: "/v2/bot/message/delivery/pnp/templated", integration: integrated_offline, test: contract, access: required_eligibility_review}
+  - {source: messaging-api, group: membership, operation: getMembershipSubscription, method: GET, path: "/v2/bot/membership/subscription/{userId}", integration: integrated_offline, test: contract, access: required_eligibility_review}
+  - {source: messaging-api, group: membership, operation: getMembershipList, method: GET, path: "/v2/bot/membership/list", integration: integrated_offline, test: contract, access: required_eligibility_review}
+  - {source: messaging-api, group: membership, operation: getJoinedMembershipUsers, method: GET, path: "/v2/bot/membership/{membershipId}/users/ids", integration: integrated_offline, test: contract, access: required_eligibility_review}
+  - {source: messaging-api, group: coupon, operation: listCoupon, method: GET, path: "/v2/bot/coupon", integration: integrated_offline, test: contract, access: required_eligibility_review}
+  - {source: messaging-api, group: coupon, operation: createCoupon, method: POST, path: "/v2/bot/coupon", integration: integrated_offline, test: contract, access: required_eligibility_review}
+  - {source: messaging-api, group: coupon, operation: getCouponDetail, method: GET, path: "/v2/bot/coupon/{couponId}", integration: integrated_offline, test: contract, access: required_eligibility_review}
+  - {source: messaging-api, group: coupon, operation: closeCoupon, method: PUT, path: "/v2/bot/coupon/{couponId}/close", integration: integrated_offline, test: contract, access: required_eligibility_review}
+  - {source: messaging-api, group: chat, operation: showLoadingAnimation, method: POST, path: "/v2/bot/chat/loading/start", integration: integrated_offline, test: contract, access: review}
+  - {source: messaging-api, group: chat, operation: markMessagesAsReadByToken, method: POST, path: "/v2/bot/chat/markAsRead", integration: integrated_offline, test: contract, access: review}
+  - {source: insight, group: insight, operation: getFriendsDemographics, method: GET, path: "/v2/bot/insight/demographic", integration: integrated_offline, test: contract, access: review}
+  - {source: insight, group: insight, operation: getNumberOfMessageDeliveries, method: GET, path: "/v2/bot/insight/message/delivery", integration: integrated_offline, test: contract, access: review}
+  - {source: insight, group: insight, operation: getNumberOfFollowers, method: GET, path: "/v2/bot/insight/followers", integration: integrated_offline, test: contract, access: review}
+  - {source: insight, group: insight, operation: getMessageEvent, method: GET, path: "/v2/bot/insight/message/event", integration: integrated_offline, test: contract, access: review}
+  - {source: insight, group: insight, operation: getStatisticsPerUnit, method: GET, path: "/v2/bot/insight/message/event/aggregation", integration: integrated_offline, test: contract, access: review}
+  - {source: insight, group: insight, operation: getRichMenuInsightSummary, method: GET, path: "/v2/bot/insight/richmenu/{richMenuId}/summary", integration: integrated_offline, test: contract, access: review}
+  - {source: insight, group: insight, operation: getRichMenuInsightDaily, method: GET, path: "/v2/bot/insight/richmenu/{richMenuId}/daily", integration: integrated_offline, test: contract, access: review}
+  - {source: manage-audience, group: manage-audience, operation: createAudienceGroup, method: POST, path: "/v2/bot/audienceGroup/upload", integration: integrated_offline, test: contract, access: review}
+  - {source: manage-audience, group: manage-audience, operation: addAudienceToAudienceGroup, method: PUT, path: "/v2/bot/audienceGroup/upload", integration: integrated_offline, test: contract, access: review}
+  - {source: manage-audience, group: manage-audience, operation: createAudienceForUploadingUserIds, method: POST, path: "/v2/bot/audienceGroup/upload/byFile", integration: integrated_offline, test: contract, access: review}
+  - {source: manage-audience, group: manage-audience, operation: addUserIdsToAudience, method: PUT, path: "/v2/bot/audienceGroup/upload/byFile", integration: integrated_offline, test: contract, access: review}
+  - {source: manage-audience, group: manage-audience, operation: createClickBasedAudienceGroup, method: POST, path: "/v2/bot/audienceGroup/click", integration: integrated_offline, test: contract, access: review}
+  - {source: manage-audience, group: manage-audience, operation: createImpBasedAudienceGroup, method: POST, path: "/v2/bot/audienceGroup/imp", integration: integrated_offline, test: contract, access: review}
+  - {source: manage-audience, group: manage-audience, operation: updateAudienceGroupDescription, method: PUT, path: "/v2/bot/audienceGroup/{audienceGroupId}/updateDescription", integration: integrated_offline, test: contract, access: review}
+  - {source: manage-audience, group: manage-audience, operation: deleteAudienceGroup, method: DELETE, path: "/v2/bot/audienceGroup/{audienceGroupId}", integration: integrated_offline, test: contract, access: review}
+  - {source: manage-audience, group: manage-audience, operation: getAudienceData, method: GET, path: "/v2/bot/audienceGroup/{audienceGroupId}", integration: integrated_offline, test: contract, access: review}
+  - {source: manage-audience, group: manage-audience, operation: getAudienceGroups, method: GET, path: "/v2/bot/audienceGroup/list", integration: integrated_offline, test: contract, access: review}
+  - {source: manage-audience, group: manage-audience, operation: getSharedAudienceData, method: GET, path: "/v2/bot/audienceGroup/shared/{audienceGroupId}", integration: integrated_offline, test: contract, access: review}
+  - {source: manage-audience, group: manage-audience, operation: getSharedAudienceGroups, method: GET, path: "/v2/bot/audienceGroup/shared/list", integration: integrated_offline, test: contract, access: review}
+  - {source: channel-access-token, group: channel-access-token, operation: issueStatelessChannelToken, method: POST, path: "/oauth2/v3/token", integration: integrated_offline, test: contract, access: review}
+  - {source: channel-access-token, group: channel-access-token, operation: getsAllValidChannelAccessTokenKeyIds, method: GET, path: "/oauth2/v2.1/tokens/kid", integration: integrated_offline, test: contract, access: review}
+  - {source: channel-access-token, group: channel-access-token, operation: issueChannelTokenByJWT, method: POST, path: "/oauth2/v2.1/token", integration: integrated_offline, test: contract, access: review}
+  - {source: channel-access-token, group: channel-access-token, operation: verifyChannelTokenByJWT, method: GET, path: "/oauth2/v2.1/verify", integration: integrated_offline, test: contract, access: review}
+  - {source: channel-access-token, group: channel-access-token, operation: revokeChannelTokenByJWT, method: POST, path: "/oauth2/v2.1/revoke", integration: integrated_offline, test: contract, access: review}
+  - {source: channel-access-token, group: channel-access-token, operation: issueChannelToken, method: POST, path: "/v2/oauth/accessToken", integration: integrated_offline, test: contract, access: review}
+  - {source: channel-access-token, group: channel-access-token, operation: verifyChannelToken, method: POST, path: "/v2/oauth/verify", integration: integrated_offline, test: contract, access: review}
+  - {source: channel-access-token, group: channel-access-token, operation: revokeChannelToken, method: POST, path: "/v2/oauth/revoke", integration: integrated_offline, test: contract, access: review}

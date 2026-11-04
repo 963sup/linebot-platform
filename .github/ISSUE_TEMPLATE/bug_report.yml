@@ -1,0 +1,24 @@
+name: Bug report
+description: 回報非敏感的錯誤
+title: "bug: "
+labels: ["bug"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: 問題描述
+      description: 請勿包含 token、使用者私訊或任何密鑰
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: 重現步驟
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: 預期結果
+    validations:
+      required: true

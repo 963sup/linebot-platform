@@ -1,0 +1,39 @@
+# Builds a private worker image only. No deployment, queue, IAM or trigger.
+substitutions:
+  _REGION: 'asia-east1'
+  _AR_REPOSITORY: 'line-bot'
+  _IMAGE_NAME: 'line-bot-private'
+
+serviceAccount: 'projects/bubbly-area-513305-s0/serviceAccounts/line-bot-build@bubbly-area-513305-s0.iam.gserviceaccount.com'
+steps:
+  - id: 'verify-go'
+    name: 'golang@sha256:2920bb124f1a2e12a1d39f0cab756ae0068441ee1da7655dec7f5e374944095b'
+    entrypoint: 'bash'
+    args:
+      - '-ceu'
+      - |
+        go mod download
+        go mod verify
+        unformatted="$$(gofmt -l cmd/ internal/ tests/)"
+        if [ -n "$$unformatted" ]; then
+          printf 'Unformatted Go files:\n%s\n' "$$unformatted"
+          exit 1
+        fi
+        go vet ./...
+        go test -race -count=1 ./...
+        go build ./...
+  - id: 'build-worker-image'
+    name: 'gcr.io/cloud-builders/docker@sha256:fbc05705e6f24467e40ae8a4097ab9b8fae1116551f838fa2c55f4367427fc36'
+    waitFor: ['verify-go']
+    args:
+      - 'build'
+      - '--file'
+      - 'Dockerfile.worker'
+      - '--tag'
+      - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPOSITORY}/${_IMAGE_NAME}:$BUILD_ID'
+      - '.'
+images:
+  - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPOSITORY}/${_IMAGE_NAME}:$BUILD_ID'
+options:
+  logging: CLOUD_LOGGING_ONLY
+timeout: '1800s'

@@ -1,0 +1,19 @@
+{
+  "sources": {
+    "cc-skills-golang": {
+      "repository": "https://github.com/samber/cc-skills-golang.git",
+      "commit": "bb1d43d98a3f8ab639a0042f90d0ec524e39a477",
+      "skills": ["golang-code-style", "golang-project-layout", "golang-error-handling", "golang-context", "golang-structs-interfaces", "golang-testing", "golang-security", "golang-gopls", "golang-performance", "golang-observability"]
+    },
+    "google-skills": {
+      "repository": "https://github.com/google/skills.git",
+      "commit": "3ae864a38b66642c761c8b3dad6b72e38ca3cd43",
+      "skills": ["cloud-run-basics", "google-cloud-recipe-auth", "cloud-logging-configuration-basics", "cloud-operator", "retrieving-developer-knowledge"]
+    },
+    "cc-skills": {
+      "repository": "https://github.com/samber/cc-skills.git",
+      "commit": "50a33836b20f690c668af557bd9ef9d07a8c7ef2",
+      "skills": ["conventional-git", "deep-research", "skill-progressive-disclosure-design"]
+    }
+  }
+}

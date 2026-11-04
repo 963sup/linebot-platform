@@ -1,0 +1,15 @@
+# Used by gcloud builds submit to prepare source context.
+.gcloudignore
+.git
+.gitignore
+#!include:.gitignore
+
+# Non-runtime project material is omitted from Cloud Build source uploads.
+.github/
+.agents/
+.vscode/
+deploy/
+plugins/
+
+# Keep Dockerfile, go.mod, go.sum, cmd/, internal/ and tests/.
+# Never include secrets, local credentials, Terraform state or git history.

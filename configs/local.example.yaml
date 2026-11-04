@@ -1,0 +1,4 @@
+# Reference-only legacy scaffold. Go runtime does not parse YAML.
+# The authoritative configuration contract is internal/bootstrap/config_contract.go;
+# read docs/operations/configuration.md for the generated settings table.
+# Local safe defaults are represented in .env.example, without real secrets.
