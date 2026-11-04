@@ -54,7 +54,7 @@ var calendarPolicies = []Policy{
 	{API: "calendar", Operation: "events.quickAdd", Mode: "write", Dangerous: false},
 	{API: "calendar", Operation: "events.update", Mode: "write", Dangerous: false},
 	{API: "calendar", Operation: "events.watch", Mode: "write", Dangerous: false},
-	{API: "calendar", Operation: "freebusy.query", Mode: "write", Dangerous: false},
+	{API: "calendar", Operation: "freebusy.query", Mode: "read", Dangerous: false},
 	{API: "calendar", Operation: "settings.get", Mode: "read", Dangerous: false},
 	{API: "calendar", Operation: "settings.list", Mode: "read", Dangerous: false},
 	{API: "calendar", Operation: "settings.watch", Mode: "write", Dangerous: false},

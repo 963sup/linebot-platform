@@ -20,7 +20,7 @@
         "calendar",
         "calendar.acls"
       ],
-      "status": "planned"
+      "status": "integrated_offline"
     },
     {
       "operation": "acl.get",
@@ -36,7 +36,7 @@
         "calendar.acls.readonly",
         "calendar.readonly"
       ],
-      "status": "planned"
+      "status": "integrated_offline"
     },
     {
       "operation": "acl.insert",
@@ -50,7 +50,7 @@
         "calendar",
         "calendar.acls"
       ],
-      "status": "planned"
+      "status": "integrated_offline"
     },
     {
       "operation": "acl.list",
@@ -65,7 +65,7 @@
         "calendar.acls",
         "calendar.acls.readonly"
       ],
-      "status": "planned"
+      "status": "integrated_offline"
     },
     {
       "operation": "acl.patch",
@@ -79,7 +79,7 @@
         "calendar",
         "calendar.acls"
       ],
-      "status": "planned"
+      "status": "integrated_offline"
     },
     {
       "operation": "acl.update",
@@ -93,7 +93,7 @@
         "calendar",
         "calendar.acls"
       ],
-      "status": "planned"
+      "status": "integrated_offline"
     },
     {
       "operation": "acl.watch",
@@ -108,7 +108,7 @@
         "calendar.acls",
         "calendar.acls.readonly"
       ],
-      "status": "planned"
+      "status": "integrated_offline"
     },
     {
       "operation": "calendarList.delete",
@@ -123,7 +123,7 @@
         "calendar.app.created",
         "calendar.calendarlist"
       ],
-      "status": "planned"
+      "status": "integrated_offline"
     },
     {
       "operation": "calendarList.get",
@@ -140,7 +140,7 @@
         "calendar.calendarlist.readonly",
         "calendar.readonly"
       ],
-      "status": "planned"
+      "status": "integrated_offline"
     },
     {
       "operation": "calendarList.insert",
@@ -154,7 +154,7 @@
         "calendar",
         "calendar.calendarlist"
       ],
-      "status": "planned"
+      "status": "integrated_offline"
     },
     {
       "operation": "calendarList.list",
@@ -170,7 +170,7 @@
         "calendar.calendarlist.readonly",
         "calendar.readonly"
       ],
-      "status": "planned"
+      "status": "integrated_offline"
     },
     {
       "operation": "calendarList.patch",
@@ -185,7 +185,7 @@
         "calendar.app.created",
         "calendar.calendarlist"
       ],
-      "status": "planned"
+      "status": "integrated_offline"
     },
     {
       "operation": "calendarList.update",
@@ -200,7 +200,7 @@
         "calendar.app.created",
         "calendar.calendarlist"
       ],
-      "status": "planned"
+      "status": "integrated_offline"
     },
     {
       "operation": "calendarList.watch",
@@ -216,7 +216,7 @@
         "calendar.calendarlist.readonly",
         "calendar.readonly"
       ],
-      "status": "planned"
+      "status": "integrated_offline"
     },
     {
       "operation": "calendars.clear",
@@ -230,7 +230,7 @@
         "calendar",
         "calendar.calendars"
       ],
-      "status": "planned"
+      "status": "integrated_offline"
     },
     {
       "operation": "calendars.delete",
@@ -245,7 +245,7 @@
         "calendar.app.created",
         "calendar.calendars"
       ],
-      "status": "planned"
+      "status": "integrated_offline"
     },
     {
       "operation": "calendars.get",
@@ -262,7 +262,7 @@
         "calendar.calendars.readonly",
         "calendar.readonly"
       ],
-      "status": "planned"
+      "status": "integrated_offline"
     },
     {
       "operation": "calendars.insert",
@@ -277,7 +277,7 @@
         "calendar.app.created",
         "calendar.calendars"
       ],
-      "status": "planned"
+      "status": "integrated_offline"
     },
     {
       "operation": "calendars.patch",
@@ -292,7 +292,7 @@
         "calendar.app.created",
         "calendar.calendars"
       ],
-      "status": "planned"
+      "status": "integrated_offline"
     },
     {
       "operation": "calendars.transferOwnership",
@@ -306,7 +306,7 @@
         "calendar",
         "calendar.calendars"
       ],
-      "status": "planned"
+      "status": "integrated_offline"
     },
     {
       "operation": "calendars.update",
@@ -321,7 +321,7 @@
         "calendar.app.created",
         "calendar.calendars"
       ],
-      "status": "planned"
+      "status": "integrated_offline"
     },
     {
       "operation": "channels.stop",
@@ -348,7 +348,7 @@
         "calendar.settings",
         "calendar.settings.readonly"
       ],
-      "status": "planned"
+      "status": "integrated_offline"
     },
     {
       "operation": "colors.get",
@@ -369,7 +369,7 @@
         "calendar.events.public.readonly",
         "calendar.readonly"
       ],
-      "status": "planned"
+      "status": "integrated_offline"
     },
     {
       "operation": "events.delete",
@@ -385,7 +385,7 @@
         "calendar.events",
         "calendar.events.owned"
       ],
-      "status": "planned"
+      "status": "integrated_offline"
     },
     {
       "operation": "events.get",
@@ -406,7 +406,7 @@
         "calendar.events.readonly",
         "calendar.readonly"
       ],
-      "status": "planned"
+      "status": "integrated_offline"
     },
     {
       "operation": "events.import",
@@ -422,7 +422,7 @@
         "calendar.events",
         "calendar.events.owned"
       ],
-      "status": "planned"
+      "status": "integrated_offline"
     },
     {
       "operation": "events.insert",
@@ -438,7 +438,7 @@
         "calendar.events",
         "calendar.events.owned"
       ],
-      "status": "planned"
+      "status": "integrated_offline"
     },
     {
       "operation": "events.instances",
@@ -459,7 +459,7 @@
         "calendar.events.readonly",
         "calendar.readonly"
       ],
-      "status": "planned"
+      "status": "integrated_offline"
     },
     {
       "operation": "events.list",
@@ -480,7 +480,7 @@
         "calendar.events.readonly",
         "calendar.readonly"
       ],
-      "status": "planned"
+      "status": "integrated_offline"
     },
     {
       "operation": "events.move",
@@ -495,7 +495,7 @@
         "calendar.events",
         "calendar.events.owned"
       ],
-      "status": "planned"
+      "status": "integrated_offline"
     },
     {
       "operation": "events.patch",
@@ -511,7 +511,7 @@
         "calendar.events",
         "calendar.events.owned"
       ],
-      "status": "planned"
+      "status": "integrated_offline"
     },
     {
       "operation": "events.quickAdd",
@@ -527,7 +527,7 @@
         "calendar.events",
         "calendar.events.owned"
       ],
-      "status": "planned"
+      "status": "integrated_offline"
     },
     {
       "operation": "events.update",
@@ -543,7 +543,7 @@
         "calendar.events",
         "calendar.events.owned"
       ],
-      "status": "planned"
+      "status": "integrated_offline"
     },
     {
       "operation": "events.watch",
@@ -564,7 +564,7 @@
         "calendar.events.readonly",
         "calendar.readonly"
       ],
-      "status": "planned"
+      "status": "integrated_offline"
     },
     {
       "operation": "freebusy.query",
@@ -572,7 +572,7 @@
       "method": "query",
       "httpMethod": "POST",
       "path": "freeBusy",
-      "mode": "write",
+      "mode": "read",
       "dangerous": false,
       "scopes": [
         "calendar",
@@ -580,7 +580,7 @@
         "calendar.freebusy",
         "calendar.readonly"
       ],
-      "status": "planned"
+      "status": "integrated_offline"
     },
     {
       "operation": "settings.get",
@@ -596,7 +596,7 @@
         "calendar.settings",
         "calendar.settings.readonly"
       ],
-      "status": "planned"
+      "status": "integrated_offline"
     },
     {
       "operation": "settings.list",
@@ -612,7 +612,7 @@
         "calendar.settings",
         "calendar.settings.readonly"
       ],
-      "status": "planned"
+      "status": "integrated_offline"
     },
     {
       "operation": "settings.watch",
@@ -628,7 +628,7 @@
         "calendar.settings",
         "calendar.settings.readonly"
       ],
-      "status": "planned"
+      "status": "integrated_offline"
     }
   ]
 }

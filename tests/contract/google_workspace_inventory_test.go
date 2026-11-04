@@ -59,10 +59,10 @@ func TestWorkspacePinnedEndpointInventory(t *testing.T) {
 				if m.HTTPMethod == "GET" && m.Mode != "read" {
 					t.Fatalf("GET operation %s must be read", m.Operation)
 				}
-				if m.HTTPMethod != "GET" && m.Mode != "write" {
+				if m.HTTPMethod != "GET" && m.Mode != "write" && m.Operation != "freebusy.query" {
 					t.Fatalf("mutation %s must be write", m.Operation)
 				}
-				if m.Status != "planned" && m.Status != "integrated_offline" && m.Status != "staging_verified" {
+				if m.Status != "integrated_offline" {
 					t.Fatalf("invalid status %q", m.Status)
 				}
 			}
