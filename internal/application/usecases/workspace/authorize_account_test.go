@@ -37,12 +37,12 @@ func TestAuthorizeLinkedGoogleAccount(t *testing.T) {
 	}
 	const calendarScope = "https://www.googleapis.com/auth/calendar.events"
 	cases := []struct {
-		name         string
-		reader       fakeConnectionReader
-		owner        string
-		subject      string
-		scopes       []string
-		wantErr      bool
+		name    string
+		reader  fakeConnectionReader
+		owner   string
+		subject string
+		scopes  []string
+		wantErr bool
 	}{
 		{name: "authorized", reader: fakeConnectionReader{link: active}, owner: "line-owner", subject: "google-subject", scopes: []string{calendarScope}},
 		{name: "valid link without scope requirement", reader: fakeConnectionReader{link: active}, owner: "line-owner", subject: "google-subject"},
