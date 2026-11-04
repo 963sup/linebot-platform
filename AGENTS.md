@@ -52,8 +52,9 @@
 
 ## Codex Agents 與 MCP 選用（不負責安裝）
 
-- 複雜且互不依賴的任務才委派給 `domain_architect`、`line_integrator`、`cloud_platform`、`go_reviewer` 或 `docs_researcher`；合併前清理與驗證則使用 `code_cleanup_release_validation`，且不得刪 SDK 預留模組／骨架或必要的回歸測試。同一檔案不得由多個 Agent 同時改寫，最後由主 Agent 整合、驗證。
-- 修改 Go 程式前，需要追查 definitions、references、型別或診斷時用 **gopls MCP**；若不可用則使用本地 Go 工具。
+- 複雜且互不依賴的任務才委派給 `domain_architect`、`line_integrator`、`cloud_platform`、`go_reviewer`、`docs_researcher` 或 `gopls_go_refactor`；合併前清理與驗證則使用 `code_cleanup_release_validation`，且不得刪 SDK 預留模組／骨架或必要的回歸測試。同一檔案不得由多個 Agent 同時改寫，最後由主 Agent 整合、驗證。
+- 跨 package rename、interface／DTO 簽名變更、Port／Adapter 搬遷、package 拆分或需批量更新 Go references 時，優先委派 **`gopls_go_refactor`**。它必須先以 gopls MCP 查 definition、references、implementations 與 diagnostics，修改後執行 gofmt、目標測試並重新檢查 diagnostics；若 gopls MCP 不可用，才以本地 Go 工具降級並回報。
+- 修改其他 Go 程式前，需要追查 definitions、references、型別或診斷時用 **gopls MCP**；若不可用則使用本地 Go 工具。
 - OpenAI API、Responses API、OpenAI Go SDK、Codex、Skills、MCP 或 Plugins 的更新與實作優先使用 **openaiDeveloperDocs MCP** 查閱官方文件；不得推測不存在的 API、參數或能力。若 MCP 不可用，改用 OpenAI 官方網站並標示未驗證事項。
 - 其他新版本 SDK／API 使用方式、設定或重大變更使用 **Context7 MCP**，再核對相關官方 Go／LINE／Google 文件；無法查證時明確標示。
 - PR／Issue／commit／CI 狀態需要外部證據時，優先選擇既有已授權 GitHub 工具，必要時才使用 **GitHub MCP（唯讀）**。

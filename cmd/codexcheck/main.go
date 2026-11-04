@@ -137,7 +137,7 @@ func validateConfig(path string) error {
 func validateAgents(dir string) error {
 	expected := []string{
 		"domain_architect", "line_integrator", "cloud_platform", "go_reviewer", "docs_researcher",
-		"code_cleanup_release_validation",
+		"code_cleanup_release_validation", "gopls_go_refactor",
 	}
 	files, err := filepath.Glob(filepath.Join(dir, "*.toml"))
 	if err != nil {
