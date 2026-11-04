@@ -90,6 +90,39 @@ func TestLINEEndpointInventory(t *testing.T) {
 		"richMenuBatch":                    false,
 		"validateRichMenuBatchRequest":     false,
 	}
+	implemented["getMessageContent"] = false
+	implemented["getMessageContentPreview"] = false
+	implemented["getMessageContentTranscodingByMessageId"] = false
+	implemented["leaveGroup"] = false
+	implemented["leaveRoom"] = false
+	implemented["getRichMenuImage"] = false
+	implemented["setRichMenuImage"] = false
+	implemented["issueLinkToken"] = false
+	implemented["markMessagesAsRead"] = false
+	implemented["pushMessagesByPhone"] = false
+	implemented["pushTemplatedMessagesByPhone"] = false
+	implemented["getPNPMessageStatistics"] = false
+	implemented["getPNPTemplatedMessageStatistics"] = false
+	implemented["createCoupon"] = false
+	implemented["closeCoupon"] = false
+	implemented["showLoadingAnimation"] = false
+	implemented["markMessagesAsReadByToken"] = false
+	implemented["createAudienceGroup"] = false
+	implemented["addAudienceToAudienceGroup"] = false
+	implemented["createAudienceForUploadingUserIds"] = false
+	implemented["addUserIdsToAudience"] = false
+	implemented["createClickBasedAudienceGroup"] = false
+	implemented["createImpBasedAudienceGroup"] = false
+	implemented["updateAudienceGroupDescription"] = false
+	implemented["deleteAudienceGroup"] = false
+	implemented["issueStatelessChannelToken"] = false
+	implemented["getsAllValidChannelAccessTokenKeyIds"] = false
+	implemented["issueChannelTokenByJWT"] = false
+	implemented["verifyChannelTokenByJWT"] = false
+	implemented["revokeChannelTokenByJWT"] = false
+	implemented["issueChannelToken"] = false
+	implemented["verifyChannelToken"] = false
+	implemented["revokeChannelToken"] = false
 	seen := make(map[string]bool)
 	count := 0
 	scanner := bufio.NewScanner(file)

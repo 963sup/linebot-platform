@@ -23,6 +23,18 @@ func uuidv4() (string, error) {
 }
 
 func run(args []string, getenv func(string) string) error {
+	if len(args) > 0 && args[0] == "actions" {
+		return runActions(args[1:], getenv)
+	}
+	if len(args) > 0 && args[0] == "link-token" {
+		return runLinkToken(args[1:], getenv)
+	}
+	if len(args) > 0 && args[0] == "eligibility" {
+		return runEligibility(args[1:], getenv, os.Stdout)
+	}
+	if len(args) > 0 && args[0] == "menu-image" {
+		return runMenuImage(args[1:], getenv)
+	}
 	if len(args) > 0 && args[0] == "events" {
 		return runEvents(args[1:], getenv)
 	}

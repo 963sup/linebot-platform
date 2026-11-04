@@ -75,7 +75,7 @@
 
 ## P3 — 全公開 API、AI 與雲端
 
-- [x] 依固定官方 OpenAPI revision 建立 102 項 LINE endpoint inventory（Messaging、Insights、Audience、Channel Access Token）；目前僅 Reply、Push、GetProfile 已接入，真實 Channel 驗收仍待完成。
-- [ ] Message types、Rich Menu、Audience、Insights、Coupon、Account link。
+- [x] 依固定官方 OpenAPI revision 建立 102 項 LINE endpoint inventory（Messaging、Insights、Audience、Channel Access Token）；main 原先已有 69 項離線接線。\n- [ ] [Draft PR #24](https://github.com/963sup/linebot-platform/pull/24)：補齊 33 項 Operator-only SDK Port → Use Case → Adapter → CLI 與 offline contract tests；在 CI 通過與合併前，不視為正式完成。
+- [ ] 全訊息型別、全 Webhook 業務事件等後續能力目前暫緩；本輪僅以固定 102 項 API 為目標。
 - [ ] OpenAI / Gemini 可替換 adapter；Google Cloud／Workspace。
 - [ ] 批准後部署 staging，驗證後再考慮 production。
