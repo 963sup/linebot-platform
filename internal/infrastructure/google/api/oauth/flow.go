@@ -20,32 +20,32 @@ import (
 // able to request arbitrary Google account permissions.
 var allowedScopes = map[string]bool{
 	"openid": true,
-	"email": true,
-	"https://www.googleapis.com/auth/calendar.events.readonly": true,
-	"https://www.googleapis.com/auth/calendar.events": true,
+	"email":  true,
+	"https://www.googleapis.com/auth/calendar.events.readonly":       true,
+	"https://www.googleapis.com/auth/calendar.events":                true,
 	"https://www.googleapis.com/auth/calendar.calendarlist.readonly": true,
-	"https://www.googleapis.com/auth/calendar.acls": true,
-	"https://www.googleapis.com/auth/tasks.readonly": true,
-	"https://www.googleapis.com/auth/tasks": true,
-	"https://www.googleapis.com/auth/forms.body.readonly": true,
-	"https://www.googleapis.com/auth/forms.body": true,
-	"https://www.googleapis.com/auth/forms.responses.readonly": true,
+	"https://www.googleapis.com/auth/calendar.acls":                  true,
+	"https://www.googleapis.com/auth/tasks.readonly":                 true,
+	"https://www.googleapis.com/auth/tasks":                          true,
+	"https://www.googleapis.com/auth/forms.body.readonly":            true,
+	"https://www.googleapis.com/auth/forms.body":                     true,
+	"https://www.googleapis.com/auth/forms.responses.readonly":       true,
 }
 
 type Settings struct {
-	ClientID string
+	ClientID     string
 	ClientSecret string
-	RedirectURL string
+	RedirectURL  string
 }
 
 // VerifiedUser uses Google's stable subject as identity, never an email address.
 type VerifiedUser struct {
-	Subject string
+	Subject       string
 	VerifiedEmail string
 }
 
 type ExchangeResult struct {
-	User VerifiedUser
+	User  VerifiedUser
 	Token *oauth2.Token
 }
 
@@ -67,10 +67,10 @@ func NewFlow(s Settings) (*Flow, error) {
 		return nil, errors.New("Google OAuth callback must be a fixed HTTPS URL")
 	}
 	return &Flow{config: oauth2.Config{
-		ClientID: s.ClientID,
+		ClientID:     s.ClientID,
 		ClientSecret: s.ClientSecret,
-		RedirectURL: s.RedirectURL,
-		Endpoint: google.Endpoint,
+		RedirectURL:  s.RedirectURL,
+		Endpoint:     google.Endpoint,
 	}, verify: idtoken.Validate}, nil
 }
 
@@ -78,7 +78,9 @@ func NewFlow(s Settings) (*Flow, error) {
 // Persist only its digest as an indexing key, and consume the state exactly once.
 func RandomState() (string, error) {
 	var b [32]byte
-	if _, err := rand.Read(b[:]); err != nil { return "", errors.New("unable to generate OAuth state") }
+	if _, err := rand.Read(b[:]); err != nil {
+		return "", errors.New("unable to generate OAuth state")
+	}
 	return base64.RawURLEncoding.EncodeToString(b[:]), nil
 }
 
@@ -88,7 +90,9 @@ func (f *Flow) AuthorizationURL(state, verifier, nonce string, scopes []string) 
 	if f == nil || len(state) < 32 || len(nonce) < 32 || len(verifier) < 43 || len(verifier) > 128 {
 		return "", errors.New("OAuth state, nonce or PKCE verifier is invalid")
 	}
-	if len(scopes) == 0 { return "", errors.New("OAuth scopes required") }
+	if len(scopes) == 0 {
+		return "", errors.New("OAuth scopes required")
+	}
 	seen := map[string]bool{"openid": true}
 	granted := []string{"openid"}
 	for _, s := range scopes {
@@ -113,20 +117,30 @@ func (f *Flow) AuthorizationURL(state, verifier, nonce string, scopes []string) 
 // The returned token is sensitive; a caller must securely persist it before
 // declaring any account link active. Raw provider errors are not returned.
 func (f *Flow) ExchangeAndVerify(ctx context.Context, code, verifier, nonce string) (*ExchangeResult, error) {
-	if f == nil || ctx == nil { return nil, errors.New("OAuth flow and context required") }
-	if err := ctx.Err(); err != nil { return nil, err }
+	if f == nil || ctx == nil {
+		return nil, errors.New("OAuth flow and context required")
+	}
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
 	if strings.TrimSpace(code) == "" || len(verifier) < 43 || len(verifier) > 128 || len(nonce) < 32 {
 		return nil, errors.New("OAuth code, PKCE or nonce invalid")
 	}
 	token, err := f.config.Exchange(ctx, code, oauth2.VerifierOption(verifier))
 	if err != nil {
-		if ctx.Err() != nil { return nil, ctx.Err() }
+		if ctx.Err() != nil {
+			return nil, ctx.Err()
+		}
 		return nil, errors.New("Google OAuth code exchange failed")
 	}
 	raw, ok := token.Extra("id_token").(string)
-	if !ok || raw == "" { return nil, errors.New("Google ID token missing") }
+	if !ok || raw == "" {
+		return nil, errors.New("Google ID token missing")
+	}
 	user, err := verifyUser(ctx, raw, f.config.ClientID, nonce, f.verify)
-	if err != nil { return nil, errors.New("Google ID token verification failed") }
+	if err != nil {
+		return nil, errors.New("Google ID token verification failed")
+	}
 	return &ExchangeResult{User: user, Token: token}, nil
 }
 
@@ -134,9 +148,13 @@ func verifyUser(ctx context.Context, raw, audience, nonce string, verify idVerif
 	if ctx == nil || verify == nil || raw == "" || audience == "" || nonce == "" {
 		return VerifiedUser{}, errors.New("invalid ID token verifier inputs")
 	}
-	if err := ctx.Err(); err != nil { return VerifiedUser{}, err }
+	if err := ctx.Err(); err != nil {
+		return VerifiedUser{}, err
+	}
 	p, err := verify(ctx, raw, audience)
-	if err != nil || p == nil { return VerifiedUser{}, errors.New("ID token invalid") }
+	if err != nil || p == nil {
+		return VerifiedUser{}, errors.New("ID token invalid")
+	}
 	if p.Issuer != "accounts.google.com" && p.Issuer != "https://accounts.google.com" {
 		return VerifiedUser{}, errors.New("ID token issuer invalid")
 	}
@@ -144,7 +162,9 @@ func verifyUser(ctx context.Context, raw, audience, nonce string, verify idVerif
 		return VerifiedUser{}, errors.New("ID token audience, subject or expiry invalid")
 	}
 	gotNonce, _ := p.Claims["nonce"].(string)
-	if gotNonce != nonce { return VerifiedUser{}, errors.New("ID token nonce invalid") }
+	if gotNonce != nonce {
+		return VerifiedUser{}, errors.New("ID token nonce invalid")
+	}
 	user := VerifiedUser{Subject: p.Subject}
 	if verified, _ := p.Claims["email_verified"].(bool); verified {
 		user.VerifiedEmail, _ = p.Claims["email"].(string)
