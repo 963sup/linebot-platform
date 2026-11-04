@@ -12,9 +12,9 @@ endpoints:
   - {source: messaging-api, group: webhook, operation: getWebhookEndpoint, method: GET, path: "/v2/bot/channel/webhook/endpoint", integration: integrated_offline, test: contract, access: review}
   - {source: messaging-api, group: webhook, operation: setWebhookEndpoint, method: PUT, path: "/v2/bot/channel/webhook/endpoint", integration: integrated_offline, test: contract, access: review}
   - {source: messaging-api, group: webhook, operation: testWebhookEndpoint, method: POST, path: "/v2/bot/channel/webhook/test", integration: integrated_offline, test: contract, access: review}
-  - {source: messaging-api, group: webhook-content, operation: getMessageContent, method: GET, path: "/v2/bot/message/{messageId}/content", integration: not_integrated, test: none, access: review}
-  - {source: messaging-api, group: webhook-content, operation: getMessageContentPreview, method: GET, path: "/v2/bot/message/{messageId}/content/preview", integration: not_integrated, test: none, access: review}
-  - {source: messaging-api, group: webhook-content, operation: getMessageContentTranscodingByMessageId, method: GET, path: "/v2/bot/message/{messageId}/content/transcoding", integration: not_integrated, test: none, access: review}
+  - {source: messaging-api, group: webhook-content, operation: getMessageContent, method: GET, path: "/v2/bot/message/{messageId}/content", integration: integrated_offline, test: contract, access: review}
+  - {source: messaging-api, group: webhook-content, operation: getMessageContentPreview, method: GET, path: "/v2/bot/message/{messageId}/content/preview", integration: integrated_offline, test: contract, access: review}
+  - {source: messaging-api, group: webhook-content, operation: getMessageContentTranscodingByMessageId, method: GET, path: "/v2/bot/message/{messageId}/content/transcoding", integration: integrated_offline, test: contract, access: review}
   - {source: messaging-api, group: messaging, operation: replyMessage, method: POST, path: "/v2/bot/message/reply", integration: integrated_offline, test: contract, access: review}
   - {source: messaging-api, group: messaging, operation: pushMessage, method: POST, path: "/v2/bot/message/push", integration: integrated_offline, test: contract, access: review}
   - {source: messaging-api, group: messaging, operation: multicast, method: POST, path: "/v2/bot/message/multicast", integration: integrated_offline, test: contract, access: review}
@@ -41,15 +41,15 @@ endpoints:
   - {source: messaging-api, group: group, operation: getRoomMemberProfile, method: GET, path: "/v2/bot/room/{roomId}/member/{userId}", integration: integrated_offline, test: contract, access: review}
   - {source: messaging-api, group: group, operation: getGroupMembersIds, method: GET, path: "/v2/bot/group/{groupId}/members/ids", integration: integrated_offline, test: contract, access: review}
   - {source: messaging-api, group: group, operation: getRoomMembersIds, method: GET, path: "/v2/bot/room/{roomId}/members/ids", integration: integrated_offline, test: contract, access: review}
-  - {source: messaging-api, group: group, operation: leaveGroup, method: POST, path: "/v2/bot/group/{groupId}/leave", integration: not_integrated, test: none, access: review}
-  - {source: messaging-api, group: group, operation: leaveRoom, method: POST, path: "/v2/bot/room/{roomId}/leave", integration: not_integrated, test: none, access: review}
+  - {source: messaging-api, group: group, operation: leaveGroup, method: POST, path: "/v2/bot/group/{groupId}/leave", integration: integrated_offline, test: contract, access: review}
+  - {source: messaging-api, group: group, operation: leaveRoom, method: POST, path: "/v2/bot/room/{roomId}/leave", integration: integrated_offline, test: contract, access: review}
   - {source: messaging-api, group: group, operation: getGroupSummary, method: GET, path: "/v2/bot/group/{groupId}/summary", integration: integrated_offline, test: contract, access: review}
   - {source: messaging-api, group: group, operation: getGroupMemberCount, method: GET, path: "/v2/bot/group/{groupId}/members/count", integration: integrated_offline, test: contract, access: review}
   - {source: messaging-api, group: group, operation: getRoomMemberCount, method: GET, path: "/v2/bot/room/{roomId}/members/count", integration: integrated_offline, test: contract, access: review}
   - {source: messaging-api, group: richmenu, operation: createRichMenu, method: POST, path: "/v2/bot/richmenu", integration: integrated_offline, test: contract, access: review}
   - {source: messaging-api, group: richmenu, operation: validateRichMenuObject, method: POST, path: "/v2/bot/richmenu/validate", integration: integrated_offline, test: contract, access: review}
-  - {source: messaging-api, group: richmenu, operation: getRichMenuImage, method: GET, path: "/v2/bot/richmenu/{richMenuId}/content", integration: not_integrated, test: none, access: review}
-  - {source: messaging-api, group: richmenu, operation: setRichMenuImage, method: POST, path: "/v2/bot/richmenu/{richMenuId}/content", integration: not_integrated, test: none, access: review}
+  - {source: messaging-api, group: richmenu, operation: getRichMenuImage, method: GET, path: "/v2/bot/richmenu/{richMenuId}/content", integration: integrated_offline, test: contract, access: review}
+  - {source: messaging-api, group: richmenu, operation: setRichMenuImage, method: POST, path: "/v2/bot/richmenu/{richMenuId}/content", integration: integrated_offline, test: contract, access: review}
   - {source: messaging-api, group: richmenu, operation: getRichMenu, method: GET, path: "/v2/bot/richmenu/{richMenuId}", integration: integrated_offline, test: contract, access: review}
   - {source: messaging-api, group: richmenu, operation: deleteRichMenu, method: DELETE, path: "/v2/bot/richmenu/{richMenuId}", integration: integrated_offline, test: contract, access: review}
   - {source: messaging-api, group: richmenu, operation: getRichMenuList, method: GET, path: "/v2/bot/richmenu/list", integration: integrated_offline, test: contract, access: review}
@@ -69,21 +69,21 @@ endpoints:
   - {source: messaging-api, group: user-richmenu, operation: richMenuBatch, method: POST, path: "/v2/bot/richmenu/batch", integration: integrated_offline, test: contract, access: review}
   - {source: messaging-api, group: user-richmenu, operation: validateRichMenuBatchRequest, method: POST, path: "/v2/bot/richmenu/validate/batch", integration: integrated_offline, test: contract, access: review}
   - {source: messaging-api, group: user-richmenu, operation: getRichMenuBatchProgress, method: GET, path: "/v2/bot/richmenu/progress/batch", integration: integrated_offline, test: contract, access: review}
-  - {source: messaging-api, group: account-link, operation: issueLinkToken, method: POST, path: "/v2/bot/user/{userId}/linkToken", integration: not_integrated, test: none, access: review}
-  - {source: messaging-api, group: optional-apis, operation: markMessagesAsRead, method: POST, path: "/v2/bot/message/markAsRead", integration: not_integrated, test: none, access: required_eligibility_review}
-  - {source: messaging-api, group: optional-apis, operation: pushMessagesByPhone, method: POST, path: "/bot/pnp/push", integration: not_integrated, test: none, access: required_eligibility_review}
-  - {source: messaging-api, group: optional-apis, operation: pushTemplatedMessagesByPhone, method: POST, path: "/v2/bot/message/pnp/templated/push", integration: not_integrated, test: none, access: required_eligibility_review}
-  - {source: messaging-api, group: optional-apis, operation: getPNPMessageStatistics, method: GET, path: "/v2/bot/message/delivery/pnp", integration: not_integrated, test: none, access: required_eligibility_review}
-  - {source: messaging-api, group: optional-apis, operation: getPNPTemplatedMessageStatistics, method: GET, path: "/v2/bot/message/delivery/pnp/templated", integration: not_integrated, test: none, access: required_eligibility_review}
+  - {source: messaging-api, group: account-link, operation: issueLinkToken, method: POST, path: "/v2/bot/user/{userId}/linkToken", integration: integrated_offline, test: contract, access: review}
+  - {source: messaging-api, group: optional-apis, operation: markMessagesAsRead, method: POST, path: "/v2/bot/message/markAsRead", integration: integrated_offline, test: contract, access: required_eligibility_review}
+  - {source: messaging-api, group: optional-apis, operation: pushMessagesByPhone, method: POST, path: "/bot/pnp/push", integration: integrated_offline, test: contract, access: required_eligibility_review}
+  - {source: messaging-api, group: optional-apis, operation: pushTemplatedMessagesByPhone, method: POST, path: "/v2/bot/message/pnp/templated/push", integration: integrated_offline, test: contract, access: required_eligibility_review}
+  - {source: messaging-api, group: optional-apis, operation: getPNPMessageStatistics, method: GET, path: "/v2/bot/message/delivery/pnp", integration: integrated_offline, test: contract, access: required_eligibility_review}
+  - {source: messaging-api, group: optional-apis, operation: getPNPTemplatedMessageStatistics, method: GET, path: "/v2/bot/message/delivery/pnp/templated", integration: integrated_offline, test: contract, access: required_eligibility_review}
   - {source: messaging-api, group: membership, operation: getMembershipSubscription, method: GET, path: "/v2/bot/membership/subscription/{userId}", integration: integrated_offline, test: contract, access: required_eligibility_review}
   - {source: messaging-api, group: membership, operation: getMembershipList, method: GET, path: "/v2/bot/membership/list", integration: integrated_offline, test: contract, access: required_eligibility_review}
   - {source: messaging-api, group: membership, operation: getJoinedMembershipUsers, method: GET, path: "/v2/bot/membership/{membershipId}/users/ids", integration: integrated_offline, test: contract, access: required_eligibility_review}
   - {source: messaging-api, group: coupon, operation: listCoupon, method: GET, path: "/v2/bot/coupon", integration: integrated_offline, test: contract, access: required_eligibility_review}
-  - {source: messaging-api, group: coupon, operation: createCoupon, method: POST, path: "/v2/bot/coupon", integration: not_integrated, test: none, access: required_eligibility_review}
+  - {source: messaging-api, group: coupon, operation: createCoupon, method: POST, path: "/v2/bot/coupon", integration: integrated_offline, test: contract, access: required_eligibility_review}
   - {source: messaging-api, group: coupon, operation: getCouponDetail, method: GET, path: "/v2/bot/coupon/{couponId}", integration: integrated_offline, test: contract, access: required_eligibility_review}
-  - {source: messaging-api, group: coupon, operation: closeCoupon, method: PUT, path: "/v2/bot/coupon/{couponId}/close", integration: not_integrated, test: none, access: required_eligibility_review}
-  - {source: messaging-api, group: chat, operation: showLoadingAnimation, method: POST, path: "/v2/bot/chat/loading/start", integration: not_integrated, test: none, access: review}
-  - {source: messaging-api, group: chat, operation: markMessagesAsReadByToken, method: POST, path: "/v2/bot/chat/markAsRead", integration: not_integrated, test: none, access: review}
+  - {source: messaging-api, group: coupon, operation: closeCoupon, method: PUT, path: "/v2/bot/coupon/{couponId}/close", integration: integrated_offline, test: contract, access: required_eligibility_review}
+  - {source: messaging-api, group: chat, operation: showLoadingAnimation, method: POST, path: "/v2/bot/chat/loading/start", integration: integrated_offline, test: contract, access: review}
+  - {source: messaging-api, group: chat, operation: markMessagesAsReadByToken, method: POST, path: "/v2/bot/chat/markAsRead", integration: integrated_offline, test: contract, access: review}
   - {source: insight, group: insight, operation: getFriendsDemographics, method: GET, path: "/v2/bot/insight/demographic", integration: integrated_offline, test: contract, access: review}
   - {source: insight, group: insight, operation: getNumberOfMessageDeliveries, method: GET, path: "/v2/bot/insight/message/delivery", integration: integrated_offline, test: contract, access: review}
   - {source: insight, group: insight, operation: getNumberOfFollowers, method: GET, path: "/v2/bot/insight/followers", integration: integrated_offline, test: contract, access: review}

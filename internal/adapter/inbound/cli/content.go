@@ -6,8 +6,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"os"
-	"path/filepath"
 	"time"
 
 	"github.com/963sup/linebot-platform/internal/application/usecases/contacts"
@@ -44,5 +42,5 @@ func runContent(args []string, getenv func(string) string, output io.Writer) err
 		_, err = fmt.Fprintln(output, string(j))
 		return err
 	}
-	return os.WriteFile(filepath.Clean(*out), b.Data, 0o600)
+	return writePrivateFile(*out, b.Data)
 }

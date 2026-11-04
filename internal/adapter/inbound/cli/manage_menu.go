@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/963sup/linebot-platform/internal/application/usecases/engagement"
@@ -23,6 +24,8 @@ func runManageMenu(args []string, getenv func(string) string) error {
 	user := flags.String("user", "", "LINE user ID")
 	alias := flags.String("alias-id", "", "rich menu alias ID")
 	requestFile := flags.String("request", "", "JSON request file for create, validation, alias, bulk, or batch actions")
+	imageFile := flags.String("image-file", "", "local PNG or JPEG file for upload-image")
+	imageType := flags.String("image-type", "", "image/png or image/jpeg")
 	apply := flags.Bool("apply", false, "explicitly enable a remote write")
 	confirm := flags.String("confirm", "", "must equal the action to avoid accidental changes")
 	if err := flags.Parse(args); err != nil {
@@ -45,7 +48,21 @@ func runManageMenu(args []string, getenv func(string) string) error {
 		}
 		payload = data
 	}
+	if *imageFile != "" {
+		if *action != "upload-image" || *requestFile != "" || strings.TrimSpace(*menu) == "" {
+			return errors.New("image-file is only valid for upload-image with --menu-id")
+		}
+		if *imageType != "image/png" && *imageType != "image/jpeg" { return errors.New("image-type must be image/png or image/jpeg") }
+		_, err := os.Stat(filepath.Clean(*imageFile))
+		if err != nil { return errors.New("image upload file is not accessible") }
+	}
 	cmd := engagement.MenuCommand{Action: *action, RichMenuID: *menu, UserID: *user, AliasID: *alias, Payload: payload}
+	if *action == "upload-image" && *imageFile != "" {
+		data, err := readPrivateBounded(*imageFile, 20 << 20)
+		if err != nil { return err }
+		cmd.Image = data
+		cmd.ContentType = *imageType
+	}
 	if err := engagement.ValidateMenuCommand(cmd); err != nil {
 		return err
 	}
@@ -56,5 +73,8 @@ func runManageMenu(args []string, getenv func(string) string) error {
 	defer runtime.Close()
 	ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
 	defer cancel()
+	if *action == "upload-image" {
+		return runtime.RichMenuImages.Upload(ctx, cmd.RichMenuID, cmd.ContentType, cmd.Image)
+	}
 	return runtime.MenuManager.Execute(ctx, cmd)
 }

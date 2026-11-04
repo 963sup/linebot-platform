@@ -29,6 +29,10 @@ type LINEOpsRuntime struct {
 	BulkMessaging  *messaging.BulkSender
 	Content        *contacts.ContentInspector
 	RichMenuImages *engagement.RichMenuImageManager
+	Actions        *messaging.ConversationActions
+	AccountLink    *contacts.AccountLinker
+	Eligibility    *engagement.EligibilityOperations
+	MenuImageReader *line.BlobSender
 	outbound       *httpclient.Managed
 }
 
@@ -133,7 +137,13 @@ func NewLINEOpsRuntime(token string) (*LINEOpsRuntime, error) {
 	if err != nil {
 		return cleanup(err)
 	}
-	return &LINEOpsRuntime{Messaging: messages, Validation: validator, Profiles: profiles, Channel: inspector, WebhookAdmin: webhookAdmin, Menus: menus, MenuManager: menuManager, RichMenuImages: richMenuImages, Memberships: membership, Coupons: coupon, Contacts: contactsInspector, Content: content, Insights: inspectorInsights, Audiences: inspectorAudiences, BulkMessaging: bulkMessenger, outbound: transport}, nil
+	actions, err := messaging.NewConversationActions(sender)
+	if err != nil { return cleanup(err) }
+	accountLink, err := contacts.NewAccountLinker(sender)
+	if err != nil { return cleanup(err) }
+	eligibility, err := engagement.NewEligibilityOperations(sender)
+	if err != nil { return cleanup(err) }
+	return &LINEOpsRuntime{Actions: actions, AccountLink: accountLink, Eligibility: eligibility, MenuImageReader: blobSender, Messaging: messages, Validation: validator, Profiles: profiles, Channel: inspector, WebhookAdmin: webhookAdmin, Menus: menus, MenuManager: menuManager, RichMenuImages: richMenuImages, Memberships: membership, Coupons: coupon, Contacts: contactsInspector, Content: content, Insights: inspectorInsights, Audiences: inspectorAudiences, BulkMessaging: bulkMessenger, outbound: transport}, nil
 }
 
 func (r *LINEOpsRuntime) Close() {
