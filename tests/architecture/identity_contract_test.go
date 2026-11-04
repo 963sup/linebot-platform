@@ -69,3 +69,24 @@ func TestIdentityContract(t *testing.T) {
 		}
 	}
 }
+
+func TestBootstrapDoesNotOwnIdentityBusinessPolicy(t *testing.T) {
+	file := filepath.Join("..", "..", "internal", "bootstrap", "workspace_links.go")
+	content, err := os.ReadFile(file)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, forbidden := range []string{
+		"internal/domain/identity/specifications",
+		"internal/domain/identity/value-objects",
+		"specifications.CanUseGoogleAPI",
+		"valueobjects.NewConnectionID",
+	} {
+		if strings.Contains(string(content), forbidden) {
+			t.Errorf("Bootstrap reintroduced a Domain authorization decision: %s", forbidden)
+		}
+	}
+	if !strings.Contains(string(content), "workspace.AuthorizeLinkedGoogleAccount") {
+		t.Fatal("Bootstrap no longer delegates identity authorization to Application")
+	}
+}

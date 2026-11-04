@@ -18,6 +18,7 @@ var protectedSDKModules = []string{
 	"github.com/line/line-bot-sdk-go/v8",
 	"github.com/openai/openai-go/v3",
 	"go.linecorp.com/garr",
+	"golang.org/x/oauth2",
 	"google.golang.org/api",
 	"google.golang.org/genai",
 	"google.golang.org/grpc",
