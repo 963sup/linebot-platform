@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-// OAuthScopes is an immutable, canonical set of granted scopes.
+// OAuthScopes is an immutable canonical set of authorization scopes.
 type OAuthScopes struct{ values []string }
 
 func NewOAuthScopes(scopes []string) (OAuthScopes, error) {
@@ -27,6 +27,7 @@ func NewOAuthScopes(scopes []string) (OAuthScopes, error) {
 	sort.Strings(values)
 	return OAuthScopes{values: values}, nil
 }
+
 func (s OAuthScopes) Values() []string { return append([]string(nil), s.values...) }
 func (s OAuthScopes) Contains(scope string) bool {
 	idx := sort.SearchStrings(s.values, scope)

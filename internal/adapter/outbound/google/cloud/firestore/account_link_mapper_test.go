@@ -22,6 +22,9 @@ func TestAccountLinkMapperPreservesIdentityAndState(t *testing.T) {
 	if link.Owner().String() != conn.OwnerID || link.GoogleAccount().String() != conn.GoogleSubject || !link.IsActive() {
 		t.Fatal("identity or active status lost")
 	}
+	if len(link.PendingEvents()) != 0 {
+		t.Fatal("rehydrated account emitted a new link event")
+	}
 	if len(link.Scopes()) != 2 {
 		t.Fatal("scopes not canonicalized")
 	}

@@ -177,3 +177,21 @@ func TestLinkServiceDomainRejectsInvalidScopeBeforeStateCreation(t *testing.T) {
 		t.Fatal("invalid scope created an OAuth session")
 	}
 }
+
+func TestLinkServiceMissingGrantedScopeRejected(t *testing.T) {
+	provider := &fakeGoogleProvider{}
+	store := newFakeOAuthStore()
+	service, err := NewLinkService(provider, store, store)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := service.Begin(context.Background(), "line-verified", []string{"https://www.googleapis.com/auth/calendar.events"}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := service.Complete(context.Background(), provider.state, "code"); err == nil {
+		t.Fatal("missing granted scope should prevent account linking")
+	}
+	if len(store.links) != 0 {
+		t.Fatal("invalid consent persisted a connection")
+	}
+}

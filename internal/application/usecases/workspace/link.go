@@ -10,6 +10,7 @@ import (
 
 	"github.com/963sup/linebot-platform/internal/application/ports/outbound"
 	"github.com/963sup/linebot-platform/internal/domain/identity/factories"
+	"github.com/963sup/linebot-platform/internal/domain/identity/policies"
 	"github.com/963sup/linebot-platform/internal/domain/identity/value-objects"
 )
 
@@ -59,7 +60,6 @@ func (s *LinkService) Begin(ctx context.Context, verifiedOwner string, scopes []
 	if err != nil {
 		return "", errors.New("verified owner and Google scopes required")
 	}
-	_ = owner
 	if err := ctx.Err(); err != nil {
 		return "", err
 	}
@@ -80,7 +80,7 @@ func (s *LinkService) Begin(ctx context.Context, verifiedOwner string, scopes []
 		return "", err
 	}
 	session := outbound.OAuthSession{
-		OwnerID:   verifiedOwner,
+		OwnerID:   owner.String(),
 		Verifier:  verifier,
 		Nonce:     nonce,
 		Scopes:    requestedScopes.Values(),
@@ -115,14 +115,9 @@ func (s *LinkService) Complete(ctx context.Context, state, code string) (LinkedA
 	if identity.Subject == "" || token.AccessToken == "" {
 		return LinkedAccount{}, errors.New("Google identity or credentials missing")
 	}
-	confirmed := make(map[string]bool, len(identity.GrantedScopes))
-	for _, granted := range identity.GrantedScopes {
-		confirmed[granted] = true
-	}
-	for _, required := range session.Scopes {
-		if required != "openid" && required != "email" && !confirmed[required] {
-			return LinkedAccount{}, errors.New("Google authorization missing required scope")
-		}
+	requestedScopes, err := valueobjects.NewOAuthScopes(session.Scopes)
+	if err != nil || policies.ValidateGrantedScopes(requestedScopes, identity.GrantedScopes) != nil {
+		return LinkedAccount{}, errors.New("Google authorization missing required scope")
 	}
 	// Domain owns the account-link invariant; credentials remain an
 	// application/technical DTO and never enter the aggregate.
@@ -158,8 +153,20 @@ func (s *LinkService) Disconnect(ctx context.Context, verifiedOwner, googleSubje
 	}
 	// Validate the stored identity and allowed state transition in the
 	// aggregate before the repository performs its atomic deactivation.
-	accountLink, err := factories.NewVerifiedLink(link.OwnerID, link.GoogleSubject, link.Scopes)
-	if err != nil || link.OwnerID != verifiedOwner || link.GoogleSubject != googleSubject || !link.Active {
+	status := valueobjects.ConnectionDisconnected
+	if link.Active {
+		status = valueobjects.ConnectionActive
+	}
+	accountLink, err := factories.RestoreLink(link.OwnerID, link.GoogleSubject, link.Scopes, status)
+	if err != nil {
+		return errors.New("invalid Google connection state")
+	}
+	owner, err := valueobjects.NewLineUserID(verifiedOwner)
+	if err != nil {
+		return errors.New("invalid LINE account identity")
+	}
+	subject, err := valueobjects.NewGoogleAccountID(googleSubject)
+	if err != nil || policies.ValidateUnlink(accountLink, owner, subject) != nil {
 		return errors.New("invalid Google connection state")
 	}
 	if err := accountLink.Disconnect(); err != nil {

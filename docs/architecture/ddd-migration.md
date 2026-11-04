@@ -39,3 +39,13 @@ Run `go test ./internal/domain/...`, `go test ./tests/architecture/...`, `go tes
 - `Disconnect` validates the stored link and delegates state transition to AccountLink before the existing atomic Firestore deactivation.
 - Firestore validates legacy OAuthConnection DTOs through the domain mapper on active read/write paths, while keeping existing ciphertext, collection names, document IDs, version numbers and token refresh behavior.
 - No token or OAuth secret is stored in AccountLink; no data migration or Cloud Run release is part of this slice.
+
+## Slice 3: Explicit domain ownership and consolidation
+- Identity source of truth is `AccountLink` (aggregate root), containing one `GoogleConnection` entity; technical OAuth tokens and persistence version remain outside the domain.
+- Value objects are separate `value-objects/line_user_id.go`, `google_account_id.go`, `connection_id.go`, `oauth_scope.go`, and `connection_status.go`.
+- Consent scope matching moved from the OAuth use case to `policies.ValidateGrantedScopes`; unlink ownership/status validation moved to `policies.ValidateUnlink`.
+- Operational connection eligibility moved to `specifications.CanUseGoogleAPI`.
+- `factories.NewVerifiedLink` is for first verified linking; `factories.RestoreLink` is for database rehydration and does **not** create AccountLinked events.
+- The Firestore adapter implements `repositories.ConnectionReader` using existing encrypted state; Bootstrap checks domain eligibility before issuing a user-scoped token source.
+- The existing `outbound.OAuthConnection` remains a **temporary technical credential envelope** for token refresh and backward-compatible Firestore ciphertext. Its `OwnerID`, `GoogleSubject`, `Scopes`, and `Active` fields must no longer be used to decide business policy directly in new code. Retirement requires a separate credential-store contract and compatibility tests across existing callers.
+- Domain events are staged in memory but deliberately **not published** before transaction commit. Integrating a durable event publisher must be a separately tested slice.

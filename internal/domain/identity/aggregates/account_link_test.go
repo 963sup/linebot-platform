@@ -3,6 +3,7 @@ package aggregates_test
 import (
 	"github.com/963sup/linebot-platform/internal/domain/identity/aggregates"
 	"github.com/963sup/linebot-platform/internal/domain/identity/factories"
+	"github.com/963sup/linebot-platform/internal/domain/identity/events"
 	"github.com/963sup/linebot-platform/internal/domain/identity/value-objects"
 	"testing"
 )
@@ -53,5 +54,35 @@ func TestFactoryRejectsInvalidClaims(t *testing.T) {
 		if _, err := factories.NewVerifiedLink(tc.owner, tc.subject, tc.scopes); err == nil {
 			t.Fatalf("invalid input accepted: %+v", tc)
 		}
+	}
+}
+
+func TestAccountLinkEventsAreEmittedOnce(t *testing.T) {
+	link, err := factories.NewVerifiedLink("line-owner", "google-subject", []string{"calendar.read"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	initial := link.PendingEvents()
+	if len(initial) != 1 {
+		t.Fatalf("expected one link event, got %d", len(initial))
+	}
+	if _, ok := initial[0].(events.AccountLinked); !ok {
+		t.Fatal("first event must be AccountLinked")
+	}
+	if err := link.Disconnect(); err != nil {
+		t.Fatal(err)
+	}
+	if err := link.Disconnect(); err != nil {
+		t.Fatal(err)
+	}
+	if len(link.PendingEvents()) != 2 {
+		t.Fatal("repeated disconnect emitted duplicate events")
+	}
+	if _, ok := link.PendingEvents()[1].(events.AccountUnlinked); !ok {
+		t.Fatal("second event must be AccountUnlinked")
+	}
+	id, err := link.ConnectionID()
+	if err != nil || id.Owner().String() != "line-owner" {
+		t.Fatal("invalid connection ID", err)
 	}
 }

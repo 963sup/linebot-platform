@@ -9,6 +9,9 @@ import (
 	authadapter "github.com/963sup/linebot-platform/internal/adapter/outbound/google/api/oauth"
 	fsadapter "github.com/963sup/linebot-platform/internal/adapter/outbound/google/cloud/firestore"
 	"github.com/963sup/linebot-platform/internal/application/usecases/workspace"
+	"github.com/963sup/linebot-platform/internal/domain/identity/repositories"
+	"github.com/963sup/linebot-platform/internal/domain/identity/specifications"
+	valueobjects "github.com/963sup/linebot-platform/internal/domain/identity/value-objects"
 	oauthinfra "github.com/963sup/linebot-platform/internal/infrastructure/google/api/oauth"
 )
 
@@ -56,7 +59,21 @@ func NewWorkspaceOperationsForAccount(ctx context.Context, rt *WorkspaceLinkRunt
 	if ctx == nil {
 		return nil, errors.New("Google workspace request context required")
 	}
-	if _, err := rt.Store.GetConnection(ctx, owner, subject); err != nil {
+	lineID, err := valueobjects.NewLineUserID(owner)
+	if err != nil {
+		return nil, errors.New("invalid LINE account identity")
+	}
+	googleID, err := valueobjects.NewGoogleAccountID(subject)
+	if err != nil {
+		return nil, errors.New("invalid Google account identity")
+	}
+	id, err := valueobjects.NewConnectionID(lineID, googleID)
+	if err != nil {
+		return nil, err
+	}
+	var reader repositories.ConnectionReader = rt.Store
+	link, err := reader.FindConnection(ctx, id)
+	if err != nil || !specifications.CanUseGoogleAPI(link, nil) {
 		return nil, errors.New("Google account not linked or disabled")
 	}
 	source, err := authadapter.NewPersistedTokenSource(ctx, rt.Flow, rt.Store, owner, subject)
