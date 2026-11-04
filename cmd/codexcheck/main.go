@@ -16,6 +16,7 @@ import (
 )
 
 type config struct {
+	ProjectDocMaxBytes int `toml:"project_doc_max_bytes"`
 	Features struct {
 		MultiAgent bool `toml:"multi_agent"`
 	} `toml:"features"`
