@@ -2,6 +2,34 @@
 
 > 適用範圍：本儲存庫所有 Go 程式、SDK 整合、CI 與未來擴充。這是架構規範，不代表目前所有功能已完成。維持 Pragmatic DDD、Lightweight Hexagonal Architecture 與 Idiomatic Go；不為形式製造額外 Wrapper 或 Package。
 
+## Codex 必讀：本檔為架構標靶文件與 gopls MCP 工作契約
+
+**開始任何 Go 開發、SDK 整合、DDD / Hexagonal 調整、跨 Package Rename 或 Review 前，先讀本檔，再檢查實際程式與 `.codex/config.toml`。本檔是架構決策的標靶（source of truth），不是自動載入 MCP 的設定檔。**
+
+本儲存庫已在 `.codex/config.toml` 宣告：
+
+```toml
+[mcp_servers.gopls]
+command = "bash"
+args = ["-c", 'exec "$HOME/.local/bin/gopls" mcp']
+enabled = true
+required = false
+startup_timeout_sec = 30
+tool_timeout_sec = 60
+```
+
+**Codex 操作規則（優先使用 `mcp_servers.gopls`）：**
+
+1. **啟動前檢查**：確認工作階段已連接 gopls MCP，並確認其工作區為本儲存庫；`enabled = true` 不代表已安裝、已連線或可用。不得自行修改使用者的全域設定或安裝工具。
+2. **閱讀與定位**：先用 gopls 的可用語意工具（例如 definition、references、implementations、workspace symbols、diagnostics；實際工具名稱依 MCP 暴露為準）定位目標 Symbol、所有使用端、Interface 實作及現有編譯診斷。不得猜測符號與 SDK API。
+3. **修改前影響分析**：跨 Package Rename、Factory / Adapter / Port 搬移、Interface 簽名調整、DTO 退役時，先取得 references 與 implementations，列出受影響的 `cmd → Factory → Adapter → Port → Use Case → Domain` 建立／依賴關係。此表示分析涵蓋範圍，**不是單一 runtime 呼叫鏈**。
+4. **修改時**：優先使用 gopls 提供的語意 Rename / Refactor 能力（若有），只修改必要的檔案；不得以大量文字替換代替已可用的語意重構。維持第 3 節 import 依賴矩陣、Identity 八個分類及 OAuth / Firestore 相容性。
+5. **修改後驗證**：重新取得 gopls diagnostics，確認新舊 references 與 implementations 一致；再執行 `gofmt`、目標測試、`go vet ./...`、`go test ./...`、`go build ./...`，需要時跑 race / integration / architecture tests。診斷無錯不等於測試通過。
+6. **MCP 不可用時**：明確記錄 `gopls MCP unavailable` 與原因；使用 `go list`、`go doc`、`go test`、`go vet`、`gofmt` 等可用工具降級，標示未完成的語意 references / implementations 驗證。**不能宣稱已使用 gopls**。
+7. **交付摘要**：報告讀取的標準、實際使用的 gopls 能力、變更的 Package / Symbol、依賴方向檢查、測試結果與未驗證事項。未獲授權不合併、不部署。
+
+**文件分工**：`DESIGN.md` 定義架構與命名契約；`AGENTS.md` 負責 Codex 角色路由；`.codex/config.toml` 負責 MCP 連線。若指示衝突，先辨識是架構、路由還是工具連線問題，回報衝突並尋求必要確認，不得靜默覆蓋其他檔案。僅修改本文件不會強制 Codex 自動讀取它；任務入口應明確引用 `DESIGN.md`，或由既有 AGENTS 路由引導。
+
 ## 1. 不可退化原則
 
 1. **DDD 邊界**：Domain 管理業務不變條件、Aggregate、Entity、Value Object、Policy、Specification、Factory、Repository 契約及 Domain Event；不依賴外部 SDK。
@@ -34,7 +62,7 @@
 
 同一 Provider 的不同 API Family 可能需要不同 Constructor、認證選項與權限；**統一入口不等於強迫所有 API 具有相同簽章**。
 
-## 2A. 從 go.mod 到 client_factory.go：最短依賴路徑（Context7 / Go 官方查證）
+## 2.1 從 go.mod 到 client_factory.go：最短依賴路徑（Context7 / Go 官方查證）
 
 **結論：go.mod 不會直接呼叫 Factory。** `go.mod` 只記錄 Module 與版本；Factory 的 `import` 才是對官方 SDK Package 的編譯期依賴。不要再建立專案自有的「SDK Package Layer」。
 
@@ -114,7 +142,7 @@ func NewCalendar(ctx context.Context, authorizedHTTP *http.Client) (*calendar.Se
 
 **查證依據（Context7）：** Go 官方 `go.dev/doc/code`、`go.dev/doc/modules/layout`、`go.dev/doc/modules/managing-dependencies` 說明 Module 與 Package 的關係及 `go mod tidy`；LINE 官方 `line-bot-sdk-go` 文件展示 `NewMessagingApiAPI` 與 `WithHTTPClient`。Google Factory 實例則依本儲存庫現有的官方 SDK `NewService` 呼叫整理，未聲稱 Context7 找到完整 Google Go Client 條目。
 
-## 3. 依賴方向：統一圖與實作契約
+## 3. 依賴方向：唯一規範圖與實作契約
 
 下圖是本專案的**概念關係圖**，沿用既定的節點與標籤；它同時呈現版本管理、原始碼 import、物件建立與 Port 實作關係，因此**不可把所有箭頭當成同一種 import 或執行期呼叫**。
 
@@ -281,24 +309,24 @@ Tasks / Forms / UserInfo 使用各自官方 `NewService`；不需另外建立一
 - `*_adapter.go` 或業務命名檔案：外部能力轉換、錯誤映射與 Port 實作；不再重複 SDK Constructor。
 - `*_repository.go`：持久化契約或實作，依所在 Layer 判定；不可用 Repository 名稱掩蓋純 SDK API 呼叫。
 - `*_policy.go`：業務決策；`*_factory.go`（Domain）：領域物件建立；兩者不得與 Infrastructure Client Factory 混淆。
-- Go Package 名稱簡短、小寫、無底線；檔案採 `snake_case.go`；型別使用 `MixedCaps`；公開 API 名稱描述行為，不重複 Package 名稱。
+- Go Package 名稱簡短、小寫、無底線；檔案採 `snake_case.go`；型別使用 `MixedCaps`；公開 API 名稱描述行為，不重複 Package 名稱。\n- **命名判定順序**：先看現有 Package 與 gopls references，再沿用既有公開名稱；新建時按職責使用 `NewX`（Constructor）、`client_factory.go`（共用 SDK Client 建立）、`*_adapter.go`（Port 實作）、`*_repository.go`（持久化契約或實作）、`*_policy.go`（純業務規則）。`Manager` / `Provider` / `Service` 只有當它們表示真實獨立職責時可用，不能為形式建立空包裝。\n- **衝突判定**：相同能力出現多個 `NewX` 或多個 DTO / Mapper 時，先用 gopls references 判定權威實作與相容性需求；禁止直接刪除仍被引用的入口。
 - 依賴注入優先使用 `NewX(deps...)`；Context 不保存於長壽命 Struct，應於請求／操作方法傳遞。
 - 相同邏輯只存在一處；禁止為符合檔案樹而製造重複 DTO、Mapper、Interface 或 Wrapper。
 
-## 7. 變更流程與 CI 驗收
+## 7. Codex 標準化工作流程與 CI 驗收\n\n**連續工作契約**：讀本檔 → gopls 檢查 definitions / references / implementations → 確認 `go.mod` 與 SDK 官方 Constructor → 判斷 Domain / Port / Adapter / Factory 責任 → 最小修改 → gopls diagnostics → Go / CI 測試 → 更新相關文件與交付紀錄。每一步的輸出是下一步的依據；若工具不可用，按上方降級規則處理，不能直接跳過並宣稱已驗證。\n
 
-1. 從 `go.mod` 核對 Module 及版本，查官方 SDK Package / Constructor / Options；先確認是否已提供所需功能。
+1. 先讀 `DESIGN.md`，以 gopls MCP 定位 symbols、references、implementations；再從 `go.mod` 核對 Module 及版本，查官方 SDK Package / Constructor / Options，確認是否已有所需功能。
 2. 搜尋現有 `client_factory.go` 與 Adapter，重用既有初始化；只在缺少實際能力時擴充 Factory。
 3. 定義必要的 Application Port 與 Domain 規則，檢查 import 方向；保留 Identity 八個分類目錄。
 4. 用手動 Constructor Injection 組裝；不要建立無效的 Bootstrap 轉接層。
 5. 檢查 OAuth、LINE Webhook 驗證、Firestore 相容性、Token Refresh CAS 與使用者隔離。
-6. 執行 `gofmt`、`go vet ./...`、`go test ./...`、`go test -race ./...`、`go build ./...`、`go mod tidy` 並檢查 `git diff -- go.mod go.sum`。依現有 CI 保留已授權的 SDK retention 規則。
+6. 修改後重新檢查 gopls diagnostics 與 references；執行 `gofmt`、`go vet ./...`、`go test ./...`、`go test -race ./...`、`go build ./...`、`go mod tidy` 並檢查 `git diff -- go.mod go.sum`。依現有 CI 保留已授權的 SDK retention 規則。
 7. 架構測試應檢查 Domain / Application 禁止 import 的依賴、循環依賴與業務不變條件；不要把檔案數量或 Wrapper 數量當成品質指標。
 8. 若以減少 40% 以上程式碼為目標，先定義量測範圍：**SDK 初始化與組裝的專案自有有效程式行數**。比較重構前後，排除第三方 SDK、註解、空白、測試與 Domain 業務邏輯；不得未量測就宣稱達標。
 
 ## 8. 參考與驗證界限
 
-- Go 官方 Module Layout：https://go.dev/doc/modules/layout
+- gopls 官方文件：https://go.dev/gopls\n- Go 官方 Module Layout：https://go.dev/doc/modules/layout
 - Go Module Reference：https://go.dev/ref/mod
 - Go Code Review Comments：https://go.dev/wiki/CodeReviewComments
 - LINE SDK：https://github.com/line/line-bot-sdk-go
