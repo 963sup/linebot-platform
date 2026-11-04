@@ -47,6 +47,7 @@ type VerifiedUser struct {
 type ExchangeResult struct {
 	User  VerifiedUser
 	Token *oauth2.Token
+	GrantedScopes []string
 }
 
 type idVerifier func(context.Context, string, string) (*idtoken.Payload, error)
@@ -141,7 +142,8 @@ func (f *Flow) ExchangeAndVerify(ctx context.Context, code, verifier, nonce stri
 	if err != nil {
 		return nil, errors.New("Google ID token verification failed")
 	}
-	return &ExchangeResult{User: user, Token: token}, nil
+	scopeText, _ := token.Extra("scope").(string)
+	return &ExchangeResult{User: user, Token: token, GrantedScopes: strings.Fields(scopeText)}, nil
 }
 
 func verifyUser(ctx context.Context, raw, audience, nonce string, verify idVerifier) (VerifiedUser, error) {
@@ -170,4 +172,14 @@ func verifyUser(ctx context.Context, raw, audience, nonce string, verify idVerif
 		user.VerifiedEmail, _ = p.Claims["email"].(string)
 	}
 	return user, nil
+}
+
+// TokenSource delegates access-token renewal to the official x/oauth2 SDK.
+// Callers must persist refreshed credentials and enforce account isolation.
+func (f *Flow) TokenSource(ctx context.Context, token *oauth2.Token) (oauth2.TokenSource, error) {
+	if f == nil || ctx == nil || token == nil {
+		return nil, errors.New("OAuth token source configuration required")
+	}
+	if err := ctx.Err(); err != nil { return nil, err }
+	return f.config.TokenSource(ctx, token), nil
 }
