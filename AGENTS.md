@@ -71,6 +71,7 @@
 - OpenAI API、Responses API、OpenAI Go SDK、Codex、Skills、MCP 或 Plugins 的更新與實作優先使用 **openaiDeveloperDocs MCP** 查閱官方文件；不得推測不存在的 API、參數或能力。若 MCP 不可用，改用 OpenAI 官方網站並標示未驗證事項。
 - **主動使用 Context7：**凡涉及任何函式庫、框架、SDK、API、CLI 工具、MCP 或版本／設定用法的問題，Codex 必須先使用 **Context7 MCP** 查詢最新文件與範例，再進行分析、修改或回答；不得只依賴記憶。若 Context7 不可用，必須明確說明並改查官方文件。
 - **MCP 路由固定規則：**所有 Go 語言、Go workspace、Go symbol、Go diagnostics、重構與 Go tooling 工作必須使用 `[mcp_servers.gopls]`；所有 GitHub repository、branch、commit、PR、Issue、workflow 與 CI 操作必須使用 `[mcp_servers.github]`；所有 Codex、Codex 設定、Agents、Skills、MCP 與 Plugins 的設定或文件問題必須使用 `[mcp_servers.openaiDeveloperDocs]`。不得以其他 MCP 取代上述指定路由；指定 MCP 不可用時，必須明確回報並說明 fallback。
+- **不確定時查證：**若對答案、API、版本、設定或行為沒有至少 90% 把握，必須先使用 `[mcp_servers.context7]` 查詢最新文件與範例，再回答或執行修改；不得以推測代替查證。
 - 其他新版本 SDK／API 使用方式、設定或重大變更使用 **Context7 MCP**，再核對相關官方 Go／LINE／Google 文件；無法查證時明確標示。
 - PR／Issue／commit／CI 狀態需要外部證據或經授權的 GitHub 寫入時，使用已啟用的 **GitHub MCP**；寫入前確認使用者授權、目標 repository、branch head 與 expected SHA。
 - **Firestore Toolbox** 只在使用者授權的隔離 staging 環境、具最小權限 ADC 時使用，不得存取或修改 production。
