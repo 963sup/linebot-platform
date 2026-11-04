@@ -17,10 +17,50 @@ linebot-platform/
 │   │   │   ├── repositories/
 │   │   │   └── events/
 │   │   ├── conversation/
+│   │   │   ├── entities/
+│   │   │   ├── aggregates/
+│   │   │   ├── value-objects/
+│   │   │   ├── policies/
+│   │   │   ├── specifications/
+│   │   │   ├── factories/
+│   │   │   ├── repositories/
+│   │   │   └── events/
 │   │   ├── calendar/
+│   │   │   ├── entities/
+│   │   │   ├── aggregates/
+│   │   │   ├── value-objects/
+│   │   │   ├── policies/
+│   │   │   ├── specifications/
+│   │   │   ├── factories/
+│   │   │   ├── repositories/
+│   │   │   └── events/
 │   │   ├── task/
+│   │   │   ├── entities/
+│   │   │   ├── aggregates/
+│   │   │   ├── value-objects/
+│   │   │   ├── policies/
+│   │   │   ├── specifications/
+│   │   │   ├── factories/
+│   │   │   ├── repositories/
+│   │   │   └── events/
 │   │   ├── form/
+│   │   │   ├── entities/
+│   │   │   ├── aggregates/
+│   │   │   ├── value-objects/
+│   │   │   ├── policies/
+│   │   │   ├── specifications/
+│   │   │   ├── factories/
+│   │   │   ├── repositories/
+│   │   │   └── events/
 │   │   └── audience/
+│   │   │   ├── entities/
+│   │   │   ├── aggregates/
+│   │   │   ├── value-objects/
+│   │   │   ├── policies/
+│   │   │   ├── specifications/
+│   │   │   ├── factories/
+│   │   │   ├── repositories/
+│   │   │   └── events/
 │   ├── application/
 │   │   ├── commands/
 │   │   ├── queries/
