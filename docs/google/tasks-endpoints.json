@@ -1,0 +1,198 @@
+{
+  "schemaVersion": 1,
+  "api": "tasks",
+  "version": "v1",
+  "sdkModule": "google.golang.org/api",
+  "sdkVersion": "v0.310.0",
+  "discoveryRevision": "20261025",
+  "discoveryBlobSHA": "3ab5fea31aef05d659a2848b55b6eff9d1071229",
+  "liveAccountVerified": false,
+  "methods": [
+    {
+      "operation": "tasklists.delete",
+      "resource": "tasklists",
+      "method": "delete",
+      "httpMethod": "DELETE",
+      "path": "tasks/v1/users/@me/lists/{tasklist}",
+      "mode": "write",
+      "dangerous": true,
+      "scopes": [
+        "tasks"
+      ],
+      "status": "planned"
+    },
+    {
+      "operation": "tasklists.get",
+      "resource": "tasklists",
+      "method": "get",
+      "httpMethod": "GET",
+      "path": "tasks/v1/users/@me/lists/{tasklist}",
+      "mode": "read",
+      "dangerous": false,
+      "scopes": [
+        "tasks",
+        "tasks.readonly"
+      ],
+      "status": "planned"
+    },
+    {
+      "operation": "tasklists.insert",
+      "resource": "tasklists",
+      "method": "insert",
+      "httpMethod": "POST",
+      "path": "tasks/v1/users/@me/lists",
+      "mode": "write",
+      "dangerous": false,
+      "scopes": [
+        "tasks"
+      ],
+      "status": "planned"
+    },
+    {
+      "operation": "tasklists.list",
+      "resource": "tasklists",
+      "method": "list",
+      "httpMethod": "GET",
+      "path": "tasks/v1/users/@me/lists",
+      "mode": "read",
+      "dangerous": false,
+      "scopes": [
+        "tasks",
+        "tasks.readonly"
+      ],
+      "status": "planned"
+    },
+    {
+      "operation": "tasklists.patch",
+      "resource": "tasklists",
+      "method": "patch",
+      "httpMethod": "PATCH",
+      "path": "tasks/v1/users/@me/lists/{tasklist}",
+      "mode": "write",
+      "dangerous": false,
+      "scopes": [
+        "tasks"
+      ],
+      "status": "planned"
+    },
+    {
+      "operation": "tasklists.update",
+      "resource": "tasklists",
+      "method": "update",
+      "httpMethod": "PUT",
+      "path": "tasks/v1/users/@me/lists/{tasklist}",
+      "mode": "write",
+      "dangerous": false,
+      "scopes": [
+        "tasks"
+      ],
+      "status": "planned"
+    },
+    {
+      "operation": "tasks.clear",
+      "resource": "tasks",
+      "method": "clear",
+      "httpMethod": "POST",
+      "path": "tasks/v1/lists/{tasklist}/clear",
+      "mode": "write",
+      "dangerous": true,
+      "scopes": [
+        "tasks"
+      ],
+      "status": "planned"
+    },
+    {
+      "operation": "tasks.delete",
+      "resource": "tasks",
+      "method": "delete",
+      "httpMethod": "DELETE",
+      "path": "tasks/v1/lists/{tasklist}/tasks/{task}",
+      "mode": "write",
+      "dangerous": true,
+      "scopes": [
+        "tasks"
+      ],
+      "status": "planned"
+    },
+    {
+      "operation": "tasks.get",
+      "resource": "tasks",
+      "method": "get",
+      "httpMethod": "GET",
+      "path": "tasks/v1/lists/{tasklist}/tasks/{task}",
+      "mode": "read",
+      "dangerous": false,
+      "scopes": [
+        "tasks",
+        "tasks.readonly"
+      ],
+      "status": "planned"
+    },
+    {
+      "operation": "tasks.insert",
+      "resource": "tasks",
+      "method": "insert",
+      "httpMethod": "POST",
+      "path": "tasks/v1/lists/{tasklist}/tasks",
+      "mode": "write",
+      "dangerous": false,
+      "scopes": [
+        "tasks"
+      ],
+      "status": "planned"
+    },
+    {
+      "operation": "tasks.list",
+      "resource": "tasks",
+      "method": "list",
+      "httpMethod": "GET",
+      "path": "tasks/v1/lists/{tasklist}/tasks",
+      "mode": "read",
+      "dangerous": false,
+      "scopes": [
+        "tasks",
+        "tasks.readonly"
+      ],
+      "status": "planned"
+    },
+    {
+      "operation": "tasks.move",
+      "resource": "tasks",
+      "method": "move",
+      "httpMethod": "POST",
+      "path": "tasks/v1/lists/{tasklist}/tasks/{task}/move",
+      "mode": "write",
+      "dangerous": false,
+      "scopes": [
+        "tasks"
+      ],
+      "status": "planned"
+    },
+    {
+      "operation": "tasks.patch",
+      "resource": "tasks",
+      "method": "patch",
+      "httpMethod": "PATCH",
+      "path": "tasks/v1/lists/{tasklist}/tasks/{task}",
+      "mode": "write",
+      "dangerous": false,
+      "scopes": [
+        "tasks"
+      ],
+      "status": "planned"
+    },
+    {
+      "operation": "tasks.update",
+      "resource": "tasks",
+      "method": "update",
+      "httpMethod": "PUT",
+      "path": "tasks/v1/lists/{tasklist}/tasks/{task}",
+      "mode": "write",
+      "dangerous": false,
+      "scopes": [
+        "tasks"
+      ],
+      "status": "planned"
+    }
+  ]
+}
