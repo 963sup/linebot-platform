@@ -8,6 +8,7 @@
 |---|---|---|---|
 | `domain_architect` | Bounded Context、Aggregate、Value Object、Port 邊界 | gopls | 預設設計分析 |
 | `line_integrator` | Messaging API Webhook／Reply／Push／Flex、事件安全 | gopls、Context7、LINE 官方來源 | 被委派後可修改相應檔案 |
+| `google_identity_workspace_integrator` | Google OAuth／ID token、使用者 token、Calendar／Tasks／Forms 的每使用者存取 | gopls、Context7、Google 官方來源 | 被委派後可修改相應檔案；不可自行開 OAuth、部署或改 IAM |
 | `cloud_platform` | Cloud Run、Firestore、Cloud Tasks、WIF、IAM | Context7，隔離 staging 才允許 Toolbox | 預設只審查；不可自行部署 |
 | `go_reviewer` | Go correctness、Race、CI、PR 安全審查 | gopls、授權 GitHub（唯讀） | 只審查 |
 | `gopls_go_refactor` | 跨 package rename、interface／DTO 演進、Port／Adapter 搬遷與語意批量修改 | gopls | 被委派後可修改 Go 檔案 |
@@ -16,12 +17,14 @@
 
 Codex 內建 `worker`、`explorer` 可處理一般任務，不再額外建立通用 agent。主 Agent 負責拆分任務、避免併發編輯同一檔案、整合與最後驗證。只有實際互不依賴的工作才並行委派；建議最多三個子 Agent。
 
-SDK 功能開發仍以 [sdk-integration Skill](../../.agents/skills/sdk-integration/SKILL.md) 按需查證；`gopls_go_refactor` 專責 Go 語意批量修改，`code_cleanup_release_validation` 專責交付前清理與驗證。`go.mod` 預先核准的 SDK 直接依賴及其預留空白骨架不得因尚未使用被刪除，Catalog 的能力標籤只是搜尋提示。
+SDK 功能開發仍以 [sdk-integration Skill](../../.agents/skills/sdk-integration/SKILL.md) 按需查證。LINE 的十一個 v8 package 統一交 `line_integrator`，Google OAuth／Workspace 的八個 package 統一交 `google_identity_workspace_integrator`；不可依 import path 建立互相重疊的角色。兩者都必須將 SDK 型別留在 Adapter／Infrastructure、由 Bootstrap 組裝，並以自有 DTO／小型 Port 隔開 Domain 與 Application。`gopls_go_refactor` 專責 Go 語意批量修改，`code_cleanup_release_validation` 專責交付前清理與驗證。`go.mod` 預先核准的 SDK 直接依賴及其預留空白骨架不得因尚未使用被刪除，Catalog 的能力標籤只是搜尋提示。
 
 ## 使用範例
 
 - 修改 Conversation 聚合：先由 `domain_architect` 釐清不變量，再交給內建 `worker` 實作；`go_reviewer` 審查。
 - 新增 LINE Flex／Webhook event：由 `docs_researcher` 核對版本、`line_integrator` 實作、`go_reviewer` 驗證。
+- 新增每使用者 Google Calendar／Tasks／Forms：由 `domain_architect` 先定義自有 DTO／Port，`google_identity_workspace_integrator` 實作 BFF + PKCE、加密 token repository 與 SDK Adapter，`cloud_platform` 審查 public/private IAM 邊界，最後由 `go_reviewer` 驗證。
+- LINE Account Linking 串接 Google 授權：`line_integrator` 處理 LINE webhook／link token，`google_identity_workspace_integrator` 處理 Google consent／connection；共用 Port 或 DTO 的演進先交 `gopls_go_refactor`，不可平行改同一檔案。
 - 準備 Cloud Tasks Worker：`domain_architect` 釐清 Port、`cloud_platform` 審查 IAM 與資料一致性，主 Agent 排程實作。
 - 判斷 SDK 升級：`docs_researcher` 核對正式來源，主 Agent 決定升級範圍。
 - 將 application port 的 method 改名並更新所有 adapter、fake 與 call site：委派 `gopls_go_refactor`，先取得 references／implementations，再做語意批量修改與 diagnostics 驗證。

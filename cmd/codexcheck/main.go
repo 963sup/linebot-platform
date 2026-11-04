@@ -137,7 +137,7 @@ func validateConfig(path string) error {
 func validateAgents(dir string) error {
 	expected := []string{
 		"domain_architect", "line_integrator", "cloud_platform", "go_reviewer", "docs_researcher",
-		"code_cleanup_release_validation", "gopls_go_refactor",
+		"code_cleanup_release_validation", "gopls_go_refactor", "google_identity_workspace_integrator",
 	}
 	files, err := filepath.Glob(filepath.Join(dir, "*.toml"))
 	if err != nil {
@@ -212,5 +212,5 @@ func main() {
 		fmt.Fprintln(os.Stderr, "Codex config validation:", err)
 		os.Exit(1)
 	}
-	fmt.Println("Codex config OK: 6 agents, 5 MCP entries, SDK catalog and reserved SDKs; no Python source files")
+	fmt.Println("Codex config OK: 8 agents, 7 MCP entries, SDK catalog and reserved SDKs; no Python source files")
 }

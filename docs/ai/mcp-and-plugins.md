@@ -40,7 +40,7 @@ Google Cloud Run 與 Firestore 都提供 Google 管理的遠端 MCP server，分
 ## 設定與驗證
 
 1. Cloud setup 在非互動情境安裝 `gopls v0.24.0` 至 `$HOME/.local/bin/gopls`，專案 config 用絕對 HOME 路徑執行 `gopls mcp`。
-2. 本地執行 `go run ./cmd/codexcheck` 確認五個 MCP、六個 Agents 與 setup shell 語法。
+2. 本地執行 `go run ./cmd/codexcheck` 確認七個 MCP、八個 Agents 與 setup shell 語法。
 3. 若可使用 Codex CLI，在可信 repo 內執行 `codex mcp list`，檢查已啟用 server 與認證狀態。
 4. 在 Codex Cloud 設定網路允許必要主機（包括 `developers.openai.com`），Publish／Republish 後於**新工作階段**再驗證 MCP 可用性；本專案尚未代你發布雲端環境。
 
