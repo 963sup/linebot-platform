@@ -68,11 +68,11 @@ type storedState struct {
 }
 
 type storedConnection struct {
-	Ciphertext []byte    `firestore:"ciphertext"`
-	KeyID      string    `firestore:"key_id"`
-	Active     bool      `firestore:"active"`
-	Version    int64     `firestore:"version"`
-	UpdatedAt  time.Time `firestore:"updated_at"`
+	Ciphertext []byte     `firestore:"ciphertext"`
+	KeyID      string     `firestore:"key_id"`
+	Active     bool       `firestore:"active"`
+	Version    int64      `firestore:"version"`
+	UpdatedAt  time.Time  `firestore:"updated_at"`
 	ExpiresAt  *time.Time `firestore:"expires_at,omitempty"`
 }
 
