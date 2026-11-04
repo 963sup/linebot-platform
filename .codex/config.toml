@@ -32,11 +32,11 @@ startup_timeout_sec = 20
 tool_timeout_sec = 45
 
 # GitHub official remote MCP. The token is supplied only through the environment.
-# The headers restrict MCP tools to read-only repository metadata.
-[mcp_servers.github_readonly]
+# Write operations remain gated by explicit user authorization and the git_release agent.
+[mcp_servers.github]
 url = "https://api.githubcopilot.com/mcp/"
 bearer_token_env_var = "GITHUB_MCP_TOKEN"
-http_headers = { "X-MCP-Readonly" = "true", "X-MCP-Toolsets" = "repos,issues,pull_requests" }
+http_headers = { "X-MCP-Toolsets" = "repos,issues,pull_requests" }
 enabled = true
 required = false
 startup_timeout_sec = 20

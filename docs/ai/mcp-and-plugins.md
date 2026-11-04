@@ -4,16 +4,16 @@ MCP 是**開發期工具**，由 [`.codex/config.toml`](../../.codex/config.toml
 
 ## 宣告、Host 載入與連線是三個不同狀態
 
-`.codex/config.toml` 被版本控制，代表本專案期望的 MCP 配置；它本身不會證明當前 Codex CLI／Cloud host 已載入。每個新工作階段須以實際工具清單與 `codex mcp list`（若該 host 提供 CLI）驗證有效配置，並對需要認證的 server 驗證最小唯讀呼叫。若工具不存在、CLI 未列出 server、網路受限、`gopls` 不在預期路徑，或 OAuth／token 缺失，必須回報「未掛載／未驗證」，使用安全 fallback，不能聲稱 MCP 可用。
+`.codex/config.toml` 被版本控制，代表本專案期望的 MCP 配置；它本身不會證明當前 Codex CLI／Cloud host 已載入。每個新工作階段須以實際工具清單與 `codex mcp list`（若該 host 提供 CLI）驗證有效配置；對唯讀 server 執行最小唯讀呼叫，對可寫 server 則只在使用者明確授權的目標與操作下驗證。若工具不存在、CLI 未列出 server、網路受限、`gopls` 不在預期路徑，或 OAuth／token 缺失，必須回報「未掛載／未驗證」，使用安全 fallback，不能聲稱 MCP 可用。
 
-## 7 個 MCP 與安全預設
+## MCP 與安全預設
 
 | MCP 名稱 | 官方實作 | 啟用狀態 | 何時使用 |
 |---|---|---|---|
 | `gopls` | [gopls MCP](https://go.dev/gopls/features/mcp)；`gopls mcp` | 開啟（需安裝） | Go symbols、definitions、references、型別／錯誤診斷、重構前分析 |
 | `context7` | [upstash/context7](https://github.com/upstash/context7)；`https://mcp.context7.com/mcp` | 開啟（遠端） | 第三方 SDK 版本、安裝和程式 API 用法，仍需核對官方資料 |
 | `openaiDeveloperDocs` | [OpenAI Docs MCP](https://developers.openai.com/learn/docs-mcp)；`https://developers.openai.com/mcp` | 開啟（遠端、唯讀） | 官方 OpenAI API、SDK、Responses API、Codex、Skills、MCP 和 Plugins 文件 |
-| `github_readonly` | [github/github-mcp-server](https://github.com/github/github-mcp-server)；`https://api.githubcopilot.com/mcp/` | 啟用（需環境 token） | 依授權讀取 PR、Issue、commit、workflow 等，不寫入 |
+| `github` | [github/github-mcp-server](https://github.com/github/github-mcp-server)；`https://api.githubcopilot.com/mcp/` | 啟用（需環境 token） | 依明確授權讀取或寫入 repository、PR、Issue、commit、workflow |
 | `firestore_toolbox` | [googleapis/mcp-toolbox](https://github.com/googleapis/mcp-toolbox)；Firestore prebuilt | 停用（未配置 staging ADC） | 在**隔離測試專案**審查 Firestore collections、documents、rules |
 | `google_cloud_run` | Google Cloud Run remote MCP；`https://run.googleapis.com/mcp` | 停用（尚未配置 Google OAuth／最小 IAM） | 讀取 service、revision、部署與診斷資料 |
 | `google_firestore` | Google Firestore remote MCP；`https://firestore.googleapis.com/mcp` | 停用（尚未配置 Google OAuth／最小 IAM） | 讀取隔離 staging 的 Firestore 資料與設定 |
@@ -22,10 +22,11 @@ MCP 是**開發期工具**，由 [`.codex/config.toml`](../../.codex/config.toml
 
 `context7` 公開文件查詢不需專案預設寫入 token；匿名存取可能有速率限制。若要使用私有文件或較高額度，應在使用者自己的 Codex 設定／認證流程中加入憑證，**不要在這個 repo 的 TOML 硬編碼 Header**。
 
-## GitHub MCP：唯讀與權限
+## GitHub MCP：可寫與權限
 
-- `github_readonly` 只在環境安全提供 `GITHUB_MCP_TOKEN` 時連線；不要提交 token 或為了讓它能用而在 CI 自動登入。
-- 以 `X-MCP-Readonly: true` 限制 MCP 提供的工具，`X-MCP-Toolsets` 收斂至 `repos,issues,pull_requests`；但 token 自身權限仍須單獨限制。
+- `github` 只在環境安全提供 `GITHUB_MCP_TOKEN` 時連線；不要提交 token 或為了讓它能用而在 CI 自動登入。
+- MCP 可寫不等於自動授權。commit、branch、PR、Issue 或 merge 寫入前，必須確認使用者明確授權、repository、目標 branch 與 expected head；禁止未授權 force push、merge、部署或修改 secrets。
+- `X-MCP-Toolsets` 收斂至 `repos,issues,pull_requests`；token 自身權限仍須單獨限制，且 GitHub MCP 操作需由 `git_release` 交付閘門管理。
 
 ## Google MCP Toolbox：不是 Google Workspace API MCP
 
@@ -44,11 +45,11 @@ Google Cloud Run 與 Firestore 都提供 Google 管理的遠端 MCP server，分
 ## 設定與驗證
 
 1. Cloud setup 在非互動情境安裝 `gopls v0.24.0` 至 `$HOME/.local/bin/gopls`，專案 config 用絕對 HOME 路徑執行 `gopls mcp`。
-2. 本地執行 `go run ./cmd/codexcheck` 確認七個 MCP 宣告、十五個 Agents 與 setup shell 語法；這不代表 host 已載入 MCP。
+2. 本地執行 `go run ./cmd/codexcheck` 確認 MCP 宣告、十六個 Agents 與 setup shell 語法；這不代表 host 已載入 MCP。
 3. 若可使用 Codex CLI，在可信 repo 內執行 `codex mcp list`，檢查已啟用 server 與認證狀態。
 4. 在 Codex Cloud 設定網路允許必要主機（包括 `developers.openai.com`），Publish／Republish 後於**新工作階段**再驗證 MCP 可用性；本專案尚未代你發布雲端環境。
 
-官方索引：[Codex Config Reference](https://learn.chatgpt.com/docs/config-file/config-reference)、[Codex Cloud Environments](https://learn.chatgpt.com/docs/environments/cloud-environments)、[GitHub MCP Read-only](https://github.com/github/github-mcp-server/blob/main/docs/server-configuration.md)、[Firestore Toolbox](https://mcp-toolbox.dev/integrations/firestore/prebuilt-configs/firestore/)。
+官方索引：[Codex Config Reference](https://learn.chatgpt.com/docs/config-file/config-reference)、[Codex Cloud Environments](https://learn.chatgpt.com/docs/environments/cloud-environments)、[GitHub MCP Server](https://github.com/github/github-mcp-server/blob/main/docs/server-configuration.md)、[Firestore Toolbox](https://mcp-toolbox.dev/integrations/firestore/prebuilt-configs/firestore/)。
 
 ## Plugin 關係
 

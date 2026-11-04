@@ -63,13 +63,14 @@
 - **三層契約：**`.codex/config.toml` 只宣告 MCP／協作功能的連線、啟用狀態與 timeout，不能放角色工作流程或憑證；`.codex/agents/*.toml` 只定義可委派角色的責任、輸入、交付與安全邊界，不能自行啟用工具或擴權；本檔負責跨角色路由、架構不變量、驗證與 fallback。三者的相同工具名稱必須一致，設定啟用不代表此工作階段已連線成功。
 - 跨領域、跨 SDK、跨 package 或跨環境的複雜任務先由第 0 層 `delivery_orchestrator` 產出工作契約；小型單一邊界任務直接交對應角色，避免徒增 Agent 鏈。它不取代主 Agent 的整合與最終驗證責任。
 - **層級與順序：**第 1 層 `docs_researcher`、`domain_architect` 產出外部證據與領域契約；第 2 層 `go_feature_engineer`、`line_integrator`、`google_identity_workspace_integrator`、`cloud_platform` 在契約內實作或審查能力邊界；第 3 層 `gopls_go_refactor` 只傳播已確認的跨 package 語意變更；第 4 層 `go_reviewer`、`go_architecture_reviewer`、`github_actions_reviewer` 獨立檢查；第 5 層 `technical_docs_writer`、`go_agents_md_author`、`code_cleanup_release_validation`、`cloud_run_release` 產出文件、治理、交付驗證與經明確授權的發布。同一檔案不得由多個實作角色同時改寫，最後由主 Agent 整合、驗證。
+- **Git 交付閘門：**`git_release` 只在使用者明確要求 commit／push／PR／merge 時啟用；先驗證工作區、變更範圍、Go 品質閘門與 secrets，再以 fast-forward 或 GitHub MCP 的 expected head 保護更新指定分支。GitHub MCP 可寫不代表自動授權：所有寫入、PR merge、force push 與 deployment 仍需使用者明確要求；推送後必須用 GitHub MCP 驗證遠端 SHA、branch ref 與 CI 狀態，不得把 push、PR merge 或 CI 通過宣稱為 Cloud Run／staging／production 部署成功。
 - **SDK 路由標準：**所有 `github.com/line/line-bot-sdk-go/v8/linebot`、`webhook`、`messaging_api`、`liff`、`channel_access_token`、`insight`、`manage_audience`、`module`、`module_attach`、`shop`、`httphandler` 變更由 `line_integrator` 負責；所有 `golang.org/x/oauth2`、`oauth2/google`、`google.golang.org/api/idtoken`、`oauth2/v2`、`option`、`calendar/v3`、`tasks/v1`、`forms/v1` 變更由 `google_identity_workspace_integrator` 負責。它們都必須先套用 `sdk-integration` Skill、查 Catalog、以 gopls 驗證符號，並維持 Domain/Application 無 SDK import、Adapter/Infrastructure 持 SDK、Bootstrap 組裝的邊界。
 - **命名與交接標準：**由具體能力命名，查詢 Port 使用 `Reader`、`Finder` 或 `Inspector`，改變外部狀態使用 `Manager` 或 `Command`；禁止建立 `Provider`、萬用 `Client`、`Call` 或動態路由層。跨 LINE 與 Google 的帳號連結，先由 `domain_architect` 定義自有 DTO／Port，再分別交兩個整合 Agent；跨 package rename、DTO／Port 演進則交 `gopls_go_refactor`，最後由 `go_reviewer` 檢查邊界、錯誤、取消、效能與測試。
 - 跨 package rename、interface／DTO 簽名變更、Port／Adapter 搬遷、package 拆分或需批量更新 Go references 時，優先委派 **`gopls_go_refactor`**。它必須先以 gopls MCP 查 definition、references、implementations 與 diagnostics，修改後執行 gofmt、目標測試並重新檢查 diagnostics；若 gopls MCP 不可用，才以本地 Go 工具降級並回報。
 - 修改其他 Go 程式前，需要追查 definitions、references、型別或診斷時用 **gopls MCP**；若不可用則使用本地 Go 工具。
 - OpenAI API、Responses API、OpenAI Go SDK、Codex、Skills、MCP 或 Plugins 的更新與實作優先使用 **openaiDeveloperDocs MCP** 查閱官方文件；不得推測不存在的 API、參數或能力。若 MCP 不可用，改用 OpenAI 官方網站並標示未驗證事項。
 - 其他新版本 SDK／API 使用方式、設定或重大變更使用 **Context7 MCP**，再核對相關官方 Go／LINE／Google 文件；無法查證時明確標示。
-- PR／Issue／commit／CI 狀態需要外部證據時，優先選擇既有已授權 GitHub 工具，必要時才使用 **GitHub MCP（唯讀）**。
+- PR／Issue／commit／CI 狀態需要外部證據或經授權的 GitHub 寫入時，使用已啟用的 **GitHub MCP**；寫入前確認使用者授權、目標 repository、branch head 與 expected SHA。
 - **Firestore Toolbox** 只在使用者授權的隔離 staging 環境、具最小權限 ADC 時使用，不得存取或修改 production。
 - `AGENTS.md` 只負責路由規則；**不可因指示而自行安裝 MCP、產生 token、執行 OAuth 或修改個人 Codex 設定**。MCP 的啟用與安裝由 `.codex/config.toml`、Codex Cloud Install script 與使用者環境設定處理。
 

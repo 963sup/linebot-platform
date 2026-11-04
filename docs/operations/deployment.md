@@ -24,7 +24,7 @@ Cloud Run 使用 `line-bot-runtime@bubbly-area-513305-s0.iam.gserviceaccount.com
 
 | 設定位置 | 項目 | 用途 |
 | --- | --- | --- |
-| Codex Cloud secure environment | `GITHUB_MCP_TOKEN` | 唯讀 GitHub MCP，僅可送至 `api.githubcopilot.com`；不屬於 Cloud Run runtime。 |
+| Codex Cloud secure environment | `GITHUB_MCP_TOKEN` | GitHub MCP（依使用者授權可讀寫），僅可送至 `api.githubcopilot.com`；不屬於 Cloud Run runtime。 |
 | Google Secret Manager | `LINE_CHANNEL_SECRET` | 僅注入 `line-bot-public`。 |
 | Google Secret Manager | `LINE_CHANNEL_ACCESS_TOKEN` | 僅注入 `line-bot-private`。 |
 | Cloud Run deployment | `APP_ENV`、`LINE_EVENT_MODE`、`LINE_API_TIMEOUT`、`LOG_LEVEL`、`LOG_FORMAT`、`LINE_BOT_DESTINATION`、`GCP_PROJECT_ID`、`TASK_QUEUE_NAME`、`TASK_WORKER_URL`、`TASK_OIDC_AUDIENCE`、`TASK_INVOKER_EMAIL` | 非敏感 production 設定；由 `cloudbuild.deploy.yaml` 寫入。 |

@@ -79,7 +79,7 @@ func validateConfig(path string) error {
 		c.Agents.MaxConcurrentThreadsPerSession > 3 {
 		return errors.New("multi-agent must be enabled with concurrency between 1 and 3")
 	}
-	expected := []string{"gopls", "context7", "github_readonly", "firestore_toolbox", "google_cloud_run", "google_firestore", "openaiDeveloperDocs", "google_developer_knowledge", "google_cloud_cli", "google_cloud_logging", "google_cloud_monitoring", "google_calendar", "google_drive", "google_sheets", "google_docs", "google_gmail"}
+	expected := []string{"gopls", "context7", "github", "firestore_toolbox", "google_cloud_run", "google_firestore", "openaiDeveloperDocs", "google_developer_knowledge", "google_cloud_cli", "google_cloud_logging", "google_cloud_monitoring", "google_calendar", "google_drive", "google_sheets", "google_docs", "google_gmail"}
 	keys := make([]string, 0, len(c.MCPServers))
 	for name, s := range c.MCPServers {
 		keys = append(keys, name)
@@ -106,11 +106,11 @@ func validateConfig(path string) error {
 		docs.BearerTokenEnvVar != "" || docs.Command != "" {
 		return errors.New("OpenAI Docs MCP must use the official HTTPS endpoint without local command or bearer token")
 	}
-	github := c.MCPServers["github_readonly"]
+	github := c.MCPServers["github"]
 	if !github.Enabled || github.URL != "https://api.githubcopilot.com/mcp/" ||
 		github.BearerTokenEnvVar != "GITHUB_MCP_TOKEN" ||
-		github.HTTPHeaders["X-MCP-Readonly"] != "true" {
-		return errors.New("GitHub MCP must be enabled and explicitly read-only")
+		github.HTTPHeaders["X-MCP-Readonly"] != "" {
+		return errors.New("GitHub MCP must be enabled without a read-only header")
 	}
 	firestore := c.MCPServers["firestore_toolbox"]
 	if firestore.Enabled || firestore.Command != "npx" ||
@@ -160,7 +160,7 @@ func validateAgents(dir string) error {
 		"domain_architect", "line_integrator", "cloud_platform", "go_reviewer", "docs_researcher",
 		"code_cleanup_release_validation", "gopls_go_refactor", "google_identity_workspace_integrator",
 		"delivery_orchestrator", "go_feature_engineer", "go_architecture_reviewer", "github_actions_reviewer",
-		"go_agents_md_author", "technical_docs_writer", "cloud_run_release",
+		"go_agents_md_author", "technical_docs_writer", "cloud_run_release", "git_release", "openai_docs_researcher",
 	}
 	files, err := filepath.Glob(filepath.Join(dir, "*.toml"))
 	if err != nil {
@@ -235,5 +235,5 @@ func main() {
 		fmt.Fprintln(os.Stderr, "Codex config validation:", err)
 		os.Exit(1)
 	}
-	fmt.Println("Codex config OK: 15 agents, 16 MCP entries, SDK catalog and reserved SDKs; no Python source files")
+	fmt.Println("Codex config OK: 17 agents, 16 MCP entries, SDK catalog and reserved SDKs; no Python source files")
 }

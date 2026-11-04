@@ -27,11 +27,13 @@ flowchart TD
 | L3 | `gopls_go_refactor` | 跨 package rename、interface／DTO 演進、Port／Adapter 搬遷與語意批量修改 | gopls | 被委派後可修改 Go 檔案 |
 | L4 | `go_reviewer` | Go correctness、Race、CI、PR 安全審查 | gopls、授權 GitHub（唯讀） | 只審查 |
 | L4 | `go_architecture_reviewer` | DDD／六角形邊界、consumer ownership、結構冗餘的獨立審查 | gopls、架構測試 | 只審查 |
-| L4 | `github_actions_reviewer` | GitHub Actions 的 trigger、權限、OIDC、secrets、cache／artifact 與 CI gate 審查 | GitHub 唯讀、workflow 原始碼 | 預設只審查 |
+| L4 | `github_actions_reviewer` | GitHub Actions 的 trigger、權限、OIDC、secrets、cache／artifact 與 CI gate 審查 | GitHub MCP（本角色只讀）、workflow 原始碼 | 預設只審查 |
 | L5 | `technical_docs_writer` | 技術文件、設定說明與可驗證 runbook | 程式／測試／第一方來源 | 被委派後可修改文件 |
 | L5 | `go_agents_md_author` | AGENTS／Codex 規範與實際 Go 專案現況的一致性 | gopls、Go 工具鏈、codexcheck | 被委派後可修改規範文件 |
 | L5 | `code_cleanup_release_validation` | 驗收後範圍檢查、引用追蹤、清理、受保護 SDK 及正式測試保留、發行驗證 | gopls、Go 工具鏈、CI、SDK Catalog | 經授權才可修改；不可自行合併或部署 |
 | L5 | `cloud_run_release` | `line-bot-public`／`line-bot-private` 的受授權 Cloud Run 發布與證據 | Cloud Run release skill、Google 官方工具 | 明確授權後才可發布 |
+| L5 | `git_release` | Git commit、branch、PR／merge 交付閘門與遠端驗證 | GitHub MCP、Git、Go 品質工具 | 明確授權後才可寫入；不可自行部署 |
+| L1 | `openai_docs_researcher` | OpenAI 官方文件、API、SDK、Codex、Skills、MCP 與 Plugins 查證 | OpenAI Docs MCP；明確授權後可嘗試 Codex MCP setup；官方 fallback | 只查證，不修改產品程式 |
 
 Codex 內建 `worker`、`explorer` 可處理一般任務，不再額外建立通用 agent。主 Agent 負責拆分任務、避免併發編輯同一檔案、整合與最後驗證。只有實際互不依賴的工作才並行委派；建議最多三個子 Agent。
 
@@ -48,7 +50,7 @@ SDK 功能開發仍以 [sdk-integration Skill](../../.agents/skills/sdk-integrat
 - 準備 Cloud Tasks Worker：`domain_architect` 釐清 Port、`cloud_platform` 審查 IAM 與資料一致性，主 Agent 排程實作。
 - 判斷 SDK 升級：`docs_researcher` 核對正式來源，主 Agent 決定升級範圍。
 - 將 application port 的 method 改名並更新所有 adapter、fake 與 call site：委派 `gopls_go_refactor`，先取得 references／implementations，再做語意批量修改與 diagnostics 驗證。
-- 準備合併／交付：委派 `code_cleanup_release_validation`，先列出保留與候選清理項、檢查引用，再以 `codexcheck`、`make check`、Actions CI 驗證；不得刪除 SDK Reserved Modules／Scaffolds、必要 Regression Tests 或跳過真實 Staging 安全門檻。
+- 準備合併／交付：委派 `code_cleanup_release_validation`，先列出保留與候選清理項、檢查引用，再以 `codexcheck`、`make check`、Actions CI 驗證；不得刪除 SDK Reserved Modules／Scaffolds、必要 Regression Tests 或跳過真實 Staging 安全門檻。使用者明確授權 commit／push／PR／merge 後，再交 `git_release` 執行交付閘門與 GitHub MCP 遠端驗證。
 - 修改 `.github/workflows`：先由 `github_actions_reviewer` 分析 trigger、權限與 WIF 邊界；修改一般 Go 垂直切片則由 `go_feature_engineer` 實作、`go_reviewer` 審查；修改 AGENTS／Codex 規範則交 `go_agents_md_author`。
 
 ## 禁止誤用
