@@ -2,6 +2,10 @@
 
 **Status:** not run. External Google account consent, Google Cloud resources, Pub/Sub, OAuth verification/production approval were not granted by this PR. The following are **acceptance gates**, not deployment commands.
 
+## Source of user-self-service security contract
+
+The requirements from [PR #26](https://github.com/963sup/linebot-platform/pull/26) are preserved in [User Self-Service Linking](user-self-service-linking.md). All work in PR #27 must comply with forwarded-link defense, independent LINE Login/LIFF verification, channel/user/Google subject isolation, and disabling sync on account unlink. Existing LINE or Firestore deployment does not prove these OAuth-specific boundaries.
+
 ## Authorized setup
 
 1. Designate an isolated Google Cloud project, OAuth web application Client ID and approved HTTPS redirect URI. Enable Calendar API, Tasks API, Forms API and OAuth consent screen as required. Review Google verification/publishing requirements for sensitive scopes.
@@ -14,8 +18,8 @@
 
 | Gate | Expected staging evidence |
 |---|---|
-| OAuth identity | State binds to verified LINE principal; spoofed LINE ID and unauthorized HTTP start rejected |
-| CSRF/PKCE | Missing/modified/replayed state or cookie rejected; expired session rejected; code verifier and nonce checked |
+| OAuth identity | State binds to verified LINE Channel/user; spoofed LINE ID and unauthorized HTTP start rejected; browser LINE Login/LIFF reverified at handoff/callback |
+| CSRF/PKCE | Missing/modified/replayed/forwarded authorization link or cookie rejected; expired session rejected; code verifier and nonce checked |
 | Google identity | Wrong Google Client ID, issuer, nonce, expiry, or subject rejected; no email-as-identity shortcut |
 | Scopes | Only approved Calendar / Tasks / Forms scopes are issued; missing granted API scope is rejected |
 | Secure credentials | Token ciphertext contains no plaintext; changing document ID causes AES-GCM authentication error; no raw tokens in logs |

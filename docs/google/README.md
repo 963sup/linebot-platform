@@ -17,7 +17,7 @@
 - https://github.com/googleapis/google-api-go-client/blob/v0.310.0/tasks/v1/tasks-api.json
 - https://github.com/googleapis/google-api-go-client/blob/v0.310.0/tasks/v1/tasks-gen.go
 
-## 離線整合進度（Draft PR #25）
+## 離線整合進度（PR #25 已合併）
 
 - Calendar v3：38/38；Tasks v1：14/14。合計 52/52 項 `integrated_offline`，以 `google.golang.org/api v0.310.0` 為準。
 - `freebusy.query` 雖使用 HTTP POST，但**不修改資料**，Operator 應以 `--read` 操作；其他寫入與 Watch 註冊需明確 `--apply --confirm`。
@@ -28,4 +28,10 @@
 - Forms 4、Responses 2、Watches 4，共 10 個原生 Typed SDK 方法，使用 `google.golang.org/api/forms/v1`。
 - Forms 呼叫沿用 `WorkspaceRequest`／`cmd/ops workspace --api forms` 的本機測試帳號與操作確認規則。新增 `docs/google/forms-endpoints.json` 作為 Discovery v0.310.0 方法清單。
 - 真正的 Forms Watches 通知需要額外 Pub/Sub Topic、通知授權、續約與去重；僅 SDK 離線整合不表示通知服務已部署。
-- OAuth 仍只提供 CLI 外部短期 Access Token；尚未完成使用者同意、Token 儲存、撤銷或正式帳號驗證。
+- 本機 CLI 仍使用外部短期 Access Token；Draft PR #27 已新增 OAuth／Token Repository 的離線程式碼，但尚未掛載可信的 LINE 使用者登入與 Google 真實授權／撤銷流程。
+
+## 使用者自助連結規格（整合自 PR #26）
+
+- [LINE 使用者自行綁定 Google 帳號](user-self-service-linking.md)：明確規範連結轉傳防護、瀏覽器重新驗證 LINE 身分、Channel／使用者／Google sub 隔離與取消連結時停止同步。
+- Draft PR #27 的 OAuth 核心、Firestore、TokenSource 及 Handler 仍是 opt-in 基礎元件；尚未透過已驗證 LINE Login／LIFF 接上公開路由，不能宣稱已能讓每位 LINE 使用者自行綁定。
+- [OAuth 基礎實作](oauth-foundation.md) · [隔離 Staging 驗收](staging-acceptance.md)。

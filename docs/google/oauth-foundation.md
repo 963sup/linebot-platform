@@ -10,15 +10,12 @@
 - 在離線測試使用 Fake Google Token Endpoint 與 Fake ID Token Verifier；不使用任何 Google 真實帳號、Key、Token 或服務。
 - Token 與 provider 原始錯誤不記錄、不轉成 CLI 文字；受控流程應直接處理 Result，而不是輸出到 stdout。
 
-## 尚未實作，不能直接對公提供登入
+## 尚未完成的外部接線及驗收（不可對公提供登入）
 
-- 驗證 LINE 使用者及持有的帳號連結意圖，建立單次且短時有效的 State（綁定 ownerLineUserID、verifier、nonce、scope）。
-- Firestore durable `Put/Consume`：只能原子消耗一次 state，跨 Cloud Run 執行個體仍防 CSRF、重播與搶先使用；state 應以安全雜湊作索引，不可放入日誌。
-- 已驗證 Google 帳號（ID Token 的 `sub`）與 LINE 使用者的存取政策；沒有 Google ID Token 或 nonce 不一致必須拒絕。
-- 加密 Refresh Token 的 Token Repository、金鑰輪替、憑證撤銷、Scope 增減與 Google 連線解除；注意更新 Access Token 時 Google 可能不回傳新的 Refresh Token，不能覆蓋現有有效值。
-- TokenSource 跨程序刷新與持久化的版本檢查／分散式單次更新策略；Token refresh 結果未知時不得覆蓋較新 Token。
-- OAuth Start／Callback HTTP 入口、Redirect URI 與 Cookie policy、登入期限及安全 header、敏感異常監控、隔離 Staging 真實授權測試。
-- Credential Store 無可審查的加密／授權實作前，不可接入公開 LINE webhook、Cloud Run 或將本元件標為 production-ready。
+- [使用者自助綁定規格](user-self-service-linking.md) 來自 PR #26，保留了**連結可轉傳時須在瀏覽器再次驗證 LINE Login／LIFF 身分**的安全限制。單靠 Callback 的 state Cookie 無法證明原始 LINE 身分。
+- Firestore 一次性 State、AES-GCM 加密 Token Repository、金鑰輪替版本、刷新 CAS／停用及 OAuth Start／Callback Handler 的**離線程式碼已於 PR #27 實作**；但尚未在既有正式 LINE Login、Firestore IAM、Secret Manager 金鑰及真實 Google 帳號上驗收。
+- OAuth Start／Callback 尚未掛載公開路由，可信的 Channel／LINE user／Google `sub` 隔離與瀏覽器再驗證、憑證輪替、權限擴充與解除連結後停止背景同步仍待整合測試。
+- 使用者個別 Calendar／Tasks／Forms 同步及 Pub/Sub Watch 通知不是本輪已完成的服務；詳見 [Staging Acceptance](staging-acceptance.md)。
 
 ## 最小流程
 
@@ -51,7 +48,7 @@
 
 ### Prerequisites remaining before public use
 
-1. Verify the LINE principal with Messaging Account Linking or LINE Login before issuing authorization URLs; never accept a user ID copied from HTTP parameters.
+1. Verify the LINE principal with Messaging Account Linking or LINE Login **and reverify the browser's LINE Login/LIFF identity at handoff and callback**; a forwarded authorization link or matching state cookie alone cannot bind a Google account.
 2. Provision dedicated GCP staging project, restricted Firestore permissions, TTL policy and pinned Secret Manager encryption versions; validate revocation and key rotation.
 3. Demonstrate Firestore Emulator transaction races, secret-manager IAM and real Google OAuth consent/refresh/revoke on a separate test Google account. Define a reauthorization fallback for concurrent or revoked refresh tokens.
 4. Bind the HTTPS start/callback routes to a reviewed identity gate; enforce session and consent policy, use staging OAuth client IDs, and record redacted audit and recovery evidence.
