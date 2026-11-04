@@ -2,24 +2,21 @@ package workspace
 
 import (
 	"context"
-	"encoding/json"
 	"testing"
-
-	"github.com/963sup/linebot-platform/internal/application/ports/outbound"
 )
 
 type fakeCalendar struct{ called int }
 
-func (f *fakeCalendar) ExecuteCalendar(context.Context, outbound.WorkspaceRequest) (json.RawMessage, error) {
+func (f *fakeCalendar) ExecuteCalendar(context.Context, Command) (Result, error) {
 	f.called++
-	return json.RawMessage(`{"ok":true}`), nil
+	return Result{Value: map[string]any{"ok": true}}, nil
 }
 
 type fakeTasks struct{ called int }
 
-func (f *fakeTasks) ExecuteTasks(context.Context, outbound.WorkspaceRequest) (json.RawMessage, error) {
+func (f *fakeTasks) ExecuteTasks(context.Context, Command) (Result, error) {
 	f.called++
-	return json.RawMessage(`{"ok":true}`), nil
+	return Result{Value: map[string]any{"ok": true}}, nil
 }
 
 func TestWorkspaceOperationsRequireExplicitApproval(t *testing.T) {
@@ -42,7 +39,7 @@ func TestWorkspaceOperationsRequireExplicitApproval(t *testing.T) {
 		{"calendar", "calendars.clear", Approval{Apply: true, Confirm: "calendars.clear"}, false},
 		{"calendar", "not-an-api", Approval{Read: true}, false},
 	} {
-		_, err := s.Execute(context.Background(), tc.api, outbound.WorkspaceRequest{Operation: tc.op}, tc.approval)
+		_, err := s.Execute(context.Background(), tc.api, Command{Operation: tc.op}, tc.approval)
 		if (err == nil) != tc.pass {
 			t.Fatalf("%s %s pass=%t err=%v", tc.api, tc.op, tc.pass, err)
 		}
@@ -55,7 +52,7 @@ func TestWorkspaceOperationsRequireExplicitApproval(t *testing.T) {
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	if _, err := s.Execute(ctx, "tasks", outbound.WorkspaceRequest{Operation: "tasks.list"}, Approval{Read: true}); err == nil {
+	if _, err := s.Execute(ctx, "tasks", Command{Operation: "tasks.list"}, Approval{Read: true}); err == nil {
 		t.Fatal("cancelled context accepted")
 	}
 }

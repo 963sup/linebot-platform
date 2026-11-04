@@ -2,11 +2,11 @@ package line
 
 import (
 	"context"
-	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
+	"github.com/963sup/linebot-platform/internal/application/ports/outbound"
 	"github.com/line/line-bot-sdk-go/v8/linebot/manage_audience"
 )
 
@@ -34,7 +34,7 @@ func TestAudienceManagementUsesOfficialEndpoints(t *testing.T) {
 		t.Fatal(err)
 	}
 	ctx := context.Background()
-	j := json.RawMessage("{}")
+	j := outbound.LINERequest{Value: map[string]any{}}
 	tests := []struct {
 		want string
 		call func() error

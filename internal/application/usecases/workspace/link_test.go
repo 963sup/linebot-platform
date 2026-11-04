@@ -5,9 +5,9 @@ import (
 	"errors"
 	"sync"
 	"testing"
-	"time"
 
 	"github.com/963sup/linebot-platform/internal/application/ports/outbound"
+	"time"
 )
 
 type fakeGoogleProvider struct {

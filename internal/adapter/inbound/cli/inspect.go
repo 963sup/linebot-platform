@@ -2,11 +2,11 @@ package cli
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
 	"io"
-	"strings"
 	"time"
 
 	"github.com/963sup/linebot-platform/internal/application/usecases/channel"
@@ -48,9 +48,10 @@ func runInspect(args []string, getenv func(string) string, output io.Writer) err
 	if err != nil {
 		return err
 	}
-	if strings.TrimSpace(string(data)) == "" {
+	payload, err := json.Marshal(data.Value)
+	if err != nil || string(payload) == "null" {
 		return fmt.Errorf("LINE report is empty")
 	}
-	_, err = fmt.Fprintln(output, string(data))
+	_, err = fmt.Fprintln(output, string(payload))
 	return err
 }

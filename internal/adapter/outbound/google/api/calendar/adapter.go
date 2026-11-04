@@ -2,11 +2,10 @@ package calendar
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"strings"
 
-	"github.com/963sup/linebot-platform/internal/application/ports/outbound"
+	"github.com/963sup/linebot-platform/internal/application/usecases/workspace"
 	googlecalendar "google.golang.org/api/calendar/v3"
 )
 
@@ -19,12 +18,12 @@ func New(client *googlecalendar.Service) (*Adapter, error) {
 	return &Adapter{client: client}, nil
 }
 
-func (a *Adapter) ExecuteCalendar(ctx context.Context, req outbound.WorkspaceRequest) (json.RawMessage, error) {
+func (a *Adapter) ExecuteCalendar(ctx context.Context, req workspace.Command) (workspace.Result, error) {
 	if ctx == nil {
-		return nil, errors.New("workspace context required")
+		return workspace.Result{}, errors.New("workspace context required")
 	}
 	if err := ctx.Err(); err != nil {
-		return nil, err
+		return workspace.Result{}, err
 	}
 	switch strings.SplitN(req.Operation, ".", 2)[0] {
 	case "acl":
@@ -44,6 +43,6 @@ func (a *Adapter) ExecuteCalendar(ctx context.Context, req outbound.WorkspaceReq
 	case "settings":
 		return a.executeSettings(ctx, req)
 	default:
-		return nil, errors.New("unsupported calendar SDK operation")
+		return workspace.Result{}, errors.New("unsupported calendar SDK operation")
 	}
 }

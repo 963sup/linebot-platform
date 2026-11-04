@@ -8,9 +8,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"reflect"
 	"strings"
 
-	"github.com/963sup/linebot-platform/internal/application/ports/outbound"
+	"github.com/963sup/linebot-platform/internal/application/usecases/workspace"
 	"google.golang.org/api/googleapi"
 )
 
@@ -41,7 +43,7 @@ func Wrap(api, operation string, err error) error {
 	return &RemoteError{API: api, Operation: operation, OutcomeUnknown: true}
 }
 
-func Validate(req outbound.WorkspaceRequest, expectsBody bool, required, allowed []string) error {
+func Validate(req workspace.Command, expectsBody bool, required, allowed []string) error {
 	if req.Operation == "" {
 		return errors.New("workspace operation is required")
 	}
@@ -52,8 +54,8 @@ func Validate(req outbound.WorkspaceRequest, expectsBody bool, required, allowed
 	for _, name := range required {
 		expected[name] = true
 	}
-	for name, raw := range req.Parameters {
-		if !expected[name] || !json.Valid(raw) {
+	for name := range req.Parameters {
+		if !expected[name] {
 			return errors.New("unknown or invalid required parameter")
 		}
 	}
@@ -61,26 +63,39 @@ func Validate(req outbound.WorkspaceRequest, expectsBody bool, required, allowed
 	for _, name := range allowed {
 		permitted[name] = true
 	}
-	for name, raw := range req.Options {
-		if !permitted[name] || !json.Valid(raw) {
+	for name := range req.Options {
+		if !permitted[name] {
 			return errors.New("unknown or invalid workspace option")
 		}
 	}
 	if expectsBody {
-		body := bytes.TrimSpace(req.Body)
-		if len(body) == 0 || body[0] != '{' || !json.Valid(body) || len(body) > 1<<20 {
+		if isNil(req.Body) {
 			return errors.New("request JSON object is required")
 		}
-	} else if len(req.Body) != 0 {
+	} else if !isNil(req.Body) {
 		return errors.New("unexpected workspace request body")
 	}
 	return nil
 }
 
-func Required[T any](params map[string]json.RawMessage, name string) (T, error) {
+func isNil(value any) bool {
+	if value == nil {
+		return true
+	}
+	v := reflect.ValueOf(value)
+	switch v.Kind() {
+	case reflect.Chan, reflect.Func, reflect.Interface, reflect.Map, reflect.Pointer, reflect.Slice:
+		return v.IsNil()
+	default:
+		return false
+	}
+}
+
+func Required[T any](params map[string]any, name string) (T, error) {
 	var value T
 	raw, ok := params[name]
-	if !ok || json.Unmarshal(raw, &value) != nil {
+	data, err := json.Marshal(raw)
+	if !ok || err != nil || json.Unmarshal(data, &value) != nil {
 		return value, errors.New("invalid required workspace parameter")
 	}
 	switch v := any(value).(type) {
@@ -92,31 +107,43 @@ func Required[T any](params map[string]json.RawMessage, name string) (T, error) 
 	return value, nil
 }
 
-func Optional[T any](options map[string]json.RawMessage, name string) (T, error) {
+func Optional[T any](options map[string]any, name string) (T, error) {
 	var value T
-	if err := json.Unmarshal(options[name], &value); err != nil {
+	data, err := json.Marshal(options[name])
+	if err != nil || json.Unmarshal(data, &value) != nil {
 		return value, errors.New("invalid workspace option")
 	}
 	return value, nil
 }
 
-func Body[T any](data json.RawMessage) (*T, error) {
+func Body[T any](value any) (*T, error) {
 	var body T
-	if err := json.Unmarshal(data, &body); err != nil {
+	data, err := json.Marshal(value)
+	if err != nil || json.Unmarshal(data, &body) != nil {
 		return nil, errors.New("invalid workspace request body")
 	}
 	return &body, nil
 }
 
-func Encode(value any) (json.RawMessage, error) {
+func Encode(value any) (workspace.Result, error) {
 	if value == nil {
-		return nil, nil
+		return workspace.Result{}, nil
 	}
 	data, err := json.Marshal(value)
 	if err != nil {
-		return nil, errors.New("unable to encode workspace response")
+		return workspace.Result{}, errors.New("unable to encode workspace response")
 	}
-	return json.RawMessage(data), nil
+	decoder := json.NewDecoder(bytes.NewReader(data))
+	decoder.UseNumber()
+	var result any
+	if err := decoder.Decode(&result); err != nil {
+		return workspace.Result{}, errors.New("unable to decode workspace response")
+	}
+	var trailing any
+	if err := decoder.Decode(&trailing); err != io.EOF {
+		return workspace.Result{}, errors.New("invalid workspace response")
+	}
+	return workspace.Result{Value: result}, nil
 }
 
 func UnsupportedOperation() error { return errors.New("unsupported Google Workspace SDK operation") }

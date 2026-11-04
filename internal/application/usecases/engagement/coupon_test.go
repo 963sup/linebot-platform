@@ -2,8 +2,9 @@ package engagement
 
 import (
 	"context"
-	"encoding/json"
 	"testing"
+
+	"github.com/963sup/linebot-platform/internal/application/ports/outbound"
 )
 
 type fakeCouponReader struct {
@@ -12,15 +13,15 @@ type fakeCouponReader struct {
 	limit   int32
 }
 
-func (f *fakeCouponReader) CouponList(_ context.Context, _ string, limit int32) (json.RawMessage, error) {
+func (f *fakeCouponReader) CouponList(_ context.Context, _ string, limit int32) (outbound.LINEResult, error) {
 	f.lists++
 	f.limit = limit
-	return json.RawMessage("{}"), nil
+	return outbound.LINEResult{Value: map[string]any{}}, nil
 }
 
-func (f *fakeCouponReader) CouponDetail(context.Context, string) (json.RawMessage, error) {
+func (f *fakeCouponReader) CouponDetail(context.Context, string) (outbound.LINEResult, error) {
 	f.details++
-	return json.RawMessage("{}"), nil
+	return outbound.LINEResult{Value: map[string]any{}}, nil
 }
 
 func TestCouponInspectorValidationAndRouting(t *testing.T) {

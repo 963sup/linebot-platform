@@ -33,7 +33,7 @@ func (fakeStore) Recover(context.Context, time.Time, int) ([]string, error)     
 
 type fakeQueue struct{}
 
-func (fakeQueue) Enqueue(context.Context, string) error { return nil }
+func (fakeQueue) Enqueue(context.Context, ingestion.EventKey) error { return nil }
 
 type fakeSender struct{}
 

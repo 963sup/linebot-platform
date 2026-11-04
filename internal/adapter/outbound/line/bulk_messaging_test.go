@@ -2,10 +2,11 @@ package line
 
 import (
 	"context"
-	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/963sup/linebot-platform/internal/application/ports/outbound"
 )
 
 func TestCampaignUsesNativeSDKEdgesAndRetryKey(t *testing.T) {
@@ -27,7 +28,7 @@ func TestCampaignUsesNativeSDKEdgesAndRetryKey(t *testing.T) {
 	if err := sender.Multicast(context.Background(), []string{"U123"}, testText(), retryKey); err != nil {
 		t.Fatal(err)
 	}
-	request := json.RawMessage(`{"messages":[{"type":"text","text":"hello"}],"recipient":{"type":"operator","and":[]}}`)
+	request := outbound.LINERequest{Value: map[string]any{"messages": []any{map[string]any{"type": "text", "text": "hello"}}, "recipient": map[string]any{"type": "operator", "and": []any{}}}}
 	if err := sender.Narrowcast(context.Background(), request, retryKey); err != nil {
 		t.Fatal(err)
 	}

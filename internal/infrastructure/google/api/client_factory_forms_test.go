@@ -7,10 +7,11 @@ import (
 )
 
 func TestFormsFactoryUsesAuthorizedTransport(t *testing.T) {
+	var nilContext context.Context
 	if _, err := NewForms(context.Background(), nil); err == nil {
 		t.Fatal("nil authorized HTTP client accepted")
 	}
-	if _, err := NewForms(nil, &http.Client{}); err == nil {
+	if _, err := NewForms(nilContext, &http.Client{}); err == nil {
 		t.Fatal("nil context accepted")
 	}
 	svc, err := NewForms(context.Background(), &http.Client{})

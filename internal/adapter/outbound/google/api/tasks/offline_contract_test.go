@@ -7,7 +7,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/963sup/linebot-platform/internal/application/ports/outbound"
+	"github.com/963sup/linebot-platform/internal/application/usecases/workspace"
 	"google.golang.org/api/option"
 	googletasks "google.golang.org/api/tasks/v1"
 )
@@ -37,27 +37,27 @@ func TestAllTasksSDKOperationsUsePinnedRoutes(t *testing.T) {
 		operation string
 		want      string
 		body      json.RawMessage
-		params    map[string]json.RawMessage
+		params    map[string]any
 	}{
-		{operation: "tasklists.delete", want: "DELETE /tasks/v1/users/@me/lists/test", body: nil, params: map[string]json.RawMessage{"tasklist": json.RawMessage(`"test"`)}},
-		{operation: "tasklists.get", want: "GET /tasks/v1/users/@me/lists/test", body: nil, params: map[string]json.RawMessage{"tasklist": json.RawMessage(`"test"`)}},
-		{operation: "tasklists.insert", want: "POST /tasks/v1/users/@me/lists", body: json.RawMessage(`{}`), params: map[string]json.RawMessage{}},
-		{operation: "tasklists.list", want: "GET /tasks/v1/users/@me/lists", body: nil, params: map[string]json.RawMessage{}},
-		{operation: "tasklists.patch", want: "PATCH /tasks/v1/users/@me/lists/test", body: json.RawMessage(`{}`), params: map[string]json.RawMessage{"tasklist": json.RawMessage(`"test"`)}},
-		{operation: "tasklists.update", want: "PUT /tasks/v1/users/@me/lists/test", body: json.RawMessage(`{}`), params: map[string]json.RawMessage{"tasklist": json.RawMessage(`"test"`)}},
-		{operation: "tasks.clear", want: "POST /tasks/v1/lists/test/clear", body: nil, params: map[string]json.RawMessage{"tasklist": json.RawMessage(`"test"`)}},
-		{operation: "tasks.delete", want: "DELETE /tasks/v1/lists/test/tasks/test", body: nil, params: map[string]json.RawMessage{"tasklist": json.RawMessage(`"test"`), "task": json.RawMessage(`"test"`)}},
-		{operation: "tasks.get", want: "GET /tasks/v1/lists/test/tasks/test", body: nil, params: map[string]json.RawMessage{"tasklist": json.RawMessage(`"test"`), "task": json.RawMessage(`"test"`)}},
-		{operation: "tasks.insert", want: "POST /tasks/v1/lists/test/tasks", body: json.RawMessage(`{}`), params: map[string]json.RawMessage{"tasklist": json.RawMessage(`"test"`)}},
-		{operation: "tasks.list", want: "GET /tasks/v1/lists/test/tasks", body: nil, params: map[string]json.RawMessage{"tasklist": json.RawMessage(`"test"`)}},
-		{operation: "tasks.move", want: "POST /tasks/v1/lists/test/tasks/test/move", body: nil, params: map[string]json.RawMessage{"tasklist": json.RawMessage(`"test"`), "task": json.RawMessage(`"test"`)}},
-		{operation: "tasks.patch", want: "PATCH /tasks/v1/lists/test/tasks/test", body: json.RawMessage(`{}`), params: map[string]json.RawMessage{"tasklist": json.RawMessage(`"test"`), "task": json.RawMessage(`"test"`)}},
-		{operation: "tasks.update", want: "PUT /tasks/v1/lists/test/tasks/test", body: json.RawMessage(`{}`), params: map[string]json.RawMessage{"tasklist": json.RawMessage(`"test"`), "task": json.RawMessage(`"test"`)}},
+		{operation: "tasklists.delete", want: "DELETE /tasks/v1/users/@me/lists/test", body: nil, params: map[string]any{"tasklist": json.RawMessage(`"test"`)}},
+		{operation: "tasklists.get", want: "GET /tasks/v1/users/@me/lists/test", body: nil, params: map[string]any{"tasklist": json.RawMessage(`"test"`)}},
+		{operation: "tasklists.insert", want: "POST /tasks/v1/users/@me/lists", body: json.RawMessage(`{}`), params: map[string]any{}},
+		{operation: "tasklists.list", want: "GET /tasks/v1/users/@me/lists", body: nil, params: map[string]any{}},
+		{operation: "tasklists.patch", want: "PATCH /tasks/v1/users/@me/lists/test", body: json.RawMessage(`{}`), params: map[string]any{"tasklist": json.RawMessage(`"test"`)}},
+		{operation: "tasklists.update", want: "PUT /tasks/v1/users/@me/lists/test", body: json.RawMessage(`{}`), params: map[string]any{"tasklist": json.RawMessage(`"test"`)}},
+		{operation: "tasks.clear", want: "POST /tasks/v1/lists/test/clear", body: nil, params: map[string]any{"tasklist": json.RawMessage(`"test"`)}},
+		{operation: "tasks.delete", want: "DELETE /tasks/v1/lists/test/tasks/test", body: nil, params: map[string]any{"tasklist": json.RawMessage(`"test"`), "task": json.RawMessage(`"test"`)}},
+		{operation: "tasks.get", want: "GET /tasks/v1/lists/test/tasks/test", body: nil, params: map[string]any{"tasklist": json.RawMessage(`"test"`), "task": json.RawMessage(`"test"`)}},
+		{operation: "tasks.insert", want: "POST /tasks/v1/lists/test/tasks", body: json.RawMessage(`{}`), params: map[string]any{"tasklist": json.RawMessage(`"test"`)}},
+		{operation: "tasks.list", want: "GET /tasks/v1/lists/test/tasks", body: nil, params: map[string]any{"tasklist": json.RawMessage(`"test"`)}},
+		{operation: "tasks.move", want: "POST /tasks/v1/lists/test/tasks/test/move", body: nil, params: map[string]any{"tasklist": json.RawMessage(`"test"`), "task": json.RawMessage(`"test"`)}},
+		{operation: "tasks.patch", want: "PATCH /tasks/v1/lists/test/tasks/test", body: json.RawMessage(`{}`), params: map[string]any{"tasklist": json.RawMessage(`"test"`), "task": json.RawMessage(`"test"`)}},
+		{operation: "tasks.update", want: "PUT /tasks/v1/lists/test/tasks/test", body: json.RawMessage(`{}`), params: map[string]any{"tasklist": json.RawMessage(`"test"`), "task": json.RawMessage(`"test"`)}},
 	}
 	for _, tc := range cases {
 		t.Run(tc.operation, func(t *testing.T) {
 			got = ""
-			req := outbound.WorkspaceRequest{
+			req := workspace.Command{
 				Operation: tc.operation, Parameters: tc.params, Body: tc.body,
 			}
 			_, err := adapter.ExecuteTasks(context.Background(), req)

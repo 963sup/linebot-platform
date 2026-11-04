@@ -1,9 +1,6 @@
 package outbound
 
-import (
-	"context"
-	"encoding/json"
-)
+import "context"
 
 // BinaryContent is returned only to an explicit local operator command. It
 // must never be logged or exposed by the public webhook.
@@ -15,7 +12,7 @@ type BinaryContent struct {
 type MessageContentReader interface {
 	MessageContent(context.Context, string) (BinaryContent, error)
 	MessageContentPreview(context.Context, string) (BinaryContent, error)
-	MessageContentTranscoding(context.Context, string) (json.RawMessage, error)
+	MessageContentTranscoding(context.Context, string) (LINEResult, error)
 }
 
 type RichMenuImageManager interface {

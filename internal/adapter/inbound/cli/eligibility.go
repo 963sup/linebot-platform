@@ -2,13 +2,13 @@ package cli
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
 	"io"
 	"time"
 
+	"github.com/963sup/linebot-platform/internal/application/ports/outbound"
 	"github.com/963sup/linebot-platform/internal/application/usecases/engagement"
 )
 
@@ -41,7 +41,11 @@ func runEligibility(args []string, getenv func(string) string, output io.Writer)
 		if err != nil {
 			return err
 		}
-		cmd.Payload = json.RawMessage(payload)
+		value, err := decodeLINEJSON(payload)
+		if err != nil {
+			return errors.New("request must be valid JSON")
+		}
+		cmd.Payload = outbound.LINERequest{Value: value}
 	}
 	if err := engagement.ValidateEligibilityCommand(cmd); err != nil {
 		return err

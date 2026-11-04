@@ -22,4 +22,4 @@
 - [開發路線圖](roadmap.md)
 - [版本決策](versions.md)
 
-其他目錄目前由 `.gitkeep` 保留，對應功能仍待實作與補完。
+目錄按真實 capability 建立；未實作能力記錄於 Roadmap 或 SDK Catalog，不以 `.gitkeep` 或空目錄表示進度。

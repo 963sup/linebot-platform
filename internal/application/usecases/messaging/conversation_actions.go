@@ -2,7 +2,6 @@ package messaging
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"strings"
 
@@ -13,7 +12,7 @@ import (
 // not expose these methods.
 type ConversationActionCommand struct {
 	Action, ID string
-	Payload    json.RawMessage
+	Request    outbound.LINERequest
 }
 
 type ConversationActions struct {
@@ -33,13 +32,12 @@ func ValidateConversationAction(c ConversationActionCommand) error {
 	}
 	switch c.Action {
 	case "leave-group", "leave-room":
-		if c.ID == "" || len(c.Payload) != 0 {
-			return errors.New("leave requires an ID and no JSON request")
+		if c.ID == "" || c.Request.Value != nil {
+			return errors.New("leave requires an ID and no request")
 		}
 	case "loading", "mark-read", "mark-read-token":
-		if c.ID != "" || len(c.Payload) == 0 || !json.Valid(c.Payload) ||
-			strings.TrimSpace(string(c.Payload))[0] != '{' {
-			return errors.New("action requires a JSON object and no ID")
+		if _, ok := c.Request.Value.(map[string]any); c.ID != "" || !ok {
+			return errors.New("action requires an object and no ID")
 		}
 	default:
 		return errors.New("unsupported conversation action")
@@ -63,11 +61,11 @@ func (s *ConversationActions) Execute(ctx context.Context, c ConversationActionC
 	case "leave-room":
 		return s.manager.LeaveRoom(ctx, c.ID)
 	case "loading":
-		return s.manager.ShowLoading(ctx, c.Payload)
+		return s.manager.ShowLoading(ctx, c.Request)
 	case "mark-read":
-		return s.manager.MarkMessagesRead(ctx, c.Payload)
+		return s.manager.MarkMessagesRead(ctx, c.Request)
 	case "mark-read-token":
-		return s.manager.MarkMessagesReadByToken(ctx, c.Payload)
+		return s.manager.MarkMessagesReadByToken(ctx, c.Request)
 	default:
 		return errors.New("unsupported conversation action")
 	}

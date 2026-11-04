@@ -68,11 +68,12 @@ func (h *Handler) handleReply(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "invalid task", http.StatusBadRequest)
 		return
 	}
-	if !ingestion.ValidKey(request.Key) {
+	key, err := ingestion.ParseEventKey(request.Key)
+	if err != nil {
 		http.Error(w, "invalid task key", http.StatusBadRequest)
 		return
 	}
-	if err := h.processor.Process(r.Context(), request.Key); err != nil {
+	if err := h.processor.Process(r.Context(), key); err != nil {
 		if h.logger != nil {
 			h.logger.Error("durable task state update failed", "operation", "reply")
 		}

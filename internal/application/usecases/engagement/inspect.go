@@ -2,7 +2,6 @@ package engagement
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"strings"
 
@@ -42,15 +41,15 @@ func ValidateRichMenuQuery(query RichMenuQuery) error {
 	}
 }
 
-func (s *RichMenuInspector) Inspect(ctx context.Context, query RichMenuQuery) (json.RawMessage, error) {
+func (s *RichMenuInspector) Inspect(ctx context.Context, query RichMenuQuery) (outbound.LINEResult, error) {
 	if ctx == nil {
-		return nil, errors.New("context is required")
+		return outbound.LINEResult{}, errors.New("context is required")
 	}
 	if err := ctx.Err(); err != nil {
-		return nil, err
+		return outbound.LINEResult{}, err
 	}
 	if err := ValidateRichMenuQuery(query); err != nil {
-		return nil, err
+		return outbound.LINEResult{}, err
 	}
 	switch query.Kind {
 	case "list":

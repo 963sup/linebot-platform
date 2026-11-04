@@ -2,12 +2,9 @@ package workspace
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
-
-	"github.com/963sup/linebot-platform/internal/application/ports/outbound"
 )
 
 // Policy is intentionally static and pinned to the audited Google Discovery
@@ -117,12 +114,12 @@ type Approval struct {
 // own SDK request and response mapping. This is never routed from the
 // publicly accessible LINE webhook.
 type Operations struct {
-	calendar outbound.GoogleCalendarOperator
-	tasks    outbound.GoogleTasksOperator
-	forms    outbound.GoogleFormsOperator
+	calendar CalendarOperator
+	tasks    TasksOperator
+	forms    FormsOperator
 }
 
-func NewOperations(cal outbound.GoogleCalendarOperator, task outbound.GoogleTasksOperator) (*Operations, error) {
+func NewOperations(cal CalendarOperator, task TasksOperator) (*Operations, error) {
 	if cal == nil || task == nil {
 		return nil, errors.New("Calendar and Tasks operators are required")
 	}
@@ -130,7 +127,7 @@ func NewOperations(cal outbound.GoogleCalendarOperator, task outbound.GoogleTask
 }
 
 // NewOperationsWithForms leaves existing Calendar/Tasks constructors intact.
-func NewOperationsWithForms(cal outbound.GoogleCalendarOperator, tasks outbound.GoogleTasksOperator, forms outbound.GoogleFormsOperator) (*Operations, error) {
+func NewOperationsWithForms(cal CalendarOperator, tasks TasksOperator, forms FormsOperator) (*Operations, error) {
 	if forms == nil {
 		return nil, errors.New("Forms operator is required")
 	}
@@ -142,7 +139,7 @@ func NewOperationsWithForms(cal outbound.GoogleCalendarOperator, tasks outbound.
 	return ops, nil
 }
 
-func Validate(api string, req outbound.WorkspaceRequest, approval Approval) error {
+func Validate(api string, req Command, approval Approval) error {
 	p, ok := Lookup(api, req.Operation)
 	if !ok {
 		return errors.New("unsupported Google Workspace operation")
@@ -150,7 +147,7 @@ func Validate(api string, req outbound.WorkspaceRequest, approval Approval) erro
 	if strings.TrimSpace(req.Operation) != req.Operation {
 		return errors.New("invalid operation name")
 	}
-	if len(req.Parameters) > 12 || len(req.Options) > 32 || len(req.Body) > 1<<20 {
+	if len(req.Parameters) > 12 || len(req.Options) > 32 {
 		return errors.New("workspace request exceeds bounds")
 	}
 	if p.Mode == "read" {
@@ -168,31 +165,18 @@ func Validate(api string, req outbound.WorkspaceRequest, approval Approval) erro
 			return errors.New("unneeded dangerous confirmation")
 		}
 	}
-	for _, v := range req.Parameters {
-		if !json.Valid(v) {
-			return errors.New("invalid operation parameter")
-		}
-	}
-	for _, v := range req.Options {
-		if !json.Valid(v) {
-			return errors.New("invalid operation option")
-		}
-	}
-	if len(req.Body) > 0 && !json.Valid(req.Body) {
-		return errors.New("invalid operation body")
-	}
 	return nil
 }
 
-func (s *Operations) Execute(ctx context.Context, api string, req outbound.WorkspaceRequest, approval Approval) (json.RawMessage, error) {
+func (s *Operations) Execute(ctx context.Context, api string, req Command, approval Approval) (Result, error) {
 	if ctx == nil {
-		return nil, errors.New("context is required")
+		return Result{}, errors.New("context is required")
 	}
 	if err := ctx.Err(); err != nil {
-		return nil, err
+		return Result{}, err
 	}
 	if err := Validate(api, req, approval); err != nil {
-		return nil, err
+		return Result{}, err
 	}
 	switch api {
 	case "calendar":
@@ -201,10 +185,10 @@ func (s *Operations) Execute(ctx context.Context, api string, req outbound.Works
 		return s.tasks.ExecuteTasks(ctx, req)
 	case "forms":
 		if s.forms == nil {
-			return nil, errors.New("Forms adapter not configured")
+			return Result{}, errors.New("Forms adapter not configured")
 		}
 		return s.forms.ExecuteForms(ctx, req)
 	default:
-		return nil, fmt.Errorf("unsupported workspace provider")
+		return Result{}, fmt.Errorf("unsupported workspace provider")
 	}
 }

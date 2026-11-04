@@ -60,7 +60,29 @@ func runEvents(args []string, getenv func(string) string) error {
 	if err != nil {
 		return err
 	}
-	if err := json.NewEncoder(os.Stdout).Encode(report); err != nil {
+	type wireSample struct {
+		KeyHint   string              `json:"key_hint"`
+		State     outbound.EventState `json:"state"`
+		UpdatedAt time.Time           `json:"updated_at"`
+	}
+	type wireReport struct {
+		GeneratedAt             time.Time                     `json:"generated_at"`
+		Counts                  map[outbound.EventState]int64 `json:"counts"`
+		OldestPendingAgeSeconds int64                         `json:"oldest_pending_age_seconds"`
+		Samples                 []wireSample                  `json:"samples,omitempty"`
+	}
+	wire := wireReport{
+		GeneratedAt:             report.GeneratedAt,
+		Counts:                  report.Counts,
+		OldestPendingAgeSeconds: report.OldestPendingAgeSeconds,
+		Samples:                 make([]wireSample, 0, len(report.Samples)),
+	}
+	for _, sample := range report.Samples {
+		wire.Samples = append(wire.Samples, wireSample{
+			KeyHint: sample.KeyHint, State: sample.State, UpdatedAt: sample.UpdatedAt,
+		})
+	}
+	if err := json.NewEncoder(os.Stdout).Encode(wire); err != nil {
 		return fmt.Errorf("write outbox status: %w", err)
 	}
 	if *check && (report.Counts[outbound.EventUnknown] > 0 ||

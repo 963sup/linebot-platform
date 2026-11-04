@@ -34,11 +34,11 @@ func (f *persisted) Complete(context.Context, string, string, outbound.DeliveryS
 func (f *persisted) Recover(context.Context, time.Time, int) ([]string, error) { return nil, nil }
 
 type workQueue struct {
-	keys []string
+	keys []ingestion.EventKey
 	fail bool
 }
 
-func (q *workQueue) Enqueue(_ context.Context, key string) error {
+func (q *workQueue) Enqueue(_ context.Context, key ingestion.EventKey) error {
 	if q.fail {
 		return errors.New("network failure")
 	}

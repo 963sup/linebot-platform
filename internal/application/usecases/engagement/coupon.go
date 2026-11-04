@@ -2,7 +2,6 @@ package engagement
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"strings"
 
@@ -48,15 +47,15 @@ func ValidateCouponQuery(q CouponQuery) error {
 	}
 }
 
-func (s *CouponInspector) Inspect(ctx context.Context, q CouponQuery) (json.RawMessage, error) {
+func (s *CouponInspector) Inspect(ctx context.Context, q CouponQuery) (outbound.LINEResult, error) {
 	if ctx == nil {
-		return nil, errors.New("context is required")
+		return outbound.LINEResult{}, errors.New("context is required")
 	}
 	if err := ctx.Err(); err != nil {
-		return nil, err
+		return outbound.LINEResult{}, err
 	}
 	if err := ValidateCouponQuery(q); err != nil {
-		return nil, err
+		return outbound.LINEResult{}, err
 	}
 	if q.Kind == "coupon" {
 		return s.reader.CouponDetail(ctx, q.CouponID)

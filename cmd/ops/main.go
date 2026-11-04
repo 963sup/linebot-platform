@@ -201,14 +201,15 @@ func (r webhookRuntime) Test(ctx context.Context, endpoint string) (outbound.Web
 
 type tokenRuntime struct{ *bootstrap.LINETokenOpsRuntime }
 
-func (r tokenRuntime) Execute(ctx context.Context, cmd channel.TokenCommand) ([]byte, error) {
+func (r tokenRuntime) Execute(ctx context.Context, cmd channel.TokenCommand) (outbound.LINEResult, error) {
 	return r.Tokens.Execute(ctx, cmd)
 }
 
 type audienceManagementRuntime struct{ *bootstrap.LINEOpsRuntime }
 
 func (r audienceManagementRuntime) Execute(ctx context.Context, cmd engagement.AudienceCommand) (json.RawMessage, error) {
-	return r.AudienceManager.Execute(ctx, cmd)
+	result, err := r.AudienceManager.Execute(ctx, cmd)
+	return marshalLINEResult(result, err)
 }
 
 type bulkMessagingRuntime struct{ *bootstrap.LINEOpsRuntime }
@@ -221,7 +222,7 @@ func (r bulkMessagingRuntime) Multicast(ctx context.Context, users []string, mes
 	return r.BulkMessaging.Multicast(ctx, users, messages, retryKey)
 }
 
-func (r bulkMessagingRuntime) Narrowcast(ctx context.Context, payload json.RawMessage, retryKey string) error {
+func (r bulkMessagingRuntime) Narrowcast(ctx context.Context, payload outbound.LINERequest, retryKey string) error {
 	return r.BulkMessaging.Narrowcast(ctx, payload, retryKey)
 }
 
@@ -270,14 +271,15 @@ type audienceRuntime struct {
 }
 
 func (r audienceRuntime) Inspect(ctx context.Context, query engagement.AudienceQuery) (json.RawMessage, error) {
-	return r.Audiences.Inspect(ctx, query)
+	result, err := r.Audiences.Inspect(ctx, query)
+	return marshalLINEResult(result, err)
 }
 
 type contactsRuntime struct {
 	*bootstrap.LINEOpsRuntime
 }
 
-func (r contactsRuntime) Inspect(ctx context.Context, query contacts.Inspection) (json.RawMessage, error) {
+func (r contactsRuntime) Inspect(ctx context.Context, query contacts.Inspection) (outbound.LINEResult, error) {
 	return r.Contacts.Inspect(ctx, query)
 }
 
@@ -289,7 +291,7 @@ type insightsRuntime struct {
 	*bootstrap.LINEOpsRuntime
 }
 
-func (r insightsRuntime) Inspect(ctx context.Context, query insights.Query) (json.RawMessage, error) {
+func (r insightsRuntime) Inspect(ctx context.Context, query insights.Query) (outbound.LINEResult, error) {
 	return r.Insights.Inspect(ctx, query)
 }
 
@@ -298,7 +300,8 @@ type membershipsRuntime struct {
 }
 
 func (r membershipsRuntime) Inspect(ctx context.Context, query engagement.MembershipQuery) (json.RawMessage, error) {
-	return r.Memberships.Inspect(ctx, query)
+	result, err := r.Memberships.Inspect(ctx, query)
+	return marshalLINEResult(result, err)
 }
 
 type menusRuntime struct {
@@ -309,7 +312,7 @@ type channelInspectionRuntime struct {
 	*bootstrap.LINEOpsRuntime
 }
 
-func (r channelInspectionRuntime) Inspect(ctx context.Context, query channel.Inspection) (json.RawMessage, error) {
+func (r channelInspectionRuntime) Inspect(ctx context.Context, query channel.Inspection) (outbound.LINEResult, error) {
 	return r.Channel.Inspect(ctx, query)
 }
 
@@ -317,7 +320,7 @@ type contentRuntime struct {
 	*bootstrap.LINEOpsRuntime
 }
 
-func (r contentRuntime) Inspect(ctx context.Context, query contacts.ContentQuery) (outbound.BinaryContent, json.RawMessage, error) {
+func (r contentRuntime) Inspect(ctx context.Context, query contacts.ContentQuery) (outbound.BinaryContent, outbound.LINEResult, error) {
 	return r.Content.Inspect(ctx, query)
 }
 
@@ -346,18 +349,35 @@ func (r menuImageRuntime) RichMenuImage(ctx context.Context, id string) (outboun
 }
 
 func (r menusRuntime) Inspect(ctx context.Context, query engagement.RichMenuQuery) (json.RawMessage, error) {
-	return r.Menus.Inspect(ctx, query)
+	result, err := r.Menus.Inspect(ctx, query)
+	return marshalLINEResult(result, err)
 }
 
 func (r couponsRuntime) Inspect(ctx context.Context, query engagement.CouponQuery) (json.RawMessage, error) {
-	return r.Coupons.Inspect(ctx, query)
+	result, err := r.Coupons.Inspect(ctx, query)
+	return marshalLINEResult(result, err)
 }
 
 func (r eligibilityRuntime) Execute(ctx context.Context, cmd engagement.EligibilityCommand) (json.RawMessage, error) {
-	return r.Eligibility.Execute(ctx, cmd)
+	result, err := r.Eligibility.Execute(ctx, cmd)
+	return marshalLINEResult(result, err)
 }
 
-func (r linkTokenRuntime) IssueLinkToken(ctx context.Context, userID string) ([]byte, error) {
+func marshalLINEResult(result outbound.LINEResult, err error) (json.RawMessage, error) {
+	if err != nil {
+		return nil, err
+	}
+	if result.Value == nil {
+		return nil, nil
+	}
+	payload, err := json.Marshal(result.Value)
+	if err != nil {
+		return nil, fmt.Errorf("encode LINE result: %w", err)
+	}
+	return payload, nil
+}
+
+func (r linkTokenRuntime) IssueLinkToken(ctx context.Context, userID string) (outbound.LINEResult, error) {
 	return r.AccountLink.IssueLinkToken(ctx, userID)
 }
 

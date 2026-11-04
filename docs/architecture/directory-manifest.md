@@ -1,157 +1,39 @@
 # 目錄配置清單
 
-下表保留最初 scaffold 的 123 個目錄；已有實際檔案的目錄會移除 `.gitkeep`，仍為空的目錄則繼續保留 `.gitkeep`。Go／CI／Terraform 等檔案依階段實作，不能因目錄存在就視為功能完成。`value-objects/` 是 Value Object 目錄，Go package 識別名稱為 `valueobjects`；`genai` 對應 Google Gen AI SDK 的實作邊界。
+本文件說明目錄治理方式，不保存空目錄快照。實際目錄與 Go package 以受測 commit 的 Git tree、`go list ./...` 與 `DESIGN.md` 為準；目錄存在不代表功能已部署或外部服務已授權。
 
-原 scaffold 為 123 個目錄。以下依照 Draft PR #28 的 `refactor/ddd-hexagonal-foundation` 分支 Git Tree 列出 **149 個目錄**；其中 `internal/domain/identity/` 的八個分類子目錄已有真實程式碼與測試。目錄存在不代表功能已部署。
+## 建立條件
 
-```text
-.agents
-.agents/plugins
-.agents/skills
-.agents/skills/linebot-api-upgrade
-.agents/skills/linebot-cloudrun-release
-.agents/skills/linebot-cloudrun-release/agents
-.agents/skills/linebot-domain-change
-.agents/skills/linebot-messaging-feature
-.agents/skills/linebot-webhook-safety
-.agents/skills/sdk-integration
-.agents/skills/sdk-integration/references
-.codex
-.codex/agents
-.github
-.github/ISSUE_TEMPLATE
-.github/workflows
-.vscode
-api
-api/openapi
-api/schemas
-assets
-assets/messages
-assets/messages/flex
-assets/messages/templates
-assets/prompts
-assets/richmenus
-cmd
-cmd/codexcheck
-cmd/configcheck
-cmd/ops
-cmd/webhook
-cmd/worker
-configs
-deploy
-deploy/cloudrun
-deploy/firestore
-deploy/terraform
-deploy/terraform/environments
-docs
-docs/adr
-docs/ai
-docs/architecture
-docs/google
-docs/line
-docs/operations
-docs/quality
-docs/sdk
-internal
-internal/adapter
-internal/adapter/inbound
-internal/adapter/inbound/cli
-internal/adapter/inbound/http
-internal/adapter/inbound/http/google
-internal/adapter/inbound/http/google/oauth
-internal/adapter/inbound/http/health
-internal/adapter/inbound/http/line
-internal/adapter/inbound/http/middleware
-internal/adapter/inbound/http/tasks
-internal/adapter/outbound
-internal/adapter/outbound/audit
-internal/adapter/outbound/clock
-internal/adapter/outbound/genai
-internal/adapter/outbound/google
-internal/adapter/outbound/google/api
-internal/adapter/outbound/google/api/calendar
-internal/adapter/outbound/google/api/codec
-internal/adapter/outbound/google/api/drive
-internal/adapter/outbound/google/api/forms
-internal/adapter/outbound/google/api/oauth
-internal/adapter/outbound/google/api/sheets
-internal/adapter/outbound/google/api/tasks
-internal/adapter/outbound/google/cloud
-internal/adapter/outbound/google/cloud/cloudtasks
-internal/adapter/outbound/google/cloud/firestore
-internal/adapter/outbound/google/cloud/storage
-internal/adapter/outbound/identity
-internal/adapter/outbound/line
-internal/adapter/outbound/openai
-internal/application
-internal/application/commands
-internal/application/dto
-internal/application/ports
-internal/application/ports/inbound
-internal/application/ports/outbound
-internal/application/queries
-internal/application/usecases
-internal/application/usecases/campaign
-internal/application/usecases/channel
-internal/application/usecases/contacts
-internal/application/usecases/conversation
-internal/application/usecases/engagement
-internal/application/usecases/ingestion
-internal/application/usecases/insights
-internal/application/usecases/integrations
-internal/application/usecases/media
-internal/application/usecases/messaging
-internal/application/usecases/workspace
-internal/bootstrap
-internal/domain
-internal/domain/aggregates
-internal/domain/entities
-internal/domain/events
-internal/domain/factories
-internal/domain/identity
-internal/domain/identity/aggregates
-internal/domain/identity/entities
-internal/domain/identity/events
-internal/domain/identity/factories
-internal/domain/identity/policies
-internal/domain/identity/repositories
-internal/domain/identity/specifications
-internal/domain/identity/value-objects
-internal/domain/policies
-internal/domain/repositories
-internal/domain/specifications
-internal/domain/value-objects
-internal/infrastructure
-internal/infrastructure/dependencies
-internal/infrastructure/google
-internal/infrastructure/google/api
-internal/infrastructure/google/api/calendar
-internal/infrastructure/google/api/drive
-internal/infrastructure/google/api/oauth
-internal/infrastructure/google/api/sheets
-internal/infrastructure/google/cloud
-internal/infrastructure/google/cloud/cloudtasks
-internal/infrastructure/google/cloud/firestore
-internal/infrastructure/google/cloud/secretmanager
-internal/infrastructure/google/cloud/storage
-internal/infrastructure/google/cloud/tasksauth
-internal/infrastructure/google/genai
-internal/infrastructure/httpclient
-internal/infrastructure/line
-internal/infrastructure/mcp
-internal/infrastructure/observability
-internal/infrastructure/openai
-internal/infrastructure/resilience
-plugins
-plugins/linebot-dev
-scripts
-tests
-tests/architecture
-tests/contract
-tests/e2e
-tests/fakes
-tests/integration
-tests/testdata
-tests/testdata/line
-tests/testdata/webhooks
+- `internal/domain/<context>/`：只有已確認業務語言、不變量與 Aggregate owner 時建立；DDD 分類留在 Bounded Context 內。
+- `internal/application/usecases/<capability>/`：只有具體 command／query、consumer 與測試時建立。
+- `internal/application/ports/`：只保留由 Application consumer 擁有、確實需要替換的介面。
+- `internal/adapter/`：只有 protocol／provider mapping 或 I/O 行為已實作時建立。
+- `internal/infrastructure/`：只有共用 client factory、transport、認證、觀測或 lifecycle primitive 已實作時建立。
+
+不得為未排程能力預建 SDK、Domain 或 Application 空目錄，也不得以 `.gitkeep` 作為架構、版本或完成度證據。空 package 應刪除；未實作能力記錄於 Roadmap 或 SDK Catalog。
+
+## 穩定命名
+
+- Value Object 目錄使用 `<context>/value-objects/`，Go package 名稱使用 `valueobjects`。
+- Adapter 使用 `internal/adapter` 單數；測試集合使用 `tests` 複數。
+- `identity/` 的 `aggregates`、`entities`、`events`、`factories`、`policies`、`repositories`、`specifications`、`value-objects` 是已實作結構，不是全域 scaffold 範本。
+
+## 依賴保留
+
+SDK 版本與能力不由目錄保留：
+
+1. `go.mod`／`go.sum` 是版本與解析結果來源。
+2. `docs/sdk/catalog.toml` 記錄 module、用途、接線狀態與預期邊界。
+3. `internal/infrastructure/dependencies/modules.go` 以 `dependencies` build tag 保留尚未 runtime 啟用的核准 import。
+4. `go run ./cmd/codexcheck` 驗證三者的一致性，不驗證空目錄。
+
+## 查核命令
+
+```bash
+git ls-tree -dr --name-only HEAD
+go list ./...
+find internal -name .gitkeep -print
+go run ./cmd/codexcheck
 ```
+
+`find` 有輸出時應判斷其是否為待清理歷史檔，不得據此推論該 capability 已保留或已完成。

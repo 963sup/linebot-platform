@@ -12,7 +12,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/963sup/linebot-platform/internal/application/ports/outbound"
 	"github.com/963sup/linebot-platform/internal/application/usecases/workspace"
 	"golang.org/x/oauth2"
 )
@@ -61,18 +60,31 @@ func runWorkspace(args []string, getenv func(string) string) error {
 	if err != nil {
 		return err
 	}
-	var req outbound.WorkspaceRequest
+	type wireRequest struct {
+		Operation  string         `json:"operation"`
+		Parameters map[string]any `json:"parameters,omitempty"`
+		Options    map[string]any `json:"options,omitempty"`
+		Body       any            `json:"body,omitempty"`
+	}
+	var wire wireRequest
 	dec := json.NewDecoder(bytes.NewReader(data))
+	dec.UseNumber()
 	dec.DisallowUnknownFields()
-	if err := dec.Decode(&req); err != nil {
+	if err := dec.Decode(&wire); err != nil {
 		return errors.New("invalid workspace request JSON")
 	}
 	var trailing any
 	if err := dec.Decode(&trailing); err != io.EOF {
 		return errors.New("workspace request contains trailing data")
 	}
-	if strings.TrimSpace(req.Operation) == "" {
+	if strings.TrimSpace(wire.Operation) == "" {
 		return errors.New("workspace operation is required")
+	}
+	req := workspace.Command{
+		Operation:  wire.Operation,
+		Parameters: wire.Parameters,
+		Options:    wire.Options,
+		Body:       wire.Body,
 	}
 	approval := workspace.Approval{Read: *read, Apply: *apply, Confirm: *confirm, ConfirmDangerous: *highRisk}
 	if err := workspace.Validate(*api, req, approval); err != nil {

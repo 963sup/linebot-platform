@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"cloud.google.com/go/cloudtasks/apiv2/cloudtaskspb"
+	"github.com/963sup/linebot-platform/internal/application/usecases/ingestion"
 	queueinfra "github.com/963sup/linebot-platform/internal/infrastructure/google/cloud/cloudtasks"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -32,6 +33,10 @@ func TestQueueConfiguration(t *testing.T) {
 }
 
 func TestEnqueueStableIdAndOIDC(t *testing.T) {
+	key, err := ingestion.ParseEventKey(testKey)
+	if err != nil {
+		t.Fatal(err)
+	}
 	var calls int
 	clock := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
 	var lastTaskName string
@@ -68,26 +73,33 @@ func TestEnqueueStableIdAndOIDC(t *testing.T) {
 		}
 		return nil, status.Error(codes.AlreadyExists, "duplicate")
 	}
-	if err := q.Enqueue(context.Background(), testKey); err != nil {
+	if err := q.Enqueue(context.Background(), key); err != nil {
 		t.Fatal(err)
 	}
-	if err := q.Enqueue(context.Background(), testKey); err != nil {
+	if err := q.Enqueue(context.Background(), key); err != nil {
 		t.Fatal(err)
 	}
 	clock = clock.Add(11 * time.Second)
-	if err := q.Enqueue(context.Background(), testKey); err != nil {
+	if err := q.Enqueue(context.Background(), key); err != nil {
 		t.Fatal(err)
 	}
 	if calls != 3 {
 		t.Fatalf("expected 3 CreateTask calls including the new retry window, got %d", calls)
 	}
-	if err := q.Enqueue(context.Background(), "bad"); err == nil {
-		t.Fatal("malformed task key must be rejected")
-	}
 	q.create = func(context.Context, *cloudtaskspb.CreateTaskRequest) (*cloudtaskspb.Task, error) {
 		return nil, errors.New("ambiguous network error")
 	}
-	if err := q.Enqueue(context.Background(), testKey); err == nil {
+	if err := q.Enqueue(context.Background(), key); err == nil {
 		t.Fatal("must surface unknown task enqueue result")
+	}
+}
+
+func TestEnqueueRejectsZeroEventKey(t *testing.T) {
+	q := &Queue{create: func(context.Context, *cloudtaskspb.CreateTaskRequest) (*cloudtaskspb.Task, error) {
+		t.Fatal("zero EventKey reached Cloud Tasks")
+		return nil, nil
+	}}
+	if err := q.Enqueue(context.Background(), ingestion.EventKey{}); err == nil {
+		t.Fatal("zero EventKey must be rejected")
 	}
 }

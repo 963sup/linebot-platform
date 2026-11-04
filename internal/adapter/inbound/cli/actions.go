@@ -2,11 +2,11 @@ package cli
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"flag"
 	"time"
 
+	"github.com/963sup/linebot-platform/internal/application/ports/outbound"
 	"github.com/963sup/linebot-platform/internal/application/usecases/messaging"
 )
 
@@ -33,7 +33,11 @@ func runActions(args []string, getenv func(string) string) error {
 		if err != nil {
 			return err
 		}
-		cmd.Payload = json.RawMessage(payload)
+		value, err := decodeLINEJSON(payload)
+		if err != nil {
+			return errors.New("request must be valid JSON")
+		}
+		cmd.Request = outbound.LINERequest{Value: value}
 	}
 	if err := messaging.ValidateConversationAction(cmd); err != nil {
 		return err

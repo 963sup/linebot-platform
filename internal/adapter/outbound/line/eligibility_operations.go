@@ -2,15 +2,15 @@ package line
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 
+	"github.com/963sup/linebot-platform/internal/application/ports/outbound"
 	"github.com/line/line-bot-sdk-go/v8/linebot/messaging_api"
 )
 
-func (s *Sender) PushMessagesByPhone(ctx context.Context, payload json.RawMessage) error {
+func (s *Sender) PushMessagesByPhone(ctx context.Context, payload outbound.LINERequest) error {
 	var req messaging_api.PnpMessagesRequest
-	if err := json.Unmarshal(payload, &req); err != nil {
+	if err := decodeLINERequest(payload, &req); err != nil {
 		return errors.New("invalid LINE PNP request")
 	}
 	client, err := s.clientFor(ctx)
@@ -21,9 +21,9 @@ func (s *Sender) PushMessagesByPhone(ctx context.Context, payload json.RawMessag
 	return lineWriteError("pushMessagesByPhone", r, err)
 }
 
-func (s *Sender) PushTemplatedMessagesByPhone(ctx context.Context, payload json.RawMessage) error {
+func (s *Sender) PushTemplatedMessagesByPhone(ctx context.Context, payload outbound.LINERequest) error {
 	var req messaging_api.PnpTemplatedMessageRequest
-	if err := json.Unmarshal(payload, &req); err != nil {
+	if err := decodeLINERequest(payload, &req); err != nil {
 		return errors.New("invalid LINE PNP template request")
 	}
 	client, err := s.clientFor(ctx)
@@ -34,35 +34,35 @@ func (s *Sender) PushTemplatedMessagesByPhone(ctx context.Context, payload json.
 	return lineWriteError("pushTemplatedMessagesByPhone", r, err)
 }
 
-func (s *Sender) PNPMessageStatistics(ctx context.Context, date string) (json.RawMessage, error) {
+func (s *Sender) PNPMessageStatistics(ctx context.Context, date string) (outbound.LINEResult, error) {
 	client, err := s.clientFor(ctx)
 	if err != nil {
-		return nil, err
+		return outbound.LINEResult{}, err
 	}
 	r, v, err := client.GetPNPMessageStatisticsWithHttpInfo(date)
-	return reportResult("getPNPMessageStatistics", r, v, err)
+	return typedReportResult("getPNPMessageStatistics", r, v, err)
 }
 
-func (s *Sender) PNPTemplatedMessageStatistics(ctx context.Context, date string) (json.RawMessage, error) {
+func (s *Sender) PNPTemplatedMessageStatistics(ctx context.Context, date string) (outbound.LINEResult, error) {
 	client, err := s.clientFor(ctx)
 	if err != nil {
-		return nil, err
+		return outbound.LINEResult{}, err
 	}
 	r, v, err := client.GetPNPTemplatedMessageStatisticsWithHttpInfo(date)
-	return reportResult("getPNPTemplatedMessageStatistics", r, v, err)
+	return typedReportResult("getPNPTemplatedMessageStatistics", r, v, err)
 }
 
-func (s *Sender) CreateCoupon(ctx context.Context, payload json.RawMessage) (json.RawMessage, error) {
+func (s *Sender) CreateCoupon(ctx context.Context, payload outbound.LINERequest) (outbound.LINEResult, error) {
 	var request messaging_api.CouponCreateRequest
-	if err := json.Unmarshal(payload, &request); err != nil {
-		return nil, errors.New("invalid LINE coupon creation request")
+	if err := decodeLINERequest(payload, &request); err != nil {
+		return outbound.LINEResult{}, errors.New("invalid LINE coupon creation request")
 	}
 	client, err := s.clientFor(ctx)
 	if err != nil {
-		return nil, err
+		return outbound.LINEResult{}, err
 	}
 	r, v, err := client.CreateCouponWithHttpInfo(&request)
-	return reportResult("createCoupon", r, v, err)
+	return typedReportResult("createCoupon", r, v, err)
 }
 
 func (s *Sender) CloseCoupon(ctx context.Context, couponID string) error {

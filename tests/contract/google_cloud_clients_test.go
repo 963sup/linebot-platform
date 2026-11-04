@@ -12,19 +12,20 @@ import (
 )
 
 func TestGoogleCloudFactoriesRejectInvalidContext(t *testing.T) {
-	if _, err := firestore.NewClient(nil, "test-project"); err == nil {
+	var nilContext context.Context
+	if _, err := firestore.NewClient(nilContext, "test-project"); err == nil {
 		t.Fatal("Firestore must reject nil context")
 	}
 	if _, err := firestore.NewClient(context.Background(), ""); err == nil {
 		t.Fatal("Firestore must reject missing project")
 	}
-	if _, err := cloudtasks.NewClient(nil); err == nil {
+	if _, err := cloudtasks.NewClient(nilContext); err == nil {
 		t.Fatal("Cloud Tasks must reject nil context")
 	}
-	if _, err := secretmanager.NewClient(nil); err == nil {
+	if _, err := secretmanager.NewClient(nilContext); err == nil {
 		t.Fatal("Secret Manager must reject nil context")
 	}
-	if _, err := storage.NewClient(nil); err == nil {
+	if _, err := storage.NewClient(nilContext); err == nil {
 		t.Fatal("Storage must reject nil context")
 	}
 

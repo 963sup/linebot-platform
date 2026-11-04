@@ -4,7 +4,7 @@ This branch establishes the **target domain first**, not a directory-only refact
 
 ## Naming contract
 - Every bounded context stores value objects in `value-objects/`, never `valueobjects/` or `value_objects/`. The Go package identifier is `valueobjects`; the hyphen exists only in the import path.
-- The architecture test walks all domain subdirectories to enforce this rule, not just the root scaffold.
+- The architecture test walks all implemented domain subdirectories to enforce this rule; no root classification scaffold is required.
 
 ## Dependency rules
 - Identity domain owns account-link lifecycle, validated IDs, granted scopes and status decisions.

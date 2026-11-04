@@ -2,8 +2,9 @@ package engagement
 
 import (
 	"context"
-	"encoding/json"
 	"testing"
+
+	"github.com/963sup/linebot-platform/internal/application/ports/outbound"
 )
 
 type fakeMembershipReader struct {
@@ -11,18 +12,18 @@ type fakeMembershipReader struct {
 	limit int32
 }
 
-func (f *fakeMembershipReader) MembershipList(context.Context) (json.RawMessage, error) {
-	return json.RawMessage("{}"), nil
+func (f *fakeMembershipReader) MembershipList(context.Context) (outbound.LINEResult, error) {
+	return outbound.LINEResult{Value: map[string]any{}}, nil
 }
 
-func (f *fakeMembershipReader) MembershipSubscription(context.Context, string) (json.RawMessage, error) {
-	return json.RawMessage("{}"), nil
+func (f *fakeMembershipReader) MembershipSubscription(context.Context, string) (outbound.LINEResult, error) {
+	return outbound.LINEResult{Value: map[string]any{}}, nil
 }
 
-func (f *fakeMembershipReader) MembershipUsers(_ context.Context, _ int32, _ string, limit int32) (json.RawMessage, error) {
+func (f *fakeMembershipReader) MembershipUsers(_ context.Context, _ int32, _ string, limit int32) (outbound.LINEResult, error) {
 	f.users++
 	f.limit = limit
-	return json.RawMessage("{}"), nil
+	return outbound.LINEResult{Value: map[string]any{}}, nil
 }
 
 func TestMembershipInspectorRejectsCoupons(t *testing.T) {

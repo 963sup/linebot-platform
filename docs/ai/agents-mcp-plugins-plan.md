@@ -1,6 +1,6 @@
 # Agents、MCP 與 Plugins：P0–P5 實施契約
 
-初始基線：`258cd82ff3b5bb915457964ee53380ddf56debf2`。先提交本計畫，再於獨立分支一次交付六階段；不合併 PR、不部署、不建立憑證或改 IAM。保留原有 27 角色、16 MCP、SDK 依賴與預留骨架。
+初始基線：`258cd82ff3b5bb915457964ee53380ddf56debf2`。先提交本計畫，再於獨立分支一次交付六階段；不合併 PR、不部署、不建立憑證或改 IAM。這是歷史執行契約；SDK 依賴現由 `go.mod`、Catalog 與 build-tag dependency manifest 保留，不再保護空 scaffold。
 
 ## P0：設定與驗證
 

@@ -2,6 +2,7 @@ package cli
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"flag"
 	"time"
@@ -31,6 +32,10 @@ func runLinkToken(args []string, getenv func(string) string) error {
 		defer r.Close()
 		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
 		defer cancel()
-		return r.IssueLinkToken(ctx, *user)
+		result, err := r.IssueLinkToken(ctx, *user)
+		if err != nil {
+			return nil, err
+		}
+		return json.Marshal(result.Value)
 	})
 }

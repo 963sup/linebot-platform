@@ -2,7 +2,6 @@ package contacts
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"strings"
 
@@ -22,15 +21,15 @@ func NewAccountLinker(m outbound.AccountLinkManager) (*AccountLinker, error) {
 
 // IssueLinkToken contains sensitive credentials; callers must persist it to
 // an explicitly requested 0600 file and must never print it to the terminal.
-func (s *AccountLinker) IssueLinkToken(ctx context.Context, userID string) (json.RawMessage, error) {
+func (s *AccountLinker) IssueLinkToken(ctx context.Context, userID string) (outbound.LINEResult, error) {
 	if ctx == nil {
-		return nil, errors.New("context is required")
+		return outbound.LINEResult{}, errors.New("context is required")
 	}
 	if err := ctx.Err(); err != nil {
-		return nil, err
+		return outbound.LINEResult{}, err
 	}
 	if userID == "" || userID != strings.TrimSpace(userID) {
-		return nil, errors.New("user ID is required")
+		return outbound.LINEResult{}, errors.New("user ID is required")
 	}
-	return s.manager.IssueLinkToken(ctx, userID)
+	return s.manager.IssueLinkTokenResult(ctx, userID)
 }

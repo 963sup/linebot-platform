@@ -2,7 +2,6 @@ package contacts
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"strings"
 
@@ -56,15 +55,15 @@ func ValidateInspection(q Inspection) error {
 	}
 }
 
-func (s *Inspector) Inspect(ctx context.Context, q Inspection) (json.RawMessage, error) {
+func (s *Inspector) Inspect(ctx context.Context, q Inspection) (outbound.LINEResult, error) {
 	if ctx == nil {
-		return nil, errors.New("context is required")
+		return outbound.LINEResult{}, errors.New("context is required")
 	}
 	if err := ctx.Err(); err != nil {
-		return nil, err
+		return outbound.LINEResult{}, err
 	}
 	if err := ValidateInspection(q); err != nil {
-		return nil, err
+		return outbound.LINEResult{}, err
 	}
 	switch q.Kind {
 	case "followers":

@@ -15,7 +15,6 @@ type EventJob struct {
 	OccurredAt time.Time
 	CreatedAt  time.Time
 }
-
 type DeliveryState string
 
 const (
@@ -37,11 +36,4 @@ type EventStore interface {
 	Claim(ctx context.Context, key, leaseID string, now time.Time) (EventJob, bool, error)
 	Complete(ctx context.Context, key, leaseID string, outcome DeliveryState) error
 	Recover(ctx context.Context, now time.Time, limit int) ([]string, error)
-}
-
-// EventQueue enqueues only a deterministic, non-sensitive outbox key. It MUST
-// tolerate a duplicate task name and MUST NOT interpret an ambiguous RPC
-// failure as proof no task was created.
-type EventQueue interface {
-	Enqueue(ctx context.Context, key string) error
 }

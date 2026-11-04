@@ -10,7 +10,7 @@ import (
 	"testing"
 
 	"github.com/963sup/linebot-platform/internal/adapter/outbound/google/api/codec"
-	"github.com/963sup/linebot-platform/internal/application/ports/outbound"
+	"github.com/963sup/linebot-platform/internal/application/usecases/workspace"
 	googleforms "google.golang.org/api/forms/v1"
 	"google.golang.org/api/option"
 )
@@ -40,25 +40,25 @@ func TestFormsPinnedSDKRoutes(t *testing.T) {
 	cases := []struct {
 		operation  string
 		want       string
-		parameters map[string]json.RawMessage
-		options    map[string]json.RawMessage
+		parameters map[string]any
+		options    map[string]any
 		body       json.RawMessage
 	}{
-		{operation: "forms.batchUpdate", want: "POST /v1/forms/form-1:batchUpdate", parameters: map[string]json.RawMessage{"formId": json.RawMessage("\"form-1\"")}, body: json.RawMessage(`{}`), options: nil},
-		{operation: "forms.create", want: "POST /v1/forms", parameters: map[string]json.RawMessage{}, body: json.RawMessage(`{}`), options: map[string]json.RawMessage{"unpublished": json.RawMessage("true")}},
-		{operation: "forms.get", want: "GET /v1/forms/form-1", parameters: map[string]json.RawMessage{"formId": json.RawMessage("\"form-1\"")}, body: nil, options: nil},
-		{operation: "forms.setPublishSettings", want: "POST /v1/forms/form-1:setPublishSettings", parameters: map[string]json.RawMessage{"formId": json.RawMessage("\"form-1\"")}, body: json.RawMessage(`{}`), options: nil},
-		{operation: "forms.responses.get", want: "GET /v1/forms/form-1/responses/response-1", parameters: map[string]json.RawMessage{"formId": json.RawMessage("\"form-1\""), "responseId": json.RawMessage("\"response-1\"")}, body: nil, options: nil},
-		{operation: "forms.responses.list", want: "GET /v1/forms/form-1/responses", parameters: map[string]json.RawMessage{"formId": json.RawMessage("\"form-1\"")}, body: nil, options: map[string]json.RawMessage{"pageSize": json.RawMessage("5"), "pageToken": json.RawMessage("\"next\"")}},
-		{operation: "forms.watches.create", want: "POST /v1/forms/form-1/watches", parameters: map[string]json.RawMessage{"formId": json.RawMessage("\"form-1\"")}, body: json.RawMessage(`{}`), options: nil},
-		{operation: "forms.watches.delete", want: "DELETE /v1/forms/form-1/watches/watch-1", parameters: map[string]json.RawMessage{"formId": json.RawMessage("\"form-1\""), "watchId": json.RawMessage("\"watch-1\"")}, body: nil, options: nil},
-		{operation: "forms.watches.list", want: "GET /v1/forms/form-1/watches", parameters: map[string]json.RawMessage{"formId": json.RawMessage("\"form-1\"")}, body: nil, options: nil},
-		{operation: "forms.watches.renew", want: "POST /v1/forms/form-1/watches/watch-1:renew", parameters: map[string]json.RawMessage{"formId": json.RawMessage("\"form-1\""), "watchId": json.RawMessage("\"watch-1\"")}, body: json.RawMessage(`{}`), options: nil},
+		{operation: "forms.batchUpdate", want: "POST /v1/forms/form-1:batchUpdate", parameters: map[string]any{"formId": json.RawMessage("\"form-1\"")}, body: json.RawMessage(`{}`), options: nil},
+		{operation: "forms.create", want: "POST /v1/forms", parameters: map[string]any{}, body: json.RawMessage(`{}`), options: map[string]any{"unpublished": json.RawMessage("true")}},
+		{operation: "forms.get", want: "GET /v1/forms/form-1", parameters: map[string]any{"formId": json.RawMessage("\"form-1\"")}, body: nil, options: nil},
+		{operation: "forms.setPublishSettings", want: "POST /v1/forms/form-1:setPublishSettings", parameters: map[string]any{"formId": json.RawMessage("\"form-1\"")}, body: json.RawMessage(`{}`), options: nil},
+		{operation: "forms.responses.get", want: "GET /v1/forms/form-1/responses/response-1", parameters: map[string]any{"formId": json.RawMessage("\"form-1\""), "responseId": json.RawMessage("\"response-1\"")}, body: nil, options: nil},
+		{operation: "forms.responses.list", want: "GET /v1/forms/form-1/responses", parameters: map[string]any{"formId": json.RawMessage("\"form-1\"")}, body: nil, options: map[string]any{"pageSize": json.RawMessage("5"), "pageToken": json.RawMessage("\"next\"")}},
+		{operation: "forms.watches.create", want: "POST /v1/forms/form-1/watches", parameters: map[string]any{"formId": json.RawMessage("\"form-1\"")}, body: json.RawMessage(`{}`), options: nil},
+		{operation: "forms.watches.delete", want: "DELETE /v1/forms/form-1/watches/watch-1", parameters: map[string]any{"formId": json.RawMessage("\"form-1\""), "watchId": json.RawMessage("\"watch-1\"")}, body: nil, options: nil},
+		{operation: "forms.watches.list", want: "GET /v1/forms/form-1/watches", parameters: map[string]any{"formId": json.RawMessage("\"form-1\"")}, body: nil, options: nil},
+		{operation: "forms.watches.renew", want: "POST /v1/forms/form-1/watches/watch-1:renew", parameters: map[string]any{"formId": json.RawMessage("\"form-1\""), "watchId": json.RawMessage("\"watch-1\"")}, body: json.RawMessage(`{}`), options: nil},
 	}
 	for _, tc := range cases {
 		t.Run(tc.operation, func(t *testing.T) {
 			got = ""
-			req := outbound.WorkspaceRequest{Operation: tc.operation, Parameters: tc.parameters, Options: tc.options, Body: tc.body}
+			req := workspace.Command{Operation: tc.operation, Parameters: tc.parameters, Options: tc.options, Body: tc.body}
 			if _, err := adapter.ExecuteForms(context.Background(), req); err != nil {
 				t.Fatal(err)
 			}
@@ -67,15 +67,15 @@ func TestFormsPinnedSDKRoutes(t *testing.T) {
 			}
 		})
 	}
-	if _, err := adapter.ExecuteForms(context.Background(), outbound.WorkspaceRequest{Operation: "forms.responses.get"}); err == nil {
+	if _, err := adapter.ExecuteForms(context.Background(), workspace.Command{Operation: "forms.responses.get"}); err == nil {
 		t.Fatal("missing required parameter accepted")
 	}
-	if _, err := adapter.ExecuteForms(context.Background(), outbound.WorkspaceRequest{Operation: "forms.not-a-method"}); err == nil {
+	if _, err := adapter.ExecuteForms(context.Background(), workspace.Command{Operation: "forms.not-a-method"}); err == nil {
 		t.Fatal("unsupported endpoint accepted")
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	if _, err := adapter.ExecuteForms(ctx, outbound.WorkspaceRequest{Operation: "forms.get"}); !errors.Is(err, context.Canceled) {
+	if _, err := adapter.ExecuteForms(ctx, workspace.Command{Operation: "forms.get"}); !errors.Is(err, context.Canceled) {
 		t.Fatalf("cancellation lost: %v", err)
 	}
 }
@@ -94,7 +94,7 @@ func TestFormsRemoteErrorHasNoResponseBody(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = a.ExecuteForms(context.Background(), outbound.WorkspaceRequest{Operation: "forms.get", Parameters: map[string]json.RawMessage{"formId": json.RawMessage(`"form-1"`)}})
+	_, err = a.ExecuteForms(context.Background(), workspace.Command{Operation: "forms.get", Parameters: map[string]any{"formId": json.RawMessage(`"form-1"`)}})
 	var remote *codec.RemoteError
 	if !errors.As(err, &remote) || remote.Status != 403 || remote.API != "forms" {
 		t.Fatalf("expected redacted Google 403, got %v", err)

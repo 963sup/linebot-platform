@@ -2,7 +2,6 @@ package cli
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
@@ -11,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/963sup/linebot-platform/internal/application/ports/outbound"
 	"github.com/963sup/linebot-platform/internal/application/usecases/engagement"
 )
 
@@ -36,16 +36,17 @@ func runManageMenu(args []string, getenv func(string) string) error {
 	if getenv == nil {
 		return errors.New("missing environment reader")
 	}
-	var payload json.RawMessage
+	var payload outbound.LINERequest
 	if *requestFile != "" {
 		data, err := os.ReadFile(filepath.Clean(*requestFile))
 		if err != nil {
 			return fmt.Errorf("read rich menu request: %w", err)
 		}
-		if !json.Valid(data) {
+		value, err := decodeLINEJSON(data)
+		if err != nil {
 			return errors.New("rich menu request must be valid JSON")
 		}
-		payload = data
+		payload = outbound.LINERequest{Value: value}
 	}
 	if *imageFile != "" {
 		if *action != "upload-image" || *requestFile != "" || strings.TrimSpace(*menu) == "" {

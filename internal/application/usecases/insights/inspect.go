@@ -2,7 +2,6 @@ package insights
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"strings"
 	"time"
@@ -73,15 +72,15 @@ func ValidateQuery(q Query) error {
 	}
 }
 
-func (s *Inspector) Inspect(ctx context.Context, q Query) (json.RawMessage, error) {
+func (s *Inspector) Inspect(ctx context.Context, q Query) (outbound.LINEResult, error) {
 	if ctx == nil {
-		return nil, errors.New("context is required")
+		return outbound.LINEResult{}, errors.New("context is required")
 	}
 	if err := ctx.Err(); err != nil {
-		return nil, err
+		return outbound.LINEResult{}, err
 	}
 	if err := ValidateQuery(q); err != nil {
-		return nil, err
+		return outbound.LINEResult{}, err
 	}
 	switch q.Kind {
 	case "demographics":

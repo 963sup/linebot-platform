@@ -11,6 +11,7 @@ import (
 )
 
 func TestWorkspaceFactoriesRequireAuthorizedTransport(t *testing.T) {
+	var nilContext context.Context
 	if _, err := NewTasks(context.Background(), nil); err == nil {
 		t.Fatal("Google Tasks must require a caller-owned authorized HTTP client")
 	}
@@ -23,7 +24,7 @@ func TestWorkspaceFactoriesRequireAuthorizedTransport(t *testing.T) {
 	if _, err := NewSheets(context.Background(), nil); err == nil {
 		t.Fatal("Google Sheets must require a caller-owned authorized HTTP client")
 	}
-	if _, err := NewTasks(nil, &http.Client{}); err == nil {
+	if _, err := NewTasks(nilContext, &http.Client{}); err == nil {
 		t.Fatal("nil context must fail")
 	}
 	ctx, cancel := context.WithCancel(context.Background())

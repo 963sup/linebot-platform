@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/963sup/linebot-platform/internal/application/ports/outbound"
+	"github.com/963sup/linebot-platform/internal/application/usecases/workspace"
 	"google.golang.org/api/option"
 	googletasks "google.golang.org/api/tasks/v1"
 )
@@ -39,16 +39,16 @@ func TestTasksMoveParentAndListOptions(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = a.ExecuteTasks(context.Background(), outbound.WorkspaceRequest{
-		Operation: "tasks.list", Parameters: map[string]json.RawMessage{"tasklist": json.RawMessage(`"list1"`)},
-		Options: map[string]json.RawMessage{"showAssigned": json.RawMessage(`true`), "maxResults": json.RawMessage(`5`)},
+	_, err = a.ExecuteTasks(context.Background(), workspace.Command{
+		Operation: "tasks.list", Parameters: map[string]any{"tasklist": json.RawMessage(`"list1"`)},
+		Options: map[string]any{"showAssigned": json.RawMessage(`true`), "maxResults": json.RawMessage(`5`)},
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = a.ExecuteTasks(context.Background(), outbound.WorkspaceRequest{
-		Operation: "tasks.move", Parameters: map[string]json.RawMessage{"tasklist": json.RawMessage(`"list1"`), "task": json.RawMessage(`"task1"`)},
-		Options: map[string]json.RawMessage{"parent": json.RawMessage(`"parent1"`), "previous": json.RawMessage(`"sibling1"`)},
+	_, err = a.ExecuteTasks(context.Background(), workspace.Command{
+		Operation: "tasks.move", Parameters: map[string]any{"tasklist": json.RawMessage(`"list1"`), "task": json.RawMessage(`"task1"`)},
+		Options: map[string]any{"parent": json.RawMessage(`"parent1"`), "previous": json.RawMessage(`"sibling1"`)},
 	})
 	if err != nil {
 		t.Fatal(err)

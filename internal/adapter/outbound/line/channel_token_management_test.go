@@ -49,3 +49,27 @@ func TestChannelTokenAdapterUsesOfficialOAuthEndpoints(t *testing.T) {
 		}
 	}
 }
+
+func TestChannelTokenAdapterReturnsTransportNeutralResult(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"access_token":"secret","expires_in":3600}`))
+	}))
+	defer server.Close()
+	client, err := channel_access_token.NewChannelAccessTokenAPI(channel_access_token.WithEndpoint(server.URL), channel_access_token.WithHTTPClient(server.Client()))
+	if err != nil {
+		t.Fatal(err)
+	}
+	manager, err := NewChannelTokenManager(client)
+	if err != nil {
+		t.Fatal(err)
+	}
+	result, err := manager.IssueShortLived(context.Background(), "client_credentials", "id", "secret")
+	if err != nil {
+		t.Fatal(err)
+	}
+	value, ok := result.Value.(map[string]any)
+	if !ok || value["access_token"] != "secret" {
+		t.Fatalf("unexpected typed result: %#v", result.Value)
+	}
+}

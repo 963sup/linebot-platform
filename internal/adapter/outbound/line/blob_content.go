@@ -3,7 +3,6 @@ package line
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
 	"io"
 	"net/http"
@@ -86,14 +85,14 @@ func (s *BlobSender) SetRichMenuImage(ctx context.Context, id string, blob outbo
 	r, _, e := c.SetRichMenuImageWithHttpInfo(id, blob.ContentType, bytes.NewReader(blob.Data))
 	return lineWriteError("setRichMenuImage", r, e)
 }
-func (s *BlobSender) MessageContentTranscoding(ctx context.Context, id string) (json.RawMessage, error) {
+func (s *BlobSender) MessageContentTranscoding(ctx context.Context, id string) (outbound.LINEResult, error) {
 	c, e := s.clientFor(ctx)
 	if e != nil {
-		return nil, e
+		return outbound.LINEResult{}, e
 	}
 	r, v, e := c.GetMessageContentTranscodingByMessageIdWithHttpInfo(id)
 	if e != nil {
-		return nil, resilience.Wrap("line", "getMessageContentTranscoding", httpStatus(r), e)
+		return outbound.LINEResult{}, resilience.Wrap("line", "getMessageContentTranscoding", httpStatus(r), e)
 	}
-	return json.Marshal(v)
+	return typedReportResult("getMessageContentTranscoding", r, v, nil)
 }

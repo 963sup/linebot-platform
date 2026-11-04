@@ -2,7 +2,6 @@ package engagement
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"strings"
 	"time"
@@ -15,7 +14,7 @@ import (
 type EligibilityCommand struct {
 	Action  string
 	ID      string
-	Payload json.RawMessage
+	Payload outbound.LINERequest
 }
 
 type EligibilityOperations struct {
@@ -35,18 +34,18 @@ func ValidateEligibilityCommand(c EligibilityCommand) error {
 	}
 	switch c.Action {
 	case "push-phone", "push-template-phone", "create-coupon":
-		if c.ID != "" || len(c.Payload) == 0 || !json.Valid(c.Payload) || strings.TrimSpace(string(c.Payload))[0] != '{' {
+		if c.ID != "" || !isLINEObject(c.Payload) {
 			return errors.New("action requires a JSON object and no ID")
 		}
 	case "pnp-stats", "pnp-template-stats":
-		if len(c.ID) != 8 || len(c.Payload) != 0 {
+		if len(c.ID) != 8 || c.Payload.Value != nil {
 			return errors.New("statistics require YYYYMMDD and no payload")
 		}
 		if _, err := time.Parse("20060102", c.ID); err != nil {
 			return errors.New("invalid statistics date")
 		}
 	case "close-coupon":
-		if c.ID == "" || len(c.Payload) != 0 {
+		if c.ID == "" || c.Payload.Value != nil {
 			return errors.New("coupon ID and no payload are required")
 		}
 	default:
@@ -55,21 +54,21 @@ func ValidateEligibilityCommand(c EligibilityCommand) error {
 	return nil
 }
 
-func (s *EligibilityOperations) Execute(ctx context.Context, c EligibilityCommand) (json.RawMessage, error) {
+func (s *EligibilityOperations) Execute(ctx context.Context, c EligibilityCommand) (outbound.LINEResult, error) {
 	if ctx == nil {
-		return nil, errors.New("context is required")
+		return outbound.LINEResult{}, errors.New("context is required")
 	}
 	if err := ctx.Err(); err != nil {
-		return nil, err
+		return outbound.LINEResult{}, err
 	}
 	if err := ValidateEligibilityCommand(c); err != nil {
-		return nil, err
+		return outbound.LINEResult{}, err
 	}
 	switch c.Action {
 	case "push-phone":
-		return nil, s.operations.PushMessagesByPhone(ctx, c.Payload)
+		return outbound.LINEResult{}, s.operations.PushMessagesByPhone(ctx, c.Payload)
 	case "push-template-phone":
-		return nil, s.operations.PushTemplatedMessagesByPhone(ctx, c.Payload)
+		return outbound.LINEResult{}, s.operations.PushTemplatedMessagesByPhone(ctx, c.Payload)
 	case "pnp-stats":
 		return s.operations.PNPMessageStatistics(ctx, c.ID)
 	case "pnp-template-stats":
@@ -77,8 +76,8 @@ func (s *EligibilityOperations) Execute(ctx context.Context, c EligibilityComman
 	case "create-coupon":
 		return s.operations.CreateCoupon(ctx, c.Payload)
 	case "close-coupon":
-		return nil, s.operations.CloseCoupon(ctx, c.ID)
+		return outbound.LINEResult{}, s.operations.CloseCoupon(ctx, c.ID)
 	default:
-		return nil, errors.New("unsupported eligibility action")
+		return outbound.LINEResult{}, errors.New("unsupported eligibility action")
 	}
 }

@@ -11,8 +11,20 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/963sup/linebot-platform/internal/application/ports/outbound"
 	"github.com/963sup/linebot-platform/internal/application/usecases/channel"
 )
+
+// tokenRequest is the private-file wire format. Secret-bearing JSON metadata
+// stays at the CLI boundary and never enters the application package.
+type tokenRequest struct {
+	GrantType           string `json:"grantType,omitempty"`
+	ClientID            string `json:"clientId,omitempty"`
+	ClientSecret        string `json:"clientSecret,omitempty"`
+	ClientAssertionType string `json:"clientAssertionType,omitempty"`
+	ClientAssertion     string `json:"clientAssertion,omitempty"`
+	AccessToken         string `json:"accessToken,omitempty"`
+}
 
 func tokenRequestFromPrivateFile(path string) (channel.TokenCommand, error) {
 	if path == "" {
@@ -26,17 +38,24 @@ func tokenRequestFromPrivateFile(path string) (channel.TokenCommand, error) {
 	if err != nil {
 		return channel.TokenCommand{}, err
 	}
-	var cmd channel.TokenCommand
+	var request tokenRequest
 	dec := json.NewDecoder(bytes.NewReader(data))
 	dec.DisallowUnknownFields()
-	if err := dec.Decode(&cmd); err != nil {
+	if err := dec.Decode(&request); err != nil {
 		return channel.TokenCommand{}, errors.New("invalid private token request JSON")
 	}
 	var additional any
 	if err := dec.Decode(&additional); err != io.EOF {
 		return channel.TokenCommand{}, errors.New("extra token request content")
 	}
-	return cmd, nil
+	return channel.TokenCommand{
+		GrantType:           request.GrantType,
+		ClientID:            request.ClientID,
+		ClientSecret:        request.ClientSecret,
+		ClientAssertionType: request.ClientAssertionType,
+		ClientAssertion:     request.ClientAssertion,
+		AccessToken:         request.AccessToken,
+	}, nil
 }
 
 // runChannelTokens is available ONLY in the local ops CLI. It never accepts
@@ -79,13 +98,13 @@ func runChannelTokens(args []string) error {
 	if err := channel.ValidateTokenCommand(cmd); err != nil {
 		return err
 	}
-	invoke := func() ([]byte, error) {
+	invoke := func() (outbound.LINEResult, error) {
 		if tokenRuntimeFactory == nil {
-			return nil, errors.New("token runtime is not configured")
+			return outbound.LINEResult{}, errors.New("token runtime is not configured")
 		}
 		rt, err := tokenRuntimeFactory()
 		if err != nil {
-			return nil, err
+			return outbound.LINEResult{}, err
 		}
 		defer rt.Close()
 		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
@@ -96,5 +115,15 @@ func runChannelTokens(args []string) error {
 		_, err := invoke()
 		return err
 	}
-	return writePrivateOperation(*out, invoke)
+	return writePrivateOperation(*out, func() ([]byte, error) {
+		result, err := invoke()
+		if err != nil {
+			return nil, err
+		}
+		payload, err := json.Marshal(result.Value)
+		if err != nil || string(payload) == "null" {
+			return nil, errors.New("invalid LINE token result")
+		}
+		return payload, nil
+	})
 }

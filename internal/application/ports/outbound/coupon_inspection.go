@@ -1,12 +1,9 @@
 package outbound
 
-import (
-	"context"
-	"encoding/json"
-)
+import "context"
 
 // CouponReader reads coupon metadata for an eligible LINE channel.
 type CouponReader interface {
-	CouponList(ctx context.Context, start string, limit int32) (json.RawMessage, error)
-	CouponDetail(ctx context.Context, couponID string) (json.RawMessage, error)
+	CouponList(ctx context.Context, start string, limit int32) (LINEResult, error)
+	CouponDetail(ctx context.Context, couponID string) (LINEResult, error)
 }

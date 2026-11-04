@@ -38,11 +38,11 @@ type StatusRuntime interface {
 }
 
 type WorkspaceRuntime interface {
-	Execute(context.Context, string, outbound.WorkspaceRequest, workspace.Approval) ([]byte, error)
+	Execute(context.Context, string, workspace.Command, workspace.Approval) ([]byte, error)
 }
 
 type LinkTokenRuntime interface {
-	IssueLinkToken(context.Context, string) ([]byte, error)
+	IssueLinkToken(context.Context, string) (outbound.LINEResult, error)
 	Close() error
 }
 
@@ -62,7 +62,7 @@ type AudienceRuntime interface {
 }
 
 type ContactsRuntime interface {
-	Inspect(context.Context, contacts.Inspection) (json.RawMessage, error)
+	Inspect(context.Context, contacts.Inspection) (outbound.LINEResult, error)
 	Close() error
 }
 
@@ -72,7 +72,7 @@ type CouponsRuntime interface {
 }
 
 type InsightsRuntime interface {
-	Inspect(context.Context, insights.Query) (json.RawMessage, error)
+	Inspect(context.Context, insights.Query) (outbound.LINEResult, error)
 	Close() error
 }
 
@@ -87,12 +87,12 @@ type MenusRuntime interface {
 }
 
 type ChannelInspectionRuntime interface {
-	Inspect(context.Context, channel.Inspection) (json.RawMessage, error)
+	Inspect(context.Context, channel.Inspection) (outbound.LINEResult, error)
 	Close() error
 }
 
 type ContentRuntime interface {
-	Inspect(context.Context, contacts.ContentQuery) (outbound.BinaryContent, json.RawMessage, error)
+	Inspect(context.Context, contacts.ContentQuery) (outbound.BinaryContent, outbound.LINEResult, error)
 	Close() error
 }
 
@@ -118,7 +118,7 @@ type WebhookRuntime interface {
 }
 
 type TokenRuntime interface {
-	Execute(context.Context, channel.TokenCommand) ([]byte, error)
+	Execute(context.Context, channel.TokenCommand) (outbound.LINEResult, error)
 	Close()
 }
 
@@ -130,7 +130,7 @@ type AudienceManagementRuntime interface {
 type BulkMessagingRuntime interface {
 	Broadcast(context.Context, []outbound.Message, string) error
 	Multicast(context.Context, []string, []outbound.Message, string) error
-	Narrowcast(context.Context, json.RawMessage, string) error
+	Narrowcast(context.Context, outbound.LINERequest, string) error
 	Close() error
 }
 

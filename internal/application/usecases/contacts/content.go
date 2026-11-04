@@ -2,7 +2,6 @@ package contacts
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"strings"
 
@@ -18,27 +17,27 @@ func NewContentInspector(reader outbound.MessageContentReader) (*ContentInspecto
 	}
 	return &ContentInspector{reader}, nil
 }
-func (s *ContentInspector) Inspect(ctx context.Context, q ContentQuery) (outbound.BinaryContent, json.RawMessage, error) {
+func (s *ContentInspector) Inspect(ctx context.Context, q ContentQuery) (outbound.BinaryContent, outbound.LINEResult, error) {
 	if ctx == nil {
-		return outbound.BinaryContent{}, nil, errors.New("context is required")
+		return outbound.BinaryContent{}, outbound.LINEResult{}, errors.New("context is required")
 	}
 	if err := ctx.Err(); err != nil {
-		return outbound.BinaryContent{}, nil, err
+		return outbound.BinaryContent{}, outbound.LINEResult{}, err
 	}
 	if strings.TrimSpace(q.MessageID) == "" || q.MessageID != strings.TrimSpace(q.MessageID) {
-		return outbound.BinaryContent{}, nil, errors.New("message ID is required")
+		return outbound.BinaryContent{}, outbound.LINEResult{}, errors.New("message ID is required")
 	}
 	switch q.Kind {
 	case "content":
 		b, e := s.reader.MessageContent(ctx, q.MessageID)
-		return b, nil, e
+		return b, outbound.LINEResult{}, e
 	case "preview":
 		b, e := s.reader.MessageContentPreview(ctx, q.MessageID)
-		return b, nil, e
+		return b, outbound.LINEResult{}, e
 	case "transcoding":
 		j, e := s.reader.MessageContentTranscoding(ctx, q.MessageID)
 		return outbound.BinaryContent{}, j, e
 	default:
-		return outbound.BinaryContent{}, nil, errors.New("unsupported message content kind")
+		return outbound.BinaryContent{}, outbound.LINEResult{}, errors.New("unsupported message content kind")
 	}
 }

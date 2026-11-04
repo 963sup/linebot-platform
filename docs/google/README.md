@@ -26,7 +26,7 @@
 ## Forms v1（離線整合候選，非真實帳號驗證）
 
 - Forms 4、Responses 2、Watches 4，共 10 個原生 Typed SDK 方法，使用 `google.golang.org/api/forms/v1`。
-- Forms 呼叫沿用 `WorkspaceRequest`／`cmd/ops workspace --api forms` 的本機測試帳號與操作確認規則。新增 `docs/google/forms-endpoints.json` 作為 Discovery v0.310.0 方法清單。
+- Forms 呼叫使用 `workspace.Command` capability contract 與 `cmd/ops workspace --api forms` 的本機測試帳號、操作確認規則；CLI wire JSON 只在 inbound adapter 解碼。新增 `docs/google/forms-endpoints.json` 作為 Discovery v0.310.0 方法清單。
 - 真正的 Forms Watches 通知需要額外 Pub/Sub Topic、通知授權、續約與去重；僅 SDK 離線整合不表示通知服務已部署。
 - 本機 CLI 仍使用外部短期 Access Token；OAuth／Token Repository 的離線程式碼已在 `main`，但尚未掛載可信的 LINE 使用者登入與 Google 真實授權／撤銷流程。
 

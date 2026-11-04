@@ -38,6 +38,6 @@ Google Tasks API 使用現有模組的 `google.golang.org/api/tasks/v1`，**沒�
 
 PR #8 實作的 Firestore／Cloud Tasks Adapter 直接使用 `google.golang.org/grpc/codes`／`status`，因此 `go mod tidy` 將既有 gRPC module 轉為直接依賴；`go.sum` 不新增未經驗證的 checksum。
 
-**原有 12 個直接依賴加上本次直接使用的 OAuth2，共 13 個直接依賴；SDK 預留空白骨架是經核准的開發基礎，不得因目前 runtime 未啟用就移除。** `integrated` 表示程式碼已接線，不表示 IAM／OAuth／部署完成。詳見 [main 基礎設施狀態](architecture/infrastructure-status.md) 與 [SDK Catalog](sdk/catalog.toml)。
+**原有 12 個直接依賴加上本次直接使用的 OAuth2，共 13 個直接依賴。** 核准依賴由 `go.mod`／`go.sum`、[SDK Catalog](sdk/catalog.toml) 與 build-tag dependency manifest 共同保留，不要求空白 SDK 目錄。`integrated` 表示程式碼已接線，不表示 IAM／OAuth／部署完成。詳見 [main 基礎設施狀態](architecture/infrastructure-status.md)。
 
 Go 版本鎖定為 **1.27.3**。若 `go mod tidy` 因間接依賴調整版本，應以實際可重現建置結果重新審查本表。Google Cloud Client Libraries 的多 module 架構不等於只安裝一個 `google-cloud-go` root module。

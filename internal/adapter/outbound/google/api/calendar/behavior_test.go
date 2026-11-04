@@ -12,7 +12,7 @@ import (
 	"testing"
 
 	"github.com/963sup/linebot-platform/internal/adapter/outbound/google/api/codec"
-	"github.com/963sup/linebot-platform/internal/application/ports/outbound"
+	"github.com/963sup/linebot-platform/internal/application/usecases/workspace"
 	googlecalendar "google.golang.org/api/calendar/v3"
 	"google.golang.org/api/option"
 )
@@ -46,10 +46,10 @@ func TestCalendarEventsPreserveOptionsAndSanitizeErrors(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	req := outbound.WorkspaceRequest{
+	req := workspace.Command{
 		Operation:  "events.insert",
-		Parameters: map[string]json.RawMessage{"calendarId": json.RawMessage(`"primary"`)},
-		Options: map[string]json.RawMessage{
+		Parameters: map[string]any{"calendarId": json.RawMessage(`"primary"`)},
+		Options: map[string]any{
 			"sendUpdates":           json.RawMessage(`"none"`),
 			"conferenceDataVersion": json.RawMessage(`1`),
 		},
@@ -59,19 +59,20 @@ func TestCalendarEventsPreserveOptionsAndSanitizeErrors(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(string(result), `"event1"`) {
-		t.Fatalf("response lost: %s", result)
+	encoded, err := json.Marshal(result.Value)
+	if err != nil || !strings.Contains(string(encoded), `"event1"`) {
+		t.Fatalf("response lost: %v", result.Value)
 	}
 	if calls.Load() != 1 {
 		t.Fatalf("called provider %d times", calls.Load())
 	}
 	invalid := req
-	invalid.Options = map[string]json.RawMessage{"unknownOption": json.RawMessage(`true`)}
+	invalid.Options = map[string]any{"unknownOption": json.RawMessage(`true`)}
 	if _, err := adapter.ExecuteCalendar(context.Background(), invalid); err == nil {
 		t.Fatal("unrecognized query option accepted")
 	}
 	invalid = req
-	invalid.Parameters = map[string]json.RawMessage{"calendarId": json.RawMessage(`false`)}
+	invalid.Parameters = map[string]any{"calendarId": json.RawMessage(`false`)}
 	if _, err := adapter.ExecuteCalendar(context.Background(), invalid); err == nil {
 		t.Fatal("invalid calendar identifier accepted")
 	}
@@ -95,8 +96,8 @@ func TestCalendarProviderFailureDoesNotExposeResponseBody(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = adapter.ExecuteCalendar(context.Background(), outbound.WorkspaceRequest{
-		Operation: "events.list", Parameters: map[string]json.RawMessage{"calendarId": json.RawMessage(`"primary"`)},
+	_, err = adapter.ExecuteCalendar(context.Background(), workspace.Command{
+		Operation: "events.list", Parameters: map[string]any{"calendarId": json.RawMessage(`"primary"`)},
 	})
 	var external *codec.RemoteError
 	if !errors.As(err, &external) || external.Status != 403 {

@@ -2,7 +2,6 @@ package engagement
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"strings"
 
@@ -51,15 +50,15 @@ func ValidateMembershipQuery(q MembershipQuery) error {
 	}
 }
 
-func (s *MembershipInspector) Inspect(ctx context.Context, q MembershipQuery) (json.RawMessage, error) {
+func (s *MembershipInspector) Inspect(ctx context.Context, q MembershipQuery) (outbound.LINEResult, error) {
 	if ctx == nil {
-		return nil, errors.New("context is required")
+		return outbound.LINEResult{}, errors.New("context is required")
 	}
 	if err := ctx.Err(); err != nil {
-		return nil, err
+		return outbound.LINEResult{}, err
 	}
 	if err := ValidateMembershipQuery(q); err != nil {
-		return nil, err
+		return outbound.LINEResult{}, err
 	}
 	limit := q.Limit
 	if limit == 0 {

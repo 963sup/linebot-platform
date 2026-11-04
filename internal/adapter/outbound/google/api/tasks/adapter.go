@@ -2,11 +2,10 @@ package tasks
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"strings"
 
-	"github.com/963sup/linebot-platform/internal/application/ports/outbound"
+	"github.com/963sup/linebot-platform/internal/application/usecases/workspace"
 	googletasks "google.golang.org/api/tasks/v1"
 )
 
@@ -19,12 +18,12 @@ func New(client *googletasks.Service) (*Adapter, error) {
 	return &Adapter{client: client}, nil
 }
 
-func (a *Adapter) ExecuteTasks(ctx context.Context, req outbound.WorkspaceRequest) (json.RawMessage, error) {
+func (a *Adapter) ExecuteTasks(ctx context.Context, req workspace.Command) (workspace.Result, error) {
 	if ctx == nil {
-		return nil, errors.New("workspace context required")
+		return workspace.Result{}, errors.New("workspace context required")
 	}
 	if err := ctx.Err(); err != nil {
-		return nil, err
+		return workspace.Result{}, err
 	}
 	switch strings.SplitN(req.Operation, ".", 2)[0] {
 	case "tasklists":
@@ -32,6 +31,6 @@ func (a *Adapter) ExecuteTasks(ctx context.Context, req outbound.WorkspaceReques
 	case "tasks":
 		return a.executeTasks(ctx, req)
 	default:
-		return nil, errors.New("unsupported tasks SDK operation")
+		return workspace.Result{}, errors.New("unsupported tasks SDK operation")
 	}
 }

@@ -1,10 +1,27 @@
 package cli
 
 import (
+	"context"
 	"os"
 	"path/filepath"
+	"reflect"
 	"testing"
+
+	"github.com/963sup/linebot-platform/internal/application/ports/outbound"
+	"github.com/963sup/linebot-platform/internal/application/usecases/channel"
 )
+
+type fakeTokenRuntime struct {
+	command channel.TokenCommand
+	result  outbound.LINEResult
+}
+
+func (f *fakeTokenRuntime) Execute(_ context.Context, command channel.TokenCommand) (outbound.LINEResult, error) {
+	f.command = command
+	return f.result, nil
+}
+
+func (*fakeTokenRuntime) Close() {}
 
 func TestTokenOperationsFailClosed(t *testing.T) {
 	for _, args := range [][]string{
@@ -52,5 +69,59 @@ func TestPrivateOperationRunsOnlyWithReservedOutput(t *testing.T) {
 	}
 	if calls != 1 {
 		t.Fatalf("external operation was called %d times", calls)
+	}
+}
+
+func TestTokenRequestMapsSecretsOnlyAtCLIBoundary(t *testing.T) {
+	dir := t.TempDir()
+	request := filepath.Join(dir, "request.json")
+	if err := os.WriteFile(request, []byte(`{"grantType":"client_credentials","clientId":"id","clientSecret":"secret"}`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	command, err := tokenRequestFromPrivateFile(request)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if command.GrantType != "client_credentials" || command.ClientID != "id" || command.ClientSecret != "secret" {
+		t.Fatal("private request was not mapped to the application command")
+	}
+	commandType := reflect.TypeOf(command)
+	for i := 0; i < commandType.NumField(); i++ {
+		if commandType.Field(i).Tag.Get("json") != "" {
+			t.Fatalf("application field %s owns JSON metadata", commandType.Field(i).Name)
+		}
+	}
+}
+
+func TestTokenResultEncodingStaysPrivateAndAtCLIBoundary(t *testing.T) {
+	dir := t.TempDir()
+	request := filepath.Join(dir, "request.json")
+	output := filepath.Join(dir, "result.json")
+	if err := os.WriteFile(request, []byte(`{"grantType":"client_credentials","clientId":"id","clientSecret":"secret"}`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	runtime := &fakeTokenRuntime{result: outbound.LINEResult{Value: outbound.LINEObject{"access_token": "issued-secret"}}}
+	previous := tokenRuntimeFactory
+	t.Cleanup(func() { tokenRuntimeFactory = previous })
+	tokenRuntimeFactory = func() (TokenRuntime, error) { return runtime, nil }
+	if err := runChannelTokens([]string{"--action", "issue-short", "--request", request, "--apply", "--confirm", "issue-short", "--out", output}); err != nil {
+		t.Fatal(err)
+	}
+	info, err := os.Stat(output)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if info.Mode().Perm() != 0o600 {
+		t.Fatalf("private result mode = %o", info.Mode().Perm())
+	}
+	payload, err := os.ReadFile(output)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(payload) != `{"access_token":"issued-secret"}` {
+		t.Fatalf("unexpected token result: %s", payload)
+	}
+	if runtime.command.ClientSecret != "secret" || runtime.command.Action != "issue-short" {
+		t.Fatal("token command was not routed intact")
 	}
 }

@@ -10,7 +10,8 @@ import (
 )
 
 func TestNewGeminiClientValidatesAndKeepsBackendExplicit(t *testing.T) {
-	if _, err := NewGeminiClient(nil, "fake-key", &http.Client{}); err == nil {
+	var nilContext context.Context
+	if _, err := NewGeminiClient(nilContext, "fake-key", &http.Client{}); err == nil {
 		t.Fatal("missing context must fail")
 	}
 	if _, err := NewGeminiClient(context.Background(), "", &http.Client{}); err == nil {

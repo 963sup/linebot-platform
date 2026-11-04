@@ -16,7 +16,7 @@
 | Firestore | `integrated` | 原生 Factory、Inbox/Outbox 原子 Transaction、單次 Claim、Recover | 真實專案 IAM、TTL、擴容測試 |
 | Google Cloud Tasks | `integrated` | 原生 Factory、Queue／OIDC Task、私有 Worker、排程恢復入口 | 真實 Queue、Cloud Run OIDC、Scheduler |
 | Google Secret Manager | `client_ready` | 原生 Factory | 憑證／Secret Access 業務接線 |
-| Google Cloud Storage | `client_ready` | 原生 Factory；Outbound Adapter 骨架保留 | 物件存取業務接線 |
+| Google Cloud Storage | `client_ready` | 原生 Factory；尚無 Outbound Adapter | 物件存取業務接線 |
 | OpenAI Go SDK v3 | `client_ready` | 原生 Factory；Responses API 型別可查證 | 業務 Adapter、憑證與授權測試 |
 | Google Gen AI SDK | `client_ready` | Gemini API 與 Vertex AI 原生 Factory | 業務 Adapter、ADC／API Key 驗證 |
 | Google API Client | `client_ready` | Tasks、Calendar、Sheets、Drive 原生 Factory | 使用者 OAuth Consent、Token 管理、業務 Adapter |
@@ -25,18 +25,18 @@
 | TOML | `integrated` | `cmd/codexcheck` 解析 Codex／Catalog 設定 | 已有 CI 檢查 |
 | gRPC | `integrated` | Firestore／Cloud Tasks 狀態碼與錯誤判斷 | 已有 Go 型別及測試 |
 
-注意：**Google Tasks 是使用者待辦清單；Google Cloud Tasks 是背景任務佇列**，與 Google Sheets 工作表不同。Workspace 四項服務使用同一 `google.golang.org/api` Go Module。已核准的依賴與 SDK 空白骨架不得因未使用而移除。
+注意：**Google Tasks 是使用者待辦清單；Google Cloud Tasks 是背景任務佇列**，與 Google Sheets 工作表不同。Workspace 四項服務使用同一 `google.golang.org/api` Go Module。已核准的依賴由 `go.mod`、SDK Catalog 與 build-tag dependency manifest 保留；空目錄不屬保留契約。
 
 ## 基礎設施交付證據
 
 - `internal/infrastructure`：LINE、OpenAI、GenAI、Google Cloud、Google Workspace 的 Typed Client Factory；`httpclient`、`resilience`、`observability`。
 - `internal/adapter/outbound/google/cloud`：Firestore EventStore、Cloud Tasks Queue；`internal/application/usecases/ingestion` 與 `cmd/worker`：持久化流程與私有 Worker。
-- `go run ./cmd/codexcheck`：SDK Catalog、六個 Codex Agents、保留 SDK 模組／骨架驗證。合併後 `main` 的 [CI #41568775857](https://github.com/963sup/linebot-platform/actions/runs/41568775857) 通過模組鎖定、格式、Vet、Race Test、Build。
+- `go run ./cmd/codexcheck`：SDK Catalog、Codex Agents、保留 SDK 模組與 build-tag manifest 驗證；不驗證空 scaffold。合併後 `main` 的 [CI #41568775857](https://github.com/963sup/linebot-platform/actions/runs/41568775857) 通過模組鎖定、格式、Vet、Race Test、Build。
 - Firestore Emulator 的交易／併發整合測試曾在 [PR #8 的 CI #41555545761](https://github.com/963sup/linebot-platform/actions/runs/41555545761) 通過；**合併前依清理要求移除一次性 Emulator Harness**。目前 `main` CI 不會重跑該套 Emulator 測試，後續變更仍有整合回歸風險。
 
 ## 歷史殘留稽核與處置
 
-本次只修正經過原始碼和合併狀態比對、已確定過時的描述，**不刪除功能、測試、依賴、SDK 骨架或歷史 Git Commit**：
+下表保留 2026-11-03 稽核背景；現行治理已改為按 capability 建立 package，不再將空 SDK 目錄視為受保護資產：
 
 | 歷史內容 | 檢查結果／處置 |
 |---|---|
@@ -46,7 +46,7 @@
 | `docs/architecture/overview.md`、`docs/architecture/event-processing.md` | 區分已存在的程式碼與僅是規劃中的雲端部署，保留歷史 Emulator 驗證證據 |
 | `docs/line/feature-matrix.md`、`docs/operations/local-development.md` | 修正「全部未實作」、預設同步與可選 Durable 模式的去重能力混淆 |
 | `deploy/README.md`、`deploy/firestore/README.md` | 修正「沒有可用建置／部署設定」及「This PR」的歷史時態；不誤稱雲端資源已建立 |
-| `internal/infrastructure/dependencies/modules.go`、`garr`、SDK `.gitkeep` | **刻意保留**：供預先核准 SDK 鎖版及未來擴充使用，不屬於應刪除的垃圾 |
+| `internal/infrastructure/dependencies/modules.go`、`garr` | **刻意保留**：搭配 `go.mod` 與 SDK Catalog 保存預先核准依賴；SDK `.gitkeep` 不再是保留機制 |
 | 固定文字／Flex 範例回覆 | 仍是目前 MVP 既有行為；不能當作完整對話或正式 AI 整合，也不在純文件更新中擅自移除 |
 | 一次性 Stage-5 模擬／假證據／Emulator 驗收檔 | PR #8 清理後未保留在 `main`；Git 歷史保留先前驗證證據，非執行期殘留 |
 
@@ -54,7 +54,7 @@
 
 - 核對 `main` 的 **38 個非測試 Go 原始碼檔**：未找到 `TODO`、`FIXME`、`XXX`、`HACK` 等明確的臨時待辦標記。仍有刻意保留的 MVP／Demo Reply 與必要 SDK 兼容限制註解；不將其誤判為可直接刪除的廢碼。
 - 以本次更新分支的 Git Tree 檢查 **47 份 Markdown 的相對連結路徑**：未發現指向不存在的儲存庫檔案／目錄。此檢查不含外部 HTTP 網址的即時可用性。
-- `main` 有 **130 個目錄**，SDK 空白骨架及 `.gitkeep` 均依既有保留規則維持；本次純文件更新未改 `go.mod`、`go.sum`、SDK Catalog、Factory 或任何自動化測試。
+- 2026-11-03 的 `main` 曾有 **130 個目錄**；此數量只是歷史快照，不是現行 manifest 或驗收門檻。
 - **未進行外部機密掃描、真實服務登入或雲端權限測試**；不應把靜態文字掃描視為安全稽核的完整替代品。
 
 ## 尚待完成，但不能以刪除 TODO／文件掩蓋

@@ -68,19 +68,20 @@ func NewQueue(client *sdk.Client, queueName, workerURL, audience, invokerEmail s
 }
 
 // Enqueue includes only an opaque digest; no reply token, user ID or user text.
-func (q *Queue) Enqueue(ctx context.Context, key string) error {
+func (q *Queue) Enqueue(ctx context.Context, key ingestion.EventKey) error {
 	if ctx == nil {
 		return errors.New("context is required")
-	}
-	if !ingestion.ValidKey(key) {
-		return errors.New("invalid task event key")
 	}
 	if err := ctx.Err(); err != nil {
 		return err
 	}
+	if !key.Valid() {
+		return errors.New("invalid task event key")
+	}
+	value := key.String()
 	payload, err := json.Marshal(struct {
 		Key string `json:"key"`
-	}{Key: key})
+	}{Key: value})
 	if err != nil {
 		return err
 	}
@@ -90,7 +91,7 @@ func (q *Queue) Enqueue(ctx context.Context, key string) error {
 	}
 	bucket := clock().UTC().Unix() / int64(taskDedupeWindow/time.Second)
 	task := &cloudtaskspb.Task{
-		Name: fmt.Sprintf("%s/tasks/%s-%d", q.name, key, bucket),
+		Name: fmt.Sprintf("%s/tasks/%s-%d", q.name, value, bucket),
 		MessageType: &cloudtaskspb.Task_HttpRequest{HttpRequest: &cloudtaskspb.HttpRequest{
 			HttpMethod: cloudtaskspb.HttpMethod_POST,
 			Url:        q.worker,

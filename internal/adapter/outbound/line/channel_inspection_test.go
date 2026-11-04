@@ -2,6 +2,7 @@ package line
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"net/http"
 	"net/http/httptest"
@@ -10,6 +11,20 @@ import (
 
 	"github.com/963sup/linebot-platform/internal/infrastructure/resilience"
 )
+
+func TestDecodeJSONValuePreservesLargeInteger(t *testing.T) {
+	value, err := decodeJSONValue([]byte(`{"audienceGroupId":9007199254740993}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	encoded, err := json.Marshal(value)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(encoded) != `{"audienceGroupId":9007199254740993}` {
+		t.Fatalf("large integer lost precision: %s", encoded)
+	}
+}
 
 func TestChannelInspectorUsesRealSDKEndpoints(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

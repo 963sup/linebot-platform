@@ -2,13 +2,13 @@ package cli
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
 	"io"
 	"time"
 
+	"github.com/963sup/linebot-platform/internal/application/ports/outbound"
 	"github.com/963sup/linebot-platform/internal/application/usecases/engagement"
 )
 
@@ -39,7 +39,11 @@ func runAudienceAdmin(args []string, getenv func(string) string, output io.Write
 		if err != nil {
 			return err
 		}
-		cmd.Request = json.RawMessage(b)
+		value, err := decodeLINEJSON(b)
+		if err != nil {
+			return errors.New("request must be valid JSON")
+		}
+		cmd.Request = outbound.LINERequest{Value: value}
 	}
 	if *file != "" {
 		b, err := readPrivateBounded(*file, 20<<20)

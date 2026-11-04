@@ -2,10 +2,11 @@ package line
 
 import (
 	"context"
-	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/963sup/linebot-platform/internal/application/ports/outbound"
 )
 
 func TestRemainingMessagingAPIEndpointsAreWired(t *testing.T) {
@@ -21,7 +22,8 @@ func TestRemainingMessagingAPIEndpointsAreWired(t *testing.T) {
 	defer server.Close()
 	s := contractSender(t, server)
 	ctx := context.Background()
-	request := json.RawMessage("{}")
+	request := outbound.LINERequest{Value: map[string]any{}}
+	actionRequest := outbound.LINERequest{Value: map[string]any{}}
 	cases := []struct {
 		name string
 		want string
@@ -29,9 +31,9 @@ func TestRemainingMessagingAPIEndpointsAreWired(t *testing.T) {
 	}{
 		{"leave-group", "POST /v2/bot/group/group-1/leave", func() error { return s.LeaveGroup(ctx, "group-1") }},
 		{"leave-room", "POST /v2/bot/room/room-1/leave", func() error { return s.LeaveRoom(ctx, "room-1") }},
-		{"loading", "POST /v2/bot/chat/loading/start", func() error { return s.ShowLoading(ctx, request) }},
-		{"mark-read", "POST /v2/bot/message/markAsRead", func() error { return s.MarkMessagesRead(ctx, request) }},
-		{"mark-read-token", "POST /v2/bot/chat/markAsRead", func() error { return s.MarkMessagesReadByToken(ctx, request) }},
+		{"loading", "POST /v2/bot/chat/loading/start", func() error { return s.ShowLoading(ctx, actionRequest) }},
+		{"mark-read", "POST /v2/bot/message/markAsRead", func() error { return s.MarkMessagesRead(ctx, actionRequest) }},
+		{"mark-read-token", "POST /v2/bot/chat/markAsRead", func() error { return s.MarkMessagesReadByToken(ctx, actionRequest) }},
 		{"issue-link-token", "POST /v2/bot/user/U123/linkToken", func() error { _, e := s.IssueLinkToken(ctx, "U123"); return e }},
 		{"push-phone", "POST /bot/pnp/push", func() error { return s.PushMessagesByPhone(ctx, request) }},
 		{"push-template-phone", "POST /v2/bot/message/pnp/templated/push", func() error { return s.PushTemplatedMessagesByPhone(ctx, request) }},

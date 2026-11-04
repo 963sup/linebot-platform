@@ -2,7 +2,6 @@ package channel
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"strconv"
 	"strings"
@@ -57,15 +56,15 @@ func ValidateInspection(q Inspection) error {
 
 // Inspect only dispatches an explicitly whitelisted set of read-only queries.
 // No production LINE request is made without the caller's opt-in.
-func (s *Inspector) Inspect(ctx context.Context, q Inspection) (json.RawMessage, error) {
+func (s *Inspector) Inspect(ctx context.Context, q Inspection) (outbound.LINEResult, error) {
 	if ctx == nil {
-		return nil, errors.New("context is required")
+		return outbound.LINEResult{}, errors.New("context is required")
 	}
 	if err := ctx.Err(); err != nil {
-		return nil, err
+		return outbound.LINEResult{}, err
 	}
 	if err := ValidateInspection(q); err != nil {
-		return nil, err
+		return outbound.LINEResult{}, err
 	}
 	switch q.Kind {
 	case "bot-info":
@@ -80,7 +79,7 @@ func (s *Inspector) Inspect(ctx context.Context, q Inspection) (json.RawMessage,
 		return s.reader.AggregationUnitUsage(ctx)
 	case "aggregation-names":
 		if q.Limit < 0 || q.Limit > 100 || strings.TrimSpace(q.Start) != q.Start {
-			return nil, errors.New("invalid aggregation pagination")
+			return outbound.LINEResult{}, errors.New("invalid aggregation pagination")
 		}
 		limit := ""
 		if q.Limit > 0 {
@@ -89,7 +88,7 @@ func (s *Inspector) Inspect(ctx context.Context, q Inspection) (json.RawMessage,
 		return s.reader.AggregationUnitNames(ctx, limit, q.Start)
 	case "delivery-reply", "delivery-push", "delivery-multicast", "delivery-broadcast":
 		if !validDate(q.Date) {
-			return nil, errors.New("delivery date must be valid YYYYMMDD")
+			return outbound.LINEResult{}, errors.New("delivery date must be valid YYYYMMDD")
 		}
 		switch q.Kind {
 		case "delivery-reply":
@@ -103,11 +102,11 @@ func (s *Inspector) Inspect(ctx context.Context, q Inspection) (json.RawMessage,
 		}
 	case "narrowcast-progress":
 		if q.RequestID == "" || strings.TrimSpace(q.RequestID) != q.RequestID {
-			return nil, errors.New("narrowcast request ID is required")
+			return outbound.LINEResult{}, errors.New("narrowcast request ID is required")
 		}
 		return s.reader.NarrowcastProgress(ctx, q.RequestID)
 	default:
-		return nil, errors.New("unsupported channel inspection kind")
+		return outbound.LINEResult{}, errors.New("unsupported channel inspection kind")
 	}
 }
 

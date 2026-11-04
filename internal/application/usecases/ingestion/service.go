@@ -25,23 +25,43 @@ const (
 // original webhook event is outside the documented redelivery eligibility.
 var ErrEventTooOld = errors.New("LINE event reply window expired")
 
-// EventKey is stable for a LINE channel + webhook event ID across redeliveries.
-// The opaque hash avoids storing either identifier in Firestore document paths.
-func EventKey(channel, eventID string) (string, error) {
+// EventKey is an application-owned, validated opaque event identifier.
+type EventKey struct{ value string }
+
+// NewEventKey creates a stable key for a LINE channel + webhook event ID across
+// redeliveries. The opaque hash avoids storing either identifier in document paths.
+func NewEventKey(channel, eventID string) (EventKey, error) {
 	if strings.TrimSpace(channel) == "" || strings.TrimSpace(eventID) == "" {
-		return "", errors.New("event channel and ID are required")
+		return EventKey{}, errors.New("event channel and ID are required")
 	}
 	hash := sha256.Sum256([]byte(channel + "\x00" + eventID))
-	return hex.EncodeToString(hash[:]), nil
+	return EventKey{value: hex.EncodeToString(hash[:])}, nil
+}
+
+// ParseEventKey validates an event key received from a persistence or transport
+// boundary before it enters the application workflow.
+func ParseEventKey(value string) (EventKey, error) {
+	if !validEventKey(value) {
+		return EventKey{}, errors.New("invalid event key")
+	}
+	return EventKey{value: value}, nil
+}
+
+func (k EventKey) String() string { return k.value }
+
+func (k EventKey) Valid() bool { return validEventKey(k.value) }
+
+type EventQueue interface {
+	Enqueue(context.Context, EventKey) error
 }
 
 type Ingestor struct {
 	store outbound.EventStore
-	queue outbound.EventQueue
+	queue EventQueue
 	now   func() time.Time
 }
 
-func NewIngestor(store outbound.EventStore, queue outbound.EventQueue) (*Ingestor, error) {
+func NewIngestor(store outbound.EventStore, queue EventQueue) (*Ingestor, error) {
 	if store == nil || queue == nil {
 		return nil, errors.New("event store and queue are required")
 	}
@@ -65,7 +85,7 @@ func (s *Ingestor) Ingest(ctx context.Context, channel, eventID, replyToken stri
 	if err := message.Validate(); err != nil {
 		return err
 	}
-	key, err := EventKey(channel, eventID)
+	key, err := NewEventKey(channel, eventID)
 	if err != nil {
 		return err
 	}
@@ -85,7 +105,7 @@ func (s *Ingestor) Ingest(ctx context.Context, channel, eventID, replyToken stri
 		replyUntil = eventLimit
 	}
 	if _, err := s.store.Record(ctx, outbound.EventJob{
-		Key: key, ReplyToken: replyToken, Message: message,
+		Key: key.String(), ReplyToken: replyToken, Message: message,
 		CreatedAt: now, OccurredAt: occurredAt, ReplyUntil: replyUntil,
 	}); err != nil {
 		return err
@@ -109,14 +129,14 @@ func NewProcessor(store outbound.EventStore, sender outbound.Messaging) (*Proces
 // Process runs at most one LINE reply attempt for a given event key. A second
 // Cloud Tasks delivery will never call LINE again once a lease was acquired.
 // The sending/unknown states require explicit reconciliation, not auto-retry.
-func (p *Processor) Process(ctx context.Context, key string) error {
+func (p *Processor) Process(ctx context.Context, key EventKey) error {
 	if ctx == nil {
 		return errors.New("context is required")
 	}
 	if err := ctx.Err(); err != nil {
 		return err
 	}
-	if !ValidKey(key) {
+	if !key.Valid() {
 		return errors.New("invalid event key")
 	}
 	var lease [16]byte
@@ -124,7 +144,7 @@ func (p *Processor) Process(ctx context.Context, key string) error {
 		return err
 	}
 	leaseID := hex.EncodeToString(lease[:])
-	job, claimed, err := p.store.Claim(ctx, key, leaseID, p.now().UTC())
+	job, claimed, err := p.store.Claim(ctx, key.String(), leaseID, p.now().UTC())
 	if err != nil || !claimed {
 		return err
 	}
@@ -136,11 +156,10 @@ func (p *Processor) Process(ctx context.Context, key string) error {
 	} else if err := p.sender.Reply(ctx, job.ReplyToken, []outbound.Message{job.Message}); err != nil {
 		outcome = outbound.DeliveryUnknown
 	}
-	return p.store.Complete(ctx, key, leaseID, outcome)
+	return p.store.Complete(ctx, key.String(), leaseID, outcome)
 }
 
-// ValidKey constrains all task/body identifiers to opaque SHA-256 hex strings.
-func ValidKey(key string) bool {
+func validEventKey(key string) bool {
 	if len(key) != 64 {
 		return false
 	}
@@ -154,11 +173,11 @@ func ValidKey(key string) bool {
 
 type Dispatcher struct {
 	store outbound.EventStore
-	queue outbound.EventQueue
+	queue EventQueue
 	now   func() time.Time
 }
 
-func NewDispatcher(store outbound.EventStore, queue outbound.EventQueue) (*Dispatcher, error) {
+func NewDispatcher(store outbound.EventStore, queue EventQueue) (*Dispatcher, error) {
 	if store == nil || queue == nil {
 		return nil, errors.New("event store and queue are required")
 	}
@@ -179,7 +198,12 @@ func (d *Dispatcher) Dispatch(ctx context.Context) error {
 	// Attempt every reserved item. A single queue error must not prevent
 	// younger work from being offered; Recover will retry after cooldown.
 	var dispatchErr error
-	for _, key := range keys {
+	for _, value := range keys {
+		key, err := ParseEventKey(value)
+		if err != nil {
+			dispatchErr = errors.Join(dispatchErr, err)
+			continue
+		}
 		if err := d.queue.Enqueue(ctx, key); err != nil {
 			dispatchErr = errors.Join(dispatchErr, err)
 		}

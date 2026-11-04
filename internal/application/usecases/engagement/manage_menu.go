@@ -2,7 +2,6 @@ package engagement
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"strings"
 
@@ -14,7 +13,7 @@ type MenuCommand struct {
 	RichMenuID  string
 	UserID      string
 	AliasID     string
-	Payload     json.RawMessage
+	Payload     outbound.LINERequest
 	Image       []byte
 	ContentType string
 }
@@ -37,15 +36,15 @@ func validID(id string) bool {
 func ValidateMenuCommand(cmd MenuCommand) error {
 	switch cmd.Action {
 	case "create", "validate", "create-alias", "bulk-link", "bulk-unlink", "batch", "validate-batch":
-		if len(cmd.Payload) == 0 || !json.Valid(cmd.Payload) || cmd.RichMenuID != "" || cmd.UserID != "" || cmd.AliasID != "" || len(cmd.Image) != 0 || cmd.ContentType != "" {
+		if !isLINEObject(cmd.Payload) || cmd.RichMenuID != "" || cmd.UserID != "" || cmd.AliasID != "" || len(cmd.Image) != 0 || cmd.ContentType != "" {
 			return errors.New("a valid JSON payload and no IDs are required")
 		}
 	case "update-alias":
-		if !validID(cmd.AliasID) || len(cmd.Payload) == 0 || !json.Valid(cmd.Payload) || cmd.RichMenuID != "" || cmd.UserID != "" || len(cmd.Image) != 0 || cmd.ContentType != "" {
+		if !validID(cmd.AliasID) || !isLINEObject(cmd.Payload) || cmd.RichMenuID != "" || cmd.UserID != "" || len(cmd.Image) != 0 || cmd.ContentType != "" {
 			return errors.New("alias ID and a valid JSON payload are required")
 		}
 	case "upload-image":
-		if !validID(cmd.RichMenuID) || len(cmd.Image) == 0 || (cmd.ContentType != "image/png" && cmd.ContentType != "image/jpeg") || cmd.UserID != "" || cmd.AliasID != "" || len(cmd.Payload) != 0 {
+		if !validID(cmd.RichMenuID) || len(cmd.Image) == 0 || (cmd.ContentType != "image/png" && cmd.ContentType != "image/jpeg") || cmd.UserID != "" || cmd.AliasID != "" || cmd.Payload.Value != nil {
 			return errors.New("rich menu ID, PNG or JPEG image, and no additional input are required")
 		}
 	case "set-default", "delete-menu":

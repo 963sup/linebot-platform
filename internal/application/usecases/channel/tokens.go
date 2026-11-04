@@ -2,23 +2,22 @@ package channel
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"strings"
 
 	"github.com/963sup/linebot-platform/internal/application/ports/outbound"
 )
 
-// TokenCommand must be populated from a protected operator-only JSON file.
+// TokenCommand must be populated through a protected operator-only boundary.
 // Never log this struct, stringify it, or include its values in errors.
 type TokenCommand struct {
-	Action              string `json:"-"`
-	GrantType           string `json:"grantType,omitempty"`
-	ClientID            string `json:"clientId,omitempty"`
-	ClientSecret        string `json:"clientSecret,omitempty"`
-	ClientAssertionType string `json:"clientAssertionType,omitempty"`
-	ClientAssertion     string `json:"clientAssertion,omitempty"`
-	AccessToken         string `json:"accessToken,omitempty"`
+	Action              string
+	GrantType           string
+	ClientID            string
+	ClientSecret        string
+	ClientAssertionType string
+	ClientAssertion     string
+	AccessToken         string
 }
 
 type TokenOperations struct{ manager outbound.ChannelTokenManager }
@@ -74,15 +73,15 @@ func ValidateTokenCommand(c TokenCommand) error {
 
 // Execute performs exactly one SDK operation. No retry is permitted for an
 // unknown token issuance/revocation outcome.
-func (s *TokenOperations) Execute(ctx context.Context, c TokenCommand) (json.RawMessage, error) {
+func (s *TokenOperations) Execute(ctx context.Context, c TokenCommand) (outbound.LINEResult, error) {
 	if ctx == nil {
-		return nil, errors.New("context is required")
+		return outbound.LINEResult{}, errors.New("context is required")
 	}
 	if err := ctx.Err(); err != nil {
-		return nil, err
+		return outbound.LINEResult{}, err
 	}
 	if err := ValidateTokenCommand(c); err != nil {
-		return nil, err
+		return outbound.LINEResult{}, err
 	}
 	switch c.Action {
 	case "issue-stateless":
@@ -94,14 +93,14 @@ func (s *TokenOperations) Execute(ctx context.Context, c TokenCommand) (json.Raw
 	case "verify-jwt":
 		return s.manager.VerifyJWT(ctx, c.AccessToken)
 	case "revoke-jwt":
-		return nil, s.manager.RevokeJWT(ctx, c.ClientID, c.ClientSecret, c.AccessToken)
+		return outbound.LINEResult{}, s.manager.RevokeJWT(ctx, c.ClientID, c.ClientSecret, c.AccessToken)
 	case "issue-short":
 		return s.manager.IssueShortLived(ctx, c.GrantType, c.ClientID, c.ClientSecret)
 	case "verify-short":
 		return s.manager.VerifyShortLived(ctx, c.AccessToken)
 	case "revoke-short":
-		return nil, s.manager.RevokeShortLived(ctx, c.AccessToken)
+		return outbound.LINEResult{}, s.manager.RevokeShortLived(ctx, c.AccessToken)
 	default:
-		return nil, errors.New("unsupported channel token action")
+		return outbound.LINEResult{}, errors.New("unsupported channel token action")
 	}
 }

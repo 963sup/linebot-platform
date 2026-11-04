@@ -33,7 +33,7 @@ func runCampaign(args []string, getenv func(string) string) error {
 		return errors.New("valid campaign kind required")
 	}
 	var users []string
-	var payload json.RawMessage
+	var request outbound.LINERequest
 	if *kind == "narrowcast" {
 		if *recipients != "" || *message != "" || *requestFile == "" {
 			return errors.New("narrowcast requires --request and does not accept --to or --text")
@@ -45,7 +45,11 @@ func runCampaign(args []string, getenv func(string) string) error {
 		if !json.Valid(data) {
 			return errors.New("narrowcast request must be valid JSON")
 		}
-		payload = data
+		value, err := decodeLINEJSON(data)
+		if err != nil {
+			return errors.New("narrowcast request must be valid JSON")
+		}
+		request = outbound.LINERequest{Value: value}
 	} else if strings.TrimSpace(*message) == "" || *requestFile != "" {
 		return errors.New("broadcast and multicast require --text and do not accept --request")
 	} else if *kind == "broadcast" {
@@ -84,7 +88,7 @@ func runCampaign(args []string, getenv func(string) string) error {
 	msgs := []outbound.Message{{Kind: outbound.KindText, Text: *message}}
 	fmt.Fprintln(os.Stderr, "LINE campaign retry key:", *key)
 	if *kind == "narrowcast" {
-		return rt.Narrowcast(ctx, payload, *key)
+		return rt.Narrowcast(ctx, request, *key)
 	}
 	if *kind == "broadcast" {
 		return rt.Broadcast(ctx, msgs, *key)

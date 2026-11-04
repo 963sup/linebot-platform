@@ -13,7 +13,7 @@
 | 安全安裝 | 不能越界、跟隨 symlink、覆寫個人內容；失敗不發布半成品；重跑冪等 |
 | Marketplace | CLI 不支援即 blocked；既有來源 pin 不符不覆寫；認證失敗不繞過 |
 | Go／Shell | codexcheck、相關單元／race、gofmt、vet、build、shell -n、make check |
-| SDK | go.mod／go.sum、Catalog、retention 與骨架未因本工作減少 |
+| SDK | go.mod／go.sum、Catalog 與 build-tag dependency manifest 一致；不要求空 scaffold |
 
 ## 必須在實際 Host 執行
 

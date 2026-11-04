@@ -2,17 +2,14 @@ package workspace
 
 import (
 	"context"
-	"encoding/json"
 	"testing"
-
-	"github.com/963sup/linebot-platform/internal/application/ports/outbound"
 )
 
 type fakeFormsOperator struct{ count int }
 
-func (f *fakeFormsOperator) ExecuteForms(context.Context, outbound.WorkspaceRequest) (json.RawMessage, error) {
+func (f *fakeFormsOperator) ExecuteForms(context.Context, Command) (Result, error) {
 	f.count++
-	return json.RawMessage(`{"formId":"ok"}`), nil
+	return Result{Value: map[string]any{"formId": "ok"}}, nil
 }
 
 func TestFormsAuthorizationPolicy(t *testing.T) {
@@ -43,7 +40,7 @@ func TestFormsAuthorizationPolicy(t *testing.T) {
 		{"forms.watches.renew", Approval{Apply: true, Confirm: "forms.watches.renew"}, true},
 	} {
 		before := forms.count
-		_, err := s.Execute(context.Background(), "forms", outbound.WorkspaceRequest{Operation: tc.op}, tc.approval)
+		_, err := s.Execute(context.Background(), "forms", Command{Operation: tc.op}, tc.approval)
 		if (err == nil) != tc.allowed {
 			t.Fatalf("%s approved=%t err=%v", tc.op, tc.allowed, err)
 		}
@@ -55,7 +52,7 @@ func TestFormsAuthorizationPolicy(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err = legacy.Execute(context.Background(), "forms", outbound.WorkspaceRequest{Operation: "forms.get"}, Approval{Read: true}); err == nil {
+	if _, err = legacy.Execute(context.Background(), "forms", Command{Operation: "forms.get"}, Approval{Read: true}); err == nil {
 		t.Fatal("Forms not configured in legacy constructor")
 	}
 }

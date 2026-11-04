@@ -7,7 +7,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/963sup/linebot-platform/internal/application/ports/outbound"
+	"github.com/963sup/linebot-platform/internal/application/usecases/workspace"
 	googlecalendar "google.golang.org/api/calendar/v3"
 	"google.golang.org/api/option"
 )
@@ -37,51 +37,51 @@ func TestAllCalendarSDKOperationsUsePinnedRoutes(t *testing.T) {
 		operation string
 		want      string
 		body      json.RawMessage
-		params    map[string]json.RawMessage
+		params    map[string]any
 	}{
-		{operation: "acl.delete", want: "DELETE /calendar/v3/calendars/test/acl/test", body: nil, params: map[string]json.RawMessage{"calendarId": json.RawMessage(`"test"`), "ruleId": json.RawMessage(`"test"`)}},
-		{operation: "acl.get", want: "GET /calendar/v3/calendars/test/acl/test", body: nil, params: map[string]json.RawMessage{"calendarId": json.RawMessage(`"test"`), "ruleId": json.RawMessage(`"test"`)}},
-		{operation: "acl.insert", want: "POST /calendar/v3/calendars/test/acl", body: json.RawMessage(`{}`), params: map[string]json.RawMessage{"calendarId": json.RawMessage(`"test"`)}},
-		{operation: "acl.list", want: "GET /calendar/v3/calendars/test/acl", body: nil, params: map[string]json.RawMessage{"calendarId": json.RawMessage(`"test"`)}},
-		{operation: "acl.patch", want: "PATCH /calendar/v3/calendars/test/acl/test", body: json.RawMessage(`{}`), params: map[string]json.RawMessage{"calendarId": json.RawMessage(`"test"`), "ruleId": json.RawMessage(`"test"`)}},
-		{operation: "acl.update", want: "PUT /calendar/v3/calendars/test/acl/test", body: json.RawMessage(`{}`), params: map[string]json.RawMessage{"calendarId": json.RawMessage(`"test"`), "ruleId": json.RawMessage(`"test"`)}},
-		{operation: "acl.watch", want: "POST /calendar/v3/calendars/test/acl/watch", body: json.RawMessage(`{}`), params: map[string]json.RawMessage{"calendarId": json.RawMessage(`"test"`)}},
-		{operation: "calendarList.delete", want: "DELETE /calendar/v3/users/me/calendarList/test", body: nil, params: map[string]json.RawMessage{"calendarId": json.RawMessage(`"test"`)}},
-		{operation: "calendarList.get", want: "GET /calendar/v3/users/me/calendarList/test", body: nil, params: map[string]json.RawMessage{"calendarId": json.RawMessage(`"test"`)}},
-		{operation: "calendarList.insert", want: "POST /calendar/v3/users/me/calendarList", body: json.RawMessage(`{}`), params: map[string]json.RawMessage{}},
-		{operation: "calendarList.list", want: "GET /calendar/v3/users/me/calendarList", body: nil, params: map[string]json.RawMessage{}},
-		{operation: "calendarList.patch", want: "PATCH /calendar/v3/users/me/calendarList/test", body: json.RawMessage(`{}`), params: map[string]json.RawMessage{"calendarId": json.RawMessage(`"test"`)}},
-		{operation: "calendarList.update", want: "PUT /calendar/v3/users/me/calendarList/test", body: json.RawMessage(`{}`), params: map[string]json.RawMessage{"calendarId": json.RawMessage(`"test"`)}},
-		{operation: "calendarList.watch", want: "POST /calendar/v3/users/me/calendarList/watch", body: json.RawMessage(`{}`), params: map[string]json.RawMessage{}},
-		{operation: "calendars.clear", want: "POST /calendar/v3/calendars/test/clear", body: nil, params: map[string]json.RawMessage{"calendarId": json.RawMessage(`"test"`)}},
-		{operation: "calendars.delete", want: "DELETE /calendar/v3/calendars/test", body: nil, params: map[string]json.RawMessage{"calendarId": json.RawMessage(`"test"`)}},
-		{operation: "calendars.get", want: "GET /calendar/v3/calendars/test", body: nil, params: map[string]json.RawMessage{"calendarId": json.RawMessage(`"test"`)}},
-		{operation: "calendars.insert", want: "POST /calendar/v3/calendars", body: json.RawMessage(`{}`), params: map[string]json.RawMessage{}},
-		{operation: "calendars.patch", want: "PATCH /calendar/v3/calendars/test", body: json.RawMessage(`{}`), params: map[string]json.RawMessage{"calendarId": json.RawMessage(`"test"`)}},
-		{operation: "calendars.transferOwnership", want: "POST /calendar/v3/calendars/test/transferOwnership", body: nil, params: map[string]json.RawMessage{"calendarId": json.RawMessage(`"test"`), "newDataOwner": json.RawMessage(`"test"`), "useAdminAccess": json.RawMessage(`true`)}},
-		{operation: "calendars.update", want: "PUT /calendar/v3/calendars/test", body: json.RawMessage(`{}`), params: map[string]json.RawMessage{"calendarId": json.RawMessage(`"test"`)}},
-		{operation: "channels.stop", want: "POST /calendar/v3/channels/stop", body: json.RawMessage(`{}`), params: map[string]json.RawMessage{}},
-		{operation: "colors.get", want: "GET /calendar/v3/colors", body: nil, params: map[string]json.RawMessage{}},
-		{operation: "events.delete", want: "DELETE /calendar/v3/calendars/test/events/test", body: nil, params: map[string]json.RawMessage{"calendarId": json.RawMessage(`"test"`), "eventId": json.RawMessage(`"test"`)}},
-		{operation: "events.get", want: "GET /calendar/v3/calendars/test/events/test", body: nil, params: map[string]json.RawMessage{"calendarId": json.RawMessage(`"test"`), "eventId": json.RawMessage(`"test"`)}},
-		{operation: "events.import", want: "POST /calendar/v3/calendars/test/events/import", body: json.RawMessage(`{}`), params: map[string]json.RawMessage{"calendarId": json.RawMessage(`"test"`)}},
-		{operation: "events.insert", want: "POST /calendar/v3/calendars/test/events", body: json.RawMessage(`{}`), params: map[string]json.RawMessage{"calendarId": json.RawMessage(`"test"`)}},
-		{operation: "events.instances", want: "GET /calendar/v3/calendars/test/events/test/instances", body: nil, params: map[string]json.RawMessage{"calendarId": json.RawMessage(`"test"`), "eventId": json.RawMessage(`"test"`)}},
-		{operation: "events.list", want: "GET /calendar/v3/calendars/test/events", body: nil, params: map[string]json.RawMessage{"calendarId": json.RawMessage(`"test"`)}},
-		{operation: "events.move", want: "POST /calendar/v3/calendars/test/events/test/move", body: nil, params: map[string]json.RawMessage{"calendarId": json.RawMessage(`"test"`), "eventId": json.RawMessage(`"test"`), "destination": json.RawMessage(`"test"`)}},
-		{operation: "events.patch", want: "PATCH /calendar/v3/calendars/test/events/test", body: json.RawMessage(`{}`), params: map[string]json.RawMessage{"calendarId": json.RawMessage(`"test"`), "eventId": json.RawMessage(`"test"`)}},
-		{operation: "events.quickAdd", want: "POST /calendar/v3/calendars/test/events/quickAdd", body: nil, params: map[string]json.RawMessage{"calendarId": json.RawMessage(`"test"`), "text": json.RawMessage(`"test"`)}},
-		{operation: "events.update", want: "PUT /calendar/v3/calendars/test/events/test", body: json.RawMessage(`{}`), params: map[string]json.RawMessage{"calendarId": json.RawMessage(`"test"`), "eventId": json.RawMessage(`"test"`)}},
-		{operation: "events.watch", want: "POST /calendar/v3/calendars/test/events/watch", body: json.RawMessage(`{}`), params: map[string]json.RawMessage{"calendarId": json.RawMessage(`"test"`)}},
-		{operation: "freebusy.query", want: "POST /calendar/v3/freeBusy", body: json.RawMessage(`{}`), params: map[string]json.RawMessage{}},
-		{operation: "settings.get", want: "GET /calendar/v3/users/me/settings/test", body: nil, params: map[string]json.RawMessage{"setting": json.RawMessage(`"test"`)}},
-		{operation: "settings.list", want: "GET /calendar/v3/users/me/settings", body: nil, params: map[string]json.RawMessage{}},
-		{operation: "settings.watch", want: "POST /calendar/v3/users/me/settings/watch", body: json.RawMessage(`{}`), params: map[string]json.RawMessage{}},
+		{operation: "acl.delete", want: "DELETE /calendar/v3/calendars/test/acl/test", body: nil, params: map[string]any{"calendarId": json.RawMessage(`"test"`), "ruleId": json.RawMessage(`"test"`)}},
+		{operation: "acl.get", want: "GET /calendar/v3/calendars/test/acl/test", body: nil, params: map[string]any{"calendarId": json.RawMessage(`"test"`), "ruleId": json.RawMessage(`"test"`)}},
+		{operation: "acl.insert", want: "POST /calendar/v3/calendars/test/acl", body: json.RawMessage(`{}`), params: map[string]any{"calendarId": json.RawMessage(`"test"`)}},
+		{operation: "acl.list", want: "GET /calendar/v3/calendars/test/acl", body: nil, params: map[string]any{"calendarId": json.RawMessage(`"test"`)}},
+		{operation: "acl.patch", want: "PATCH /calendar/v3/calendars/test/acl/test", body: json.RawMessage(`{}`), params: map[string]any{"calendarId": json.RawMessage(`"test"`), "ruleId": json.RawMessage(`"test"`)}},
+		{operation: "acl.update", want: "PUT /calendar/v3/calendars/test/acl/test", body: json.RawMessage(`{}`), params: map[string]any{"calendarId": json.RawMessage(`"test"`), "ruleId": json.RawMessage(`"test"`)}},
+		{operation: "acl.watch", want: "POST /calendar/v3/calendars/test/acl/watch", body: json.RawMessage(`{}`), params: map[string]any{"calendarId": json.RawMessage(`"test"`)}},
+		{operation: "calendarList.delete", want: "DELETE /calendar/v3/users/me/calendarList/test", body: nil, params: map[string]any{"calendarId": json.RawMessage(`"test"`)}},
+		{operation: "calendarList.get", want: "GET /calendar/v3/users/me/calendarList/test", body: nil, params: map[string]any{"calendarId": json.RawMessage(`"test"`)}},
+		{operation: "calendarList.insert", want: "POST /calendar/v3/users/me/calendarList", body: json.RawMessage(`{}`), params: map[string]any{}},
+		{operation: "calendarList.list", want: "GET /calendar/v3/users/me/calendarList", body: nil, params: map[string]any{}},
+		{operation: "calendarList.patch", want: "PATCH /calendar/v3/users/me/calendarList/test", body: json.RawMessage(`{}`), params: map[string]any{"calendarId": json.RawMessage(`"test"`)}},
+		{operation: "calendarList.update", want: "PUT /calendar/v3/users/me/calendarList/test", body: json.RawMessage(`{}`), params: map[string]any{"calendarId": json.RawMessage(`"test"`)}},
+		{operation: "calendarList.watch", want: "POST /calendar/v3/users/me/calendarList/watch", body: json.RawMessage(`{}`), params: map[string]any{}},
+		{operation: "calendars.clear", want: "POST /calendar/v3/calendars/test/clear", body: nil, params: map[string]any{"calendarId": json.RawMessage(`"test"`)}},
+		{operation: "calendars.delete", want: "DELETE /calendar/v3/calendars/test", body: nil, params: map[string]any{"calendarId": json.RawMessage(`"test"`)}},
+		{operation: "calendars.get", want: "GET /calendar/v3/calendars/test", body: nil, params: map[string]any{"calendarId": json.RawMessage(`"test"`)}},
+		{operation: "calendars.insert", want: "POST /calendar/v3/calendars", body: json.RawMessage(`{}`), params: map[string]any{}},
+		{operation: "calendars.patch", want: "PATCH /calendar/v3/calendars/test", body: json.RawMessage(`{}`), params: map[string]any{"calendarId": json.RawMessage(`"test"`)}},
+		{operation: "calendars.transferOwnership", want: "POST /calendar/v3/calendars/test/transferOwnership", body: nil, params: map[string]any{"calendarId": json.RawMessage(`"test"`), "newDataOwner": json.RawMessage(`"test"`), "useAdminAccess": json.RawMessage(`true`)}},
+		{operation: "calendars.update", want: "PUT /calendar/v3/calendars/test", body: json.RawMessage(`{}`), params: map[string]any{"calendarId": json.RawMessage(`"test"`)}},
+		{operation: "channels.stop", want: "POST /calendar/v3/channels/stop", body: json.RawMessage(`{}`), params: map[string]any{}},
+		{operation: "colors.get", want: "GET /calendar/v3/colors", body: nil, params: map[string]any{}},
+		{operation: "events.delete", want: "DELETE /calendar/v3/calendars/test/events/test", body: nil, params: map[string]any{"calendarId": json.RawMessage(`"test"`), "eventId": json.RawMessage(`"test"`)}},
+		{operation: "events.get", want: "GET /calendar/v3/calendars/test/events/test", body: nil, params: map[string]any{"calendarId": json.RawMessage(`"test"`), "eventId": json.RawMessage(`"test"`)}},
+		{operation: "events.import", want: "POST /calendar/v3/calendars/test/events/import", body: json.RawMessage(`{}`), params: map[string]any{"calendarId": json.RawMessage(`"test"`)}},
+		{operation: "events.insert", want: "POST /calendar/v3/calendars/test/events", body: json.RawMessage(`{}`), params: map[string]any{"calendarId": json.RawMessage(`"test"`)}},
+		{operation: "events.instances", want: "GET /calendar/v3/calendars/test/events/test/instances", body: nil, params: map[string]any{"calendarId": json.RawMessage(`"test"`), "eventId": json.RawMessage(`"test"`)}},
+		{operation: "events.list", want: "GET /calendar/v3/calendars/test/events", body: nil, params: map[string]any{"calendarId": json.RawMessage(`"test"`)}},
+		{operation: "events.move", want: "POST /calendar/v3/calendars/test/events/test/move", body: nil, params: map[string]any{"calendarId": json.RawMessage(`"test"`), "eventId": json.RawMessage(`"test"`), "destination": json.RawMessage(`"test"`)}},
+		{operation: "events.patch", want: "PATCH /calendar/v3/calendars/test/events/test", body: json.RawMessage(`{}`), params: map[string]any{"calendarId": json.RawMessage(`"test"`), "eventId": json.RawMessage(`"test"`)}},
+		{operation: "events.quickAdd", want: "POST /calendar/v3/calendars/test/events/quickAdd", body: nil, params: map[string]any{"calendarId": json.RawMessage(`"test"`), "text": json.RawMessage(`"test"`)}},
+		{operation: "events.update", want: "PUT /calendar/v3/calendars/test/events/test", body: json.RawMessage(`{}`), params: map[string]any{"calendarId": json.RawMessage(`"test"`), "eventId": json.RawMessage(`"test"`)}},
+		{operation: "events.watch", want: "POST /calendar/v3/calendars/test/events/watch", body: json.RawMessage(`{}`), params: map[string]any{"calendarId": json.RawMessage(`"test"`)}},
+		{operation: "freebusy.query", want: "POST /calendar/v3/freeBusy", body: json.RawMessage(`{}`), params: map[string]any{}},
+		{operation: "settings.get", want: "GET /calendar/v3/users/me/settings/test", body: nil, params: map[string]any{"setting": json.RawMessage(`"test"`)}},
+		{operation: "settings.list", want: "GET /calendar/v3/users/me/settings", body: nil, params: map[string]any{}},
+		{operation: "settings.watch", want: "POST /calendar/v3/users/me/settings/watch", body: json.RawMessage(`{}`), params: map[string]any{}},
 	}
 	for _, tc := range cases {
 		t.Run(tc.operation, func(t *testing.T) {
 			got = ""
-			req := outbound.WorkspaceRequest{
+			req := workspace.Command{
 				Operation: tc.operation, Parameters: tc.params, Body: tc.body,
 			}
 			_, err := adapter.ExecuteCalendar(context.Background(), req)

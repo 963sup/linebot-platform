@@ -12,14 +12,10 @@ import (
 	"testing"
 )
 
-// TestValueObjectsDirectoryContract checks every bounded context, not just
-// the original root scaffold, for the agreed value-objects/ directory name.
+// TestValueObjectsDirectoryContract checks implemented bounded contexts for
+// the agreed value-objects/ directory and package name.
 func TestValueObjectsDirectoryContract(t *testing.T) {
 	domain := filepath.Join("..", "..", "internal", "domain")
-	rootValueDir := filepath.Join(domain, "value-objects")
-	if info, err := os.Stat(rootValueDir); err != nil || !info.IsDir() {
-		t.Fatalf("value object scaffold must exist at %s: %v", rootValueDir, err)
-	}
 	identityValueDir := filepath.Join(domain, "identity", "value-objects")
 	if info, err := os.Stat(identityValueDir); err != nil || !info.IsDir() {
 		t.Fatalf("identity value objects must exist at %s: %v", identityValueDir, err)

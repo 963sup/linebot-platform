@@ -18,4 +18,4 @@ Packages, ports, DTOs, aggregates, repositories, directory structure, or cross-c
 
 ## Evidence and restrictions
 
-Distinguish target architecture from implemented wiring. Report severity, file/line, violated boundary, consumer impact, correction, and regression test. Do not modify, move packages, delete scaffolds, merge, push, deploy, or change IAM. Unavailable references or runtime composition are `Not Verified`.
+Distinguish target architecture from implemented wiring. Report severity, file/line, violated boundary, consumer impact, correction, and regression test. A reviewer does not modify or move packages, delete files, merge, push, deploy, or change IAM; obsolete empty scaffolds may be identified for an implementation owner to remove. Unavailable references or runtime composition are `Not Verified`.

@@ -2,7 +2,6 @@ package messaging
 
 import (
 	"context"
-	"encoding/json"
 	"testing"
 
 	"github.com/963sup/linebot-platform/internal/application/ports/outbound"
@@ -18,7 +17,7 @@ func (f *fakeBulkMessaging) Multicast(context.Context, []string, []outbound.Mess
 	f.calls++
 	return nil
 }
-func (f *fakeBulkMessaging) Narrowcast(context.Context, json.RawMessage, string) error {
+func (f *fakeBulkMessaging) Narrowcast(context.Context, outbound.LINERequest, string) error {
 	f.calls++
 	return nil
 }
@@ -29,10 +28,10 @@ func TestBulkSendNarrowcastValidatesPayloadBeforeCallingAdapter(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	valid := json.RawMessage(`{"messages":[{"type":"text","text":"hello"}],"recipient":{"type":"operator","and":[]}}`)
-	for _, payload := range []json.RawMessage{nil, []byte(`[]`), []byte(`{"messages":[]}`), []byte(`{"messages":[{"type":"text"}]}`)} {
+	valid := outbound.LINERequest{Value: map[string]any{"messages": []any{map[string]any{"type": "text", "text": "hello"}}, "recipient": map[string]any{"type": "operator", "and": []any{}}}}
+	for _, payload := range []outbound.LINERequest{{}, {Value: []any{}}, {Value: map[string]any{"messages": []any{}}}, {Value: map[string]any{"messages": []any{map[string]any{"type": "text"}}}}} {
 		if err := s.Narrowcast(context.Background(), payload, "stable"); err == nil {
-			t.Fatalf("invalid payload accepted: %s", payload)
+			t.Fatalf("invalid payload accepted: %#v", payload)
 		}
 	}
 	if f.calls != 0 {

@@ -2,29 +2,30 @@ package engagement
 
 import (
 	"context"
-	"encoding/json"
 	"testing"
+
+	"github.com/963sup/linebot-platform/internal/application/ports/outbound"
 )
 
 type fakeAudienceManager struct{ called string }
 
-func (f *fakeAudienceManager) CreateAudienceGroup(context.Context, json.RawMessage) (json.RawMessage, error) {
+func (f *fakeAudienceManager) CreateAudienceGroup(context.Context, outbound.LINERequest) (outbound.LINEResult, error) {
 	f.called = "create"
-	return json.RawMessage("{}"), nil
+	return outbound.LINEResult{Value: map[string]any{}}, nil
 }
-func (f *fakeAudienceManager) AddAudienceToGroup(context.Context, json.RawMessage) error {
+func (f *fakeAudienceManager) AddAudienceToGroup(context.Context, outbound.LINERequest) error {
 	f.called = "append"
 	return nil
 }
-func (f *fakeAudienceManager) CreateClickAudience(context.Context, json.RawMessage) (json.RawMessage, error) {
+func (f *fakeAudienceManager) CreateClickAudience(context.Context, outbound.LINERequest) (outbound.LINEResult, error) {
 	f.called = "create-click"
-	return json.RawMessage("{}"), nil
+	return outbound.LINEResult{Value: map[string]any{}}, nil
 }
-func (f *fakeAudienceManager) CreateImpressionAudience(context.Context, json.RawMessage) (json.RawMessage, error) {
+func (f *fakeAudienceManager) CreateImpressionAudience(context.Context, outbound.LINERequest) (outbound.LINEResult, error) {
 	f.called = "create-impression"
-	return json.RawMessage("{}"), nil
+	return outbound.LINEResult{Value: map[string]any{}}, nil
 }
-func (f *fakeAudienceManager) UpdateAudienceDescription(context.Context, int64, json.RawMessage) error {
+func (f *fakeAudienceManager) UpdateAudienceDescription(context.Context, int64, outbound.LINERequest) error {
 	f.called = "update-description"
 	return nil
 }
@@ -32,9 +33,9 @@ func (f *fakeAudienceManager) DeleteAudienceGroup(context.Context, int64) error 
 	f.called = "delete"
 	return nil
 }
-func (f *fakeAudienceManager) CreateAudienceFromFile(context.Context, []byte, string, bool, string) (json.RawMessage, error) {
+func (f *fakeAudienceManager) CreateAudienceFromFile(context.Context, []byte, string, bool, string) (outbound.LINEResult, error) {
 	f.called = "create-file"
-	return json.RawMessage("{}"), nil
+	return outbound.LINEResult{Value: map[string]any{}}, nil
 }
 func (f *fakeAudienceManager) AddAudienceFromFile(context.Context, int64, []byte, string) error {
 	f.called = "append-file"
@@ -54,8 +55,8 @@ func TestAudienceManagementValidatesAndRoutesAllEight(t *testing.T) {
 		{Action: "append-file", ID: 1},
 		{Action: "delete", ID: 0},
 		{Action: "create-file", Description: "test", File: make([]byte, (20<<20)+1)},
-		{Action: "update-description", ID: 1, Request: json.RawMessage("[]")},
-		{Action: "create", Request: json.RawMessage("{}"), IFAAudience: true},
+		{Action: "update-description", ID: 1, Request: outbound.LINERequest{Value: []any{}}},
+		{Action: "create", Request: outbound.LINERequest{Value: map[string]any{}}, IFAAudience: true},
 	} {
 		if _, err := m.Execute(context.Background(), cmd); err == nil {
 			t.Fatalf("invalid command accepted: %+v", cmd.Action)
@@ -64,7 +65,7 @@ func TestAudienceManagementValidatesAndRoutesAllEight(t *testing.T) {
 			t.Fatal("invalid command caused side effect")
 		}
 	}
-	payload := json.RawMessage("{}")
+	payload := outbound.LINERequest{Value: map[string]any{}}
 	for _, cmd := range []AudienceCommand{
 		{Action: "create", Request: payload},
 		{Action: "append", Request: payload},

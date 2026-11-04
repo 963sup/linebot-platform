@@ -2,6 +2,7 @@ package cli
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
@@ -46,6 +47,10 @@ func runContacts(args []string, getenv func(string) string, output io.Writer) er
 	if err != nil {
 		return err
 	}
-	_, err = fmt.Fprintln(output, string(result))
+	payload, err := json.Marshal(result.Value)
+	if err != nil {
+		return fmt.Errorf("encode contacts result: %w", err)
+	}
+	_, err = fmt.Fprintln(output, string(payload))
 	return err
 }

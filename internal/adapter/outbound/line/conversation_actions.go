@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 
+	"github.com/963sup/linebot-platform/internal/application/ports/outbound"
 	"github.com/line/line-bot-sdk-go/v8/linebot/messaging_api"
 )
 
@@ -26,9 +27,9 @@ func (s *Sender) LeaveRoom(ctx context.Context, roomID string) error {
 	return lineWriteError("leaveRoom", r, err)
 }
 
-func (s *Sender) ShowLoading(ctx context.Context, payload json.RawMessage) error {
+func (s *Sender) ShowLoading(ctx context.Context, payload outbound.LINERequest) error {
 	var request messaging_api.ShowLoadingAnimationRequest
-	if err := json.Unmarshal(payload, &request); err != nil {
+	if err := decodeLINERequest(payload, &request); err != nil {
 		return errors.New("invalid LINE loading request")
 	}
 	client, err := s.clientFor(ctx)
@@ -39,9 +40,9 @@ func (s *Sender) ShowLoading(ctx context.Context, payload json.RawMessage) error
 	return lineWriteError("showLoadingAnimation", r, err)
 }
 
-func (s *Sender) MarkMessagesRead(ctx context.Context, payload json.RawMessage) error {
+func (s *Sender) MarkMessagesRead(ctx context.Context, payload outbound.LINERequest) error {
 	var request messaging_api.MarkMessagesAsReadRequest
-	if err := json.Unmarshal(payload, &request); err != nil {
+	if err := decodeLINERequest(payload, &request); err != nil {
 		return errors.New("invalid LINE mark-read request")
 	}
 	client, err := s.clientFor(ctx)
@@ -52,9 +53,9 @@ func (s *Sender) MarkMessagesRead(ctx context.Context, payload json.RawMessage) 
 	return lineWriteError("markMessagesAsRead", r, err)
 }
 
-func (s *Sender) MarkMessagesReadByToken(ctx context.Context, payload json.RawMessage) error {
+func (s *Sender) MarkMessagesReadByToken(ctx context.Context, payload outbound.LINERequest) error {
 	var request messaging_api.MarkMessagesAsReadByTokenRequest
-	if err := json.Unmarshal(payload, &request); err != nil {
+	if err := decodeLINERequest(payload, &request); err != nil {
 		return errors.New("invalid LINE mark-read-token request")
 	}
 	client, err := s.clientFor(ctx)

@@ -1,8 +1,8 @@
 # Roadmap
 
-## P0 — Repository scaffold（PR #8 已合併）
+## P0 — Repository foundation（PR #8 已合併）
 
-- [x] 建立完整目錄骨架及 `.gitkeep`。
+- [x] 建立初始目錄與治理文件；後續以真實 capability 按需建立 package，不保護空 scaffold。
 - [x] 根 README、AGENTS、分層規範、技術來源與 Codex skills。
 - [x] PR #8 已於 2026-11-03 合併至 `main`（Commit `901096a7`）。
 
@@ -52,7 +52,7 @@
 1. **命名與架構 Gate（PR #28 已合併）**：所有 Bounded Context 的 Value Objects 目錄使用 `value-objects/`，Go package 為 `valueobjects`；架構測試禁止同義異名目錄。Identity 已建立八類具體元件並逐步接入 OAuth／Firestore；後續變更仍需按最新 commit 驗證。
 2. **DDD 不退化（Identity 本批完成，其他 Context 後續）**：Identity 的 Aggregate、Entity、VO、Policy、Specification、Factory、Repository Reader、Domain Events 已實作與測試；仍待移除 OAuth 技術 DTO 的重疊欄位並設計持久事件 Outbox。Conversation/Message 在確定真實不變量後才建立 Domain Model，不把 LINE SDK DTO 當成領域模型。
 3. **Hexagonal Architecture 不退化（同一功能 PR 的 Gate）**：擴充 AST import boundary 檢查，驗證 Domain 不依賴外層、Application 不 import Adapter/Infrastructure/SDK；新增 usecase 只能透過 Port 呼叫外部效果，Bootstrap 負責 DI。
-4. **GPT／Codex 零先驗不退化（獨立可重現驗收）**：全新、無過往聊天上下文的 Codex session 從 `AGENTS.md` → `README.md` → `docs/architecture/overview.md` → `docs/sdk/catalog.toml`，只讀必要 skill 與 SDK symbol，完成 sandbox-only 微小 Domain 修改；能定位正確的 `value-objects/` 且不刪預留 SDK／依賴。將指令、測試結果、失敗與修正紀錄於 PR。
+4. **GPT／Codex 零先驗不退化（獨立可重現驗收）**：全新、無過往聊天上下文的 Codex session 從 `AGENTS.md` → `README.md` → `docs/architecture/overview.md` → `docs/sdk/catalog.toml`，只讀必要 skill 與 SDK symbol，完成 sandbox-only 微小 Domain 修改；能定位正確的 `value-objects/`，並以 `go.mod`、Catalog、build-tag manifest 保留核准依賴而不建立空 scaffold。將指令、測試結果、失敗與修正紀錄於 PR。
 5. **Production Safety 不退化（Staging 前 Gate）**：以模擬事件驗證簽章、Inbox/Outbox 原子性、重送／亂序、unsend/edit tombstone、Reply token 過期、unknown 發送與 Cloud Tasks OIDC 拒絕未授權請求；建立受控 Staging IAM、Firestore TTL、Scheduler 與 rollback 方案，部署必須經明確批准。不可用 CI 綠燈代表真正 Cloud Run／LINE Production 安全。
 
 **完成證據**：每個 PR 列出不變量、涉及 Port/Adapter、可重現測試命令、CI URL、未驗證的外部資源／身分與回滾步驟。不得單憑目錄存在或文件宣稱已完成功能。

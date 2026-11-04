@@ -2,6 +2,7 @@ package cli
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
@@ -41,7 +42,11 @@ func runContent(args []string, getenv func(string) string, output io.Writer) err
 		return err
 	}
 	if *kind == "transcoding" {
-		_, err = fmt.Fprintln(output, string(j))
+		payload, encodeErr := json.Marshal(j.Value)
+		if encodeErr != nil {
+			return fmt.Errorf("encode transcoding result: %w", encodeErr)
+		}
+		_, err = fmt.Fprintln(output, string(payload))
 		return err
 	}
 	return writePrivateFile(*out, b.Data)

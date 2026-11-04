@@ -2,7 +2,6 @@ package engagement
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 
 	"github.com/963sup/linebot-platform/internal/application/ports/outbound"
@@ -46,15 +45,15 @@ func ValidateAudienceQuery(q AudienceQuery) error {
 	}
 }
 
-func (s *AudienceInspector) Inspect(ctx context.Context, q AudienceQuery) (json.RawMessage, error) {
+func (s *AudienceInspector) Inspect(ctx context.Context, q AudienceQuery) (outbound.LINEResult, error) {
 	if ctx == nil {
-		return nil, errors.New("context is required")
+		return outbound.LINEResult{}, errors.New("context is required")
 	}
 	if err := ctx.Err(); err != nil {
-		return nil, err
+		return outbound.LINEResult{}, err
 	}
 	if err := ValidateAudienceQuery(q); err != nil {
-		return nil, err
+		return outbound.LINEResult{}, err
 	}
 	switch q.Kind {
 	case "group":

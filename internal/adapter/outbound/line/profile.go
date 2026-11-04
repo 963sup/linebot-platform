@@ -8,6 +8,20 @@ import (
 	"github.com/963sup/linebot-platform/internal/infrastructure/resilience"
 )
 
+// IssueLinkTokenResult adapts the legacy wire-oriented sender method to the
+// typed application boundary without exposing JSON to the use case.
+func (s *Sender) IssueLinkTokenResult(ctx context.Context, userID string) (outbound.LINEResult, error) {
+	payload, err := s.IssueLinkToken(ctx, userID)
+	if err != nil {
+		return outbound.LINEResult{}, err
+	}
+	value, err := decodeJSONValue(payload)
+	if err != nil {
+		return outbound.LINEResult{}, errors.New("invalid LINE link token response")
+	}
+	return outbound.LINEResult{Value: value}, nil
+}
+
 // GetProfile implements the contacts ProfileReader port using the existing
 // typed SDK client. Sender.clientFor isolates SDK WithContext mutations.
 func (s *Sender) GetProfile(ctx context.Context, userID string) (outbound.UserProfile, error) {

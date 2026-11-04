@@ -2,9 +2,9 @@ package line
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 
+	"github.com/963sup/linebot-platform/internal/application/ports/outbound"
 	"github.com/line/line-bot-sdk-go/v8/linebot/channel_access_token"
 )
 
@@ -30,40 +30,40 @@ func (s *ChannelTokenManager) clientFor(ctx context.Context) (*channel_access_to
 	return copy.WithContext(ctx), nil
 }
 
-func (s *ChannelTokenManager) IssueStateless(ctx context.Context, grantType, assertionType, assertion, clientID, clientSecret string) (json.RawMessage, error) {
+func (s *ChannelTokenManager) IssueStateless(ctx context.Context, grantType, assertionType, assertion, clientID, clientSecret string) (outbound.LINEResult, error) {
 	c, err := s.clientFor(ctx)
 	if err != nil {
-		return nil, err
+		return outbound.LINEResult{}, err
 	}
 	r, v, err := c.IssueStatelessChannelTokenWithHttpInfo(grantType, assertionType, assertion, clientID, clientSecret)
-	return reportResult("issueStatelessChannelToken", r, v, err)
+	return typedReportResult("issueStatelessChannelToken", r, v, err)
 }
 
-func (s *ChannelTokenManager) ValidKeyIDs(ctx context.Context, assertionType, assertion string) (json.RawMessage, error) {
+func (s *ChannelTokenManager) ValidKeyIDs(ctx context.Context, assertionType, assertion string) (outbound.LINEResult, error) {
 	c, err := s.clientFor(ctx)
 	if err != nil {
-		return nil, err
+		return outbound.LINEResult{}, err
 	}
 	r, v, err := c.GetsAllValidChannelAccessTokenKeyIdsWithHttpInfo(assertionType, assertion)
-	return reportResult("getsAllValidChannelAccessTokenKeyIds", r, v, err)
+	return typedReportResult("getsAllValidChannelAccessTokenKeyIds", r, v, err)
 }
 
-func (s *ChannelTokenManager) IssueJWT(ctx context.Context, grantType, assertionType, assertion string) (json.RawMessage, error) {
+func (s *ChannelTokenManager) IssueJWT(ctx context.Context, grantType, assertionType, assertion string) (outbound.LINEResult, error) {
 	c, err := s.clientFor(ctx)
 	if err != nil {
-		return nil, err
+		return outbound.LINEResult{}, err
 	}
 	r, v, err := c.IssueChannelTokenByJWTWithHttpInfo(grantType, assertionType, assertion)
-	return reportResult("issueChannelTokenByJWT", r, v, err)
+	return typedReportResult("issueChannelTokenByJWT", r, v, err)
 }
 
-func (s *ChannelTokenManager) VerifyJWT(ctx context.Context, token string) (json.RawMessage, error) {
+func (s *ChannelTokenManager) VerifyJWT(ctx context.Context, token string) (outbound.LINEResult, error) {
 	c, err := s.clientFor(ctx)
 	if err != nil {
-		return nil, err
+		return outbound.LINEResult{}, err
 	}
 	r, v, err := c.VerifyChannelTokenByJWTWithHttpInfo(token)
-	return reportResult("verifyChannelTokenByJWT", r, v, err)
+	return typedReportResult("verifyChannelTokenByJWT", r, v, err)
 }
 
 func (s *ChannelTokenManager) RevokeJWT(ctx context.Context, clientID, clientSecret, token string) error {
@@ -75,22 +75,22 @@ func (s *ChannelTokenManager) RevokeJWT(ctx context.Context, clientID, clientSec
 	return lineWriteError("revokeChannelTokenByJWT", r, err)
 }
 
-func (s *ChannelTokenManager) IssueShortLived(ctx context.Context, grantType, clientID, clientSecret string) (json.RawMessage, error) {
+func (s *ChannelTokenManager) IssueShortLived(ctx context.Context, grantType, clientID, clientSecret string) (outbound.LINEResult, error) {
 	c, err := s.clientFor(ctx)
 	if err != nil {
-		return nil, err
+		return outbound.LINEResult{}, err
 	}
 	r, v, err := c.IssueChannelTokenWithHttpInfo(grantType, clientID, clientSecret)
-	return reportResult("issueChannelToken", r, v, err)
+	return typedReportResult("issueChannelToken", r, v, err)
 }
 
-func (s *ChannelTokenManager) VerifyShortLived(ctx context.Context, token string) (json.RawMessage, error) {
+func (s *ChannelTokenManager) VerifyShortLived(ctx context.Context, token string) (outbound.LINEResult, error) {
 	c, err := s.clientFor(ctx)
 	if err != nil {
-		return nil, err
+		return outbound.LINEResult{}, err
 	}
 	r, v, err := c.VerifyChannelTokenWithHttpInfo(token)
-	return reportResult("verifyChannelToken", r, v, err)
+	return typedReportResult("verifyChannelToken", r, v, err)
 }
 
 func (s *ChannelTokenManager) RevokeShortLived(ctx context.Context, token string) error {

@@ -27,16 +27,16 @@ func (s EventState) Valid() bool {
 
 // EventStatusSample intentionally contains no LINE token, user ID or message.
 type EventStatusSample struct {
-	KeyHint   string     `json:"key_hint"`
-	State     EventState `json:"state"`
-	UpdatedAt time.Time  `json:"updated_at"`
+	KeyHint   string
+	State     EventState
+	UpdatedAt time.Time
 }
 
 type EventStatusReport struct {
-	GeneratedAt             time.Time            `json:"generated_at"`
-	Counts                  map[EventState]int64 `json:"counts"`
-	OldestPendingAgeSeconds int64                `json:"oldest_pending_age_seconds"`
-	Samples                 []EventStatusSample  `json:"samples,omitempty"`
+	GeneratedAt             time.Time
+	Counts                  map[EventState]int64
+	OldestPendingAgeSeconds int64
+	Samples                 []EventStatusSample
 }
 
 // EventStatusReader is a read-only operator port. No recovery or LINE send

@@ -34,13 +34,17 @@ func (s *Sender) Multicast(ctx context.Context, recipients []string, messages []
 	return lineWriteError("multicast", response, err)
 }
 
-func (s *Sender) Narrowcast(ctx context.Context, payload json.RawMessage, retryKey string) error {
+func (s *Sender) Narrowcast(ctx context.Context, payload outbound.LINERequest, retryKey string) error {
 	client, err := s.clientFor(ctx)
 	if err != nil {
 		return err
 	}
 	var request messaging_api.NarrowcastRequest
-	if err := json.Unmarshal(payload, &request); err != nil {
+	encoded, err := json.Marshal(payload.Value)
+	if err != nil {
+		return err
+	}
+	if err := json.Unmarshal(encoded, &request); err != nil {
 		return err
 	}
 	response, _, err := client.NarrowcastWithHttpInfo(&request, retryKey)

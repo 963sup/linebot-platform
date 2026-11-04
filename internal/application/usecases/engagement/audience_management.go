@@ -2,7 +2,6 @@ package engagement
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"strings"
 
@@ -14,7 +13,7 @@ const maxAudienceFileSize = 20 << 20
 type AudienceCommand struct {
 	Action            string
 	ID                int64
-	Request           json.RawMessage
+	Request           outbound.LINERequest
 	File              []byte
 	Description       string
 	UploadDescription string
@@ -22,6 +21,11 @@ type AudienceCommand struct {
 }
 
 type AudienceOperations struct{ manager outbound.AudienceManager }
+
+func isLINEObject(request outbound.LINERequest) bool {
+	_, ok := request.Value.(map[string]any)
+	return ok
+}
 
 func NewAudienceOperations(m outbound.AudienceManager) (*AudienceOperations, error) {
 	if m == nil {
@@ -37,26 +41,24 @@ func ValidateAudienceCommand(c AudienceCommand) error {
 	}
 	switch c.Action {
 	case "create", "append", "create-click", "create-impression":
-		if c.ID != 0 || len(c.File) != 0 || len(c.Request) == 0 ||
-			!json.Valid(c.Request) || !strings.HasPrefix(strings.TrimSpace(string(c.Request)), "{") {
+		if c.ID != 0 || len(c.File) != 0 || !isLINEObject(c.Request) {
 			return errors.New("audience action requires a JSON object with no file or group ID")
 		}
 	case "update-description":
-		if c.ID <= 0 || len(c.File) != 0 || len(c.Request) == 0 ||
-			!json.Valid(c.Request) || !strings.HasPrefix(strings.TrimSpace(string(c.Request)), "{") {
+		if c.ID <= 0 || len(c.File) != 0 || !isLINEObject(c.Request) {
 			return errors.New("update-description requires group ID and JSON object")
 		}
 	case "delete":
-		if c.ID <= 0 || len(c.Request) != 0 || len(c.File) != 0 {
+		if c.ID <= 0 || c.Request.Value != nil || len(c.File) != 0 {
 			return errors.New("delete requires only a positive group ID")
 		}
 	case "create-file":
-		if c.ID != 0 || len(c.Request) != 0 || c.Description == "" ||
+		if c.ID != 0 || c.Request.Value != nil || c.Description == "" ||
 			len(c.File) == 0 || len(c.File) > maxAudienceFileSize {
 			return errors.New("create-file requires bounded user ID file and description")
 		}
 	case "append-file":
-		if c.ID <= 0 || len(c.Request) != 0 || len(c.File) == 0 ||
+		if c.ID <= 0 || c.Request.Value != nil || len(c.File) == 0 ||
 			len(c.File) > maxAudienceFileSize {
 			return errors.New("append-file requires group ID and bounded user ID file")
 		}
@@ -73,34 +75,34 @@ func ValidateAudienceCommand(c AudienceCommand) error {
 	return nil
 }
 
-func (s *AudienceOperations) Execute(ctx context.Context, c AudienceCommand) (json.RawMessage, error) {
+func (s *AudienceOperations) Execute(ctx context.Context, c AudienceCommand) (outbound.LINEResult, error) {
 	if ctx == nil {
-		return nil, errors.New("context is required")
+		return outbound.LINEResult{}, errors.New("context is required")
 	}
 	if err := ctx.Err(); err != nil {
-		return nil, err
+		return outbound.LINEResult{}, err
 	}
 	if err := ValidateAudienceCommand(c); err != nil {
-		return nil, err
+		return outbound.LINEResult{}, err
 	}
 	switch c.Action {
 	case "create":
 		return s.manager.CreateAudienceGroup(ctx, c.Request)
 	case "append":
-		return nil, s.manager.AddAudienceToGroup(ctx, c.Request)
+		return outbound.LINEResult{}, s.manager.AddAudienceToGroup(ctx, c.Request)
 	case "create-click":
 		return s.manager.CreateClickAudience(ctx, c.Request)
 	case "create-impression":
 		return s.manager.CreateImpressionAudience(ctx, c.Request)
 	case "update-description":
-		return nil, s.manager.UpdateAudienceDescription(ctx, c.ID, c.Request)
+		return outbound.LINEResult{}, s.manager.UpdateAudienceDescription(ctx, c.ID, c.Request)
 	case "delete":
-		return nil, s.manager.DeleteAudienceGroup(ctx, c.ID)
+		return outbound.LINEResult{}, s.manager.DeleteAudienceGroup(ctx, c.ID)
 	case "create-file":
 		return s.manager.CreateAudienceFromFile(ctx, c.File, c.Description, c.IFAAudience, c.UploadDescription)
 	case "append-file":
-		return nil, s.manager.AddAudienceFromFile(ctx, c.ID, c.File, c.UploadDescription)
+		return outbound.LINEResult{}, s.manager.AddAudienceFromFile(ctx, c.ID, c.File, c.UploadDescription)
 	default:
-		return nil, errors.New("unsupported audience action")
+		return outbound.LINEResult{}, errors.New("unsupported audience action")
 	}
 }

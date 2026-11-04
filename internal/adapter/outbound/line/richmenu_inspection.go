@@ -2,68 +2,68 @@ package line
 
 import (
 	"context"
-	"encoding/json"
+	"github.com/963sup/linebot-platform/internal/application/ports/outbound"
 )
 
-func (s *Sender) RichMenuList(ctx context.Context) (json.RawMessage, error) {
+func (s *Sender) RichMenuList(ctx context.Context) (outbound.LINEResult, error) {
 	client, err := s.clientFor(ctx)
 	if err != nil {
-		return nil, err
+		return outbound.LINEResult{}, err
 	}
 	response, result, err := client.GetRichMenuListWithHttpInfo()
-	return reportResult("getRichMenuList", response, result, err)
+	return typedReportResult("getRichMenuList", response, result, err)
 }
 
-func (s *Sender) RichMenu(ctx context.Context, id string) (json.RawMessage, error) {
+func (s *Sender) RichMenu(ctx context.Context, id string) (outbound.LINEResult, error) {
 	client, err := s.clientFor(ctx)
 	if err != nil {
-		return nil, err
+		return outbound.LINEResult{}, err
 	}
 	response, result, err := client.GetRichMenuWithHttpInfo(id)
-	return reportResult("getRichMenu", response, result, err)
+	return typedReportResult("getRichMenu", response, result, err)
 }
 
-func (s *Sender) DefaultRichMenu(ctx context.Context) (json.RawMessage, error) {
+func (s *Sender) DefaultRichMenu(ctx context.Context) (outbound.LINEResult, error) {
 	client, err := s.clientFor(ctx)
 	if err != nil {
-		return nil, err
+		return outbound.LINEResult{}, err
 	}
 	response, result, err := client.GetDefaultRichMenuIdWithHttpInfo()
-	return reportResult("getDefaultRichMenuId", response, result, err)
+	return typedReportResult("getDefaultRichMenuId", response, result, err)
 }
 
-func (s *Sender) RichMenuAliasList(ctx context.Context) (json.RawMessage, error) {
+func (s *Sender) RichMenuAliasList(ctx context.Context) (outbound.LINEResult, error) {
 	client, err := s.clientFor(ctx)
 	if err != nil {
-		return nil, err
+		return outbound.LINEResult{}, err
 	}
 	response, result, err := client.GetRichMenuAliasListWithHttpInfo()
-	return reportResult("getRichMenuAliasList", response, result, err)
+	return typedReportResult("getRichMenuAliasList", response, result, err)
 }
 
-func (s *Sender) RichMenuAlias(ctx context.Context, id string) (json.RawMessage, error) {
+func (s *Sender) RichMenuAlias(ctx context.Context, id string) (outbound.LINEResult, error) {
 	client, err := s.clientFor(ctx)
 	if err != nil {
-		return nil, err
+		return outbound.LINEResult{}, err
 	}
 	response, result, err := client.GetRichMenuAliasWithHttpInfo(id)
-	return reportResult("getRichMenuAlias", response, result, err)
+	return typedReportResult("getRichMenuAlias", response, result, err)
 }
 
-func (s *Sender) UserRichMenu(ctx context.Context, userID string) (json.RawMessage, error) {
+func (s *Sender) UserRichMenu(ctx context.Context, userID string) (outbound.LINEResult, error) {
 	client, err := s.clientFor(ctx)
 	if err != nil {
-		return nil, err
+		return outbound.LINEResult{}, err
 	}
 	response, result, err := client.GetRichMenuIdOfUserWithHttpInfo(userID)
-	return reportResult("getRichMenuIdOfUser", response, result, err)
+	return typedReportResult("getRichMenuIdOfUser", response, result, err)
 }
 
-func (s *Sender) RichMenuBatchProgress(ctx context.Context, id string) (json.RawMessage, error) {
+func (s *Sender) RichMenuBatchProgress(ctx context.Context, id string) (outbound.LINEResult, error) {
 	client, err := s.clientFor(ctx)
 	if err != nil {
-		return nil, err
+		return outbound.LINEResult{}, err
 	}
 	response, result, err := client.GetRichMenuBatchProgressWithHttpInfo(id)
-	return reportResult("getRichMenuBatchProgress", response, result, err)
+	return typedReportResult("getRichMenuBatchProgress", response, result, err)
 }

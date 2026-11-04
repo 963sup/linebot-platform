@@ -8,7 +8,7 @@ Commits, branches, CI, build scripts, deployment configuration, release notes, o
 
 - Diff contains only authorized files and no secrets, credentials, tokens, or temporary artifacts.
 - Formatting, tests, race, vet, build, architecture, contract, and plugin checks match risk.
-- Go modules, pinned tools, SDK catalog, and protected scaffolds are intentional.
+- Go modules, pinned tools, SDK catalog, and the build-tag dependency manifest are intentional; empty scaffold directories are not release artifacts.
 - Target commit, artifact, configuration, rollback, and health gates are explicit.
 - Local validation is not represented as deployment success.
 

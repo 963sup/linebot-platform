@@ -64,11 +64,11 @@ func (f *fakeStore) Recover(_ context.Context, _ time.Time, _ int) ([]string, er
 }
 
 type fakeQueue struct {
-	keys []string
+	keys []EventKey
 	err  error
 }
 
-func (q *fakeQueue) Enqueue(_ context.Context, key string) error {
+func (q *fakeQueue) Enqueue(_ context.Context, key EventKey) error {
 	q.keys = append(q.keys, key)
 	return q.err
 }
@@ -87,22 +87,36 @@ func (f *fakeSender) Push(_ context.Context, _ string, _ []outbound.Message, _ s
 }
 
 func TestEventKeyIsStableAndPrivate(t *testing.T) {
-	key, err := EventKey("channel", "event-id")
-	if err != nil || !ValidKey(key) {
+	key, err := NewEventKey("channel", "event-id")
+	if err != nil {
 		t.Fatalf("invalid event key: %v", err)
 	}
-	same, err := EventKey("channel", "event-id")
+	same, err := NewEventKey("channel", "event-id")
 	if err != nil || same != key {
 		t.Fatal("event key is not stable")
 	}
-	other, _ := EventKey("other", "event-id")
+	other, _ := NewEventKey("other", "event-id")
 	if key == other {
 		t.Fatal("channel isolation failed")
 	}
 	for _, key := range []string{"", "bad", "A000000000000000000000000000000000000000000000000000000000000000"} {
-		if ValidKey(key) {
+		if _, err := ParseEventKey(key); err == nil {
 			t.Fatal("accepted invalid event key")
 		}
+	}
+}
+
+func TestProcessorRejectsZeroEventKeyBeforeStoreAccess(t *testing.T) {
+	store := newFakeStore()
+	processor, err := NewProcessor(store, &fakeSender{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := processor.Process(context.Background(), EventKey{}); err == nil {
+		t.Fatal("zero EventKey must be rejected")
+	}
+	if len(store.recorded) != 0 {
+		t.Fatal("invalid key reached the event store")
 	}
 }
 
@@ -124,7 +138,7 @@ func TestDuplicateReceiptDoesNotOverwriteAndRequeues(t *testing.T) {
 		t.Fatal("duplicate receipt must persist once and re-enqueue safely")
 	}
 	key := queue.keys[0]
-	if queue.keys[1] != key || store.recorded[key].ReplyToken != "reply-one" {
+	if queue.keys[1] != key || store.recorded[key.String()].ReplyToken != "reply-one" {
 		t.Fatal("duplicate overwrote original payload or generated a new key")
 	}
 }
@@ -191,6 +205,21 @@ func TestDispatcherReEnqueuesPending(t *testing.T) {
 	}
 }
 
+func TestDispatcherRejectsInvalidPersistedKey(t *testing.T) {
+	store, queue := newFakeStore(), &fakeQueue{}
+	store.pending = []string{"bad"}
+	dispatcher, err := NewDispatcher(store, queue)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := dispatcher.Dispatch(context.Background()); err == nil {
+		t.Fatal("expected invalid persisted key to be rejected")
+	}
+	if len(queue.keys) != 0 {
+		t.Fatal("invalid persisted key reached queue adapter")
+	}
+}
+
 // TestRedeliveryRefreshesOnlyNeverSentWork guards LINE's one-use reply token.
 func TestRedeliveryRefreshesOnlyNeverSentWork(t *testing.T) {
 	store, queue, sender := newFakeStore(), &fakeQueue{}, &fakeSender{}
@@ -209,13 +238,13 @@ func TestRedeliveryRefreshesOnlyNeverSentWork(t *testing.T) {
 	if err := processor.Process(context.Background(), key); err != nil {
 		t.Fatal(err)
 	}
-	if sender.calls != 0 || store.state[key] != "expired" {
+	if sender.calls != 0 || store.state[key.String()] != "expired" {
 		t.Fatal("expired reply was sent")
 	}
 	if err := ingestor.Ingest(context.Background(), "channel", "redelivery", "token", first, message); err != nil {
 		t.Fatal(err)
 	}
-	if store.state[key] != "pending" {
+	if store.state[key.String()] != "pending" {
 		t.Fatal("signed redelivery should restore never-sent expired work")
 	}
 	if err := processor.Process(context.Background(), key); err != nil {
@@ -227,8 +256,8 @@ func TestRedeliveryRefreshesOnlyNeverSentWork(t *testing.T) {
 	if err := processor.Process(context.Background(), key); err != nil {
 		t.Fatal(err)
 	}
-	if sender.calls != 1 || store.state[key] != "sent" {
-		t.Fatalf("a redelivery resent an already used reply: calls=%d state=%q", sender.calls, store.state[key])
+	if sender.calls != 1 || store.state[key.String()] != "sent" {
+		t.Fatalf("a redelivery resent an already used reply: calls=%d state=%q", sender.calls, store.state[key.String()])
 	}
 }
 
@@ -257,7 +286,7 @@ func TestRedeliveryWindowUsesOriginalTimestamp(t *testing.T) {
 
 type failFirstEnqueue struct{ calls int }
 
-func (q *failFirstEnqueue) Enqueue(_ context.Context, _ string) error {
+func (q *failFirstEnqueue) Enqueue(_ context.Context, _ EventKey) error {
 	q.calls++
 	if q.calls == 1 {
 		return errors.New("transient queue failure")
