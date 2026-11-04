@@ -47,10 +47,10 @@
 - [x] 發送前持久化單次 Claim，結果未知標示 unknown，不進行盲目重試；保留跨執行個體事件 Fingerprint 去重。
 - [ ] GCP Staging／Cloud Tasks OIDC／LINE Sandbox 的真實跨服務驗證。
 
-## 近期實作順序與四項不可退化條件（本次目錄命名調整後，尚未完成）
+## 近期實作順序與四項不可退化條件（Identity Domain 遷移進行中）
 
-1. **命名與架構 Gate（此 PR）**：將 `internal/domain/valueobjects/` 改為 `internal/domain/value-objects/`；Go package 保留 `valueobjects`。同步根與分層 AGENTS、README、架構清單、變更紀錄與架構測試；不修改 `go.mod`、`go.sum`、外部服務設定。合併前必須通過 `go run ./cmd/codexcheck` 與 `make check`。
-2. **DDD 不退化（下一個獨立 PR）**：先明確界定 Conversation/Message 的 Bounded Context、Aggregate Root、Identity、Value Objects、Invariants 與 Repository 契約，再以純 Go unit tests 實作最小 vertical slice；不把 LINE SDK DTO 或 Webhook schema 當成領域模型。
+1. **命名與架構 Gate（Draft PR #28 已完成，尚未合併）**：所有 Bounded Context 的 Value Objects 目錄使用 `value-objects/`，Go package 為 `valueobjects`；架構測試禁止同義異名目錄。Identity 已建立八類具體元件並逐步接入 OAuth／Firestore；CI 仍需按最新 commit 逐批驗證。
+2. **DDD 不退化（Identity 本批完成，其他 Context 後續）**：Identity 的 Aggregate、Entity、VO、Policy、Specification、Factory、Repository Reader、Domain Events 已實作與測試；仍待移除 OAuth 技術 DTO 的重疊欄位並設計持久事件 Outbox。Conversation/Message 在確定真實不變量後才建立 Domain Model，不把 LINE SDK DTO 當成領域模型。
 3. **Hexagonal Architecture 不退化（同一功能 PR 的 Gate）**：擴充 AST import boundary 檢查，驗證 Domain 不依賴外層、Application 不 import Adapter/Infrastructure/SDK；新增 usecase 只能透過 Port 呼叫外部效果，Bootstrap 負責 DI。
 4. **GPT／Codex 零先驗不退化（獨立可重現驗收）**：全新、無過往聊天上下文的 Codex session 從 `AGENTS.md` → `README.md` → `docs/architecture/overview.md` → `docs/sdk/catalog.toml`，只讀必要 skill 與 SDK symbol，完成 sandbox-only 微小 Domain 修改；能定位正確的 `value-objects/` 且不刪預留 SDK／依賴。將指令、測試結果、失敗與修正紀錄於 PR。
 5. **Production Safety 不退化（Staging 前 Gate）**：以模擬事件驗證簽章、Inbox/Outbox 原子性、重送／亂序、unsend/edit tombstone、Reply token 過期、unknown 發送與 Cloud Tasks OIDC 拒絕未授權請求；建立受控 Staging IAM、Firestore TTL、Scheduler 與 rollback 方案，部署必須經明確批准。不可用 CI 綠燈代表真正 Cloud Run／LINE Production 安全。
