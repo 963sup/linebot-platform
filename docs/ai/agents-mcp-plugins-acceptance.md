@@ -8,7 +8,7 @@
 | --- | --- |
 | 註冊 | 固定 8 個角色與 config 一對一；無重複／未知鍵／越界路徑 |
 | 並行上限 | Validator 接受 1／4／8／9，拒絕 0／10；深度只接受 1；此單元測試不是 Host 排程證明 |
-| MCP | 保留 10 宣告、9 啟用、1 個服務維持停用；無明文 secrets |
+| MCP | 保留 11 宣告、10 啟用、1 個服務維持停用；無明文 secrets |
 | 安裝來源 | 僅核准來源、精確 commit、實際 FETCH_HEAD 一致 |
 | 安全安裝 | 不能越界、跟隨 symlink、覆寫個人內容；失敗不發布半成品；重跑冪等 |
 | Marketplace | CLI 不支援即 blocked；既有來源 pin 不符不覆寫；認證失敗不繞過 |
@@ -21,6 +21,7 @@
 | --- | --- | --- |
 | 8 個角色 | 在信任專案確認載入，啟動受控唯讀／獨立測試任務；確認模型有效 | 未驗證，不能由 TOML 推論 |
 | gopls | 已儲存 Go 檔的符號／references／diagnostics | Go CLI fallback 並註明 |
+| Repomix | 固定 1.18.1；sandbox 只能讀取 linebot-platform，拒絕 `..` 與外部路徑 | 直接搜尋 fallback，標記 MCP 未驗證 |
 | Context7 | 查詢目前使用 SDK 的一段版本文件 | 官方文件 fallback |
 | GitHub | 唯讀取得指定 repo／branch HEAD | 不宣稱遠端 CI 或 SHA |
 | OpenAI Docs | 查詢 Codex 設定官方文件 | 官方網站 fallback |

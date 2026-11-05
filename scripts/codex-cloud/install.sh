@@ -10,7 +10,7 @@ source "$script_dir/lib/skills.sh"
 repo_root="$(codex_cloud_repo_root)"
 cd "$repo_root"
 bash "$script_dir/preflight.sh"
-mkdir -p "$CODEX_CLOUD_BIN" "$GOCACHE" "$GOPATH"
+mkdir -p "$CODEX_CLOUD_BIN" "$GOCACHE" "$GOPATH" "$XDG_CACHE_HOME"
 codex_cloud_require go
 
 for setting in CODEX_CLOUD_INSTALL_SKILLS CODEX_CLOUD_REGISTER_GOOGLE_MARKETPLACE CODEX_CLOUD_WARM_TESTS; do
@@ -35,6 +35,9 @@ if [[ ! -x "$CODEX_CLOUD_BIN/gopls" ]] || ! "$CODEX_CLOUD_BIN/gopls" version 2>/
   GOBIN="$CODEX_CLOUD_BIN" go install "golang.org/x/tools/gopls@$gopls_version"
 fi
 "$CODEX_CLOUD_BIN/gopls" version
+
+mkdir -p /workspace/.npm-cache
+npm_config_cache=/workspace/.npm-cache npx -y repomix@1.18.1 --version
 
 if [[ "${CODEX_CLOUD_INSTALL_SKILLS:-0}" == 1 ]]; then
   plugin_args=()

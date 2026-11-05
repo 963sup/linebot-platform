@@ -7,6 +7,7 @@ export CODEX_CLOUD_BIN="${CODEX_CLOUD_BIN:-$CODEX_CLOUD_TOOLS/bin}"
 export PATH="$CODEX_CLOUD_BIN:$CODEX_CLOUD_TOOLS/go/bin:/opt/codex/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 export GOCACHE="${GOCACHE:-/workspace/.gocache}"
 export GOPATH="${GOPATH:-/workspace/.gopath}"
+export XDG_CACHE_HOME="${XDG_CACHE_HOME:-/workspace/.cache}"
 export GOFLAGS="${GOFLAGS:--mod=readonly}"
 export GOMAXPROCS="${GOMAXPROCS:-5}"
 hash -r

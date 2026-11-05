@@ -15,7 +15,7 @@ The primary Codex session is the `orchestrator`. It may delegate to exactly thes
 
 Roles are behavior guidance, not sandbox or IAM boundaries. The host controls actual permissions. The maximum delegated depth is one and the maximum concurrent child threads is nine. Do not spawn an orchestrator child; the primary session coordinates work.
 
-Nine is a capacity limit, not a required fan-out. Use the smallest necessary role set; repeated role instances require disjoint scopes. Use one write owner per file, sequence shared contracts and files, keep reviewers independent and read-only, and close completed threads promptly. Keep the ninth slot available for review, replacement, or non-overlapping research when practical. Do not delegate trivial localized changes. Every handoff reports Task, Owner, Inputs, Scope, Files, Contract Changes, Evidence, Tests Run, Findings, Risks and Next Action. Unverified states must be reported as `Not Verified`.
+The primary orchestrator interprets requests, orders dependencies, assigns one write owner per file, sequences shared contracts, resolves conflicts and verifies completion. Nine is a capacity limit, not a required fan-out. Use the smallest necessary role set; repeated role instances require disjoint scopes. Keep reviewers independent and read-only, close completed threads promptly, and reserve the ninth slot for review, replacement, or non-overlapping research when practical. Do not delegate trivial localized changes. Every handoff reports Task, Owner, Inputs, Scope, Files, Contract Changes, Evidence, Tests Run, Findings, Risks and Next Action. Unverified states must be reported as `Not Verified`.
 
 ## Routing
 
@@ -30,12 +30,15 @@ Nine is a capacity limit, not a required fan-out. Use the smallest necessary rol
 
 ## Evidence policy
 
+- Use direct search for local questions and sandboxed Repomix only when cross-package structure or repository-wide context is needed.
 - Use `gopls` for Go symbols, references and diagnostics.
 - Use Context7 for version-specific third-party SDK documentation.
 - Use `openaiDeveloperDocs` only for OpenAI/Codex/MCP/Plugin documentation.
 - Use `google_developer_knowledge` for Google Cloud and Workspace documentation.
 - Use GitHub MCP for repository, branch, PR and CI evidence.
 - MCP declarations do not prove startup, authentication, authorization or tool availability.
+
+Cross-cutting Go work follows this evidence loop: Repomix scope map, gopls semantic confirmation, smallest-role implementation, repository checks, then independent review. Repomix output is a context snapshot and never overrides current source or gopls.
 
 ## Environment policy
 

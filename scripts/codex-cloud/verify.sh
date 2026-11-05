@@ -21,6 +21,8 @@ command -v gopls >/dev/null 2>&1 && printf 'gopls=%s\n' "$(gopls version | head 
 if command -v go >/dev/null 2>&1; then
   go run ./cmd/codexcheck || block "repository Codex configuration validation failed"
   codex_cloud_skills_direct_discovery_check || warn "direct samber skill layout is not verified"
+  codex_cloud_skill_source_check "$repo_root" cc-skills 21 || warn "cc-skills count or pinned source commit is not verified"
+  codex_cloud_skill_source_check "$repo_root" cc-skills-golang 46 || warn "cc-skills-golang count or pinned source commit is not verified"
 	codex_cloud_google_plugin_check || warn "Google developer plugin is not installed and enabled"
 else
   block "Go-dependent checks skipped"

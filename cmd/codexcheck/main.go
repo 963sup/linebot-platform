@@ -145,7 +145,7 @@ func validateConfig(path string) error {
 	if _, err := parseAgentRegistry(c.Agents); err != nil {
 		return err
 	}
-	expected := []string{"gopls", "terraform", "line", "openapi_line", "firestore_toolbox"}
+	expected := []string{"gopls", "repomix", "terraform", "line", "openapi_line", "firestore_toolbox"}
 	for name := range remoteEndpoints {
 		expected = append(expected, name)
 	}
@@ -164,7 +164,7 @@ func validateConfig(path string) error {
 		if name != "github" && server.BearerTokenEnvVar != "" {
 			return fmt.Errorf("MCP %s: unexpected bearer token mapping", name)
 		}
-		if name != "firestore_toolbox" && name != "google_cloud_cli" && name != "terraform" && name != "line" && name != "openapi_line" && (len(server.EnvVars) != 0 || len(server.EnabledTools) != 0) {
+		if name != "firestore_toolbox" && name != "google_cloud_cli" && name != "repomix" && name != "terraform" && name != "line" && name != "openapi_line" && (len(server.EnvVars) != 0 || len(server.EnabledTools) != 0) {
 			return fmt.Errorf("MCP %s: unexpected tool or environment override", name)
 		}
 	}
@@ -172,8 +172,17 @@ func validateConfig(path string) error {
 		return fmt.Errorf("MCP servers differ from the approved set: %v", actual)
 	}
 	gopls := c.MCPServers["gopls"]
-	if !gopls.Enabled || gopls.Command != "gopls" || !slices.Equal(gopls.Args, []string{"mcp"}) || gopls.URL != "" || gopls.DefaultToolsApprovalMode != "" {
-		return errors.New("gopls must use the gopls mcp command")
+	goplsArgs := []string{"-lc", "exec env XDG_CACHE_HOME=/workspace/.cache /workspace/.linebot-tools/bin/gopls mcp"}
+	if !gopls.Enabled || gopls.Command != "bash" || !slices.Equal(gopls.Args, goplsArgs) || gopls.URL != "" || gopls.DefaultToolsApprovalMode != "" {
+		return errors.New("gopls must use the pinned workspace path and writable XDG cache")
+	}
+	repomix := c.MCPServers["repomix"]
+	repomixArgs := []string{"-lc", "exec env npm_config_cache=/workspace/.npm-cache npx -y repomix@1.18.1 --mcp --sandbox /workspace/linebot-platform"}
+	repomixTools := []string{"pack_codebase", "read_repomix_output", "grep_repomix_output", "file_system_read_file", "file_system_read_directory"}
+	if !repomix.Enabled || repomix.Command != "bash" || repomix.URL != "" || repomix.DefaultToolsApprovalMode != "" ||
+		!slices.Equal(repomix.Args, repomixArgs) || !sameStrings(repomix.EnabledTools, repomixTools) ||
+		len(repomix.EnvVars) != 0 || repomix.BearerTokenEnvVar != "" || len(repomix.EnvHTTPHeaders) != 0 {
+		return errors.New("Repomix MCP must use the pinned workspace-confined read-only sandbox")
 	}
 	for name, endpoint := range remoteEndpoints {
 		server := c.MCPServers[name]

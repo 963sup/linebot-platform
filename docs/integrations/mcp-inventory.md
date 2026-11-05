@@ -3,6 +3,7 @@
 | MCP | Transport | Default | Purpose |
 | --- | --- | --- | --- |
 | gopls | local stdio | enabled | Go symbols and diagnostics |
+| repomix | local npx stdio | enabled | Pinned repository-wide context; read-only sandbox rooted at linebot-platform |
 | context7 | remote HTTP | enabled | Versioned SDK documentation |
 | github | remote HTTP | enabled | Repository and CI evidence; writes require approval |
 | openaiDeveloperDocs | remote HTTP | enabled | OpenAI/Codex/MCP/Plugin docs |

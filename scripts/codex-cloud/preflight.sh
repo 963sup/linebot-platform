@@ -17,10 +17,10 @@ done
 
 test -d /workspace || { codex_cloud_fail "/workspace is missing"; exit 2; }
 test -w /workspace || { codex_cloud_fail "/workspace is not writable"; exit 2; }
-case "$CODEX_CLOUD_TOOLS:$CODEX_CLOUD_BIN:$GOCACHE:$GOPATH" in
+case "$CODEX_CLOUD_TOOLS:$CODEX_CLOUD_BIN:$GOCACHE:$GOPATH:$XDG_CACHE_HOME" in
   *"$HOME"*) codex_cloud_fail "mutable path resolves under read-only HOME"; exit 2 ;;
 esac
-for path in "$CODEX_CLOUD_TOOLS" "$CODEX_CLOUD_BIN" "$GOCACHE" "$GOPATH"; do
+for path in "$CODEX_CLOUD_TOOLS" "$CODEX_CLOUD_BIN" "$GOCACHE" "$GOPATH" "$XDG_CACHE_HOME"; do
   case "$path" in
     /workspace/*) ;;
     *) codex_cloud_fail "mutable path must stay under /workspace: $path"; exit 2 ;;
@@ -28,5 +28,5 @@ for path in "$CODEX_CLOUD_TOOLS" "$CODEX_CLOUD_BIN" "$GOCACHE" "$GOPATH"; do
 done
 
 printf 'PATH=%s\n' "$PATH"
-printf 'tools=%s\ncache=%s\ngopath=%s\n' "$CODEX_CLOUD_TOOLS" "$GOCACHE" "$GOPATH"
+printf 'tools=%s\ngocache=%s\ngopath=%s\nxdg-cache=%s\n' "$CODEX_CLOUD_TOOLS" "$GOCACHE" "$GOPATH" "$XDG_CACHE_HOME"
 codex_cloud_log "preflight READY"

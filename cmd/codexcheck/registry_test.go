@@ -117,6 +117,12 @@ func TestRetainApprovedRoles(t *testing.T) {
 			t.Errorf("approved role %s missing", name)
 		}
 	}
+	if len(roles) != 8 {
+		t.Fatalf("expected exactly eight delegated roles, got %d", len(roles))
+	}
+	if _, ok := roles["orchestrator"]; ok {
+		t.Fatal("primary orchestrator must not be registered as a delegated role")
+	}
 }
 
 func TestRejectConfigDrift(t *testing.T) {
@@ -127,6 +133,9 @@ func TestRejectConfigDrift(t *testing.T) {
 	for _, tc := range []struct{ name, from, to string }{
 		{"threads", "max_concurrent_threads_per_session = 9", "max_concurrent_threads_per_session = 10"},
 		{"knowledge-secret", `env_http_headers = { "X-Goog-Api-Key" = "DEVELOPERKNOWLEDGE_API_KEY" }`, `http_headers = { "X-Goog-Api-Key" = "do-not-store-keys" }`},
+		{"repomix-version", "repomix@1.18.1", "repomix@latest"},
+		{"repomix-sandbox", "--mcp --sandbox /workspace/linebot-platform", "--mcp"},
+		{"gopls-home-cache", "XDG_CACHE_HOME=/workspace/.cache", "XDG_CACHE_HOME=/home/agent/.cache"},
 		{"unknown", "project_doc_max_bytes = 65536", "project_doc_max_bytes = 65536\nunknown_key = true"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {

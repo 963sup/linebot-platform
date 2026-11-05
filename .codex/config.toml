@@ -36,12 +36,20 @@ description = "Independently validates Go correctness, architecture, security, p
 config_file = "agents/reviewer.toml"
 
 [mcp_servers.gopls]
-command = "gopls"
-args = ["mcp"]
+command = "bash"
+args = ["-lc", "exec env XDG_CACHE_HOME=/workspace/.cache /workspace/.linebot-tools/bin/gopls mcp"]
 enabled = true
 required = false
 startup_timeout_sec = 30
 tool_timeout_sec = 60
+[mcp_servers.repomix]
+command = "bash"
+args = ["-lc", "exec env npm_config_cache=/workspace/.npm-cache npx -y repomix@1.18.1 --mcp --sandbox /workspace/linebot-platform"]
+enabled_tools = ["pack_codebase", "read_repomix_output", "grep_repomix_output", "file_system_read_file", "file_system_read_directory"]
+enabled = true
+required = false
+startup_timeout_sec = 45
+tool_timeout_sec = 120
 [mcp_servers.context7]
 url = "https://mcp.context7.com/mcp"
 enabled = true

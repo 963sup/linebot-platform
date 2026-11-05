@@ -5,6 +5,7 @@ Configuration state is not runtime proof. Each MCP must be evaluated separately 
 | MCP | 狀態 |
 | --- | --- |
 | `gopls` | 啟用 |
+| `repomix` | 啟用 |
 | `context7` | 啟用 |
 | `github` | 啟用 |
 | `openaiDeveloperDocs` | 啟用 |
@@ -17,7 +18,7 @@ Configuration state is not runtime proof. Each MCP must be evaluated separately 
 
 ## Routing
 
-Go symbols use `gopls`; versioned third-party SDK documentation uses Context7; OpenAI/Codex documentation uses `openaiDeveloperDocs`; Google Cloud and Workspace documentation uses `google_developer_knowledge`; GitHub state uses GitHub MCP. `google_cloud_cli` is restricted by policy to read-only Logging, Monitoring, and Trace queries; every command still requires approval. Terraform exposes public Registry documentation only. The official LINE MCP exposes the approved read-only account tools, while OpenAPI exposes discovery and schema reads without endpoint invocation. Cloud write operations require explicit authorization and a separately verified identity.
+Narrow questions use direct search. Cross-package structure uses Repomix 1.18.1 in read-only sandbox mode rooted at `/workspace/linebot-platform`; Go symbols and diagnostics then use `gopls`. Versioned third-party SDK documentation uses Context7; OpenAI/Codex documentation uses `openaiDeveloperDocs`; Google Cloud and Workspace documentation uses `google_developer_knowledge`; GitHub state uses GitHub MCP. `google_cloud_cli` is restricted by policy to read-only Logging, Monitoring, and Trace queries; every command still requires approval. Terraform exposes public Registry documentation only. The official LINE MCP exposes the approved read-only account tools, while OpenAPI exposes discovery and schema reads without endpoint invocation. Cloud write operations require explicit authorization and a separately verified identity.
 
 ## Skills
 
