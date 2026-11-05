@@ -22,11 +22,17 @@ func TestInteractionSurfaceLifecycle(t *testing.T) {
 	if got, want := surface.Status(), aggregates.StatusPublished; got != want {
 		t.Errorf("InteractionSurface.Status() after Publish = %v, want %v", got, want)
 	}
+	if got, want := surface.Version(), valueobjects.Version(2); got != want {
+		t.Errorf("InteractionSurface.Version() after Publish = %v, want %v", got, want)
+	}
 	if err := surface.Retire(); err != nil {
 		t.Fatalf("InteractionSurface.Retire() error = %v, want nil", err)
 	}
 	if got, want := surface.Status(), aggregates.StatusRetired; got != want {
 		t.Errorf("InteractionSurface.Status() after Retire = %v, want %v", got, want)
+	}
+	if got, want := surface.Version(), valueobjects.Version(3); got != want {
+		t.Errorf("InteractionSurface.Version() after Retire = %v, want %v", got, want)
 	}
 }
 
@@ -41,7 +47,7 @@ func TestPublishedInteractionSurfaceIsImmutable(t *testing.T) {
 	if err := surface.Revise(revised); !errors.Is(err, aggregates.ErrPublishedSurfaceImmutable) {
 		t.Errorf("InteractionSurface.Revise(...) after Publish error = %v, want %v", err, aggregates.ErrPublishedSurfaceImmutable)
 	}
-	if got, want := surface.Version(), valueobjects.InitialVersion; got != want {
+	if got, want := surface.Version(), valueobjects.Version(2); got != want {
 		t.Errorf("InteractionSurface.Version() after rejected revision = %v, want %v", got, want)
 	}
 }
@@ -87,6 +93,10 @@ func TestInteractionSurfaceEventsAreDetached(t *testing.T) {
 	got[0] = nil
 	if surface.PendingEvents()[0] == nil {
 		t.Error("InteractionSurface.PendingEvents() returned mutable internal storage, want detached slice")
+	}
+	surface.AcknowledgeEvents()
+	if len(surface.PendingEvents()) != 0 {
+		t.Error("InteractionSurface.AcknowledgeEvents() did not clear committed events")
 	}
 }
 

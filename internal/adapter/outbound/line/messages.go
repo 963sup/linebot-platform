@@ -3,6 +3,7 @@ package line
 import (
 	"context"
 	"errors"
+	"net"
 	"net/http"
 
 	messagingdelivery "github.com/963sup/linebot-platform/internal/application/usecases/messaging-delivery"
@@ -73,10 +74,11 @@ func httpStatus(response *http.Response) int {
 	return response.StatusCode
 }
 
-// lineAPIError closes the response body left open by LINE SDK v8 on non-2xx
-// responses, then removes the provider response body from the returned error.
-// Keeping this at the adapter boundary prevents repeated provider failures from
-// leaking HTTP connections while preserving the status-based classification.
+// lineAPIError is the single provider-error boundary for LINE SDK calls. It
+// closes response bodies, retains only safe classification data, and replaces
+// the raw SDK error with a context sentinel or a generic cause. In particular,
+// URLs, response bodies, credentials and recipient identifiers in SDK error
+// strings are not reachable through the returned error chain.
 func lineAPIError(operation string, response *http.Response, err error) error {
 	if err == nil {
 		return nil
@@ -85,7 +87,17 @@ func lineAPIError(operation string, response *http.Response, err error) error {
 	if response != nil && response.Body != nil {
 		_ = response.Body.Close()
 	}
-	return resilience.Wrap("line", operation, status, err)
+	safeCause := errors.New("LINE provider request failed")
+	var networkError net.Error
+	switch {
+	case errors.Is(err, context.Canceled):
+		safeCause = context.Canceled
+	case errors.Is(err, context.DeadlineExceeded):
+		safeCause = context.DeadlineExceeded
+	case errors.As(err, &networkError) && networkError.Timeout():
+		safeCause = context.DeadlineExceeded
+	}
+	return resilience.Wrap("line", operation, status, safeCause)
 }
 
 func (s *Sender) Reply(ctx context.Context, replyToken string, messages []messagingdelivery.Message) error {

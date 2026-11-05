@@ -4,17 +4,23 @@ package firestore
 
 import (
 	"context"
+	"crypto/rand"
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"io"
+	"slices"
+	"strconv"
 	"strings"
 	"time"
 
 	sdk "cloud.google.com/go/firestore"
 	identity "github.com/963sup/linebot-platform/internal/application/usecases/identity"
 	"github.com/963sup/linebot-platform/internal/domain/identity/aggregates"
+	domainevents "github.com/963sup/linebot-platform/internal/domain/identity/events"
 	"github.com/963sup/linebot-platform/internal/domain/identity/factories"
 	"github.com/963sup/linebot-platform/internal/domain/identity/repositories"
 	valueobjects "github.com/963sup/linebot-platform/internal/domain/identity/value-objects"
@@ -24,8 +30,9 @@ import (
 )
 
 const (
-	oauthStateCollection = "google_oauth_states_v1"
-	oauthLinksCollection = "google_oauth_connections_v1"
+	oauthStateCollection     = "google_oauth_states_v1"
+	oauthLinksCollection     = "google_oauth_connections_v1"
+	identityOutboxCollection = "identity_outbox_v1"
 )
 
 var ErrConnectionConflict = errors.New("Google connection was updated concurrently")
@@ -78,6 +85,250 @@ type storedConnection struct {
 	Version    int64      `firestore:"version"`
 	UpdatedAt  time.Time  `firestore:"updated_at"`
 	ExpiresAt  *time.Time `firestore:"expires_at,omitempty"`
+}
+
+// storedIdentityEvent is a credential-free integration-event envelope. It is
+// written in the same Firestore transaction as the AccountLink state. A
+// separate dispatcher may publish it only after that transaction commits.
+type storedIdentityEvent struct {
+	EventID          string    `firestore:"event_id"`
+	EventType        string    `firestore:"event_type"`
+	SchemaVersion    int       `firestore:"schema_version"`
+	AggregateID      string    `firestore:"aggregate_id"`
+	AggregateVersion int64     `firestore:"aggregate_version"`
+	OccurredAt       time.Time `firestore:"occurred_at"`
+	State            string    `firestore:"state"`
+	CorrelationID    string    `firestore:"correlation_id"`
+	IdempotencyKey   string    `firestore:"idempotency_key"`
+	LeaseID          string    `firestore:"lease_id,omitempty"`
+	LeaseUntil       time.Time `firestore:"lease_until,omitempty"`
+	NextDispatchAt   time.Time `firestore:"next_dispatch_at"`
+	UpdatedAt        time.Time `firestore:"updated_at"`
+	Attempts         int64     `firestore:"attempts"`
+	ExpiresAt        time.Time `firestore:"expires_at"`
+}
+
+type identityOutboxDocument struct {
+	id     string
+	record storedIdentityEvent
+}
+
+func identityOutboxDocuments(aggregateID string, version int64, occurredAt time.Time, pending []domainevents.IdentityEvent) ([]identityOutboxDocument, error) {
+	if aggregateID == "" || version <= 0 || occurredAt.IsZero() {
+		return nil, errors.New("invalid identity outbox metadata")
+	}
+	documents := make([]identityOutboxDocument, 0, len(pending))
+	for index, event := range pending {
+		var eventType string
+		switch current := event.(type) {
+		case domainevents.AccountLinked:
+			eventType = "identity.account-linked"
+			if current.ID.Owner().String() == "" || current.ID.GoogleAccount().String() == "" {
+				return nil, errors.New("invalid identity domain event")
+			}
+		case domainevents.AccountUnlinked:
+			eventType = "identity.account-unlinked"
+			if current.ID.Owner().String() == "" || current.ID.GoogleAccount().String() == "" {
+				return nil, errors.New("invalid identity domain event")
+			}
+		default:
+			return nil, fmt.Errorf("unsupported identity domain event %T", event)
+		}
+		source := "identity-event-v1:" + aggregateID + "\x00" + strconv.FormatInt(version, 10) + "\x00" + strconv.Itoa(index) + "\x00" + eventType
+		digest := sha256.Sum256([]byte(source))
+		eventID := hex.EncodeToString(digest[:])
+		correlationSource := sha256.Sum256([]byte("identity-correlation-v1:" + aggregateID))
+		correlationID := hex.EncodeToString(correlationSource[:])
+		documents = append(documents, identityOutboxDocument{
+			id: eventID,
+			record: storedIdentityEvent{
+				EventID: eventID, EventType: eventType, SchemaVersion: 1,
+				AggregateID: aggregateID, AggregateVersion: version,
+				OccurredAt: occurredAt.UTC(), State: "pending",
+				CorrelationID: correlationID, IdempotencyKey: eventID,
+				NextDispatchAt: occurredAt.UTC(), UpdatedAt: occurredAt.UTC(),
+				ExpiresAt: occurredAt.UTC().Add(30 * 24 * time.Hour),
+			},
+		})
+	}
+	return documents, nil
+}
+
+const identityOutboxLease = 2 * time.Minute
+
+func randomIdentityLease() (string, error) {
+	var value [16]byte
+	if _, err := io.ReadFull(rand.Reader, value[:]); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(value[:]), nil
+}
+
+func integrationEvent(record storedIdentityEvent) identity.IntegrationEvent {
+	return identity.IntegrationEvent{
+		EventID: record.EventID, EventType: record.EventType, SchemaVersion: record.SchemaVersion,
+		OccurredAt: record.OccurredAt, AggregateID: record.AggregateID,
+		AggregateVersion: record.AggregateVersion, CorrelationID: record.CorrelationID,
+		IdempotencyKey: record.IdempotencyKey,
+	}
+}
+
+func identityLeaseExpired(record storedIdentityEvent, now time.Time) bool {
+	return record.State == "publishing" && !record.LeaseUntil.IsZero() && !record.LeaseUntil.After(now)
+}
+
+func identityEventDue(record storedIdentityEvent, now time.Time) bool {
+	return record.State == "pending" && !record.NextDispatchAt.After(now)
+}
+
+func identityConnectionVersionMatches(saved, expected int64) bool {
+	return expected > 0 && saved == expected
+}
+
+// ReserveIdentityEvents recovers expired ambiguous leases as unknown, then
+// atomically reserves due pending events. Expired publishes are never retried.
+func (s *OAuthStore) ReserveIdentityEvents(ctx context.Context, now time.Time, limit int) ([]identity.ReservedIntegrationEvent, error) {
+	if ctx == nil || now.IsZero() || limit <= 0 || limit > 100 {
+		return nil, errors.New("invalid identity outbox reservation")
+	}
+	coll := s.client.Collection(identityOutboxCollection)
+	expired, err := coll.Where("state", "==", "publishing").Where("lease_until", "<=", now).Limit(limit).Documents(ctx).GetAll()
+	if err != nil {
+		return nil, errors.New("unable to inspect identity outbox")
+	}
+	for _, document := range expired {
+		if err := s.client.RunTransaction(ctx, func(ctx context.Context, tx *sdk.Transaction) error {
+			current, err := tx.Get(document.Ref)
+			if err != nil {
+				return err
+			}
+			var record storedIdentityEvent
+			if err := current.DataTo(&record); err != nil {
+				return err
+			}
+			// A concurrent resolver may already have published the event after
+			// the query snapshot. Never downgrade that terminal state.
+			if !identityLeaseExpired(record, now) {
+				return nil
+			}
+			return tx.Update(document.Ref, []sdk.Update{
+				{Path: "state", Value: "unknown"}, {Path: "updated_at", Value: now},
+				{Path: "lease_id", Value: sdk.Delete}, {Path: "lease_until", Value: sdk.Delete},
+			})
+		}); err != nil {
+			return nil, errors.New("unable to recover identity outbox")
+		}
+	}
+	due, err := coll.Where("state", "==", "pending").Where("next_dispatch_at", "<=", now).
+		OrderBy("next_dispatch_at", sdk.Asc).Limit(limit).Documents(ctx).GetAll()
+	if err != nil {
+		return nil, errors.New("unable to inspect identity outbox")
+	}
+	reserved := make([]identity.ReservedIntegrationEvent, 0, len(due))
+	for _, candidate := range due {
+		leaseID, err := randomIdentityLease()
+		if err != nil {
+			return nil, errors.New("unable to reserve identity outbox")
+		}
+		var record storedIdentityEvent
+		claimed := false
+		err = s.client.RunTransaction(ctx, func(ctx context.Context, tx *sdk.Transaction) error {
+			// Firestore may retry this callback. Reset all captured outputs on
+			// every attempt so an aborted attempt cannot leak a successful claim.
+			claimed = false
+			record = storedIdentityEvent{}
+			current, err := tx.Get(candidate.Ref)
+			if err != nil {
+				return err
+			}
+			if err := current.DataTo(&record); err != nil {
+				return err
+			}
+			if !identityEventDue(record, now) {
+				return nil
+			}
+			claimed = true
+			return tx.Update(candidate.Ref, []sdk.Update{
+				{Path: "state", Value: "publishing"}, {Path: "lease_id", Value: leaseID},
+				{Path: "lease_until", Value: now.Add(identityOutboxLease)},
+				{Path: "updated_at", Value: now}, {Path: "attempts", Value: record.Attempts + 1},
+			})
+		})
+		if err != nil {
+			return nil, errors.New("unable to reserve identity outbox")
+		}
+		if claimed {
+			reserved = append(reserved, identity.ReservedIntegrationEvent{Event: integrationEvent(record), LeaseID: leaseID})
+		}
+	}
+	return reserved, nil
+}
+
+func (s *OAuthStore) ResolveIdentityEvent(ctx context.Context, eventID, leaseID string, resolution identity.DispatchResolution, now time.Time) error {
+	if ctx == nil || eventID == "" || leaseID == "" || now.IsZero() {
+		return errors.New("invalid identity outbox resolution")
+	}
+	ref := s.client.Collection(identityOutboxCollection).Doc(eventID)
+	err := s.client.RunTransaction(ctx, func(ctx context.Context, tx *sdk.Transaction) error {
+		snapshot, err := tx.Get(ref)
+		if err != nil {
+			return err
+		}
+		var record storedIdentityEvent
+		if err := snapshot.DataTo(&record); err != nil {
+			return err
+		}
+		if record.State != "publishing" || record.LeaseID != leaseID {
+			return errors.New("identity outbox lease conflict")
+		}
+		state := "unknown"
+		updates := []sdk.Update{{Path: "updated_at", Value: now}, {Path: "lease_id", Value: sdk.Delete}, {Path: "lease_until", Value: sdk.Delete}}
+		switch resolution {
+		case identity.DispatchPublished:
+			state = "published"
+		case identity.DispatchRetryable:
+			state = "pending"
+			updates = append(updates, sdk.Update{Path: "next_dispatch_at", Value: now.Add(time.Minute)})
+		case identity.DispatchUnknown:
+			state = "unknown"
+		default:
+			return errors.New("invalid identity outbox resolution")
+		}
+		updates = append(updates, sdk.Update{Path: "state", Value: state})
+		return tx.Update(ref, updates)
+	})
+	if err != nil {
+		return errors.New("unable to resolve identity outbox")
+	}
+	return nil
+}
+
+func (s *OAuthStore) createIdentityOutbox(tx *sdk.Transaction, documents []identityOutboxDocument) error {
+	for _, document := range documents {
+		ref := s.client.Collection(identityOutboxCollection).Doc(document.id)
+		if err := tx.Create(ref, document.record); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (s *OAuthStore) disconnectedConnection(id string, authorization identity.OAuthAuthorization, version int64, now time.Time) (storedConnection, error) {
+	if id == "" || authorization.Link.IsActive() || version <= 0 || now.IsZero() {
+		return storedConnection{}, errors.New("invalid disconnected Google connection")
+	}
+	next := authorization
+	next.Credentials = identity.OAuthCredentials{}
+	next.Version = version
+	key, sealed, err := s.encodeConnection(id, next)
+	if err != nil {
+		return storedConnection{}, err
+	}
+	expiresAt := now.UTC().Add(30 * 24 * time.Hour)
+	return storedConnection{
+		Ciphertext: sealed, KeyID: key, Active: false, Version: version,
+		UpdatedAt: now.UTC(), ExpiresAt: &expiresAt,
+	}, nil
 }
 
 func (s *OAuthStore) CreateSession(ctx context.Context, state string, session identity.OAuthSession) error {
@@ -253,6 +504,8 @@ func (s *OAuthStore) SaveConnection(ctx context.Context, conn identity.OAuthAuth
 	if !conn.Link.IsActive() || conn.Credentials.AccessToken == "" {
 		return errors.New("invalid Google OAuth connection")
 	}
+	now := s.now().UTC()
+	pending := conn.Link.PendingEvents()
 	err = s.client.RunTransaction(ctx, func(ctx context.Context, tx *sdk.Transaction) error {
 		snap, err := tx.Get(ref)
 		if status.Code(err) == codes.NotFound {
@@ -265,7 +518,14 @@ func (s *OAuthStore) SaveConnection(ctx context.Context, conn identity.OAuthAuth
 			if err != nil {
 				return err
 			}
-			return tx.Create(ref, storedConnection{Ciphertext: sealed, KeyID: key, Active: true, Version: 1, UpdatedAt: s.now().UTC()})
+			outbox, err := identityOutboxDocuments(id, 1, now, pending)
+			if err != nil {
+				return err
+			}
+			if err := tx.Create(ref, storedConnection{Ciphertext: sealed, KeyID: key, Active: true, Version: 1, UpdatedAt: now}); err != nil {
+				return err
+			}
+			return s.createIdentityOutbox(tx, outbox)
 		}
 		if err != nil {
 			return err
@@ -293,7 +553,14 @@ func (s *OAuthStore) SaveConnection(ctx context.Context, conn identity.OAuthAuth
 		if err != nil {
 			return err
 		}
-		return tx.Set(ref, storedConnection{Ciphertext: sealed, KeyID: key, Active: true, Version: next.Version, UpdatedAt: s.now().UTC()})
+		outbox, err := identityOutboxDocuments(id, next.Version, now, pending)
+		if err != nil {
+			return err
+		}
+		if err := tx.Set(ref, storedConnection{Ciphertext: sealed, KeyID: key, Active: true, Version: next.Version, UpdatedAt: now}); err != nil {
+			return err
+		}
+		return s.createIdentityOutbox(tx, outbox)
 	})
 	if err != nil {
 		return errors.New("unable to save Google connection")
@@ -418,19 +685,29 @@ var (
 	_ repositories.ConnectionReader   = (*OAuthStore)(nil)
 	_ identity.OAuthSessionRepository = (*OAuthStore)(nil)
 	_ identity.ConnectionStore        = (*OAuthStore)(nil)
+	_ identity.IntegrationOutbox      = (*OAuthStore)(nil)
 )
 
-func (s *OAuthStore) DeactivateConnection(ctx context.Context, owner, subject string) error {
+func (s *OAuthStore) DeactivateConnection(ctx context.Context, authorization identity.OAuthAuthorization) error {
 	if ctx == nil {
 		return errors.New("context required")
 	}
 	if err := ctx.Err(); err != nil {
 		return err
 	}
-	ref, _, err := s.linkDoc(owner, subject)
+	id, err := authorization.Link.ConnectionID()
+	if err != nil || authorization.Link.IsActive() {
+		return errors.New("disconnected Google connection required")
+	}
+	ref, aggregateID, err := s.linkDoc(id.Owner().String(), id.GoogleAccount().String())
 	if err != nil {
 		return err
 	}
+	pending := authorization.Link.PendingEvents()
+	if len(pending) == 0 {
+		return errors.New("account unlink event required")
+	}
+	now := s.now().UTC()
 	err = s.client.RunTransaction(ctx, func(ctx context.Context, tx *sdk.Transaction) error {
 		snap, err := tx.Get(ref)
 		if err != nil {
@@ -443,17 +720,36 @@ func (s *OAuthStore) DeactivateConnection(ctx context.Context, owner, subject st
 		if !saved.Active {
 			return errors.New("Google account already disconnected")
 		}
-		now := s.now().UTC()
-		return tx.Update(ref, []sdk.Update{
-			{Path: "active", Value: false},
-			{Path: "ciphertext", Value: []byte{}},
-			{Path: "key_id", Value: ""},
-			{Path: "version", Value: saved.Version + 1},
-			{Path: "updated_at", Value: now},
-			{Path: "expires_at", Value: now.Add(30 * 24 * time.Hour)},
-		})
+		if !identityConnectionVersionMatches(saved.Version, authorization.Version) {
+			return ErrConnectionConflict
+		}
+		persisted, err := s.decodeConnection(aggregateID, saved)
+		if err != nil {
+			return err
+		}
+		if persisted.Link.Owner() != authorization.Link.Owner() ||
+			persisted.Link.GoogleAccount() != authorization.Link.GoogleAccount() ||
+			!slices.Equal(persisted.Link.Scopes(), authorization.Link.Scopes()) {
+			return errors.New("connection identity conflict")
+		}
+		nextVersion := saved.Version + 1
+		outbox, err := identityOutboxDocuments(aggregateID, nextVersion, now, pending)
+		if err != nil {
+			return err
+		}
+		disconnected, err := s.disconnectedConnection(aggregateID, authorization, nextVersion, now)
+		if err != nil {
+			return err
+		}
+		if err := tx.Set(ref, disconnected); err != nil {
+			return err
+		}
+		return s.createIdentityOutbox(tx, outbox)
 	})
 	if err != nil {
+		if errors.Is(err, ErrConnectionConflict) {
+			return ErrConnectionConflict
+		}
 		return errors.New("cannot deactivate Google connection")
 	}
 	return nil

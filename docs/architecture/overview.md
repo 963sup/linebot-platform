@@ -1,6 +1,8 @@
-# 架構概覽（程式碼已建立，部署尚待驗證）
+# 架構概覽（Production baseline 已建立；外部環境尚未驗證）
 
-採 Go modular monolith、DDD 與 Hexagonal Architecture。**預設同步 LINE Webhook／CLI 已接線；可選的 Firestore Inbox/Outbox 與 Cloud Tasks Worker 程式碼已接線，但 Google Cloud 資源、IAM／OIDC 與正式部署尚未啟用或驗證。**
+採 Go modular monolith、DDD 與 Hexagonal Architecture。**預設同步 LINE Webhook／CLI 已接線；可選的 Firestore Inbox/Outbox 與 Cloud Tasks Worker 程式碼已接線，但 Google Cloud 資源、IAM／OIDC、LINE 測試 Channel 與正式部署尚未啟用或驗證，因此本儲存庫不能宣稱 production-ready。**
+
+Repository-specific 的目錄、compile-time dependency、runtime call、interface implementation、事件與驗收語意見 [Layer-first DDD + Hexagonal Architecture Blueprint](layer-first-blueprint.md)。
 
 ```text
 LINE Platform
@@ -24,10 +26,10 @@ Cloud Run／Firestore／Cloud Tasks 實際資源與 IAM 均未由儲存庫自動
 
 ## 邊界
 
-- **Domain**：業務不變量，不接觸 SDK；PR #28 已合併 `internal/domain/identity/`（Entities、Aggregate、Value Objects、Policies、Specifications、Factory、Repository Reader、Events），其中 `identity/value-objects/` 使用 `valueobjects` package。根目錄 `domain/value-objects/` 是原始 Scaffold 預留位置。
+- **Domain**：業務不變量，不接觸 SDK；`internal/domain/identity/` 已實作 Entities、Aggregate、Value Objects、Policies、Specifications、Factory、Repository Reader 與 Events，其中 `identity/value-objects/` 使用 `valueobjects` package。其他 Bounded Context 只建立有實際行為與測試的分類，不保留根目錄 scaffold。
 - **Application**：執行流程、命令、查詢、ports；只有協調，不含 HTTP 細節。
-- **Adapter**：HTTP/CLI 入站，SDK / Firestore / Cloud Tasks 等出站；Gemini provider 使用 `internal/adapter/outbound/genai/`。
-- **Infrastructure**：外部 client、憑證、transport、觀測與執行設定；Google Gen AI SDK client 預留於 `internal/infrastructure/google/genai/`。
+- **Adapter**：HTTP/CLI 入站，LINE、Google API、Firestore、Cloud Tasks 等出站；尚未接入 Application 的 AI SDK 不建立虛假的 outbound adapter。
+- **Infrastructure**：外部 client、憑證、transport、觀測與執行設定；Google Gen AI SDK client factory 位於 `internal/infrastructure/google/genai/`，存在 factory 不代表已有業務 adapter 或外部授權。
 - **Bootstrap**：依賴組裝；cmd 只啟動服務。
 
 ## 可靠性
@@ -40,4 +42,4 @@ Cloud Run／Firestore／Cloud Tasks 實際資源與 IAM 均未由儲存庫自動
 - Unsend／edit 會影響記憶、儲存與尚未完成的 AI 回覆。
 - 保留對資料存取、AI 訊息資料、隱私與帳號限制的審核。
 
-目前除了同步 LINE Webhook／Push 示範，已新增需明確設定 `LINE_EVENT_MODE=durable` 才會啟用的 Firestore 原子 Inbox/Outbox、Cloud Tasks OIDC Worker 與定期 Reconcile 程式碼。**尚未部署任何 Google Cloud 資源**，也未實測真實 IAM、OIDC、LINE redelivery 或高吞吐；預設同步模式仍不具持久保證。參閱 [事件處理](event-processing.md)。
+目前除了同步 LINE Webhook／Push 示範，已新增需明確設定 `LINE_EVENT_MODE=durable` 才會啟用的 Firestore 原子 Inbox/Outbox、Cloud Tasks OIDC Worker 與定期 Reconcile 程式碼。這些屬於程式與測試層級的 production baseline；**尚未部署任何 Google Cloud 資源**，也未實測真實 IAM、OIDC、LINE redelivery 或高吞吐，因此不是 Staging／Production 驗收證據。預設同步模式仍不具持久保證。參閱 [事件處理](event-processing.md)。

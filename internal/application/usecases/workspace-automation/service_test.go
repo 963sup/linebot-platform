@@ -52,9 +52,15 @@ func TestRequestAndApprovePersistTransitions(t *testing.T) {
 	if err != nil || requested.Status() != valueobjects.StatusRequested {
 		t.Fatalf("Request() = (%v, %v), want requested, nil", requested.Status(), err)
 	}
+	if len(requested.PendingEvents()) != 0 {
+		t.Fatal("Request() returned acknowledged events")
+	}
 	approved, err := service.Approve(context.Background(), id, approval)
 	if err != nil || approved.Status() != valueobjects.StatusApproved {
 		t.Fatalf("Approve() = (%v, %v), want approved, nil", approved.Status(), err)
+	}
+	if len(approved.PendingEvents()) != 0 {
+		t.Fatal("Approve() returned acknowledged events")
 	}
 	if repository.saveCalls != 2 {
 		t.Fatalf("Save calls = %d, want 2", repository.saveCalls)
@@ -80,6 +86,9 @@ func TestExecuteMapsKnownProviderOutcomes(t *testing.T) {
 			request, err := service.Execute(context.Background(), repository.value.ID())
 			if err != nil || request.Status() != test.want || request.Output().Detail() != test.name {
 				t.Fatalf("Execute() = (%v, %v), want %v, nil", request.Status(), err, test.want)
+			}
+			if len(request.PendingEvents()) != 0 {
+				t.Fatal("Execute() returned acknowledged events")
 			}
 			if repository.saveCalls != 2 || provider.calls != 1 {
 				t.Fatalf("Save/Execute calls = %d/%d, want 2/1", repository.saveCalls, provider.calls)

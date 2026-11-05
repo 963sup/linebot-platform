@@ -13,6 +13,7 @@ var errAudiencePort = errors.New("audience port failure")
 
 type audienceRepository struct {
 	value     aggregates.AudienceDefinition
+	attempted aggregates.AudienceDefinition
 	findErr   error
 	saveErr   error
 	saveCalls int
@@ -23,10 +24,48 @@ func (r *audienceRepository) Find(context.Context, valueobjects.AudienceID) (agg
 }
 func (r *audienceRepository) Save(_ context.Context, value aggregates.AudienceDefinition) error {
 	r.saveCalls++
+	r.attempted = value
 	if r.saveErr == nil {
 		r.value = value
 	}
 	return r.saveErr
+}
+
+func TestAudienceNoopRevisionSkipsPersistence(t *testing.T) {
+	t.Parallel()
+	id, criteria := audienceValues(t, "same", "orders", "count > 0")
+	current, _ := aggregates.RestoreAudienceDefinition(id, criteria, 4, aggregates.StatusDraft)
+	repository := &audienceRepository{value: current}
+	service, _ := NewService(repository, &audienceProvider{})
+
+	result, err := service.Revise(context.Background(), id, criteria)
+	if err != nil || result.Version() != 4 {
+		t.Fatalf("Revise(no-op) = (%v, %v), want version 4, nil", result.Version(), err)
+	}
+	if repository.saveCalls != 0 {
+		t.Fatalf("Save calls = %d, want 0", repository.saveCalls)
+	}
+}
+
+func TestAudienceAcknowledgesOnlyAfterSuccessfulSave(t *testing.T) {
+	t.Parallel()
+	id, criteria := audienceValues(t, "events", "orders", "count > 0")
+	repository := &audienceRepository{saveErr: errAudiencePort}
+	service, _ := NewService(repository, &audienceProvider{})
+	if _, err := service.Define(context.Background(), id, criteria); !errors.Is(err, errAudiencePort) {
+		t.Fatalf("Define(save error) = %v, want %v", err, errAudiencePort)
+	}
+	if len(repository.attempted.PendingEvents()) == 0 {
+		t.Fatal("failed save cleared pending events")
+	}
+	repository.saveErr = nil
+	defined, err := service.Define(context.Background(), id, criteria)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(defined.PendingEvents()) != 0 {
+		t.Fatal("successful save retained pending events")
+	}
 }
 
 type audienceProvider struct {

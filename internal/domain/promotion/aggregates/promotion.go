@@ -31,12 +31,13 @@ func (s Status) Valid() bool { return s >= StatusDraft && s <= StatusClosed }
 
 // Promotion owns one time-bounded offer and its lifecycle.
 type Promotion struct {
-	id      valueobjects.PromotionID
-	offer   valueobjects.OfferReference
-	policy  valueobjects.EligibilityPolicyReference
-	period  valueobjects.Period
-	status  Status
-	pending []events.PromotionEvent
+	id       valueobjects.PromotionID
+	offer    valueobjects.OfferReference
+	policy   valueobjects.EligibilityPolicyReference
+	period   valueobjects.Period
+	status   Status
+	revision uint64
+	pending  []events.PromotionEvent
 }
 
 func NewPromotion(id valueobjects.PromotionID, offer valueobjects.OfferReference, policy valueobjects.EligibilityPolicyReference, period valueobjects.Period) (Promotion, error) {
@@ -44,17 +45,17 @@ func NewPromotion(id valueobjects.PromotionID, offer valueobjects.OfferReference
 		return Promotion{}, ErrInvalidPromotion
 	}
 	return Promotion{
-		id: id, offer: offer, policy: policy, period: period, status: StatusDraft,
+		id: id, offer: offer, policy: policy, period: period, status: StatusDraft, revision: 1,
 		pending: []events.PromotionEvent{events.Defined{ID: id}},
 	}, nil
 }
 
 // RestorePromotion rehydrates persisted state without raising events.
-func RestorePromotion(id valueobjects.PromotionID, offer valueobjects.OfferReference, policy valueobjects.EligibilityPolicyReference, period valueobjects.Period, status Status) (Promotion, error) {
-	if !id.Valid() || !offer.Valid() || !policy.Valid() || !period.Valid() || !status.Valid() {
+func RestorePromotion(id valueobjects.PromotionID, offer valueobjects.OfferReference, policy valueobjects.EligibilityPolicyReference, period valueobjects.Period, status Status, revision uint64) (Promotion, error) {
+	if !id.Valid() || !offer.Valid() || !policy.Valid() || !period.Valid() || !status.Valid() || revision == 0 {
 		return Promotion{}, ErrInvalidPromotion
 	}
-	return Promotion{id: id, offer: offer, policy: policy, period: period, status: status}, nil
+	return Promotion{id: id, offer: offer, policy: policy, period: period, status: status, revision: revision}, nil
 }
 
 func (p Promotion) ID() valueobjects.PromotionID                               { return p.id }
@@ -62,8 +63,17 @@ func (p Promotion) Offer() valueobjects.OfferReference                         {
 func (p Promotion) EligibilityPolicy() valueobjects.EligibilityPolicyReference { return p.policy }
 func (p Promotion) Period() valueobjects.Period                                { return p.period }
 func (p Promotion) Status() Status                                             { return p.status }
+func (p Promotion) Revision() uint64                                           { return p.revision }
 func (p Promotion) PendingEvents() []events.PromotionEvent {
 	return append([]events.PromotionEvent(nil), p.pending...)
+}
+
+// AcknowledgeEvents clears modeled-only events after aggregate state has been
+// saved successfully. This context does not publish integration events yet.
+func (p *Promotion) AcknowledgeEvents() {
+	if p != nil {
+		p.pending = nil
+	}
 }
 
 func (p *Promotion) Activate(at time.Time) error {
@@ -74,6 +84,7 @@ func (p *Promotion) Activate(at time.Time) error {
 		return ErrOutsidePromotionPeriod
 	}
 	p.status = StatusActive
+	p.revision++
 	p.pending = append(p.pending, events.Activated{ID: p.id})
 	return nil
 }
@@ -83,6 +94,7 @@ func (p *Promotion) Close() error {
 		return ErrInvalidPromotionTransition
 	}
 	p.status = StatusClosed
+	p.revision++
 	p.pending = append(p.pending, events.Closed{ID: p.id})
 	return nil
 }
@@ -112,6 +124,7 @@ func (p *Promotion) CreateDeliveryIntent(recipient string, decision valueobjects
 	if err != nil {
 		return valueobjects.DeliveryIntent{}, err
 	}
+	p.revision++
 	p.pending = append(p.pending, events.DeliveryIntentCreated{Intent: intent})
 	return intent, nil
 }

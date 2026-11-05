@@ -10,7 +10,8 @@ import (
 	experiencepresentation "github.com/963sup/linebot-platform/internal/application/usecases/experience-presentation"
 )
 
-func runMenus(args []string, getenv func(string) string, output io.Writer) error {
+func runMenus(args []string, getenv func(string) string, output io.Writer, dependencies ...Dependencies) error {
+	deps := dependency(dependencies)
 	flags := flag.NewFlagSet("menus", flag.ContinueOnError)
 	kind := flags.String("kind", "", "list|menu|default|alias-list|alias|user|batch-progress")
 	id := flags.String("id", "", "requested menu ID, alias ID, user ID, or request ID")
@@ -24,10 +25,10 @@ func runMenus(args []string, getenv func(string) string, output io.Writer) error
 	if getenv == nil || output == nil {
 		return errors.New("missing CLI configuration")
 	}
-	if menusRuntimeFactory == nil {
+	if deps.MenusRuntime == nil {
 		return errors.New("menus runtime is not configured")
 	}
-	rt, err := menusRuntimeFactory(getenv(channelTokenEnv))
+	rt, err := deps.MenusRuntime(getenv(channelTokenEnv))
 	if err != nil {
 		return err
 	}

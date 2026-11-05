@@ -5,6 +5,8 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/963sup/linebot-platform/internal/adapter/inbound/http/health"
@@ -24,21 +26,30 @@ import (
 // WorkerRuntime owns all three native outbound SDK resources used by the
 // private Cloud Run worker. Close is called after the HTTP server has drained.
 type WorkerRuntime struct {
-	Handler  http.Handler
-	outbound *httpclient.Managed
-	closers  []func() error
+	Handler   http.Handler
+	outbound  *httpclient.Managed
+	closers   []runtimeCloser
+	ready     atomic.Bool
+	closeOnce sync.Once
+	closeErr  error
 }
 
-func (r *WorkerRuntime) Close() {
+func (r *WorkerRuntime) Close() error {
 	if r == nil {
-		return
+		return nil
 	}
-	if r.outbound != nil {
+	r.ready.Store(false)
+	r.closeOnce.Do(func() {
 		r.outbound.Close()
-	}
-	for i := len(r.closers) - 1; i >= 0; i-- {
-		_ = r.closers[i]()
-	}
+		var closeErr error
+		for i := len(r.closers) - 1; i >= 0; i-- {
+			if err := r.closers[i].close(); err != nil {
+				closeErr = errors.Join(closeErr, resourceCloseError{resource: r.closers[i].name, cause: err})
+			}
+		}
+		r.closeErr = closeErr
+	})
+	return r.closeErr
 }
 
 // NewWorkerRuntime validates OIDC identity in its handler. Cloud Run must
@@ -58,16 +69,17 @@ func NewWorkerRuntime(ctx context.Context, cfg WorkerConfig, logger *slog.Logger
 	if err != nil {
 		return nil, err
 	}
+	rt := &WorkerRuntime{closers: []runtimeCloser{
+		{name: "Firestore client", close: db.Close},
+	}}
+	cleanup := func(err error) (*WorkerRuntime, error) {
+		return nil, errors.Join(err, rt.Close())
+	}
 	queueClient, err := queueinfra.NewClient(ctx)
 	if err != nil {
-		_ = db.Close()
-		return nil, err
+		return cleanup(err)
 	}
-	rt := &WorkerRuntime{closers: []func() error{db.Close, queueClient.Close}}
-	cleanup := func(err error) (*WorkerRuntime, error) {
-		rt.Close()
-		return nil, err
-	}
+	rt.closers = append(rt.closers, runtimeCloser{name: "Cloud Tasks client", close: queueClient.Close})
 	store, err := storeout.NewStore(db)
 	if err != nil {
 		return cleanup(err)
@@ -105,8 +117,15 @@ func NewWorkerRuntime(ctx context.Context, cfg WorkerConfig, logger *slog.Logger
 	}
 	mux := http.NewServeMux()
 	mux.HandleFunc("/healthz", health.Handler)
+	mux.Handle("/readyz", health.ReadyHandler(func(context.Context) error {
+		if !rt.ready.Load() {
+			return errors.New("worker runtime is not ready")
+		}
+		return nil
+	}))
 	mux.Handle("/tasks/", workHandler)
 	rt.Handler = observability.WrapInboundHTTP("worker", logger, mux)
+	rt.ready.Store(true)
 	return rt, nil
 }
 

@@ -39,8 +39,28 @@ func TestDeliveryLifecycle(t *testing.T) {
 	if err := d.Complete("lease", valueobjects.StatusSent, now); !errors.Is(err, ErrTerminal) {
 		t.Fatalf("terminal reopened: %v", err)
 	}
-	if d.Status() != valueobjects.StatusSent || len(d.PullEvents()) != 2 {
+	pending := d.PendingEvents()
+	if d.Status() != valueobjects.StatusSent || len(pending) != 2 {
 		t.Fatalf("status=%s", d.Status())
+	}
+	pending[0] = nil
+	if d.PendingEvents()[0] == nil {
+		t.Fatal("PendingEvents returned mutable internal storage")
+	}
+	d.AcknowledgeEvents()
+	if len(d.PendingEvents()) != 0 {
+		t.Fatal("AcknowledgeEvents did not clear committed events")
+	}
+}
+
+func TestRestoreDeliveryHasNoPendingEvents(t *testing.T) {
+	d := delivery(t)
+	restored, err := Restore(d.ID(), d.Status(), d.ReplyUntil(), d.ClaimID(), d.ClaimUntil(), d.Version())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(restored.PendingEvents()) != 0 {
+		t.Fatal("Restore emitted events")
 	}
 }
 

@@ -53,5 +53,5 @@ type OAuthSessionRepository interface {
 type ConnectionStore interface {
 	SaveConnection(context.Context, OAuthAuthorization) error
 	GetConnection(context.Context, string, string) (OAuthAuthorization, error)
-	DeactivateConnection(context.Context, string, string) error
+	DeactivateConnection(context.Context, OAuthAuthorization) error
 }

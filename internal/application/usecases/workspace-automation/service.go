@@ -65,6 +65,7 @@ func (s *Service) Request(ctx context.Context, id valueobjects.AutomationRequest
 	if err := s.repository.Save(ctx, request); err != nil {
 		return aggregates.AutomationRequest{}, err
 	}
+	request.AcknowledgeEvents()
 	return request, nil
 }
 
@@ -82,6 +83,7 @@ func (s *Service) Approve(ctx context.Context, id valueobjects.AutomationRequest
 	if err := s.repository.Save(ctx, request); err != nil {
 		return aggregates.AutomationRequest{}, err
 	}
+	request.AcknowledgeEvents()
 	return request, nil
 }
 
@@ -104,6 +106,7 @@ func (s *Service) Execute(ctx context.Context, id valueobjects.AutomationRequest
 		if saveErr := s.repository.Save(ctx, request); saveErr != nil {
 			return aggregates.AutomationRequest{}, saveErr
 		}
+		request.AcknowledgeEvents()
 		return request, ErrExecutionInterrupted
 	}
 	if err := request.StartExecution(); err != nil {
@@ -113,6 +116,7 @@ func (s *Service) Execute(ctx context.Context, id valueobjects.AutomationRequest
 	if err := s.repository.Save(ctx, request); err != nil {
 		return aggregates.AutomationRequest{}, err
 	}
+	request.AcknowledgeEvents()
 
 	result, providerErr := s.provider.Execute(ctx, Execution{
 		RequestID: request.ID(), Action: request.Action(), RequiredScopes: request.RequiredScopes(),
@@ -142,6 +146,7 @@ func (s *Service) Execute(ctx context.Context, id valueobjects.AutomationRequest
 	if saveErr := s.repository.Save(ctx, request); saveErr != nil {
 		return aggregates.AutomationRequest{}, errors.Join(providerErr, resultErr, saveErr)
 	}
+	request.AcknowledgeEvents()
 	return request, errors.Join(providerErr, resultErr)
 }
 

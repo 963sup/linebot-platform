@@ -19,7 +19,8 @@ type contactDirectoryRuntime interface {
 	GetMemberProfile(context.Context, contactdirectory.RecipientReference, contactdirectory.RecipientID) (contactdirectory.ProfileSnapshot, error)
 }
 
-func runContacts(args []string, getenv func(string) string, output io.Writer) error {
+func runContacts(args []string, getenv func(string) string, output io.Writer, dependencies ...Dependencies) error {
+	deps := dependency(dependencies)
 	flags := flag.NewFlagSet("contacts", flag.ContinueOnError)
 	kind := flags.String("kind", "", "read-only LINE contacts/group query")
 	conversationID := flags.String("conversation-id", "", "LINE group or room ID")
@@ -36,10 +37,10 @@ func runContacts(args []string, getenv func(string) string, output io.Writer) er
 	if getenv == nil || output == nil {
 		return errors.New("missing CLI configuration")
 	}
-	if contactsRuntimeFactory == nil {
+	if deps.ContactsRuntime == nil {
 		return errors.New("contacts runtime is not configured")
 	}
-	rt, err := contactsRuntimeFactory(getenv(channelTokenEnv))
+	rt, err := deps.ContactsRuntime(getenv(channelTokenEnv))
 	if err != nil {
 		return err
 	}

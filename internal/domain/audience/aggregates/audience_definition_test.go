@@ -22,11 +22,17 @@ func TestAudienceDefinitionLifecycle(t *testing.T) {
 	if got, want := audience.Status(), aggregates.StatusActive; got != want {
 		t.Errorf("AudienceDefinition.Status() after Activate = %v, want %v", got, want)
 	}
+	if got, want := audience.Version(), valueobjects.Version(2); got != want {
+		t.Errorf("AudienceDefinition.Version() after Activate = %v, want %v", got, want)
+	}
 	if err := audience.Archive(); err != nil {
 		t.Fatalf("AudienceDefinition.Archive() error = %v, want nil", err)
 	}
 	if got, want := audience.Status(), aggregates.StatusArchived; got != want {
 		t.Errorf("AudienceDefinition.Status() after Archive = %v, want %v", got, want)
+	}
+	if got, want := audience.Version(), valueobjects.Version(3); got != want {
+		t.Errorf("AudienceDefinition.Version() after Archive = %v, want %v", got, want)
 	}
 	if err := audience.Activate(); !errors.Is(err, aggregates.ErrInvalidAudienceTransition) {
 		t.Errorf("AudienceDefinition.Activate() after Archive error = %v, want %v", err, aggregates.ErrInvalidAudienceTransition)
@@ -44,7 +50,7 @@ func TestActiveAudienceRevisionAdvancesVersionAndStaysActive(t *testing.T) {
 	if err := audience.Revise(revised); err != nil {
 		t.Fatalf("AudienceDefinition.Revise(%v) error = %v, want nil", revised, err)
 	}
-	if got, want := audience.Version(), valueobjects.Version(2); got != want {
+	if got, want := audience.Version(), valueobjects.Version(3); got != want {
 		t.Errorf("AudienceDefinition.Version() after active revision = %v, want %v", got, want)
 	}
 	if got, want := audience.Status(), aggregates.StatusActive; got != want {
@@ -88,6 +94,10 @@ func TestAudienceEventsAreDetached(t *testing.T) {
 	got[0] = nil
 	if audience.PendingEvents()[0] == nil {
 		t.Error("AudienceDefinition.PendingEvents() returned mutable internal storage, want detached slice")
+	}
+	audience.AcknowledgeEvents()
+	if len(audience.PendingEvents()) != 0 {
+		t.Error("AudienceDefinition.AcknowledgeEvents() did not clear committed events")
 	}
 }
 

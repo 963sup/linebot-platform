@@ -62,6 +62,14 @@ func (a AudienceDefinition) PendingEvents() []events.AudienceEvent {
 	return append([]events.AudienceEvent(nil), a.pending...)
 }
 
+// AcknowledgeEvents clears modeled-only events after aggregate state has been
+// saved successfully. This context does not publish integration events yet.
+func (a *AudienceDefinition) AcknowledgeEvents() {
+	if a != nil {
+		a.pending = nil
+	}
+}
+
 // Revise replaces the definition and advances its immutable version. Active
 // audiences remain active; archived audiences cannot be revised.
 func (a *AudienceDefinition) Revise(criteria valueobjects.SelectionCriteria) error {
@@ -88,6 +96,7 @@ func (a *AudienceDefinition) Activate() error {
 		return ErrInvalidAudienceTransition
 	}
 	a.status = StatusActive
+	a.version = a.version.Next()
 	a.pending = append(a.pending, events.Activated{ID: a.id, Version: a.version})
 	return nil
 }
@@ -97,6 +106,7 @@ func (a *AudienceDefinition) Archive() error {
 		return ErrInvalidAudienceTransition
 	}
 	a.status = StatusArchived
+	a.version = a.version.Next()
 	a.pending = append(a.pending, events.Archived{ID: a.id, Version: a.version})
 	return nil
 }

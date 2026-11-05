@@ -98,7 +98,8 @@ func validateTokenCommand(command tokenCommand) error {
 // runChannelTokens is available ONLY in the local ops CLI. It never accepts
 // secrets on command line flags, never prints them, and never emits credentials
 // to structured logs. All results containing a token go to an exclusive file.
-func runChannelTokens(args []string) error {
+func runChannelTokens(args []string, dependencies ...Dependencies) error {
+	deps := dependency(dependencies)
 	flags := flag.NewFlagSet("channel-tokens", flag.ContinueOnError)
 	action := flags.String("action", "", "issue-stateless|key-ids|issue-jwt|verify-jwt|revoke-jwt|issue-short|verify-short|revoke-short")
 	request := flags.String("request", "", "owner-readable (0600) JSON file holding credentials")
@@ -136,10 +137,10 @@ func runChannelTokens(args []string) error {
 		return err
 	}
 	invoke := func() (any, error) {
-		if tokenRuntimeFactory == nil {
+		if deps.TokenRuntime == nil {
 			return nil, errors.New("token runtime is not configured")
 		}
-		rt, err := tokenRuntimeFactory()
+		rt, err := deps.TokenRuntime()
 		if err != nil {
 			return nil, err
 		}

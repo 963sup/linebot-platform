@@ -13,7 +13,8 @@ import (
 
 // Mutating webhook configuration is only permitted through a manually
 // confirmed operator CLI. No such handler is exposed on the public webhook.
-func runWebhookAdmin(args []string, getenv func(string) string, output io.Writer) error {
+func runWebhookAdmin(args []string, getenv func(string) string, output io.Writer, dependencies ...Dependencies) error {
+	deps := dependency(dependencies)
 	flags := flag.NewFlagSet("webhook-admin", flag.ContinueOnError)
 	action := flags.String("action", "", "set|test")
 	endpoint := flags.String("endpoint", "", "HTTPS destination")
@@ -31,10 +32,10 @@ func runWebhookAdmin(args []string, getenv func(string) string, output io.Writer
 	if err := providerconfiguration.ValidateWebhookEndpoint(*endpoint); err != nil {
 		return err
 	}
-	if webhookRuntimeFactory == nil {
+	if deps.WebhookRuntime == nil {
 		return errors.New("webhook runtime is not configured")
 	}
-	rt, err := webhookRuntimeFactory(getenv(channelTokenEnv))
+	rt, err := deps.WebhookRuntime(getenv(channelTokenEnv))
 	if err != nil {
 		return err
 	}

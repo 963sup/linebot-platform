@@ -63,6 +63,14 @@ func (s InteractionSurface) PendingEvents() []events.SurfaceEvent {
 	return append([]events.SurfaceEvent(nil), s.pending...)
 }
 
+// AcknowledgeEvents clears modeled-only events after aggregate state has been
+// saved successfully. This context does not publish integration events yet.
+func (s *InteractionSurface) AcknowledgeEvents() {
+	if s != nil {
+		s.pending = nil
+	}
+}
+
 func (s *InteractionSurface) Revise(presentation valueobjects.Presentation) error {
 	if s == nil || !presentation.Valid() {
 		return ErrInvalidInteractionSurface
@@ -87,6 +95,7 @@ func (s *InteractionSurface) Publish() error {
 		return ErrInvalidSurfaceTransition
 	}
 	s.status = StatusPublished
+	s.version = s.version.Next()
 	s.pending = append(s.pending, events.Published{ID: s.id, Version: s.version})
 	return nil
 }
@@ -96,6 +105,7 @@ func (s *InteractionSurface) Retire() error {
 		return ErrInvalidSurfaceTransition
 	}
 	s.status = StatusRetired
+	s.version = s.version.Next()
 	s.pending = append(s.pending, events.Retired{ID: s.id, Version: s.version})
 	return nil
 }

@@ -21,7 +21,7 @@
 | `garr` | `go.mod` | 選用工具，仍未啟用 |
 | LINE 官方文件來源 | [line-developers-docs-source](https://github.com/line/line-developers-docs-source) | 僅供查閱，不是 SDK |
 
-請閱讀 [main 基礎設施狀態與歷史殘留稽核](docs/architecture/infrastructure-status.md)、[架構](docs/architecture/overview.md)、[SDK 整合設計](docs/architecture/sdk-integration.md)、[SDK Catalog](docs/sdk/catalog.toml)、[技術與版本](docs/versions.md)、[功能矩陣](docs/line/feature-matrix.md)。
+請閱讀 [Layer-first DDD + Hexagonal Architecture Blueprint](docs/architecture/layer-first-blueprint.md)、[main 基礎設施狀態與歷史殘留稽核](docs/architecture/infrastructure-status.md)、[架構](docs/architecture/overview.md)、[SDK 整合設計](docs/architecture/sdk-integration.md)、[SDK Catalog](docs/sdk/catalog.toml)、[技術與版本](docs/versions.md)、[功能矩陣](docs/line/feature-matrix.md)。
 
 本專案直接使用 [`github.com/google/uuid`](https://github.com/google/uuid) 的 UUID v4 產生器建立 LINE Push retry key，並驗證手動指定的 retry key；不再自行實作 UUID 編碼。
 

@@ -129,6 +129,15 @@ func TestValidateRepositoryFailures(t *testing.T) {
 		{"missing evidence", "does not exist", func(m *DomainModel, _ *CapabilityMap) {
 			m.Contexts[0].Evidence = []string{"internal/domain/identity/missing_test.go"}
 		}},
+		{"missing subdomain evidence", "domain_model.subdomains[0].evidence[0]", func(m *DomainModel, _ *CapabilityMap) {
+			m.Subdomains[0].Evidence = []string{"internal/missing-subdomain-evidence"}
+		}},
+		{"missing aggregate evidence", "aggregates[0].evidence[0]", func(m *DomainModel, _ *CapabilityMap) {
+			m.Contexts[0].Aggregates[0].Evidence = []string{"internal/missing-aggregate-evidence"}
+		}},
+		{"missing data ownership evidence", "data_ownership[0].evidence[0]", func(m *DomainModel, _ *CapabilityMap) {
+			m.Contexts[0].DataOwnership[0].Evidence = []string{"internal/missing-data-ownership-evidence"}
+		}},
 		{"implemented context missing ADR", "ADR evidence", func(m *DomainModel, _ *CapabilityMap) { m.Contexts[0].ADRs = nil }},
 		{"implemented context wrong package", "must equal", func(m *DomainModel, _ *CapabilityMap) { m.Contexts[0].Package = "internal/domain" }},
 		{"implemented evidence outside package", "behavior test under", func(m *DomainModel, _ *CapabilityMap) {

@@ -124,10 +124,8 @@ func TestTokenResultEncodingStaysPrivateAndAtCLIBoundary(t *testing.T) {
 		t.Fatal(err)
 	}
 	runtime := &fakeTokenRuntime{result: credentiallifecycle.IssuedCredential{AccessToken: "issued-secret"}}
-	previous := tokenRuntimeFactory
-	t.Cleanup(func() { tokenRuntimeFactory = previous })
-	tokenRuntimeFactory = func() (TokenRuntime, error) { return runtime, nil }
-	if err := runChannelTokens([]string{"--action", "issue-short", "--request", request, "--apply", "--confirm", "issue-short", "--out", output}); err != nil {
+	deps := Dependencies{TokenRuntime: func() (TokenRuntime, error) { return runtime, nil }}
+	if err := runChannelTokens([]string{"--action", "issue-short", "--request", request, "--apply", "--confirm", "issue-short", "--out", output}, deps); err != nil {
 		t.Fatal(err)
 	}
 	info, err := os.Stat(output)

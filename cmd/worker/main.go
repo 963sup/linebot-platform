@@ -23,7 +23,11 @@ func main() {
 		logger.Error("worker initialization failed")
 		os.Exit(1)
 	}
-	defer rt.Close()
+	defer func() {
+		if closeErr := rt.Close(); closeErr != nil {
+			logger.Error("worker runtime close failed", "error", closeErr)
+		}
+	}()
 	server := &http.Server{
 		Addr:              ":" + cfg.Port,
 		Handler:           rt.Handler,
@@ -37,7 +41,9 @@ func main() {
 	logger.Info("private worker starting", "port", cfg.Port, "profile", string(cfg.Environment))
 	if err := bootstrap.Serve(ctx, server, logger); err != nil {
 		logger.Error("worker stopped unexpectedly")
-		rt.Close()
+		if closeErr := rt.Close(); closeErr != nil {
+			logger.Error("worker runtime close failed", "error", closeErr)
+		}
 		os.Exit(1)
 	}
 }

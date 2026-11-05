@@ -22,7 +22,8 @@ type insightsReportingRuntime interface {
 	PresentationDaily(context.Context, insightsreporting.PresentationStatisticsQuery) (insightsreporting.StatisticsReport, error)
 }
 
-func runInsights(args []string, getenv func(string) string, output io.Writer) error {
+func runInsights(args []string, getenv func(string) string, output io.Writer, dependencies ...Dependencies) error {
+	deps := dependency(dependencies)
 	flags := flag.NewFlagSet("insights", flag.ContinueOnError)
 	kind := flags.String("kind", "", "read-only insights report kind")
 	date := flags.String("date", "", "YYYYMMDD")
@@ -41,10 +42,10 @@ func runInsights(args []string, getenv func(string) string, output io.Writer) er
 	if getenv == nil || output == nil {
 		return errors.New("missing CLI configuration")
 	}
-	if insightsRuntimeFactory == nil {
+	if deps.InsightsRuntime == nil {
 		return errors.New("insights runtime is not configured")
 	}
-	rt, err := insightsRuntimeFactory(getenv(channelTokenEnv))
+	rt, err := deps.InsightsRuntime(getenv(channelTokenEnv))
 	if err != nil {
 		return err
 	}

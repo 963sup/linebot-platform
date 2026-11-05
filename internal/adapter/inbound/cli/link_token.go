@@ -11,7 +11,8 @@ import (
 )
 
 // Link tokens are credentials. Never print them to terminal output.
-func runLinkToken(args []string, getenv func(string) string) error {
+func runLinkToken(args []string, getenv func(string) string, dependencies ...Dependencies) error {
+	deps := dependency(dependencies)
 	flags := flag.NewFlagSet("link-token", flag.ContinueOnError)
 	user := flags.String("user", "", "LINE user ID")
 	out := flags.String("out", "", "new file for sensitive link token (0600)")
@@ -24,10 +25,10 @@ func runLinkToken(args []string, getenv func(string) string) error {
 		return errors.New("link-token requires --user --out --apply --confirm issue-link-token")
 	}
 	return writePrivateOperation(*out, func() ([]byte, error) {
-		if linkTokenRuntimeFactory == nil {
+		if deps.LinkTokenRuntime == nil {
 			return nil, errors.New("link-token runtime is not configured")
 		}
-		r, err := linkTokenRuntimeFactory(getenv(channelTokenEnv))
+		r, err := deps.LinkTokenRuntime(getenv(channelTokenEnv))
 		if err != nil {
 			return nil, err
 		}

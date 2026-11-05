@@ -101,7 +101,10 @@ func TestOAuthSessionsAndConnectionsWithFirestoreEmulator(t *testing.T) {
 	if err := store.UpdateCredentials(ctx, got, 1); err == nil {
 		t.Fatal("stale CAS update accepted")
 	}
-	if err := store.DeactivateConnection(ctx, "verified-user", "google-subject"); err != nil {
+	if err := latest.Link.Disconnect(); err != nil {
+		t.Fatal(err)
+	}
+	if err := store.DeactivateConnection(ctx, latest); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := store.GetConnection(ctx, "verified-user", "google-subject"); err == nil {
@@ -109,5 +112,27 @@ func TestOAuthSessionsAndConnectionsWithFirestoreEmulator(t *testing.T) {
 	}
 	if err := store.UpdateCredentials(ctx, latest, 2); err == nil {
 		t.Fatal("stale account writer reactivated revoked account")
+	}
+	outbox, err := client.Collection("identity_outbox_v1").Documents(ctx).GetAll()
+	if err != nil {
+		t.Fatal(err)
+	}
+	eventTypes := make(map[string]bool, len(outbox))
+	for _, event := range outbox {
+		data := event.Data()
+		if _, leaked := data["credentials"]; leaked {
+			t.Fatal("identity outbox leaked OAuth credentials")
+		}
+		if _, leaked := data["owner_id"]; leaked {
+			t.Fatal("identity outbox leaked LINE owner ID")
+		}
+		if _, leaked := data["google_account_id"]; leaked {
+			t.Fatal("identity outbox leaked Google subject")
+		}
+		eventType, _ := data["event_type"].(string)
+		eventTypes[eventType] = true
+	}
+	if len(outbox) != 2 || !eventTypes["identity.account-linked"] || !eventTypes["identity.account-unlinked"] {
+		t.Fatalf("identity outbox events = %#v", eventTypes)
 	}
 }

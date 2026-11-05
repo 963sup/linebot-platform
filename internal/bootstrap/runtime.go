@@ -1,9 +1,12 @@
 package bootstrap
 
 import (
+	"context"
 	"errors"
 	"log/slog"
 	"net/http"
+	"sync"
+	"sync/atomic"
 
 	"github.com/963sup/linebot-platform/internal/adapter/inbound/http/health"
 	linein "github.com/963sup/linebot-platform/internal/adapter/inbound/http/line"
@@ -17,9 +20,12 @@ import (
 // WebhookRuntime is the composition root for an HTTP process. It owns exactly
 // the resources it constructs. No optional provider is initialized by default.
 type WebhookRuntime struct {
-	Handler  http.Handler
-	outbound *httpclient.Managed
-	closers  []func() error
+	Handler   http.Handler
+	outbound  *httpclient.Managed
+	closers   []runtimeCloser
+	ready     atomic.Bool
+	closeOnce sync.Once
+	closeErr  error
 }
 
 // NewWebhookRuntime constructs only the clients needed by the webhook process.
@@ -30,17 +36,24 @@ func NewWebhookRuntime(cfg Config, logger *slog.Logger) (*WebhookRuntime, error)
 	mux := http.NewServeMux()
 	mux.HandleFunc("/healthz", health.Handler)
 	runtime := &WebhookRuntime{Handler: observability.WrapInboundHTTP("webhook", logger, mux)}
+	mux.Handle("/readyz", health.ReadyHandler(func(context.Context) error {
+		if !runtime.ready.Load() {
+			return errors.New("webhook runtime is not ready")
+		}
+		return nil
+	}))
 	if !cfg.LiveLINE() {
 		mux.HandleFunc("/webhook/line", func(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "LINE integration is not configured", http.StatusServiceUnavailable)
 		})
+		runtime.ready.Store(true)
 		return runtime, nil
 	}
 	if cfg.EventMode == "durable" {
 		if err := configureDurableWebhook(cfg, logger, mux, runtime); err != nil {
-			runtime.Close()
-			return nil, err
+			return nil, errors.Join(err, runtime.Close())
 		}
+		runtime.ready.Store(true)
 		return runtime, nil
 	}
 
@@ -72,17 +85,42 @@ func NewWebhookRuntime(cfg Config, logger *slog.Logger) (*WebhookRuntime, error)
 	}
 	mux.Handle("/webhook/line", linein.NewHandler(cfg.Secrets.ChannelSecret, service, logger))
 	runtime.outbound = outboundHTTP
+	runtime.ready.Store(true)
 	return runtime, nil
 }
 
 // Close releases idle SDK HTTP connections after the inbound server has
-// drained its requests. It is safe to call more than once.
-func (r *WebhookRuntime) Close() {
+// drained its requests. It is safe to call more than once and returns the
+// stable aggregate of any owned SDK close failures.
+func (r *WebhookRuntime) Close() error {
 	if r == nil {
-		return
+		return nil
 	}
-	r.outbound.Close()
-	for i := len(r.closers) - 1; i >= 0; i-- {
-		_ = r.closers[i]()
-	}
+	r.ready.Store(false)
+	r.closeOnce.Do(func() {
+		r.outbound.Close()
+		var closeErr error
+		for i := len(r.closers) - 1; i >= 0; i-- {
+			if err := r.closers[i].close(); err != nil {
+				closeErr = errors.Join(closeErr, resourceCloseError{resource: r.closers[i].name, cause: err})
+			}
+		}
+		r.closeErr = closeErr
+	})
+	return r.closeErr
 }
+
+type runtimeCloser struct {
+	name  string
+	close func() error
+}
+
+// resourceCloseError keeps shutdown logs actionable without rendering raw SDK
+// error text. The underlying cause remains available to errors.Is/As.
+type resourceCloseError struct {
+	resource string
+	cause    error
+}
+
+func (e resourceCloseError) Error() string { return "close " + e.resource + " failed" }
+func (e resourceCloseError) Unwrap() error { return e.cause }

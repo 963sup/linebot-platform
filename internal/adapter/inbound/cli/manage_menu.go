@@ -11,7 +11,8 @@ import (
 	mediatransfer "github.com/963sup/linebot-platform/internal/application/usecases/media-transfer"
 )
 
-func runManageMenu(args []string, getenv func(string) string) error {
+func runManageMenu(args []string, getenv func(string) string, dependencies ...Dependencies) error {
+	deps := dependency(dependencies)
 	flags := flag.NewFlagSet("manage-menu", flag.ContinueOnError)
 	action := flags.String("action", "", "rich menu action")
 	menu := flags.String("menu-id", "", "rich menu ID")
@@ -50,10 +51,10 @@ func runManageMenu(args []string, getenv func(string) string) error {
 		if err != nil {
 			return err
 		}
-		if menuImageUploadRuntimeFactory == nil {
+		if deps.MenuImageUploadRuntime == nil {
 			return errors.New("menu image upload runtime is not configured")
 		}
-		runtime, err := menuImageUploadRuntimeFactory(getenv(channelTokenEnv))
+		runtime, err := deps.MenuImageUploadRuntime(getenv(channelTokenEnv))
 		if err != nil {
 			return err
 		}
@@ -63,10 +64,10 @@ func runManageMenu(args []string, getenv func(string) string) error {
 	if err := validateManageMenuInput(*action, *menu, *user, *alias, document.Value != nil); err != nil {
 		return err
 	}
-	if menuManagementRuntimeFactory == nil {
+	if deps.MenuManagementRuntime == nil {
 		return errors.New("menu management runtime is not configured")
 	}
-	runtime, err := menuManagementRuntimeFactory(getenv(channelTokenEnv))
+	runtime, err := deps.MenuManagementRuntime(getenv(channelTokenEnv))
 	if err != nil {
 		return err
 	}

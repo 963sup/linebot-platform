@@ -9,7 +9,7 @@
 - Webhook 公開 HTTPS 路由僅接收 `/webhook/line`，使用 `LINE_EVENT_MODE=durable`、`LINE_CHANNEL_SECRET`；**不得**給它 `LINE_CHANNEL_ACCESS_TOKEN`、Cloud Tasks 批量管理權或 Worker 的憑證。
 - Worker 為 private IAM-authenticated Cloud Run Service，持有 LINE Channel Access Token、Firestore 最小權限、必要的 Cloud Tasks 發派權限。Cloud Tasks 和 Scheduler 若使用同一 Worker handler 的驗證器，需使用設定中同一受信任 Invoker Email 和正確 Audience，分離時應先更新雙 Actor 授權模型。
 - Cloud Tasks enqueue 身分、Cloud Run Invoker、Secret Manager 存取身分各有最小權限；不可使用常駐 JSON service-account key。
-- Firestore 必須先建立 `(state,reply_until)`、`(state,lease_until)`、`(state,next_dispatch_at)`、`(state,created_at)`、`(state,updated_at)` 所需複合索引，並建立 Inbox/Outbox `expires_at` TTL。確認 Index 為 Ready。
+- Firestore 必須先建立 LINE `line_outbox_v1` 的 `(state,reply_until)`、`(state,lease_until)`、`(state,next_dispatch_at)`、`(state,created_at)`、`(state,updated_at)` 複合索引，以及 Identity `identity_outbox_v1` 的 `(state,lease_until)`、`(state,next_dispatch_at)` 複合索引。為 `line_inbox_v1`、`line_outbox_v1` 與 `identity_outbox_v1` 建立經 retention/privacy 核准的 `expires_at` TTL，並確認所有 Index 為 Ready。
 - **資料遷移**：既有 Pending 文件若缺 `next_dispatch_at`，以可重啟且不覆蓋更新的方式回填；以權威來源數據驗證總量與缺欄位數都正確後，才能切換新 Reconcile。不要在毫無 backfill 的現有資料庫直接切換。
 
 ## 驗收用例與必要證據
@@ -23,6 +23,7 @@
 | E Reply 時效 | 收到後 45 秒以上延遲；原始時間距今超過 20 分鐘的重送 | 不嘗試已過期 Reply；以原始 Event Timestamp 約束期限，結果標為 Expired |
 | F Reconcile | 模擬 115+ Pending、過期 Sending、Queue CreateTask 暫時失敗、Worker Crash | 不會因固定前 100 筆飢餓；Unknown 不會自行重送；冷卻後可補派 Pending |
 | G IAM/TTL/Index | 實際測試複合查詢並觀測 Index Ready，查詢 TTL policy、啟用 Scheduler | 查詢無 Missing Index，TTL 僅非同步移除；Scheduler 對私有 Worker 認證成功 |
+| G2 Identity Outbox | 查詢 `identity_outbox_v1` due pending 與 expired publishing lease；競爭 claim、完成 publish 與 lease recovery | 兩個 Identity 複合索引均為 Ready；`expires_at` TTL policy 可定位；published 不會被 recovery 降級，單一 lease 不會重複派送 |
 | H 觀測／告警 | 隔離 Staging 執行 `ops events --check`、Inject Unknown 或長 Pending；停用一次 Scheduler | Job 非零 exit；Cloud Monitoring 分辨失敗和「未執行」，告警收件者收到並確認 |
 | I Rollback | 在隔離測試環境以固定 image digest 回退已核准版本，保留資料結構向前相容 | 混合新舊 Worker 無重複發送，回復遺漏/延遲工作可解釋，簽核紀錄 |
 
@@ -43,6 +44,7 @@ Webhook / Worker / Job image digests:
 IAM reviewer and approval record:
 Firestore index Ready evidence:
 TTL policy evidence:
+Identity outbox index / TTL evidence:
 Cloud Scheduler OIDC path verified:
 Event redelivery / queue retry / unknown fault-injection result:
 Operator alert proof and escalation owner:

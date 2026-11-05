@@ -111,6 +111,57 @@ func TestPromotionEventsAreDetached(t *testing.T) {
 	if promotion.PendingEvents()[0] == nil {
 		t.Error("Promotion.PendingEvents() returned mutable internal storage, want detached slice")
 	}
+	promotion.AcknowledgeEvents()
+	if len(promotion.PendingEvents()) != 0 {
+		t.Error("Promotion.AcknowledgeEvents() did not clear committed events")
+	}
+}
+
+func TestPromotionRevisionAdvancesOnlyOnSuccessfulMutations(t *testing.T) {
+	t.Parallel()
+
+	promotion := newPromotion(t)
+	if got := promotion.Revision(); got != 1 {
+		t.Fatalf("Promotion.Revision() = %d, want 1", got)
+	}
+	if err := promotion.Close(); !errors.Is(err, aggregates.ErrInvalidPromotionTransition) {
+		t.Fatalf("Promotion.Close() error = %v, want invalid transition", err)
+	}
+	if got := promotion.Revision(); got != 1 {
+		t.Fatalf("rejected transition revision = %d, want 1", got)
+	}
+	if err := promotion.Activate(promotionStart); err != nil {
+		t.Fatal(err)
+	}
+	if got := promotion.Revision(); got != 2 {
+		t.Fatalf("activated revision = %d, want 2", got)
+	}
+	if err := promotion.Close(); err != nil {
+		t.Fatal(err)
+	}
+	if got := promotion.Revision(); got != 3 {
+		t.Fatalf("closed revision = %d, want 3", got)
+	}
+}
+
+func TestRestorePromotionPreservesRevisionWithoutEvents(t *testing.T) {
+	t.Parallel()
+
+	promotion := newPromotion(t)
+	restored, err := aggregates.RestorePromotion(
+		promotion.ID(),
+		promotion.Offer(),
+		promotion.EligibilityPolicy(),
+		promotion.Period(),
+		promotion.Status(),
+		7,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if restored.Revision() != 7 || len(restored.PendingEvents()) != 0 {
+		t.Fatalf("restored promotion revision/events = %d/%d, want 7/0", restored.Revision(), len(restored.PendingEvents()))
+	}
 }
 
 func newPromotion(t *testing.T) aggregates.Promotion {

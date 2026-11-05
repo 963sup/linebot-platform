@@ -119,6 +119,7 @@ func (s *LinkService) Complete(ctx context.Context, state, code string) (LinkedA
 	if err := s.connections.SaveConnection(ctx, OAuthAuthorization{Link: accountLink, Credentials: credentials}); err != nil {
 		return LinkedAccount{}, errors.New("unable to persist Google connection")
 	}
+	accountLink.AcknowledgeEvents()
 	return LinkedAccount{
 		OwnerID: session.OwnerID, GoogleSubject: googleIdentity.Subject, VerifiedEmail: googleIdentity.VerifiedEmail,
 	}, nil
@@ -147,9 +148,10 @@ func (s *LinkService) Disconnect(ctx context.Context, verifiedOwner, googleSubje
 	if err := authorization.Link.Disconnect(); err != nil {
 		return err
 	}
-	if err := s.connections.DeactivateConnection(ctx, verifiedOwner, googleSubject); err != nil {
+	if err := s.connections.DeactivateConnection(ctx, authorization); err != nil {
 		return errors.New("unable to deactivate Google connection")
 	}
+	authorization.Link.AcknowledgeEvents()
 	token := authorization.Credentials.RefreshToken
 	if token == "" {
 		token = authorization.Credentials.AccessToken

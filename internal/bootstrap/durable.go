@@ -23,31 +23,25 @@ func configureDurableWebhook(cfg Config, logger *slog.Logger, mux *http.ServeMux
 	if err != nil {
 		return err
 	}
+	rt.closers = append(rt.closers, runtimeCloser{name: "Firestore client", close: db.Close})
 	queueClient, err := queueinfra.NewClient(ctx)
 	if err != nil {
-		_ = db.Close()
 		return err
 	}
+	rt.closers = append(rt.closers, runtimeCloser{name: "Cloud Tasks client", close: queueClient.Close})
 	store, err := storeout.NewStore(db)
 	if err != nil {
-		_ = queueClient.Close()
-		_ = db.Close()
 		return err
 	}
 	queue, err := queueout.NewQueue(queueClient, cfg.Durable.QueueName, cfg.Durable.WorkerURL,
 		cfg.Durable.OIDCAudience, cfg.Durable.InvokerEmail)
 	if err != nil {
-		_ = queueClient.Close()
-		_ = db.Close()
 		return err
 	}
 	ingestor, err := ingestion.NewIngestor(store, queue)
 	if err != nil {
-		_ = queueClient.Close()
-		_ = db.Close()
 		return err
 	}
 	mux.Handle("/webhook/line", linein.NewDurableHandler(cfg.Secrets.ChannelSecret, cfg.Durable.BotDestination, ingestor, logger))
-	rt.closers = append(rt.closers, queueClient.Close, db.Close)
 	return nil
 }

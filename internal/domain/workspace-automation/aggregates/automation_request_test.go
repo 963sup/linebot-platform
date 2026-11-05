@@ -25,17 +25,29 @@ func fixture(t *testing.T) (aggregates.AutomationRequest, valueobjects.Approval,
 
 func TestAutomationRequestLifecycle(t *testing.T) {
 	request, approval, output := fixture(t)
+	if request.Revision() != 1 {
+		t.Fatalf("initial revision = %d, want 1", request.Revision())
+	}
 	if request.Status() != valueobjects.StatusRequested {
 		t.Fatalf("status = %q", request.Status())
 	}
 	if err := request.Approve(approval); err != nil {
 		t.Fatal(err)
 	}
+	if request.Revision() != 2 {
+		t.Fatalf("approved revision = %d, want 2", request.Revision())
+	}
 	if err := request.StartExecution(); err != nil {
 		t.Fatal(err)
 	}
+	if request.Revision() != 3 {
+		t.Fatalf("executing revision = %d, want 3", request.Revision())
+	}
 	if err := request.Succeed(output); err != nil {
 		t.Fatal(err)
+	}
+	if request.Revision() != 4 {
+		t.Fatalf("terminal revision = %d, want 4", request.Revision())
 	}
 	if request.Status() != valueobjects.StatusSucceeded || request.Output() != output {
 		t.Fatalf("unexpected terminal request: %#v", request)
@@ -103,6 +115,9 @@ func TestInvalidTransitionsDoNotMutate(t *testing.T) {
 	if request.Status() != valueobjects.StatusApproved || len(request.PendingEvents()) != 2 {
 		t.Fatal("invalid transition mutated aggregate")
 	}
+	if request.Revision() != 2 {
+		t.Fatalf("invalid transition changed revision to %d", request.Revision())
+	}
 	if err := request.StartExecution(); err != nil {
 		t.Fatal(err)
 	}
@@ -139,6 +154,10 @@ func TestEventsAreOrderedAndDetached(t *testing.T) {
 	if request.PendingEvents()[0] == nil {
 		t.Fatal("event backing data leaked")
 	}
+	request.AcknowledgeEvents()
+	if len(request.PendingEvents()) != 0 {
+		t.Fatal("AcknowledgeEvents did not clear committed events")
+	}
 	scopes := request.RequiredScopes()
 	scopes[0] = "tampered"
 	if request.RequiredScopes()[0] == "tampered" {
@@ -171,12 +190,15 @@ func TestRestoreAutomationRequestValidatesStateShape(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			restored, err := aggregates.RestoreAutomationRequest(id, action, scopes, test.approval, test.output, test.status)
+			restored, err := aggregates.RestoreAutomationRequest(id, action, scopes, test.approval, test.output, test.status, 7)
 			if (err != nil) != test.wantError {
 				t.Fatalf("error = %v, wantError %v", err, test.wantError)
 			}
 			if err == nil && len(restored.PendingEvents()) != 0 {
 				t.Fatal("restore emitted events")
+			}
+			if err == nil && restored.Revision() != 7 {
+				t.Fatalf("restored revision = %d, want 7", restored.Revision())
 			}
 		})
 	}

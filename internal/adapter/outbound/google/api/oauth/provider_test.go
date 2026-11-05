@@ -56,7 +56,7 @@ func (s *memoryConnectionStore) UpdateCredentials(_ context.Context, v identity.
 	return nil
 }
 
-func (s *memoryConnectionStore) DeactivateConnection(_ context.Context, _, _ string) error {
+func (s *memoryConnectionStore) DeactivateConnection(_ context.Context, _ identity.OAuthAuthorization) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.closed = true
@@ -111,7 +111,7 @@ func TestPersistedTokenSourceRefreshAndCAS(t *testing.T) {
 	if _, err := blocked.Token(); err == nil {
 		t.Fatal("cross-account token lookup succeeded")
 	}
-	if err := store.DeactivateConnection(context.Background(), "verified-line", "verified-google"); err != nil {
+	if err := store.DeactivateConnection(context.Background(), store.value); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := source.Token(); err == nil {

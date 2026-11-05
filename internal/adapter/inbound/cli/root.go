@@ -23,63 +23,76 @@ func uuidv4() (string, error) {
 	return id.String(), nil
 }
 
-func run(args []string, getenv func(string) string) error {
+func run(args []string, getenv func(string) string, dependencies ...Dependencies) error {
+	deps := dependency(dependencies)
+	if len(args) > 0 && args[0] == "audience-definitions" {
+		return runAudienceDefinitions(args[1:], getenv, os.Stdout, deps)
+	}
+	if len(args) > 0 && args[0] == "interaction-surfaces" {
+		return runInteractionSurfaces(args[1:], getenv, os.Stdout, deps)
+	}
+	if len(args) > 0 && args[0] == "promotions" {
+		return runPromotions(args[1:], getenv, os.Stdout, deps)
+	}
+	if len(args) > 0 && args[0] == "automation-requests" {
+		return runAutomationRequests(args[1:], getenv, os.Stdout, deps)
+	}
 	if len(args) > 0 && args[0] == "workspace" {
-		return runWorkspace(args[1:], getenv)
+		return runWorkspace(args[1:], getenv, deps)
 	}
 	if len(args) > 0 && args[0] == "actions" {
-		return runActions(args[1:], getenv)
+		return runActions(args[1:], getenv, deps)
 	}
 	if len(args) > 0 && args[0] == "link-token" {
-		return runLinkToken(args[1:], getenv)
+		return runLinkToken(args[1:], getenv, deps)
 	}
 	if len(args) > 0 && args[0] == "eligibility" {
-		return runEligibility(args[1:], getenv, os.Stdout)
+		return runEligibility(args[1:], getenv, os.Stdout, deps)
 	}
 	if len(args) > 0 && args[0] == "menu-image" {
-		return runMenuImage(args[1:], getenv)
+		return runMenuImage(args[1:], getenv, deps)
 	}
 	if len(args) > 0 && args[0] == "events" {
-		return runEvents(args[1:], getenv)
+		return runEvents(args[1:], getenv, deps)
 	}
 	if len(args) > 0 && args[0] == "profile" {
-		return runProfile(args[1:], getenv, os.Stdout)
+		return runProfile(args[1:], getenv, os.Stdout, deps)
 	}
 	if len(args) > 0 && args[0] == "inspect" {
-		return runInspect(args[1:], getenv, os.Stdout)
+		return runInspect(args[1:], getenv, os.Stdout, deps)
 	}
 	if len(args) > 0 && args[0] == "menus" {
-		return runMenus(args[1:], getenv, os.Stdout)
+		return runMenus(args[1:], getenv, os.Stdout, deps)
 	}
 	if len(args) > 0 && args[0] == "contacts" {
-		return runContacts(args[1:], getenv, os.Stdout)
+		return runContacts(args[1:], getenv, os.Stdout, deps)
 	}
 	if len(args) > 0 && args[0] == "content" {
-		return runContent(args[1:], getenv, os.Stdout)
+		return runContent(args[1:], getenv, os.Stdout, deps)
 	}
 	if len(args) > 0 && args[0] == "insights" {
-		return runInsights(args[1:], getenv, os.Stdout)
+		return runInsights(args[1:], getenv, os.Stdout, deps)
 	}
 	if len(args) > 0 && args[0] == "coupons" {
-		return runCoupons(args[1:], getenv, os.Stdout)
+		return runCoupons(args[1:], getenv, os.Stdout, deps)
 	}
 	if len(args) > 0 && args[0] == "memberships" {
-		return runMemberships(args[1:], getenv, os.Stdout)
+		return runMemberships(args[1:], getenv, os.Stdout, deps)
 	}
 	if len(args) > 0 && args[0] == "audiences" {
-		return runAudiences(args[1:], getenv, os.Stdout)
+		return runAudiences(args[1:], getenv, os.Stdout, deps)
 	}
 	if len(args) > 0 && args[0] == "manage-menu" {
-		return runManageMenu(args[1:], getenv)
+		return runManageMenu(args[1:], getenv, deps)
 	}
 	if len(args) > 0 && args[0] == "campaign" {
-		return runCampaign(args[1:], getenv)
+		return runCampaign(args[1:], getenv, deps)
 	}
 	if len(args) > 0 && args[0] == "validate" {
-		return runValidate(args[1:], getenv)
+		return runValidate(args[1:], getenv, deps)
 	}
 	if len(args) > 0 && args[0] == "webhook-admin" {
-		return runWebhookAdmin(args[1:], getenv, os.Stdout)
+		return runWebhookAdmin(args[1:], getenv, os.Stdout, deps)
 	}
 	if len(args) == 0 || args[0] != "push" {
 		return errors.New("usage: ops push --to ID --text MESSAGE [--send] [--retry-key UUID] | ops events --inspect --project PROJECT | ops profile --user ID --lookup")
@@ -128,10 +141,10 @@ func run(args []string, getenv func(string) string) error {
 		}
 		*key = parsed.String()
 	}
-	if pushRuntimeFactory == nil {
+	if deps.PushRuntime == nil {
 		return errors.New("push runtime is not configured")
 	}
-	runtime, err := pushRuntimeFactory(getenv(channelTokenEnv))
+	runtime, err := deps.PushRuntime(getenv(channelTokenEnv))
 	if err != nil {
 		return err
 	}
@@ -142,6 +155,6 @@ func run(args []string, getenv func(string) string) error {
 }
 
 // Run dispatches operator commands without leaking CLI logic into cmd/ops.
-func Run(args []string, getenv func(string) string) error {
-	return run(args, getenv)
+func Run(args []string, getenv func(string) string, deps Dependencies) error {
+	return run(args, getenv, deps)
 }

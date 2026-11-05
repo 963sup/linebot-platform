@@ -44,7 +44,7 @@ func readBlob(response *http.Response, err error) (mediatransfer.BinaryContent, 
 	defer response.Body.Close()
 	data, err := io.ReadAll(io.LimitReader(response.Body, maxLINEBlobBytes+1))
 	if err != nil {
-		return mediatransfer.BinaryContent{}, err
+		return mediatransfer.BinaryContent{}, lineAPIError("blobReadBody", response, err)
 	}
 	if len(data) > maxLINEBlobBytes {
 		return mediatransfer.BinaryContent{}, errors.New("LINE blob exceeds 20 MiB limit")

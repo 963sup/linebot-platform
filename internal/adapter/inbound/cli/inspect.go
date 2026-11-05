@@ -18,7 +18,8 @@ type providerInspectionRuntime interface {
 	insightsreporting.DeliveryReader
 }
 
-func runInspect(args []string, getenv func(string) string, output io.Writer) error {
+func runInspect(args []string, getenv func(string) string, output io.Writer, dependencies ...Dependencies) error {
+	deps := dependency(dependencies)
 	flags := flag.NewFlagSet("inspect", flag.ContinueOnError)
 	kind := flags.String("kind", "", "explicitly whitelisted LINE read-only report")
 	date := flags.String("date", "", "delivery date YYYYMMDD")
@@ -35,10 +36,10 @@ func runInspect(args []string, getenv func(string) string, output io.Writer) err
 	if getenv == nil || output == nil {
 		return errors.New("missing CLI configuration")
 	}
-	if channelInspectionRuntimeFactory == nil {
+	if deps.ChannelInspectionRuntime == nil {
 		return errors.New("channel inspection runtime is not configured")
 	}
-	runtime, err := channelInspectionRuntimeFactory(getenv(channelTokenEnv))
+	runtime, err := deps.ChannelInspectionRuntime(getenv(channelTokenEnv))
 	if err != nil {
 		return err
 	}

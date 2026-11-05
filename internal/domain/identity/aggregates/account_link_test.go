@@ -81,6 +81,10 @@ func TestAccountLinkEventsAreEmittedOnce(t *testing.T) {
 	if _, ok := link.PendingEvents()[1].(events.AccountUnlinked); !ok {
 		t.Fatal("second event must be AccountUnlinked")
 	}
+	link.AcknowledgeEvents()
+	if len(link.PendingEvents()) != 0 {
+		t.Fatal("AcknowledgeEvents did not clear committed events")
+	}
 	id, err := link.ConnectionID()
 	if err != nil || id.Owner().String() != "line-owner" {
 		t.Fatal("invalid connection ID", err)

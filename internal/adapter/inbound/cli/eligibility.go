@@ -12,7 +12,8 @@ import (
 	"github.com/963sup/linebot-platform/internal/application/usecases/promotion"
 )
 
-func runEligibility(args []string, getenv func(string) string, output io.Writer) error {
+func runEligibility(args []string, getenv func(string) string, output io.Writer, dependencies ...Dependencies) error {
+	deps := dependency(dependencies)
 	flags := flag.NewFlagSet("eligibility", flag.ContinueOnError)
 	action := flags.String("action", "", "push-phone|push-template-phone|pnp-stats|pnp-template-stats|create-coupon|close-coupon")
 	id := flags.String("id", "", "YYYYMMDD for statistics, coupon ID for close")
@@ -45,10 +46,10 @@ func runEligibility(args []string, getenv func(string) string, output io.Writer)
 			return errors.New("request must be valid JSON")
 		}
 	}
-	if eligibilityRuntimeFactory == nil {
+	if deps.EligibilityRuntime == nil {
 		return errors.New("eligibility runtime is not configured")
 	}
-	runtime, err := eligibilityRuntimeFactory(getenv(channelTokenEnv))
+	runtime, err := deps.EligibilityRuntime(getenv(channelTokenEnv))
 	if err != nil {
 		return err
 	}

@@ -13,6 +13,7 @@ var errPresentationPort = errors.New("presentation port failure")
 
 type surfaceRepository struct {
 	value     aggregates.InteractionSurface
+	attempted aggregates.InteractionSurface
 	findErr   error
 	saveErr   error
 	saveCalls int
@@ -23,10 +24,48 @@ func (r *surfaceRepository) Find(context.Context, valueobjects.SurfaceID) (aggre
 }
 func (r *surfaceRepository) Save(_ context.Context, value aggregates.InteractionSurface) error {
 	r.saveCalls++
+	r.attempted = value
 	if r.saveErr == nil {
 		r.value = value
 	}
 	return r.saveErr
+}
+
+func TestPresentationNoopRevisionSkipsPersistence(t *testing.T) {
+	t.Parallel()
+	id, presentation := surfaceValues(t, "same", "primary")
+	current, _ := aggregates.RestoreInteractionSurface(id, presentation, 4, aggregates.StatusDraft)
+	repository := &surfaceRepository{value: current}
+	service, _ := NewService(repository, &presentationProvider{})
+
+	result, err := service.Revise(context.Background(), id, presentation)
+	if err != nil || result.Version() != 4 {
+		t.Fatalf("Revise(no-op) = (%v, %v), want version 4, nil", result.Version(), err)
+	}
+	if repository.saveCalls != 0 {
+		t.Fatalf("Save calls = %d, want 0", repository.saveCalls)
+	}
+}
+
+func TestPresentationAcknowledgesOnlyAfterSuccessfulSave(t *testing.T) {
+	t.Parallel()
+	id, presentation := surfaceValues(t, "events", "primary")
+	repository := &surfaceRepository{saveErr: errPresentationPort}
+	service, _ := NewService(repository, &presentationProvider{})
+	if _, err := service.Define(context.Background(), id, presentation); !errors.Is(err, errPresentationPort) {
+		t.Fatalf("Define(save error) = %v, want %v", err, errPresentationPort)
+	}
+	if len(repository.attempted.PendingEvents()) == 0 {
+		t.Fatal("failed save cleared pending events")
+	}
+	repository.saveErr = nil
+	defined, err := service.Define(context.Background(), id, presentation)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(defined.PendingEvents()) != 0 {
+		t.Fatal("successful save retained pending events")
+	}
 }
 
 type presentationProvider struct {

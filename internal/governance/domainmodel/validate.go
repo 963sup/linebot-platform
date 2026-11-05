@@ -49,6 +49,13 @@ func ValidateRepository(root string, inventory *EndpointInventory, model *Domain
 	if err := requireExistingFile(root, "capability_map.source_inventory", capabilities.SourceInventory); err != nil {
 		return err
 	}
+	for i, subdomain := range model.Subdomains {
+		for j, evidence := range subdomain.Evidence {
+			if err := requireExistingPath(root, fmt.Sprintf("domain_model.subdomains[%d].evidence[%d]", i, j), evidence); err != nil {
+				return err
+			}
+		}
+	}
 	contexts := map[string]Context{}
 	implementedPackages := map[string]string{}
 	for _, context := range model.Contexts {
@@ -124,6 +131,20 @@ func ValidateRepository(root string, inventory *EndpointInventory, model *Domain
 		for j, invariant := range context.Invariants {
 			for k, evidence := range invariant.Evidence {
 				if err := requireExistingPath(root, fmt.Sprintf("%s.invariants[%d].evidence[%d]", path, j, k), evidence); err != nil {
+					return err
+				}
+			}
+		}
+		for j, aggregate := range context.Aggregates {
+			for k, evidence := range aggregate.Evidence {
+				if err := requireExistingPath(root, fmt.Sprintf("%s.aggregates[%d].evidence[%d]", path, j, k), evidence); err != nil {
+					return err
+				}
+			}
+		}
+		for j, ownership := range context.DataOwnership {
+			for k, evidence := range ownership.Evidence {
+				if err := requireExistingPath(root, fmt.Sprintf("%s.data_ownership[%d].evidence[%d]", path, j, k), evidence); err != nil {
 					return err
 				}
 			}

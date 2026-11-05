@@ -41,25 +41,41 @@ func TestDependencyDirection(t *testing.T) {
 			}
 			return nil
 		}},
-		{"inbound adapters do not import outbound adapters or infrastructure", "../../internal/adapter/inbound", func(p string) error {
-			if strings.HasPrefix(p, internalPath+"adapter/outbound") || strings.HasPrefix(p, internalPath+"infrastructure") {
-				return fmt.Errorf("forbidden inward dependency %q", p)
+		{"inbound adapters only import application within internal", "../../internal/adapter/inbound", func(p string) error {
+			if strings.HasPrefix(p, internalPath) &&
+				!strings.HasPrefix(p, internalPath+"application") &&
+				!strings.HasPrefix(p, internalPath+"adapter/inbound") {
+				return fmt.Errorf("dependency outside inbound adapter boundary %q", p)
 			}
 			return nil
 		}},
-		{"outbound adapters do not import inbound adapters or bootstrap", "../../internal/adapter/outbound", func(p string) error {
-			if strings.HasPrefix(p, internalPath+"adapter/inbound") || strings.HasPrefix(p, internalPath+"bootstrap") {
-				return fmt.Errorf("forbidden outer-layer dependency %q", p)
+		{"outbound adapters only import ports, domain, infrastructure, and outbound peers", "../../internal/adapter/outbound", func(p string) error {
+			if !strings.HasPrefix(p, internalPath) {
+				return nil
 			}
-			return nil
-		}},
-		{"infrastructure does not import application, domain, or adapters", "../../internal/infrastructure", func(p string) error {
-			for _, forbidden := range []string{"application", "domain", "adapter"} {
-				if strings.HasPrefix(p, internalPath+forbidden) {
-					return fmt.Errorf("forbidden outer-to-inner dependency %q", p)
+			for _, allowed := range []string{"application", "domain", "infrastructure", "adapter/outbound"} {
+				if strings.HasPrefix(p, internalPath+allowed) {
+					return nil
 				}
 			}
+			return fmt.Errorf("dependency outside outbound adapter boundary %q", p)
+		}},
+		{"infrastructure only imports infrastructure within internal", "../../internal/infrastructure", func(p string) error {
+			if strings.HasPrefix(p, internalPath) && !strings.HasPrefix(p, internalPath+"infrastructure") {
+				return fmt.Errorf("dependency outside Infrastructure %q", p)
+			}
 			return nil
+		}},
+		{"bootstrap composes adapters, application, and infrastructure without domain imports", "../../internal/bootstrap", func(p string) error {
+			if !strings.HasPrefix(p, internalPath) {
+				return nil
+			}
+			for _, allowed := range []string{"adapter", "application", "infrastructure", "bootstrap"} {
+				if strings.HasPrefix(p, internalPath+allowed) {
+					return nil
+				}
+			}
+			return fmt.Errorf("dependency outside composition boundary %q", p)
 		}},
 	}
 

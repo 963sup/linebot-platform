@@ -10,7 +10,8 @@ import (
 	"github.com/963sup/linebot-platform/internal/application/usecases/audience"
 )
 
-func runAudienceAdmin(args []string, getenv func(string) string, output io.Writer) error {
+func runAudienceAdmin(args []string, getenv func(string) string, output io.Writer, dependencies ...Dependencies) error {
+	deps := dependency(dependencies)
 	flags := flag.NewFlagSet("audience-admin", flag.ContinueOnError)
 	action := flags.String("action", "", "create|append|create-click|create-impression|update-description|delete|create-file|append-file")
 	id := flags.Int64("audience-id", 0, "existing audience group ID")
@@ -51,10 +52,10 @@ func runAudienceAdmin(args []string, getenv func(string) string, output io.Write
 			return err
 		}
 	}
-	if audienceManagementRuntimeFactory == nil {
+	if deps.AudienceManagementRuntime == nil {
 		return errors.New("audience management runtime is not configured")
 	}
-	runtime, err := audienceManagementRuntimeFactory(getenv(channelTokenEnv))
+	runtime, err := deps.AudienceManagementRuntime(getenv(channelTokenEnv))
 	if err != nil {
 		return err
 	}

@@ -22,7 +22,7 @@ type Delivery struct {
 	claimID    string
 	claimUntil time.Time
 	version    uint64
-	events     []any
+	pending    []events.DeliveryEvent
 }
 
 func NewDelivery(id valueobjects.DeliveryID, replyUntil time.Time) (Delivery, error) {
@@ -71,7 +71,7 @@ func (d *Delivery) Claim(claimID string, now, claimUntil time.Time) error {
 	}
 	d.status, d.claimID, d.claimUntil = valueobjects.StatusSending, claimID, claimUntil.UTC()
 	d.version++
-	d.events = append(d.events, events.Claimed{DeliveryID: d.id, At: now})
+	d.pending = append(d.pending, events.Claimed{DeliveryID: d.id, At: now})
 	return nil
 }
 
@@ -88,9 +88,9 @@ func (d *Delivery) Complete(claimID string, outcome valueobjects.Status, now tim
 	d.status, d.claimID, d.claimUntil = outcome, "", time.Time{}
 	d.version++
 	now = now.UTC()
-	d.events = append(d.events, events.Completed{DeliveryID: d.id, Outcome: outcome, At: now})
+	d.pending = append(d.pending, events.Completed{DeliveryID: d.id, Outcome: outcome, At: now})
 	if outcome == valueobjects.StatusUnknown {
-		d.events = append(d.events, events.OutcomeUnknown{DeliveryID: d.id, At: now})
+		d.pending = append(d.pending, events.OutcomeUnknown{DeliveryID: d.id, At: now})
 	}
 	return nil
 }
@@ -103,7 +103,7 @@ func (d *Delivery) Reconcile(now time.Time) bool {
 		d.status = valueobjects.StatusExpired
 	case d.status == valueobjects.StatusSending && !now.Before(d.claimUntil):
 		d.status, d.claimID, d.claimUntil = valueobjects.StatusUnknown, "", time.Time{}
-		d.events = append(d.events, events.OutcomeUnknown{DeliveryID: d.id, At: now})
+		d.pending = append(d.pending, events.OutcomeUnknown{DeliveryID: d.id, At: now})
 	default:
 		return false
 	}
@@ -117,8 +117,14 @@ func (d Delivery) ReplyUntil() time.Time       { return d.replyUntil }
 func (d Delivery) ClaimID() string             { return d.claimID }
 func (d Delivery) ClaimUntil() time.Time       { return d.claimUntil }
 func (d Delivery) Version() uint64             { return d.version }
-func (d *Delivery) PullEvents() []any {
-	result := append([]any(nil), d.events...)
-	d.events = nil
-	return result
+func (d Delivery) PendingEvents() []events.DeliveryEvent {
+	return append([]events.DeliveryEvent(nil), d.pending...)
+}
+
+// AcknowledgeEvents clears events after the aggregate state and event records
+// have been committed successfully by the application boundary.
+func (d *Delivery) AcknowledgeEvents() {
+	if d != nil {
+		d.pending = nil
+	}
 }

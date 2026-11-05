@@ -9,7 +9,8 @@ import (
 	requestvalidation "github.com/963sup/linebot-platform/internal/application/usecases/request-validation"
 )
 
-func runValidate(args []string, getenv func(string) string) error {
+func runValidate(args []string, getenv func(string) string, dependencies ...Dependencies) error {
+	deps := dependency(dependencies)
 	flags := flag.NewFlagSet("validate", flag.ContinueOnError)
 	kind := flags.String("kind", "", "reply|push|multicast|narrowcast|broadcast")
 	text := flags.String("text", "", "text message to validate without sending")
@@ -26,10 +27,10 @@ func runValidate(args []string, getenv func(string) string) error {
 	if *kind != "reply" && *kind != "push" && *kind != "multicast" && *kind != "narrowcast" && *kind != "broadcast" {
 		return errors.New("unsupported validation kind")
 	}
-	if validationRuntimeFactory == nil {
+	if deps.ValidationRuntime == nil {
 		return errors.New("validation runtime is not configured")
 	}
-	rt, err := validationRuntimeFactory(getenv(channelTokenEnv))
+	rt, err := deps.ValidationRuntime(getenv(channelTokenEnv))
 	if err != nil {
 		return err
 	}

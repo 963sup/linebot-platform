@@ -56,6 +56,14 @@ func (a AccountLink) PendingEvents() []events.IdentityEvent {
 	return append([]events.IdentityEvent(nil), a.pending...)
 }
 
+// AcknowledgeEvents clears events after the aggregate state and event records
+// have been committed successfully by the application boundary.
+func (a *AccountLink) AcknowledgeEvents() {
+	if a != nil {
+		a.pending = nil
+	}
+}
+
 // Disconnect is idempotent; only the first transition emits AccountUnlinked.
 func (a *AccountLink) Disconnect() error {
 	if a == nil || !a.owner.Valid() {

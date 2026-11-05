@@ -3,7 +3,7 @@ schema_version: 2
 subdomains:
   - {id: reliable-customer-communication, classification: core, decision_status: hypothesis, confidence: medium, purpose: "Make customer communication reliable despite duplicate input and uncertain provider outcomes.", evidence: [internal/application/usecases/messaging-delivery/service.go]}
   - {id: account-identity-and-authorization, classification: supporting, decision_status: implemented, confidence: high, purpose: "Maintain verified account-link identity and authorization eligibility without owning credentials.", evidence: [internal/domain/identity/aggregates/account_link.go]}
-  - {id: customer-segmentation, classification: supporting, decision_status: hypothesis, confidence: medium, purpose: "Define recipients independently from provider audience resources.", evidence: [internal/application/usecases/campaign]}
+  - {id: customer-segmentation, classification: supporting, decision_status: hypothesis, confidence: medium, purpose: "Define recipients independently from provider audience resources.", evidence: [internal/domain/audience/aggregates/audience_definition.go, internal/application/usecases/audience/service.go]}
   - {id: customer-experience, classification: supporting, decision_status: hypothesis, confidence: low, purpose: "Coordinate presentation promotion and membership without merging their lifecycles.", evidence: [internal/application/usecases/experience-presentation, internal/application/usecases/promotion, internal/application/usecases/membership]}
   - {id: business-automation, classification: supporting, decision_status: hypothesis, confidence: medium, purpose: "Execute user-authorized business outcomes against replaceable workspace providers.", evidence: [internal/application/usecases/workspace-automation]}
   - {id: customer-knowledge, classification: supporting, decision_status: hypothesis, confidence: medium, purpose: "Provide recipient references and derived insight without owning provider profiles or delivery decisions.", evidence: [internal/application/usecases/contact-directory, internal/application/usecases/insights-reporting]}
@@ -246,7 +246,7 @@ contexts:
       - {term: content-draft, definition: "Unapproved generated output returned to a consumer.", forbidden_aliases: [final-message], code_symbols: []}
     owns: [generation-policy, generation-audit]
     data_ownership:
-      - {resource: generation-policy, authority: local-authoritative, owner: content-intelligence, write_policy: "Changed only through policy configuration.", evidence: [internal/adapter/outbound/openai]}
+      - {resource: generation-policy, authority: local-authoritative, owner: content-intelligence, write_policy: "Changed only through policy configuration.", evidence: [internal/application/usecases/content-intelligence/content.go]}
       - {resource: model-output, authority: provider-authoritative, owner: ai-provider, write_policy: "Imported as an unapproved draft.", evidence: [internal/infrastructure/openai, internal/infrastructure/google/genai]}
     invariants: [{id: CNT-001, statement: "Generated output remains a draft until accepted by its consumer.", evidence: [internal/application/usecases/content-intelligence/content_test.go]}]
     capabilities: [generate-content-draft, record-generation-outcome]

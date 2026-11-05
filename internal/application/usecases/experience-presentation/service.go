@@ -48,6 +48,7 @@ func (s *Service) Define(ctx context.Context, id valueobjects.SurfaceID, present
 	if err := s.repository.Save(ctx, surface); err != nil {
 		return aggregates.InteractionSurface{}, err
 	}
+	surface.AcknowledgeEvents()
 	return surface, nil
 }
 
@@ -91,12 +92,17 @@ func (s *Service) change(ctx context.Context, id valueobjects.SurfaceID, change 
 	if err != nil {
 		return aggregates.InteractionSurface{}, err
 	}
+	previousVersion := surface.Version()
 	if err := change(&surface); err != nil {
 		return aggregates.InteractionSurface{}, err
+	}
+	if surface.Version() == previousVersion {
+		return surface, nil
 	}
 	if err := s.repository.Save(ctx, surface); err != nil {
 		return aggregates.InteractionSurface{}, err
 	}
+	surface.AcknowledgeEvents()
 	return surface, nil
 }
 

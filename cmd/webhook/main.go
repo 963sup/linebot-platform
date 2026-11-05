@@ -21,7 +21,11 @@ func main() {
 		logger.Error("failed to configure HTTP runtime")
 		os.Exit(1)
 	}
-	defer runtime.Close()
+	defer func() {
+		if closeErr := runtime.Close(); closeErr != nil {
+			logger.Error("HTTP runtime close failed", "error", closeErr)
+		}
+	}()
 	server := &http.Server{
 		Addr:              ":" + cfg.Port,
 		Handler:           runtime.Handler,
@@ -35,7 +39,9 @@ func main() {
 	logger.Info("HTTP service starting", "port", cfg.Port, "profile", string(cfg.Environment), "mode", cfg.EventMode, "line_configured", cfg.LiveLINE())
 	if err := bootstrap.Serve(ctx, server, logger); err != nil {
 		logger.Error("HTTP service stopped unexpectedly")
-		runtime.Close() // os.Exit does not run deferred cleanup.
+		if closeErr := runtime.Close(); closeErr != nil { // os.Exit does not run deferred cleanup.
+			logger.Error("HTTP runtime close failed", "error", closeErr)
+		}
 		os.Exit(1)
 	}
 }

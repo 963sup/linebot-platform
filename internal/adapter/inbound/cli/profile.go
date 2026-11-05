@@ -14,7 +14,8 @@ import (
 
 // runProfile is intentionally CLI-only: no public HTTP route or automatic
 // collection of profile data. It makes an external call only with --lookup.
-func runProfile(args []string, getenv func(string) string, output io.Writer) error {
+func runProfile(args []string, getenv func(string) string, output io.Writer, dependencies ...Dependencies) error {
+	deps := dependency(dependencies)
 	flags := flag.NewFlagSet("profile", flag.ContinueOnError)
 	userID := flags.String("user", "", "LINE user ID")
 	lookup := flags.Bool("lookup", false, "explicitly fetch the profile from LINE")
@@ -36,10 +37,10 @@ func runProfile(args []string, getenv func(string) string, output io.Writer) err
 	if getenv(channelTokenEnv) == "" {
 		return errors.New("access token is required")
 	}
-	if profileRuntimeFactory == nil {
+	if deps.ProfileRuntime == nil {
 		return errors.New("profile runtime is not configured")
 	}
-	runtime, err := profileRuntimeFactory(getenv(channelTokenEnv))
+	runtime, err := deps.ProfileRuntime(getenv(channelTokenEnv))
 	if err != nil {
 		return err
 	}

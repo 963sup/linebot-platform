@@ -11,7 +11,8 @@ import (
 	conversationoperations "github.com/963sup/linebot-platform/internal/application/usecases/conversation-operations"
 )
 
-func runActions(args []string, getenv func(string) string) error {
+func runActions(args []string, getenv func(string) string, dependencies ...Dependencies) error {
+	deps := dependency(dependencies)
 	flags := flag.NewFlagSet("actions", flag.ContinueOnError)
 	action := flags.String("action", "", "leave-group|leave-room|loading|mark-read|mark-read-token")
 	id := flags.String("id", "", "group or room ID for leave actions")
@@ -44,10 +45,10 @@ func runActions(args []string, getenv func(string) string) error {
 			return errors.New("request must be a JSON object")
 		}
 	}
-	if actionsRuntimeFactory == nil {
+	if deps.ActionsRuntime == nil {
 		return errors.New("actions runtime is not configured")
 	}
-	r, err := actionsRuntimeFactory(getenv(channelTokenEnv))
+	r, err := deps.ActionsRuntime(getenv(channelTokenEnv))
 	if err != nil {
 		return err
 	}

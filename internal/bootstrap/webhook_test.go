@@ -17,7 +17,9 @@ func TestRouterWithoutCredentials(t *testing.T) {
 		status int
 	}{
 		{http.MethodGet, "/healthz", http.StatusOK},
+		{http.MethodGet, "/readyz", http.StatusOK},
 		{http.MethodPost, "/healthz", http.StatusMethodNotAllowed},
+		{http.MethodPost, "/readyz", http.StatusMethodNotAllowed},
 		{http.MethodPost, "/webhook/line", http.StatusServiceUnavailable},
 		{http.MethodGet, "/missing", http.StatusNotFound},
 	} {
@@ -26,5 +28,14 @@ func TestRouterWithoutCredentials(t *testing.T) {
 		if rec.Code != tc.status {
 			t.Fatalf("%s %s status = %d, expected %d", tc.method, tc.path, rec.Code, tc.status)
 		}
+	}
+}
+
+func TestRouterRejectsConfiguredRuntimeWithoutCloseOwner(t *testing.T) {
+	_, err := NewWebhookRouter(Config{
+		Secrets: SecretConfig{ChannelSecret: "secret", ChannelToken: "token"},
+	}, nil)
+	if err == nil {
+		t.Fatal("configured router without close owner was accepted")
 	}
 }

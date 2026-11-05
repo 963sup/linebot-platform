@@ -50,6 +50,7 @@ func (s *Service) Define(ctx context.Context, id valueobjects.AudienceID, criter
 	if err := s.repository.Save(ctx, audience); err != nil {
 		return aggregates.AudienceDefinition{}, err
 	}
+	audience.AcknowledgeEvents()
 	return audience, nil
 }
 
@@ -93,12 +94,17 @@ func (s *Service) change(ctx context.Context, id valueobjects.AudienceID, change
 	if err != nil {
 		return aggregates.AudienceDefinition{}, err
 	}
+	previousVersion := audience.Version()
 	if err := change(&audience); err != nil {
 		return aggregates.AudienceDefinition{}, err
+	}
+	if audience.Version() == previousVersion {
+		return audience, nil
 	}
 	if err := s.repository.Save(ctx, audience); err != nil {
 		return aggregates.AudienceDefinition{}, err
 	}
+	audience.AcknowledgeEvents()
 	return audience, nil
 }
 

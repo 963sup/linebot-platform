@@ -23,6 +23,7 @@ type AutomationRequest struct {
 	approval       valueobjects.Approval
 	output         valueobjects.Output
 	status         valueobjects.Status
+	revision       uint64
 	pending        []events.AutomationEvent
 }
 
@@ -35,13 +36,14 @@ func NewAutomationRequest(id valueobjects.AutomationRequestID, action valueobjec
 		action:         action,
 		requiredScopes: scopes,
 		status:         valueobjects.StatusRequested,
+		revision:       1,
 		pending:        []events.AutomationEvent{events.AutomationRequested{ID: id, Action: action}},
 	}, nil
 }
 
 // RestoreAutomationRequest rehydrates a valid persisted state without raising events.
-func RestoreAutomationRequest(id valueobjects.AutomationRequestID, action valueobjects.Action, scopes valueobjects.RequiredScopes, approval valueobjects.Approval, output valueobjects.Output, status valueobjects.Status) (AutomationRequest, error) {
-	if !id.Valid() || !action.Valid() || !scopes.Valid() || !status.Valid() {
+func RestoreAutomationRequest(id valueobjects.AutomationRequestID, action valueobjects.Action, scopes valueobjects.RequiredScopes, approval valueobjects.Approval, output valueobjects.Output, status valueobjects.Status, revision uint64) (AutomationRequest, error) {
+	if !id.Valid() || !action.Valid() || !scopes.Valid() || !status.Valid() || revision == 0 {
 		return AutomationRequest{}, ErrInvalidAutomationRequest
 	}
 	switch status {
@@ -58,7 +60,7 @@ func RestoreAutomationRequest(id valueobjects.AutomationRequestID, action valueo
 			return AutomationRequest{}, ErrInvalidAutomationRequest
 		}
 	}
-	return AutomationRequest{id: id, action: action, requiredScopes: scopes, approval: approval, output: output, status: status}, nil
+	return AutomationRequest{id: id, action: action, requiredScopes: scopes, approval: approval, output: output, status: status, revision: revision}, nil
 }
 
 func (a AutomationRequest) ID() valueobjects.AutomationRequestID { return a.id }
@@ -67,10 +69,19 @@ func (a AutomationRequest) RequiredScopes() []string             { return a.requ
 func (a AutomationRequest) Approval() valueobjects.Approval      { return a.approval }
 func (a AutomationRequest) Output() valueobjects.Output          { return a.output }
 func (a AutomationRequest) Status() valueobjects.Status          { return a.status }
+func (a AutomationRequest) Revision() uint64                     { return a.revision }
 
 // PendingEvents returns a detached event snapshot for publication after persistence.
 func (a AutomationRequest) PendingEvents() []events.AutomationEvent {
 	return append([]events.AutomationEvent(nil), a.pending...)
+}
+
+// AcknowledgeEvents clears modeled-only events after aggregate state has been
+// saved successfully. This context does not publish integration events yet.
+func (a *AutomationRequest) AcknowledgeEvents() {
+	if a != nil {
+		a.pending = nil
+	}
 }
 
 func (a *AutomationRequest) Approve(approval valueobjects.Approval) error {
@@ -82,6 +93,7 @@ func (a *AutomationRequest) Approve(approval valueobjects.Approval) error {
 	}
 	a.approval = approval
 	a.status = valueobjects.StatusApproved
+	a.revision++
 	a.pending = append(a.pending, events.AutomationApproved{ID: a.id, Approval: approval})
 	return nil
 }
@@ -97,6 +109,7 @@ func (a *AutomationRequest) StartExecution() error {
 		return ErrInvalidTransition
 	}
 	a.status = valueobjects.StatusExecuting
+	a.revision++
 	a.pending = append(a.pending, events.AutomationExecutionStarted{ID: a.id})
 	return nil
 }
@@ -122,6 +135,7 @@ func (a *AutomationRequest) finish(status valueobjects.Status, output valueobjec
 	}
 	a.status = status
 	a.output = output
+	a.revision++
 	switch status {
 	case valueobjects.StatusSucceeded:
 		a.pending = append(a.pending, events.AutomationSucceeded{ID: a.id, Output: output})

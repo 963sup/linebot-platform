@@ -17,7 +17,8 @@ type mediaTransferRuntime interface {
 	MessageContentStatus(context.Context, string) (mediatransfer.PreparationStatus, error)
 }
 
-func runContent(args []string, getenv func(string) string, output io.Writer) error {
+func runContent(args []string, getenv func(string) string, output io.Writer, dependencies ...Dependencies) error {
+	deps := dependency(dependencies)
 	f := flag.NewFlagSet("content", flag.ContinueOnError)
 	kind := f.String("kind", "", "content|preview|transcoding")
 	id := f.String("message-id", "", "LINE message ID")
@@ -32,10 +33,10 @@ func runContent(args []string, getenv func(string) string, output io.Writer) err
 	if (*kind == "content" || *kind == "preview") && *out == "" {
 		return errors.New("binary content requires --out")
 	}
-	if contentRuntimeFactory == nil {
+	if deps.ContentRuntime == nil {
 		return errors.New("content runtime is not configured")
 	}
-	r, err := contentRuntimeFactory(getenv(channelTokenEnv))
+	r, err := deps.ContentRuntime(getenv(channelTokenEnv))
 	if err != nil {
 		return err
 	}

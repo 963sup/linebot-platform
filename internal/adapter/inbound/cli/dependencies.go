@@ -183,9 +183,103 @@ type BulkMessagingRuntime interface {
 	Close() error
 }
 
-// Dependencies groups the runtime factories owned by the composition root.
-// ConfigureXRuntime remains available while command entry points migrate to
-// receiving this bundle explicitly.
+type AudienceDefinitionSummary struct {
+	ID               string `json:"id"`
+	Source           string `json:"source"`
+	DefinitionSHA256 string `json:"definition_sha256"`
+	DefinitionBytes  int    `json:"definition_bytes"`
+	Version          uint64 `json:"version"`
+	Status           string `json:"status"`
+}
+
+type AudienceSyncSummary struct {
+	ProviderReference string `json:"provider_reference"`
+	SynchronizedCount int    `json:"synchronized_count"`
+}
+
+type AudienceDefinitionsRuntime interface {
+	GetAudienceDefinition(context.Context, string) (AudienceDefinitionSummary, error)
+	DefineAudience(context.Context, string, string, string) (AudienceDefinitionSummary, error)
+	ReviseAudience(context.Context, string, string, string) (AudienceDefinitionSummary, error)
+	ActivateAudience(context.Context, string) (AudienceDefinitionSummary, error)
+	ArchiveAudience(context.Context, string) (AudienceDefinitionSummary, error)
+	SyncAudience(context.Context, string) (AudienceSyncSummary, error)
+	Close() error
+}
+
+type InteractionRegion struct {
+	ID              string `json:"id"`
+	ActionReference string `json:"action_reference"`
+	AssetReference  string `json:"asset_reference,omitempty"`
+}
+
+type InteractionSurfaceSummary struct {
+	ID          string `json:"id"`
+	RegionCount int    `json:"region_count"`
+	Version     uint64 `json:"version"`
+	Status      string `json:"status"`
+}
+
+type SurfaceDeploymentSummary struct {
+	ProviderReference string `json:"provider_reference"`
+	Version           uint64 `json:"version"`
+}
+
+type InteractionSurfacesRuntime interface {
+	GetSurface(context.Context, string) (InteractionSurfaceSummary, error)
+	DefineSurface(context.Context, string, []InteractionRegion) (InteractionSurfaceSummary, error)
+	ReviseSurface(context.Context, string, []InteractionRegion) (InteractionSurfaceSummary, error)
+	PublishSurface(context.Context, string) (InteractionSurfaceSummary, error)
+	RetireSurface(context.Context, string) (InteractionSurfaceSummary, error)
+	DeploySurface(context.Context, string) (SurfaceDeploymentSummary, error)
+	Close() error
+}
+
+type PromotionSummary struct {
+	ID                      string    `json:"id"`
+	OfferSHA256             string    `json:"offer_sha256"`
+	EligibilityPolicySHA256 string    `json:"eligibility_policy_sha256"`
+	StartsAt                time.Time `json:"starts_at"`
+	EndsAt                  time.Time `json:"ends_at"`
+	Revision                uint64    `json:"revision"`
+	Status                  string    `json:"status"`
+}
+
+type DeliveryIntentSummary struct {
+	PromotionID     string `json:"promotion_id"`
+	RecipientSHA256 string `json:"recipient_sha256"`
+	OfferSHA256     string `json:"offer_sha256"`
+}
+
+type PromotionsRuntime interface {
+	GetPromotion(context.Context, string) (PromotionSummary, error)
+	DefinePromotion(context.Context, string, string, string, time.Time, time.Time) (PromotionSummary, error)
+	ActivatePromotion(context.Context, string, time.Time) (PromotionSummary, error)
+	ClosePromotion(context.Context, string) (PromotionSummary, error)
+	CreateDeliveryIntent(context.Context, string, string, string, bool, time.Time) (DeliveryIntentSummary, error)
+	Close() error
+}
+
+type AutomationRequestSummary struct {
+	ID         string `json:"id"`
+	Action     string `json:"action"`
+	ScopeCount int    `json:"scope_count"`
+	Approved   bool   `json:"approved"`
+	HasOutput  bool   `json:"has_output"`
+	Revision   uint64 `json:"revision"`
+	Status     string `json:"status"`
+}
+
+type AutomationRequestsRuntime interface {
+	GetAutomationRequest(context.Context, string) (AutomationRequestSummary, error)
+	RequestAutomation(context.Context, string, string, []string) (AutomationRequestSummary, error)
+	ApproveAutomation(context.Context, string, string) (AutomationRequestSummary, error)
+	ExecuteAutomation(context.Context, string) (AutomationRequestSummary, error)
+	Close() error
+}
+
+// Dependencies is the immutable set of runtime factories supplied by the
+// composition root for one CLI invocation.
 type Dependencies struct {
 	PushRuntime               func(string) (PushRuntime, error)
 	ProfileRuntime            func(string) (ProfileRuntime, error)
@@ -210,152 +304,15 @@ type Dependencies struct {
 	TokenRuntime              func() (TokenRuntime, error)
 	AudienceManagementRuntime func(string) (AudienceManagementRuntime, error)
 	BulkMessagingRuntime      func(string) (BulkMessagingRuntime, error)
+	AudienceDefinitions       func(context.Context, string) (AudienceDefinitionsRuntime, error)
+	InteractionSurfaces       func(context.Context, string) (InteractionSurfacesRuntime, error)
+	Promotions                func(context.Context, string) (PromotionsRuntime, error)
+	AutomationRequests        func(context.Context, string) (AutomationRequestsRuntime, error)
 }
 
-var pushRuntimeFactory func(string) (PushRuntime, error)
-var profileRuntimeFactory func(string) (ProfileRuntime, error)
-var validationRuntimeFactory func(string) (ValidationRuntime, error)
-var statusRuntimeFactory func(context.Context, string) (StatusRuntime, error)
-var workspaceRuntimeFactory func(context.Context, oauth2.TokenSource) (WorkspaceRuntime, error)
-var linkTokenRuntimeFactory func(string) (LinkTokenRuntime, error)
-var actionsRuntimeFactory func(string) (ActionsRuntime, error)
-var eligibilityRuntimeFactory func(string) (EligibilityRuntime, error)
-var audienceRuntimeFactory func(string) (AudienceRuntime, error)
-var contactsRuntimeFactory func(string) (ContactsRuntime, error)
-var couponsRuntimeFactory func(string) (CouponsRuntime, error)
-var insightsRuntimeFactory func(string) (InsightsRuntime, error)
-var membershipsRuntimeFactory func(string) (MembershipsRuntime, error)
-var menusRuntimeFactory func(string) (MenusRuntime, error)
-var channelInspectionRuntimeFactory func(string) (ChannelInspectionRuntime, error)
-var contentRuntimeFactory func(string) (ContentRuntime, error)
-var menuImageRuntimeFactory func(string) (MenuImageRuntime, error)
-var menuManagementRuntimeFactory func(string) (MenuManagementRuntime, error)
-var menuImageUploadRuntimeFactory func(string) (MenuImageUploadRuntime, error)
-var webhookRuntimeFactory func(string) (WebhookRuntime, error)
-var tokenRuntimeFactory func() (TokenRuntime, error)
-var audienceManagementRuntimeFactory func(string) (AudienceManagementRuntime, error)
-var bulkMessagingRuntimeFactory func(string) (BulkMessagingRuntime, error)
-
-// ConfigureDependencies installs the complete composition-root bundle.
-// It is intentionally a value snapshot: callers finish constructing the
-// bundle before publishing it to the CLI package.
-func ConfigureDependencies(deps Dependencies) {
-	pushRuntimeFactory = deps.PushRuntime
-	profileRuntimeFactory = deps.ProfileRuntime
-	validationRuntimeFactory = deps.ValidationRuntime
-	statusRuntimeFactory = deps.StatusRuntime
-	workspaceRuntimeFactory = deps.WorkspaceRuntime
-	linkTokenRuntimeFactory = deps.LinkTokenRuntime
-	actionsRuntimeFactory = deps.ActionsRuntime
-	eligibilityRuntimeFactory = deps.EligibilityRuntime
-	audienceRuntimeFactory = deps.AudienceRuntime
-	contactsRuntimeFactory = deps.ContactsRuntime
-	couponsRuntimeFactory = deps.CouponsRuntime
-	insightsRuntimeFactory = deps.InsightsRuntime
-	membershipsRuntimeFactory = deps.MembershipsRuntime
-	menusRuntimeFactory = deps.MenusRuntime
-	channelInspectionRuntimeFactory = deps.ChannelInspectionRuntime
-	contentRuntimeFactory = deps.ContentRuntime
-	menuImageRuntimeFactory = deps.MenuImageRuntime
-	menuManagementRuntimeFactory = deps.MenuManagementRuntime
-	menuImageUploadRuntimeFactory = deps.MenuImageUploadRuntime
-	webhookRuntimeFactory = deps.WebhookRuntime
-	tokenRuntimeFactory = deps.TokenRuntime
-	audienceManagementRuntimeFactory = deps.AudienceManagementRuntime
-	bulkMessagingRuntimeFactory = deps.BulkMessagingRuntime
-}
-
-// ConfigurePushRuntime supplies the composition-root factory for the push command.
-// It is transitional while the remaining CLI commands migrate to injected dependencies.
-func ConfigurePushRuntime(factory func(string) (PushRuntime, error)) {
-	pushRuntimeFactory = factory
-}
-
-// ConfigureProfileRuntime supplies the composition-root factory for profile lookup.
-func ConfigureProfileRuntime(factory func(string) (ProfileRuntime, error)) {
-	profileRuntimeFactory = factory
-}
-
-func ConfigureValidationRuntime(factory func(string) (ValidationRuntime, error)) {
-	validationRuntimeFactory = factory
-}
-
-func ConfigureStatusRuntime(factory func(context.Context, string) (StatusRuntime, error)) {
-	statusRuntimeFactory = factory
-}
-
-func ConfigureWorkspaceRuntime(factory func(context.Context, oauth2.TokenSource) (WorkspaceRuntime, error)) {
-	workspaceRuntimeFactory = factory
-}
-
-func ConfigureLinkTokenRuntime(factory func(string) (LinkTokenRuntime, error)) {
-	linkTokenRuntimeFactory = factory
-}
-
-func ConfigureActionsRuntime(factory func(string) (ActionsRuntime, error)) {
-	actionsRuntimeFactory = factory
-}
-
-func ConfigureEligibilityRuntime(factory func(string) (EligibilityRuntime, error)) {
-	eligibilityRuntimeFactory = factory
-}
-
-func ConfigureAudienceRuntime(factory func(string) (AudienceRuntime, error)) {
-	audienceRuntimeFactory = factory
-}
-
-func ConfigureContactsRuntime(factory func(string) (ContactsRuntime, error)) {
-	contactsRuntimeFactory = factory
-}
-
-func ConfigureCouponsRuntime(factory func(string) (CouponsRuntime, error)) {
-	couponsRuntimeFactory = factory
-}
-
-func ConfigureInsightsRuntime(factory func(string) (InsightsRuntime, error)) {
-	insightsRuntimeFactory = factory
-}
-
-func ConfigureMembershipsRuntime(factory func(string) (MembershipsRuntime, error)) {
-	membershipsRuntimeFactory = factory
-}
-
-func ConfigureMenusRuntime(factory func(string) (MenusRuntime, error)) {
-	menusRuntimeFactory = factory
-}
-
-func ConfigureChannelInspectionRuntime(factory func(string) (ChannelInspectionRuntime, error)) {
-	channelInspectionRuntimeFactory = factory
-}
-
-func ConfigureContentRuntime(factory func(string) (ContentRuntime, error)) {
-	contentRuntimeFactory = factory
-}
-
-func ConfigureMenuImageRuntime(factory func(string) (MenuImageRuntime, error)) {
-	menuImageRuntimeFactory = factory
-}
-
-func ConfigureMenuManagementRuntime(factory func(string) (MenuManagementRuntime, error)) {
-	menuManagementRuntimeFactory = factory
-}
-
-func ConfigureMenuImageUploadRuntime(factory func(string) (MenuImageUploadRuntime, error)) {
-	menuImageUploadRuntimeFactory = factory
-}
-
-func ConfigureWebhookRuntime(factory func(string) (WebhookRuntime, error)) {
-	webhookRuntimeFactory = factory
-}
-
-func ConfigureTokenRuntime(factory func() (TokenRuntime, error)) {
-	tokenRuntimeFactory = factory
-}
-
-func ConfigureAudienceManagementRuntime(factory func(string) (AudienceManagementRuntime, error)) {
-	audienceManagementRuntimeFactory = factory
-}
-
-func ConfigureBulkMessagingRuntime(factory func(string) (BulkMessagingRuntime, error)) {
-	bulkMessagingRuntimeFactory = factory
+func dependency(values []Dependencies) Dependencies {
+	if len(values) == 0 {
+		return Dependencies{}
+	}
+	return values[0]
 }

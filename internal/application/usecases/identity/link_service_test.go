@@ -82,17 +82,15 @@ func (f *oauthStoreFake) GetConnection(_ context.Context, owner, subject string)
 	return authorization, nil
 }
 
-func (f *oauthStoreFake) DeactivateConnection(_ context.Context, owner, subject string) error {
-	key := owner + "|" + subject
-	authorization, exists := f.links[key]
+func (f *oauthStoreFake) DeactivateConnection(_ context.Context, authorization OAuthAuthorization) error {
+	key := authorization.Link.Owner().String() + "|" + authorization.Link.GoogleAccount().String()
+	stored, exists := f.links[key]
 	if !exists {
 		return errors.New("connection not found")
 	}
-	if err := authorization.Link.Disconnect(); err != nil {
-		return err
-	}
-	authorization.Credentials = OAuthCredentials{}
-	f.links[key] = authorization
+	stored.Link = authorization.Link
+	stored.Credentials = OAuthCredentials{}
+	f.links[key] = stored
 	return nil
 }
 

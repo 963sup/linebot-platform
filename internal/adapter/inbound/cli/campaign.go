@@ -15,7 +15,8 @@ import (
 	"github.com/google/uuid"
 )
 
-func runCampaign(args []string, getenv func(string) string) error {
+func runCampaign(args []string, getenv func(string) string, dependencies ...Dependencies) error {
+	deps := dependency(dependencies)
 	flags := flag.NewFlagSet("campaign", flag.ContinueOnError)
 	kind := flags.String("kind", "", "broadcast|multicast|narrowcast")
 	recipients := flags.String("to", "", "comma-separated multicast user IDs")
@@ -75,10 +76,10 @@ func runCampaign(args []string, getenv func(string) string) error {
 		}
 		*key = id.String()
 	}
-	if bulkMessagingRuntimeFactory == nil {
+	if deps.BulkMessagingRuntime == nil {
 		return errors.New("bulk messaging runtime is not configured")
 	}
-	rt, err := bulkMessagingRuntimeFactory(getenv(channelTokenEnv))
+	rt, err := deps.BulkMessagingRuntime(getenv(channelTokenEnv))
 	if err != nil {
 		return err
 	}

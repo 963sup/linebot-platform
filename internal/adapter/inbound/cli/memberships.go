@@ -12,7 +12,8 @@ import (
 	"github.com/963sup/linebot-platform/internal/application/usecases/promotion"
 )
 
-func runMemberships(args []string, getenv func(string) string, output io.Writer) error {
+func runMemberships(args []string, getenv func(string) string, output io.Writer, dependencies ...Dependencies) error {
+	deps := dependency(dependencies)
 	flags := flag.NewFlagSet("memberships", flag.ContinueOnError)
 	kind := flags.String("kind", "", "memberships|subscription|membership-users|coupons|coupon")
 	user := flags.String("user", "", "user ID")
@@ -32,12 +33,12 @@ func runMemberships(args []string, getenv func(string) string, output io.Writer)
 	}
 	// Keep the original memberships --kind coupon(s) CLI syntax compatible.
 	if *kind == "coupons" || *kind == "coupon" {
-		return inspectCoupon(*kind, promotion.CouponID(*couponID), promotion.CouponPageRequest{Cursor: *start, Limit: *limit}, getenv, output)
+		return inspectCoupon(*kind, promotion.CouponID(*couponID), promotion.CouponPageRequest{Cursor: *start, Limit: *limit}, getenv, output, deps)
 	}
-	if membershipsRuntimeFactory == nil {
+	if deps.MembershipsRuntime == nil {
 		return errors.New("memberships runtime is not configured")
 	}
-	rt, err := membershipsRuntimeFactory(getenv(channelTokenEnv))
+	rt, err := deps.MembershipsRuntime(getenv(channelTokenEnv))
 	if err != nil {
 		return err
 	}

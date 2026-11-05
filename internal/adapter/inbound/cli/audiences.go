@@ -10,7 +10,8 @@ import (
 	"github.com/963sup/linebot-platform/internal/application/usecases/audience"
 )
 
-func runAudiences(args []string, getenv func(string) string, output io.Writer) error {
+func runAudiences(args []string, getenv func(string) string, output io.Writer, dependencies ...Dependencies) error {
+	deps := dependency(dependencies)
 	flags := flag.NewFlagSet("audiences", flag.ContinueOnError)
 	kind := flags.String("kind", "", "group|shared-group|list|shared-list")
 	id := flags.Int64("audience-id", 0, "audience group ID")
@@ -26,10 +27,10 @@ func runAudiences(args []string, getenv func(string) string, output io.Writer) e
 	if getenv == nil || output == nil {
 		return errors.New("missing CLI configuration")
 	}
-	if audienceRuntimeFactory == nil {
+	if deps.AudienceRuntime == nil {
 		return errors.New("audience runtime is not configured")
 	}
-	rt, err := audienceRuntimeFactory(getenv(channelTokenEnv))
+	rt, err := deps.AudienceRuntime(getenv(channelTokenEnv))
 	if err != nil {
 		return err
 	}
