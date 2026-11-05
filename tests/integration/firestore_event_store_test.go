@@ -4,6 +4,7 @@ package integration_test
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"sync"
@@ -64,34 +65,48 @@ func TestFirestoreTransactionAndConcurrentClaim(t *testing.T) {
 		t.Fatalf("redelivery must refresh, not create a duplicate: created=%t err=%v", created, err)
 	}
 
+	const workers = 12
 	var count atomic.Int32
+	var inFlight atomic.Int32
 	var winningLease string
 	var guard sync.Mutex
 	var wg sync.WaitGroup
-	for i := 0; i < 12; i++ {
+	for i := 0; i < workers; i++ {
 		wg.Add(1)
 		go func(i int) {
 			defer wg.Done()
 			lease := fmt.Sprintf("worker-%d", i)
 			claimedJob, claimed, err := store.Claim(ctx, job.Key, lease, now.Add(11*time.Second))
+			if errors.Is(err, messagingdelivery.ErrDeliveryInFlight) {
+				if claimed {
+					t.Error("in-flight delivery must not be claimed")
+				}
+				inFlight.Add(1)
+				return
+			}
 			if err != nil {
 				t.Errorf("concurrent Claim: %v", err)
 				return
 			}
-			if claimed {
-				if claimedJob.ReplyUntil.Before(job.ReplyUntil) {
-					t.Error("redelivery deadline was not refreshed")
-				}
-				count.Add(1)
-				guard.Lock()
-				winningLease = lease
-				guard.Unlock()
+			if !claimed {
+				t.Error("concurrent Claim returned unclaimed without in-flight status")
+				return
 			}
+			if claimedJob.ReplyUntil.Before(job.ReplyUntil) {
+				t.Error("redelivery deadline was not refreshed")
+			}
+			count.Add(1)
+			guard.Lock()
+			winningLease = lease
+			guard.Unlock()
 		}(i)
 	}
 	wg.Wait()
 	if count.Load() != 1 {
 		t.Fatalf("expected exactly one durable claim, got %d", count.Load())
+	}
+	if inFlight.Load() != workers-1 {
+		t.Fatalf("expected %d in-flight losers, got %d", workers-1, inFlight.Load())
 	}
 	if err := store.Complete(ctx, job.Key, winningLease, messagingdelivery.DeliverySent); err != nil {
 		t.Fatal(err)
