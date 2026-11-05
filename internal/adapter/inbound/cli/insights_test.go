@@ -14,7 +14,7 @@ func TestInsightsFailClosed(t *testing.T) {
 		{"--read", "--kind", "deliveries", "--date", "20261334"},
 		{"--read", "--kind", "menu-daily", "--rich-menu", "rm", "--from", "20261103"},
 	} {
-		if err := runInsights(args, getenv, &output); err == nil {
+		if err := runInsights(testContext(), args, getenv, &output); err == nil {
 			t.Fatalf("invalid insights args accepted: %v", args)
 		}
 	}

@@ -14,7 +14,7 @@ func TestAudienceQueriesFailClosed(t *testing.T) {
 		{"--read", "--kind", "shared-list", "--size", "10000"},
 		{"--read", "--kind", "nonexistent"},
 	} {
-		if err := runAudiences(args, getenv, &output); err == nil {
+		if err := runAudiences(testContext(), args, getenv, &output); err == nil {
 			t.Fatalf("invalid audience inspection accepted: %v", args)
 		}
 	}

@@ -9,7 +9,7 @@ import (
 	requestvalidation "github.com/963sup/linebot-platform/internal/application/usecases/request-validation"
 )
 
-func runValidate(args []string, getenv func(string) string, dependencies ...Dependencies) error {
+func runValidate(parent context.Context, args []string, getenv func(string) string, dependencies ...Dependencies) error {
 	deps := dependency(dependencies)
 	flags := flag.NewFlagSet("validate", flag.ContinueOnError)
 	kind := flags.String("kind", "", "reply|push|multicast|narrowcast|broadcast")
@@ -35,7 +35,7 @@ func runValidate(args []string, getenv func(string) string, dependencies ...Depe
 		return err
 	}
 	defer rt.Close()
-	ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
+	ctx, cancel := context.WithTimeout(parent, 12*time.Second)
 	defer cancel()
 	_, err = rt.Validate(ctx, requestvalidation.Request{
 		Delivery: requestvalidation.DeliveryKind(*kind),

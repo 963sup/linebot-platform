@@ -33,9 +33,31 @@ func TestCloudBuildConfigurationTargetsLineBotProduction(t *testing.T) {
 		"LINE_CHANNEL_ACCESS_TOKEN=line-bot-channel-access-token:latest",
 		"--remove-env-vars",
 		"--remove-secrets",
+		"--concurrency=16",
 	} {
 		if !strings.Contains(text, want) {
 			t.Fatalf("cloudbuild.deploy.yaml missing %q", want)
 		}
+	}
+	if strings.Count(text, "--concurrency=16") != 1 {
+		t.Fatal("only the private worker deployment may set --concurrency=16")
+	}
+	private := strings.Index(text, "id: 'deploy-private-worker'")
+	if private < 0 {
+		t.Fatal("private worker deployment step is missing")
+	}
+	privateStep := text[private:]
+	if next := strings.Index(privateStep[1:], "\n  - id:"); next >= 0 {
+		privateStep = privateStep[:next+1]
+	}
+	if !strings.Contains(privateStep, "--concurrency=16") {
+		t.Fatal("private worker deployment must own the concurrency limit")
+	}
+	workerSource, err := os.ReadFile("../../internal/bootstrap/worker.go")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(workerSource), "workerMaxConcurrentRequests = 16") {
+		t.Fatal("Cloud Run concurrency must match the worker admission cap")
 	}
 }

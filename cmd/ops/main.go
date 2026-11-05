@@ -8,7 +8,9 @@ import (
 )
 
 func main() {
-	if err := bootstrap.RunOps(os.Args[1:], os.Getenv); err != nil {
+	ctx, stop := bootstrap.SignalContext()
+	defer stop()
+	if err := bootstrap.RunOps(ctx, os.Args[1:], os.Getenv); err != nil {
 		fmt.Fprintln(os.Stderr, "ops:", err)
 		os.Exit(1)
 	}

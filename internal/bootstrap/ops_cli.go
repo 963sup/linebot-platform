@@ -208,6 +208,6 @@ func BuildOpsCLI() cli.Dependencies {
 
 // RunOps owns the CLI composition boundary so the process entrypoint imports
 // only bootstrap and standard-library packages.
-func RunOps(args []string, getenv func(string) string) error {
-	return cli.Run(args, getenv, BuildOpsCLI())
+func RunOps(ctx context.Context, args []string, getenv func(string) string) error {
+	return cli.Run(ctx, args, getenv, BuildOpsCLI())
 }

@@ -15,7 +15,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func runCampaign(args []string, getenv func(string) string, dependencies ...Dependencies) error {
+func runCampaign(parent context.Context, args []string, getenv func(string) string, dependencies ...Dependencies) error {
 	deps := dependency(dependencies)
 	flags := flag.NewFlagSet("campaign", flag.ContinueOnError)
 	kind := flags.String("kind", "", "broadcast|multicast|narrowcast")
@@ -84,7 +84,7 @@ func runCampaign(args []string, getenv func(string) string, dependencies ...Depe
 		return err
 	}
 	defer rt.Close()
-	ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
+	ctx, cancel := context.WithTimeout(parent, 12*time.Second)
 	defer cancel()
 	msgs := []messagingdelivery.Message{{Kind: messagingdelivery.KindText, Text: *message}}
 	fmt.Fprintln(os.Stderr, "LINE campaign retry key:", *key)

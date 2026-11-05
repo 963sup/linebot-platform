@@ -77,6 +77,7 @@ steps:
       - '--project=$PROJECT_ID'
       - '--service-account=line-bot-runtime@bubbly-area-513305-s0.iam.gserviceaccount.com'
       - '--no-allow-unauthenticated'
+      - '--concurrency=16'
       - '--update-env-vars=APP_ENV=production,LINE_EVENT_MODE=durable,LINE_API_TIMEOUT=8s,LOG_LEVEL=info,LOG_FORMAT=json,LINE_BOT_DESTINATION=${_LINE_BOT_DESTINATION},GCP_PROJECT_ID=$PROJECT_ID,TASK_QUEUE_NAME=projects/$PROJECT_ID/locations/${_REGION}/queues/${_QUEUE_ID},TASK_WORKER_URL=https://line-bot-private-185354881750.asia-east1.run.app/tasks/v2/line-reply,TASK_OIDC_AUDIENCE=https://line-bot-private-185354881750.asia-east1.run.app,TASK_INVOKER_EMAIL=${_TASK_INVOKER_EMAIL}'
       - '--update-secrets=LINE_CHANNEL_ACCESS_TOKEN=line-bot-channel-access-token:latest'
       - '--remove-env-vars=WORKER_MODE,GOOGLE_CLOUD_PROJECT,FIRESTORE_DATABASE,AUTO_TASKS,AUTO_CALENDAR,CALENDAR_SERVICE_ACCOUNT'

@@ -28,7 +28,7 @@ func TestEventsRequiresExplicitReadOnlyModeAndStagingAllowlist(t *testing.T) {
 		{"unknown flag", []string{"--project", "test-staging", "--inspect", "--send"}, approved, "flag provided but not defined"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			err := runEvents(tc.args, tc.env)
+			err := runEvents(testContext(), tc.args, tc.env)
 			if err == nil || !strings.Contains(err.Error(), tc.want) {
 				t.Fatalf("want %q error, got %v", tc.want, err)
 			}

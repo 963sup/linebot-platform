@@ -14,7 +14,7 @@ PNG 是高階 DDD／Hexagonal Architecture 概覽的渲染版本；其中右下�
 
 補充的非規範性詳細圖：[Codex Architecture](../assets/architecture/go-ddd-hexagonal-architecture-codex.svg) · [Engineering Blueprint](../assets/architecture/go-ddd-hexagonal-architecture-engineering.svg)。三份 SVG 都採用本 repository 的 layer-first 結構，並可獨立辨識為非規範性圖解。
 
-Overview PNG 是 SVG 在本 repository 維護環境中的 2400px 寬渲染投影；本機重建命令、Inkscape 與字型前提見 [architecture assets README](../assets/architecture/README.md)。不同渲染環境不保證 byte-for-byte 相同，提交資產的完整性雜湊由 architecture test 鎖定。
+Overview PNG 是 SVG 的 2400px 寬渲染投影；提交與 CI 以 `make architecture-assets-check` 在 digest-pinned container 內重建並逐 byte 比對。一般本機預覽、受控更新命令、Inkscape 與字型前提見 [architecture assets README](../assets/architecture/README.md)；非受控渲染環境不保證 byte-for-byte 相同，提交資產的完整性雜湊另由 architecture test 鎖定。
 
 此圖是目標能力的概念藍圖，不是 repository 狀態或目錄生成器：
 

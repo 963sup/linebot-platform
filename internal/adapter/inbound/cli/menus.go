@@ -10,7 +10,7 @@ import (
 	experiencepresentation "github.com/963sup/linebot-platform/internal/application/usecases/experience-presentation"
 )
 
-func runMenus(args []string, getenv func(string) string, output io.Writer, dependencies ...Dependencies) error {
+func runMenus(parent context.Context, args []string, getenv func(string) string, output io.Writer, dependencies ...Dependencies) error {
 	deps := dependency(dependencies)
 	flags := flag.NewFlagSet("menus", flag.ContinueOnError)
 	kind := flags.String("kind", "", "list|menu|default|alias-list|alias|user|batch-progress")
@@ -33,7 +33,7 @@ func runMenus(args []string, getenv func(string) string, output io.Writer, depen
 		return err
 	}
 	defer rt.Close()
-	ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
+	ctx, cancel := context.WithTimeout(parent, 12*time.Second)
 	defer cancel()
 	var result any
 	switch *kind {

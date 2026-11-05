@@ -11,7 +11,7 @@ import (
 	mediatransfer "github.com/963sup/linebot-platform/internal/application/usecases/media-transfer"
 )
 
-func runManageMenu(args []string, getenv func(string) string, dependencies ...Dependencies) error {
+func runManageMenu(parent context.Context, args []string, getenv func(string) string, dependencies ...Dependencies) error {
 	deps := dependency(dependencies)
 	flags := flag.NewFlagSet("manage-menu", flag.ContinueOnError)
 	action := flags.String("action", "", "rich menu action")
@@ -41,7 +41,7 @@ func runManageMenu(args []string, getenv func(string) string, dependencies ...De
 		}
 		document.Value = value
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
+	ctx, cancel := context.WithTimeout(parent, 12*time.Second)
 	defer cancel()
 	if *action == "upload-image" {
 		if *imageFile == "" || document.Value != nil || strings.TrimSpace(*menu) == "" || (*imageType != "image/png" && *imageType != "image/jpeg") {

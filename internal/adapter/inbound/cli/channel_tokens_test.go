@@ -53,7 +53,7 @@ func TestTokenOperationsFailClosed(t *testing.T) {
 		{"--action", "revoke-short", "--request", "unknown", "--read"},
 		{"--action", "verify-jwt", "--request", "unknown", "--read"},
 	} {
-		if err := runChannelTokens(args); err == nil {
+		if err := runChannelTokens(testContext(), args); err == nil {
 			t.Fatalf("invalid token operation accepted: %v", args)
 		}
 	}
@@ -62,7 +62,7 @@ func TestTokenOperationsFailClosed(t *testing.T) {
 	if err := os.WriteFile(p, []byte(`{"accessToken":"secret"}`), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if err := runChannelTokens([]string{"--action", "verify-jwt", "--request", p, "--read", "--out", filepath.Join(dir, "result.json")}); err == nil {
+	if err := runChannelTokens(testContext(), []string{"--action", "verify-jwt", "--request", p, "--read", "--out", filepath.Join(dir, "result.json")}); err == nil {
 		t.Fatal("world-readable secrets allowed")
 	}
 	if err := os.Chmod(p, 0o600); err != nil {
@@ -125,7 +125,7 @@ func TestTokenResultEncodingStaysPrivateAndAtCLIBoundary(t *testing.T) {
 	}
 	runtime := &fakeTokenRuntime{result: credentiallifecycle.IssuedCredential{AccessToken: "issued-secret"}}
 	deps := Dependencies{TokenRuntime: func() (TokenRuntime, error) { return runtime, nil }}
-	if err := runChannelTokens([]string{"--action", "issue-short", "--request", request, "--apply", "--confirm", "issue-short", "--out", output}, deps); err != nil {
+	if err := runChannelTokens(testContext(), []string{"--action", "issue-short", "--request", request, "--apply", "--confirm", "issue-short", "--out", output}, deps); err != nil {
 		t.Fatal(err)
 	}
 	info, err := os.Stat(output)

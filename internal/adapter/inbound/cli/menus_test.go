@@ -14,7 +14,7 @@ func TestMenusFailClosed(t *testing.T) {
 		{"--read", "--kind", "menu"},
 		{"--read", "--kind", "list", "--id", "extra"},
 	} {
-		if err := runMenus(args, getenv, &output); err == nil {
+		if err := runMenus(testContext(), args, getenv, &output); err == nil {
 			t.Fatalf("invalid menus query accepted: %v", args)
 		}
 	}

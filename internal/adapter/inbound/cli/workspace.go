@@ -33,7 +33,7 @@ func workspacePrivateFile(path string, limit int64) ([]byte, error) {
 // endpoint. It requires an externally issued, short-lived user OAuth access
 // token; refresh tokens are not accepted. A proper OAuth consent flow and
 // secure persistent token repository are separate infrastructure stages.
-func runWorkspace(args []string, getenv func(string) string, dependencies ...Dependencies) error {
+func runWorkspace(parent context.Context, args []string, getenv func(string) string, dependencies ...Dependencies) error {
 	deps := dependency(dependencies)
 	flags := flag.NewFlagSet("workspace", flag.ContinueOnError)
 	api := flags.String("api", "", "calendar|tasks|forms")
@@ -122,7 +122,7 @@ func runWorkspace(args []string, getenv func(string) string, dependencies ...Dep
 		if deps.WorkspaceRuntime == nil {
 			return nil, errors.New("workspace runtime is not configured")
 		}
-		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+		ctx, cancel := context.WithTimeout(parent, 15*time.Second)
 		defer cancel()
 		source := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token, TokenType: "Bearer"})
 		ops, err := deps.WorkspaceRuntime(ctx, source)

@@ -9,12 +9,13 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestOperatorMutationsDryRunWithoutOpeningRuntime(t *testing.T) {
 	tests := []struct {
 		name string
-		run  func([]string, func(string) string, io.Writer, Dependencies) error
+		run  func(context.Context, []string, func(string) string, io.Writer, Dependencies) error
 		args []string
 	}{
 		{"audience", runAudienceDefinitions, []string{"--action", "activate", "--id", "aud-1"}},
@@ -25,7 +26,7 @@ func TestOperatorMutationsDryRunWithoutOpeningRuntime(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var out bytes.Buffer
-			if err := tt.run(tt.args, func(string) string { return "" }, &out, Dependencies{}); err != nil {
+			if err := tt.run(testContext(), tt.args, func(string) string { return "" }, &out, Dependencies{}); err != nil {
 				t.Fatal(err)
 			}
 			if !strings.Contains(out.String(), `"dry_run":true`) {
@@ -42,7 +43,7 @@ func TestOperatorMutationRejectsWrongConfirmationBeforeRuntime(t *testing.T) {
 		return nil, errors.New("must not open")
 	}}
 	var out bytes.Buffer
-	err := runAudienceDefinitions([]string{
+	err := runAudienceDefinitions(testContext(), []string{
 		"--action", "activate", "--id", "aud-1", "--apply", "--confirm", "archive",
 	}, func(string) string { return "stage" }, &out, deps)
 	if err == nil || !strings.Contains(err.Error(), `exactly equal "activate"`) {
@@ -60,7 +61,7 @@ func TestAudienceDefinitionDryRunRedactsDefinition(t *testing.T) {
 		t.Fatal(err)
 	}
 	var out bytes.Buffer
-	err := runAudienceDefinitions([]string{
+	err := runAudienceDefinitions(testContext(), []string{
 		"--action", "define", "--id", "aud-1", "--source", "crm", "--definition-file", path,
 	}, func(string) string { return "" }, &out, Dependencies{})
 	if err != nil {
@@ -112,7 +113,7 @@ func TestOperatorPrivateInputRejectsUnsafeFiles(t *testing.T) {
 func TestDeliveryIntentDryRunRedactsRecipient(t *testing.T) {
 	const recipient = "sensitive-recipient-id"
 	var out bytes.Buffer
-	err := runPromotions([]string{
+	err := runPromotions(testContext(), []string{
 		"--action", "delivery-intent", "--id", "promo-1",
 		"--recipient", recipient, "--policy", "policy-1", "--eligible", "true",
 		"--at", "2030-01-02T03:04:05Z",
@@ -129,9 +130,15 @@ type audienceDefinitionsRuntimeStub struct {
 	activated bool
 	closed    bool
 	closeErr  error
+	entered   chan context.Context
 }
 
-func (*audienceDefinitionsRuntimeStub) GetAudienceDefinition(context.Context, string) (AudienceDefinitionSummary, error) {
+func (r *audienceDefinitionsRuntimeStub) GetAudienceDefinition(ctx context.Context, _ string) (AudienceDefinitionSummary, error) {
+	if r.entered != nil {
+		r.entered <- ctx
+		<-ctx.Done()
+		return AudienceDefinitionSummary{}, ctx.Err()
+	}
 	return AudienceDefinitionSummary{}, nil
 }
 func (*audienceDefinitionsRuntimeStub) DefineAudience(context.Context, string, string, string) (AudienceDefinitionSummary, error) {
@@ -152,6 +159,34 @@ func (*audienceDefinitionsRuntimeStub) SyncAudience(context.Context, string) (Au
 }
 func (r *audienceDefinitionsRuntimeStub) Close() error { r.closed = true; return r.closeErr }
 
+func TestOperatorRuntimePropagatesParentContextDuringExecution(t *testing.T) {
+	type contextKey struct{}
+	parent, cancel := context.WithCancel(context.WithValue(context.Background(), contextKey{}, "operator"))
+	runtime := &audienceDefinitionsRuntimeStub{entered: make(chan context.Context, 1)}
+	deps := Dependencies{AudienceDefinitions: func(ctx context.Context, _ string) (AudienceDefinitionsRuntime, error) {
+		if ctx.Value(contextKey{}) != "operator" {
+			t.Fatal("operator factory context value was not propagated")
+		}
+		return runtime, nil
+	}}
+	done := make(chan error, 1)
+	go func() {
+		done <- runAudienceDefinitions(parent, []string{"--action", "get", "--id", "aud-1", "--project", "stage", "--read"}, func(string) string { return "stage" }, &bytes.Buffer{}, deps)
+	}()
+	ctx := <-runtime.entered
+	deadline, ok := ctx.Deadline()
+	if ctx.Value(contextKey{}) != "operator" || !ok || time.Until(deadline) > operatorCommandTimeout {
+		t.Fatalf("operator context value/deadline not propagated: %v %v", ctx.Value(contextKey{}), deadline)
+	}
+	cancel()
+	if err := <-done; !errors.Is(err, context.Canceled) {
+		t.Fatalf("operator cancellation error = %v", err)
+	}
+	if !runtime.closed {
+		t.Fatal("operator runtime was not closed after cancellation")
+	}
+}
+
 func TestAudienceMutationAppliesAndClosesRuntime(t *testing.T) {
 	runtime := &audienceDefinitionsRuntimeStub{}
 	deps := Dependencies{AudienceDefinitions: func(_ context.Context, project string) (AudienceDefinitionsRuntime, error) {
@@ -161,7 +196,7 @@ func TestAudienceMutationAppliesAndClosesRuntime(t *testing.T) {
 		return runtime, nil
 	}}
 	var out bytes.Buffer
-	err := runAudienceDefinitions([]string{
+	err := runAudienceDefinitions(testContext(), []string{
 		"--action", "activate", "--id", "aud-1", "--project", "stage", "--apply", "--confirm", "activate",
 	}, func(key string) string {
 		if key == stagingProjectEnv {
@@ -187,7 +222,7 @@ func TestAudienceRuntimeCloseErrorIsReturned(t *testing.T) {
 		return runtime, nil
 	}}
 	var out bytes.Buffer
-	err := runAudienceDefinitions([]string{
+	err := runAudienceDefinitions(testContext(), []string{
 		"--action", "get", "--id", "aud-1", "--project", "stage", "--read",
 	}, func(string) string { return "stage" }, &out, deps)
 	if !errors.Is(err, sentinel) {

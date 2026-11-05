@@ -14,7 +14,7 @@ func TestContactsFailClosed(t *testing.T) {
 		{"--read", "--kind", "group-member-profile", "--conversation-id", "C123"},
 		{"--read", "--kind", "group-summary"},
 	} {
-		if err := runContacts(args, getenv, &output); err == nil {
+		if err := runContacts(testContext(), args, getenv, &output); err == nil {
 			t.Fatalf("invalid contacts inspection accepted: %v", args)
 		}
 	}

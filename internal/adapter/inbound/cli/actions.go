@@ -11,7 +11,7 @@ import (
 	conversationoperations "github.com/963sup/linebot-platform/internal/application/usecases/conversation-operations"
 )
 
-func runActions(args []string, getenv func(string) string, dependencies ...Dependencies) error {
+func runActions(parent context.Context, args []string, getenv func(string) string, dependencies ...Dependencies) error {
 	deps := dependency(dependencies)
 	flags := flag.NewFlagSet("actions", flag.ContinueOnError)
 	action := flags.String("action", "", "leave-group|leave-room|loading|mark-read|mark-read-token")
@@ -53,7 +53,7 @@ func runActions(args []string, getenv func(string) string, dependencies ...Depen
 		return err
 	}
 	defer r.Close()
-	ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
+	ctx, cancel := context.WithTimeout(parent, 12*time.Second)
 	defer cancel()
 	switch *action {
 	case "leave-group":

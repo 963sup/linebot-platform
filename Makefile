@@ -1,10 +1,13 @@
-.PHONY: bootstrap check config-check config-docs domain-check domain-docs dev fmt-check vet test integration-compile integration-test build run-webhook run-worker run-ops
+.PHONY: bootstrap check config-check config-docs domain-check domain-docs architecture-assets-check dev fmt-check vet test integration-compile integration-test build run-webhook run-worker run-ops
 
 bootstrap:
 	go mod tidy
 	go mod download
 
 check: config-check domain-check fmt-check vet test integration-compile build
+
+architecture-assets-check:
+	./scripts/render-architecture-assets.sh --check
 
 config-check:
 	go run ./cmd/configcheck --check

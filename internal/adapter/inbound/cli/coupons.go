@@ -12,7 +12,7 @@ import (
 )
 
 // runCoupons offers a separate command without breaking the legacy membership alias.
-func runCoupons(args []string, getenv func(string) string, output io.Writer, dependencies ...Dependencies) error {
+func runCoupons(parent context.Context, args []string, getenv func(string) string, output io.Writer, dependencies ...Dependencies) error {
 	deps := dependency(dependencies)
 	flags := flag.NewFlagSet("coupons", flag.ContinueOnError)
 	kind := flags.String("kind", "coupons", "coupons|coupon")
@@ -26,10 +26,10 @@ func runCoupons(args []string, getenv func(string) string, output io.Writer, dep
 	if !*read || len(flags.Args()) != 0 {
 		return errors.New("coupons requires --read and no extra arguments")
 	}
-	return inspectCoupon(*kind, promotion.CouponID(*id), promotion.CouponPageRequest{Cursor: *start, Limit: *limit}, getenv, output, deps)
+	return inspectCoupon(parent, *kind, promotion.CouponID(*id), promotion.CouponPageRequest{Cursor: *start, Limit: *limit}, getenv, output, deps)
 }
 
-func inspectCoupon(kind string, id promotion.CouponID, page promotion.CouponPageRequest, getenv func(string) string, output io.Writer, deps Dependencies) error {
+func inspectCoupon(parent context.Context, kind string, id promotion.CouponID, page promotion.CouponPageRequest, getenv func(string) string, output io.Writer, deps Dependencies) error {
 	if getenv == nil || output == nil {
 		return errors.New("missing CLI configuration")
 	}
@@ -44,7 +44,7 @@ func inspectCoupon(kind string, id promotion.CouponID, page promotion.CouponPage
 		return err
 	}
 	defer rt.Close()
-	ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
+	ctx, cancel := context.WithTimeout(parent, 12*time.Second)
 	defer cancel()
 	var result any
 	switch kind {

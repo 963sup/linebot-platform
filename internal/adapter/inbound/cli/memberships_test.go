@@ -14,7 +14,7 @@ func TestMembershipQueriesFailClosed(t *testing.T) {
 		{"--read", "--kind", "coupon"},
 		{"--read", "--kind", "unknown"},
 	} {
-		if err := runMemberships(args, getenv, &output); err == nil {
+		if err := runMemberships(testContext(), args, getenv, &output); err == nil {
 			t.Fatalf("invalid membership query accepted: %v", args)
 		}
 	}

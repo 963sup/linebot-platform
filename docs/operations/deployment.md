@@ -33,6 +33,7 @@ Cloud Run 使用 `line-bot-runtime@bubbly-area-513305-s0.iam.gserviceaccount.com
 
 - `line-bot-public` 使用 `APP_ENV=production`、`LINE_EVENT_MODE=durable` 與 JSON logs；它只取得 `LINE_CHANNEL_SECRET` 的 Secret Manager reference，不取得 Access Token。
 - `line-bot-private` 使用相同 durable、Firestore、Cloud Tasks 與 OIDC 設定；它只取得 `LINE_CHANNEL_ACCESS_TOKEN` 的 Secret Manager reference，不取得 Channel Secret。
+- `line-bot-private` 的 Cloud Run concurrency 固定為 16，與應用程式的有界 request admission cap 一致。超過容量的 task 會收到 `503 Service Unavailable` 與 `Retry-After`，交由 Cloud Tasks 稍後重試，不在程序內建立無界 backlog。
 - `K_SERVICE` 由 Cloud Run 自動注入，程式以此拒絕套用 local profile。
 - 既有服務的 `GOOGLE_CLOUD_PROJECT`、`FIRESTORE_DATABASE`、`OPENAI_MODEL`、`AUTO_TASKS`、`AUTO_CALENDAR`、`CALENDAR_SERVICE_ACCOUNT`、`WORKER_MODE` 及錯置 Secret 會在部署時移除。
 

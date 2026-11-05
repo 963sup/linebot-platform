@@ -13,6 +13,34 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  architecture-assets:
+    name: Architecture assets
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: '1.27.3'
+          cache: true
+          cache-dependency-path: go.sum
+      - name: Verify controlled architecture rendering
+        env:
+          ARCHITECTURE_RENDER_ARTIFACT_DIR: ${{ runner.temp }}/architecture-assets
+        run: make architecture-assets-check
+      - name: Verify architecture contracts
+        run: go test ./tests/architecture/...
+      - name: Preserve architecture render evidence on failure
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: architecture-render-diff
+          path: ${{ runner.temp }}/architecture-assets
+          if-no-files-found: warn
+          retention-days: 7
+
   go:
     name: Go verify
     runs-on: ubuntu-latest

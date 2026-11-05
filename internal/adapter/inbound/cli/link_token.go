@@ -11,7 +11,7 @@ import (
 )
 
 // Link tokens are credentials. Never print them to terminal output.
-func runLinkToken(args []string, getenv func(string) string, dependencies ...Dependencies) error {
+func runLinkToken(parent context.Context, args []string, getenv func(string) string, dependencies ...Dependencies) error {
 	deps := dependency(dependencies)
 	flags := flag.NewFlagSet("link-token", flag.ContinueOnError)
 	user := flags.String("user", "", "LINE user ID")
@@ -33,7 +33,7 @@ func runLinkToken(args []string, getenv func(string) string, dependencies ...Dep
 			return nil, err
 		}
 		defer r.Close()
-		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
+		ctx, cancel := context.WithTimeout(parent, 12*time.Second)
 		defer cancel()
 		result, err := r.Issue(ctx, accountlinktoken.Subject{ID: *user})
 		if err != nil {

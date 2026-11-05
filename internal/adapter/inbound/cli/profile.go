@@ -14,7 +14,7 @@ import (
 
 // runProfile is intentionally CLI-only: no public HTTP route or automatic
 // collection of profile data. It makes an external call only with --lookup.
-func runProfile(args []string, getenv func(string) string, output io.Writer, dependencies ...Dependencies) error {
+func runProfile(parent context.Context, args []string, getenv func(string) string, output io.Writer, dependencies ...Dependencies) error {
 	deps := dependency(dependencies)
 	flags := flag.NewFlagSet("profile", flag.ContinueOnError)
 	userID := flags.String("user", "", "LINE user ID")
@@ -45,7 +45,7 @@ func runProfile(args []string, getenv func(string) string, output io.Writer, dep
 		return err
 	}
 	defer runtime.Close()
-	ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
+	ctx, cancel := context.WithTimeout(parent, 12*time.Second)
 	defer cancel()
 	profile, err := runtime.GetProfile(ctx, contactdirectory.ProfileQuery{Recipient: contactdirectory.RecipientReference{
 		ID: *userID, Kind: contactdirectory.RecipientUser,

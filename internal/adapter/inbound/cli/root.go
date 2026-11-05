@@ -7,13 +7,17 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 
 	messagingdelivery "github.com/963sup/linebot-platform/internal/application/usecases/messaging-delivery"
 )
 
-const channelTokenEnv = "LINE_CHANNEL_ACCESS_TOKEN"
+const (
+	channelTokenEnv    = "LINE_CHANNEL_ACCESS_TOKEN"
+	pushCommandTimeout = 12 * time.Second
+)
 
 func uuidv4() (string, error) {
 	id, err := uuid.NewRandom()
@@ -23,76 +27,82 @@ func uuidv4() (string, error) {
 	return id.String(), nil
 }
 
-func run(args []string, getenv func(string) string, dependencies ...Dependencies) error {
+func runWithContext(ctx context.Context, args []string, getenv func(string) string, dependencies ...Dependencies) error {
+	if ctx == nil {
+		return errors.New("CLI context is required")
+	}
+	if err := ctx.Err(); err != nil {
+		return err
+	}
 	deps := dependency(dependencies)
 	if len(args) > 0 && args[0] == "audience-definitions" {
-		return runAudienceDefinitions(args[1:], getenv, os.Stdout, deps)
+		return runAudienceDefinitions(ctx, args[1:], getenv, os.Stdout, deps)
 	}
 	if len(args) > 0 && args[0] == "interaction-surfaces" {
-		return runInteractionSurfaces(args[1:], getenv, os.Stdout, deps)
+		return runInteractionSurfaces(ctx, args[1:], getenv, os.Stdout, deps)
 	}
 	if len(args) > 0 && args[0] == "promotions" {
-		return runPromotions(args[1:], getenv, os.Stdout, deps)
+		return runPromotions(ctx, args[1:], getenv, os.Stdout, deps)
 	}
 	if len(args) > 0 && args[0] == "automation-requests" {
-		return runAutomationRequests(args[1:], getenv, os.Stdout, deps)
+		return runAutomationRequests(ctx, args[1:], getenv, os.Stdout, deps)
 	}
 	if len(args) > 0 && args[0] == "workspace" {
-		return runWorkspace(args[1:], getenv, deps)
+		return runWorkspace(ctx, args[1:], getenv, deps)
 	}
 	if len(args) > 0 && args[0] == "actions" {
-		return runActions(args[1:], getenv, deps)
+		return runActions(ctx, args[1:], getenv, deps)
 	}
 	if len(args) > 0 && args[0] == "link-token" {
-		return runLinkToken(args[1:], getenv, deps)
+		return runLinkToken(ctx, args[1:], getenv, deps)
 	}
 	if len(args) > 0 && args[0] == "eligibility" {
-		return runEligibility(args[1:], getenv, os.Stdout, deps)
+		return runEligibility(ctx, args[1:], getenv, os.Stdout, deps)
 	}
 	if len(args) > 0 && args[0] == "menu-image" {
-		return runMenuImage(args[1:], getenv, deps)
+		return runMenuImage(ctx, args[1:], getenv, deps)
 	}
 	if len(args) > 0 && args[0] == "events" {
-		return runEvents(args[1:], getenv, deps)
+		return runEvents(ctx, args[1:], getenv, deps)
 	}
 	if len(args) > 0 && args[0] == "profile" {
-		return runProfile(args[1:], getenv, os.Stdout, deps)
+		return runProfile(ctx, args[1:], getenv, os.Stdout, deps)
 	}
 	if len(args) > 0 && args[0] == "inspect" {
-		return runInspect(args[1:], getenv, os.Stdout, deps)
+		return runInspect(ctx, args[1:], getenv, os.Stdout, deps)
 	}
 	if len(args) > 0 && args[0] == "menus" {
-		return runMenus(args[1:], getenv, os.Stdout, deps)
+		return runMenus(ctx, args[1:], getenv, os.Stdout, deps)
 	}
 	if len(args) > 0 && args[0] == "contacts" {
-		return runContacts(args[1:], getenv, os.Stdout, deps)
+		return runContacts(ctx, args[1:], getenv, os.Stdout, deps)
 	}
 	if len(args) > 0 && args[0] == "content" {
-		return runContent(args[1:], getenv, os.Stdout, deps)
+		return runContent(ctx, args[1:], getenv, os.Stdout, deps)
 	}
 	if len(args) > 0 && args[0] == "insights" {
-		return runInsights(args[1:], getenv, os.Stdout, deps)
+		return runInsights(ctx, args[1:], getenv, os.Stdout, deps)
 	}
 	if len(args) > 0 && args[0] == "coupons" {
-		return runCoupons(args[1:], getenv, os.Stdout, deps)
+		return runCoupons(ctx, args[1:], getenv, os.Stdout, deps)
 	}
 	if len(args) > 0 && args[0] == "memberships" {
-		return runMemberships(args[1:], getenv, os.Stdout, deps)
+		return runMemberships(ctx, args[1:], getenv, os.Stdout, deps)
 	}
 	if len(args) > 0 && args[0] == "audiences" {
-		return runAudiences(args[1:], getenv, os.Stdout, deps)
+		return runAudiences(ctx, args[1:], getenv, os.Stdout, deps)
 	}
 	if len(args) > 0 && args[0] == "manage-menu" {
-		return runManageMenu(args[1:], getenv, deps)
+		return runManageMenu(ctx, args[1:], getenv, deps)
 	}
 	if len(args) > 0 && args[0] == "campaign" {
-		return runCampaign(args[1:], getenv, deps)
+		return runCampaign(ctx, args[1:], getenv, deps)
 	}
 	if len(args) > 0 && args[0] == "validate" {
-		return runValidate(args[1:], getenv, deps)
+		return runValidate(ctx, args[1:], getenv, deps)
 	}
 	if len(args) > 0 && args[0] == "webhook-admin" {
-		return runWebhookAdmin(args[1:], getenv, os.Stdout, deps)
+		return runWebhookAdmin(ctx, args[1:], getenv, os.Stdout, deps)
 	}
 	if len(args) == 0 || args[0] != "push" {
 		return errors.New("usage: ops push --to ID --text MESSAGE [--send] [--retry-key UUID] | ops events --inspect --project PROJECT | ops profile --user ID --lookup")
@@ -151,10 +161,12 @@ func run(args []string, getenv func(string) string, dependencies ...Dependencies
 	defer runtime.Close()
 	// Printed before sending so an uncertain result can be retried with the same key.
 	fmt.Fprintln(os.Stderr, "LINE push retry key:", *key)
-	return runtime.Push(context.Background(), *to, []messagingdelivery.Message{message}, *key)
+	commandCtx, cancel := context.WithTimeout(ctx, pushCommandTimeout)
+	defer cancel()
+	return runtime.Push(commandCtx, *to, []messagingdelivery.Message{message}, *key)
 }
 
 // Run dispatches operator commands without leaking CLI logic into cmd/ops.
-func Run(args []string, getenv func(string) string, deps Dependencies) error {
-	return run(args, getenv, deps)
+func Run(ctx context.Context, args []string, getenv func(string) string, deps Dependencies) error {
+	return runWithContext(ctx, args, getenv, deps)
 }

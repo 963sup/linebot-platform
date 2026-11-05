@@ -14,7 +14,7 @@ func TestAudienceAdminFailsClosed(t *testing.T) {
 		{"--action", "create", "--apply", "--confirm", "create"},
 		{"--action", "append-file", "--audience-id", "1", "--apply", "--confirm", "append-file"},
 	} {
-		if err := runAudienceAdmin(args, getenv, &out); err == nil {
+		if err := runAudienceAdmin(testContext(), args, getenv, &out); err == nil {
 			t.Fatalf("accepted invalid %v", args)
 		}
 	}

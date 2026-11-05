@@ -10,7 +10,7 @@ func TestMenuMutationsNeedExplicitConfirmation(t *testing.T) {
 		{"--action", "delete-menu", "--apply", "--confirm", "cancel-default", "--menu-id", "richmenu-1"},
 		{"--action", "link-user", "--apply", "--confirm", "link-user", "--user", "U123"},
 	} {
-		if err := runManageMenu(args, getenv); err == nil {
+		if err := runManageMenu(testContext(), args, getenv); err == nil {
 			t.Fatalf("unconfirmed or invalid menu operation accepted: %v", args)
 		}
 	}

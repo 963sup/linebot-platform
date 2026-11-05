@@ -98,7 +98,7 @@ func validateTokenCommand(command tokenCommand) error {
 // runChannelTokens is available ONLY in the local ops CLI. It never accepts
 // secrets on command line flags, never prints them, and never emits credentials
 // to structured logs. All results containing a token go to an exclusive file.
-func runChannelTokens(args []string, dependencies ...Dependencies) error {
+func runChannelTokens(parent context.Context, args []string, dependencies ...Dependencies) error {
 	deps := dependency(dependencies)
 	flags := flag.NewFlagSet("channel-tokens", flag.ContinueOnError)
 	action := flags.String("action", "", "issue-stateless|key-ids|issue-jwt|verify-jwt|revoke-jwt|issue-short|verify-short|revoke-short")
@@ -145,7 +145,7 @@ func runChannelTokens(args []string, dependencies ...Dependencies) error {
 			return nil, err
 		}
 		defer rt.Close()
-		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
+		ctx, cancel := context.WithTimeout(parent, 12*time.Second)
 		defer cancel()
 		client := credentiallifecycle.ClientCredential{ClientID: cmd.ClientID, ClientSecret: cmd.ClientSecret}
 		assertion := credentiallifecycle.AssertionCredential{Type: cmd.ClientAssertionType, Assertion: cmd.ClientAssertion}

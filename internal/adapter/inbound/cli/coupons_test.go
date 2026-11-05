@@ -16,7 +16,7 @@ func TestCouponsFailClosed(t *testing.T) {
 		{"--read", "--kind", "coupons", "--coupon-id", "unexpected"},
 		{"--read", "--kind", "coupon", "--coupon-id", " id "},
 	} {
-		if err := runCoupons(args, getenv, &output); err == nil {
+		if err := runCoupons(testContext(), args, getenv, &output); err == nil {
 			t.Fatalf("invalid coupon query accepted: %v", args)
 		}
 	}

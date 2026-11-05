@@ -141,7 +141,7 @@ func readOperatorPrivateFile(path string) ([]byte, error) {
 	return readPrivateBounded(path, operatorFileLimit)
 }
 
-func runAudienceDefinitions(args []string, getenv func(string) string, out io.Writer, deps Dependencies) error {
+func runAudienceDefinitions(parent context.Context, args []string, getenv func(string) string, out io.Writer, deps Dependencies) error {
 	fs := flag.NewFlagSet("audience-definitions", flag.ContinueOnError)
 	common := bindOperatorFlags(fs)
 	source := fs.String("source", "", "criteria source")
@@ -157,7 +157,7 @@ func runAudienceDefinitions(args []string, getenv func(string) string, out io.Wr
 		if err := common.authorizeGet(getenv); err != nil {
 			return err
 		}
-		return withAudienceRuntime(common, deps, func(ctx context.Context, runtime AudienceDefinitionsRuntime) error {
+		return withAudienceRuntime(parent, common, deps, func(ctx context.Context, runtime AudienceDefinitionsRuntime) error {
 			value, err := runtime.GetAudienceDefinition(ctx, *common.id)
 			if err != nil {
 				return err
@@ -189,7 +189,7 @@ func runAudienceDefinitions(args []string, getenv func(string) string, out io.Wr
 	if err := validateOperatorProject(*common.project, getenv); err != nil {
 		return err
 	}
-	return withAudienceRuntime(common, deps, func(ctx context.Context, runtime AudienceDefinitionsRuntime) error {
+	return withAudienceRuntime(parent, common, deps, func(ctx context.Context, runtime AudienceDefinitionsRuntime) error {
 		var value any
 		var err error
 		switch action {
@@ -211,11 +211,11 @@ func runAudienceDefinitions(args []string, getenv func(string) string, out io.Wr
 	})
 }
 
-func withAudienceRuntime(flags operatorFlags, deps Dependencies, operation func(context.Context, AudienceDefinitionsRuntime) error) (err error) {
+func withAudienceRuntime(parent context.Context, flags operatorFlags, deps Dependencies, operation func(context.Context, AudienceDefinitionsRuntime) error) (err error) {
 	if deps.AudienceDefinitions == nil {
 		return errors.New("audience definitions runtime is not configured")
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), operatorCommandTimeout)
+	ctx, cancel := context.WithTimeout(parent, operatorCommandTimeout)
 	defer cancel()
 	runtime, err := deps.AudienceDefinitions(ctx, *flags.project)
 	if err != nil {
@@ -225,7 +225,7 @@ func withAudienceRuntime(flags operatorFlags, deps Dependencies, operation func(
 	return operation(ctx, runtime)
 }
 
-func runInteractionSurfaces(args []string, getenv func(string) string, out io.Writer, deps Dependencies) error {
+func runInteractionSurfaces(parent context.Context, args []string, getenv func(string) string, out io.Writer, deps Dependencies) error {
 	fs := flag.NewFlagSet("interaction-surfaces", flag.ContinueOnError)
 	common := bindOperatorFlags(fs)
 	regionsFile := fs.String("regions-file", "", "private JSON array of regions (0600, max 256 KiB)")
@@ -240,7 +240,7 @@ func runInteractionSurfaces(args []string, getenv func(string) string, out io.Wr
 		if err := common.authorizeGet(getenv); err != nil {
 			return err
 		}
-		return withSurfaceRuntime(common, deps, func(ctx context.Context, runtime InteractionSurfacesRuntime) error {
+		return withSurfaceRuntime(parent, common, deps, func(ctx context.Context, runtime InteractionSurfacesRuntime) error {
 			value, err := runtime.GetSurface(ctx, *common.id)
 			if err != nil {
 				return err
@@ -270,7 +270,7 @@ func runInteractionSurfaces(args []string, getenv func(string) string, out io.Wr
 	if err := validateOperatorProject(*common.project, getenv); err != nil {
 		return err
 	}
-	return withSurfaceRuntime(common, deps, func(ctx context.Context, runtime InteractionSurfacesRuntime) error {
+	return withSurfaceRuntime(parent, common, deps, func(ctx context.Context, runtime InteractionSurfacesRuntime) error {
 		var value any
 		var err error
 		switch action {
@@ -292,11 +292,11 @@ func runInteractionSurfaces(args []string, getenv func(string) string, out io.Wr
 	})
 }
 
-func withSurfaceRuntime(flags operatorFlags, deps Dependencies, operation func(context.Context, InteractionSurfacesRuntime) error) (err error) {
+func withSurfaceRuntime(parent context.Context, flags operatorFlags, deps Dependencies, operation func(context.Context, InteractionSurfacesRuntime) error) (err error) {
 	if deps.InteractionSurfaces == nil {
 		return errors.New("interaction surfaces runtime is not configured")
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), operatorCommandTimeout)
+	ctx, cancel := context.WithTimeout(parent, operatorCommandTimeout)
 	defer cancel()
 	runtime, err := deps.InteractionSurfaces(ctx, *flags.project)
 	if err != nil {
@@ -306,7 +306,7 @@ func withSurfaceRuntime(flags operatorFlags, deps Dependencies, operation func(c
 	return operation(ctx, runtime)
 }
 
-func runPromotions(args []string, getenv func(string) string, out io.Writer, deps Dependencies) error {
+func runPromotions(parent context.Context, args []string, getenv func(string) string, out io.Writer, deps Dependencies) error {
 	fs := flag.NewFlagSet("promotions", flag.ContinueOnError)
 	common := bindOperatorFlags(fs)
 	offer := fs.String("offer", "", "offer reference")
@@ -327,7 +327,7 @@ func runPromotions(args []string, getenv func(string) string, out io.Writer, dep
 		if err := common.authorizeGet(getenv); err != nil {
 			return err
 		}
-		return withPromotionRuntime(common, deps, func(ctx context.Context, runtime PromotionsRuntime) error {
+		return withPromotionRuntime(parent, common, deps, func(ctx context.Context, runtime PromotionsRuntime) error {
 			value, err := runtime.GetPromotion(ctx, *common.id)
 			if err != nil {
 				return err
@@ -376,7 +376,7 @@ func runPromotions(args []string, getenv func(string) string, out io.Writer, dep
 	if err := validateOperatorProject(*common.project, getenv); err != nil {
 		return err
 	}
-	return withPromotionRuntime(common, deps, func(ctx context.Context, runtime PromotionsRuntime) error {
+	return withPromotionRuntime(parent, common, deps, func(ctx context.Context, runtime PromotionsRuntime) error {
 		var value any
 		var err error
 		switch action {
@@ -396,11 +396,11 @@ func runPromotions(args []string, getenv func(string) string, out io.Writer, dep
 	})
 }
 
-func withPromotionRuntime(flags operatorFlags, deps Dependencies, operation func(context.Context, PromotionsRuntime) error) (err error) {
+func withPromotionRuntime(parent context.Context, flags operatorFlags, deps Dependencies, operation func(context.Context, PromotionsRuntime) error) (err error) {
 	if deps.Promotions == nil {
 		return errors.New("promotions runtime is not configured")
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), operatorCommandTimeout)
+	ctx, cancel := context.WithTimeout(parent, operatorCommandTimeout)
 	defer cancel()
 	runtime, err := deps.Promotions(ctx, *flags.project)
 	if err != nil {
@@ -410,7 +410,7 @@ func withPromotionRuntime(flags operatorFlags, deps Dependencies, operation func
 	return operation(ctx, runtime)
 }
 
-func runAutomationRequests(args []string, getenv func(string) string, out io.Writer, deps Dependencies) error {
+func runAutomationRequests(parent context.Context, args []string, getenv func(string) string, out io.Writer, deps Dependencies) error {
 	fs := flag.NewFlagSet("automation-requests", flag.ContinueOnError)
 	common := bindOperatorFlags(fs)
 	actionName := fs.String("automation-action", "", "provider-independent automation action")
@@ -427,7 +427,7 @@ func runAutomationRequests(args []string, getenv func(string) string, out io.Wri
 		if err := common.authorizeGet(getenv); err != nil {
 			return err
 		}
-		return withAutomationRuntime(common, deps, func(ctx context.Context, runtime AutomationRequestsRuntime) error {
+		return withAutomationRuntime(parent, common, deps, func(ctx context.Context, runtime AutomationRequestsRuntime) error {
 			value, err := runtime.GetAutomationRequest(ctx, *common.id)
 			if err != nil {
 				return err
@@ -468,7 +468,7 @@ func runAutomationRequests(args []string, getenv func(string) string, out io.Wri
 	if err := validateOperatorProject(*common.project, getenv); err != nil {
 		return err
 	}
-	return withAutomationRuntime(common, deps, func(ctx context.Context, runtime AutomationRequestsRuntime) error {
+	return withAutomationRuntime(parent, common, deps, func(ctx context.Context, runtime AutomationRequestsRuntime) error {
 		var value AutomationRequestSummary
 		var err error
 		switch action {
@@ -486,11 +486,11 @@ func runAutomationRequests(args []string, getenv func(string) string, out io.Wri
 	})
 }
 
-func withAutomationRuntime(flags operatorFlags, deps Dependencies, operation func(context.Context, AutomationRequestsRuntime) error) (err error) {
+func withAutomationRuntime(parent context.Context, flags operatorFlags, deps Dependencies, operation func(context.Context, AutomationRequestsRuntime) error) (err error) {
 	if deps.AutomationRequests == nil {
 		return errors.New("automation requests runtime is not configured")
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), operatorCommandTimeout)
+	ctx, cancel := context.WithTimeout(parent, operatorCommandTimeout)
 	defer cancel()
 	runtime, err := deps.AutomationRequests(ctx, *flags.project)
 	if err != nil {

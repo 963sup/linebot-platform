@@ -40,21 +40,21 @@ func TestMissingAuthorityCannotReachLINE(t *testing.T) {
 		{"--action", "loading", "--apply", "--confirm", "loading", "--request", "not-present.json"},
 	}
 	for _, args := range actions {
-		if err := runActions(args, env); err == nil {
+		if err := runActions(testContext(), args, env); err == nil {
 			t.Fatalf("accepted %v", args)
 		}
 	}
-	if err := runLinkToken([]string{"--user", "U1", "--out", "x", "--apply"}, env); err == nil {
+	if err := runLinkToken(testContext(), []string{"--user", "U1", "--out", "x", "--apply"}, env); err == nil {
 		t.Fatal("link token issued without confirmation")
 	}
 	var out bytes.Buffer
-	if err := runEligibility([]string{"--action", "push-phone", "--apply", "--confirm", "push-phone"}, env, &out); err == nil {
+	if err := runEligibility(testContext(), []string{"--action", "push-phone", "--apply", "--confirm", "push-phone"}, env, &out); err == nil {
 		t.Fatal("PNP without review")
 	}
-	if err := runEligibility([]string{"--action", "pnp-stats", "--id", "20261101", "--read"}, env, &out); err == nil {
+	if err := runEligibility(testContext(), []string{"--action", "pnp-stats", "--id", "20261101", "--read"}, env, &out); err == nil {
 		t.Fatal("stats without review")
 	}
-	if err := runMenuImage([]string{"--menu-id", "richmenu-1", "--out", "x"}, env); err == nil {
+	if err := runMenuImage(testContext(), []string{"--menu-id", "richmenu-1", "--out", "x"}, env); err == nil {
 		t.Fatal("menu image without read")
 	}
 	if out.Len() != 0 {

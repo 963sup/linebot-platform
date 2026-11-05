@@ -2,18 +2,62 @@ package cli
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"testing"
+	"time"
 
 	messagingdelivery "github.com/963sup/linebot-platform/internal/application/usecases/messaging-delivery"
 	"github.com/google/uuid"
 )
 
-type pushRuntimeStub struct{ calls int }
+func run(args []string, getenv func(string) string, dependencies ...Dependencies) error {
+	return runWithContext(context.Background(), args, getenv, dependencies...)
+}
 
-func (s *pushRuntimeStub) Push(context.Context, string, []messagingdelivery.Message, string) error {
+type pushRuntimeStub struct {
+	calls int
+	ctx   context.Context
+}
+
+func testContext() context.Context { return context.Background() }
+
+func (s *pushRuntimeStub) Push(ctx context.Context, _ string, _ []messagingdelivery.Message, _ string) error {
 	s.calls++
+	s.ctx = ctx
 	return nil
+}
+
+func TestPushDerivesTimeoutFromRootContext(t *testing.T) {
+	type contextKey struct{}
+	root := context.WithValue(context.Background(), contextKey{}, "root")
+	runtime := &pushRuntimeStub{}
+	deps := Dependencies{PushRuntime: func(string) (PushRuntime, error) { return runtime, nil }}
+	started := time.Now()
+	err := runWithContext(
+		root,
+		[]string{"push", "--to", "U123", "--text", "hello", "--send", "--retry-key", "b547a1a1-e5cb-4f98-83ae-8e571d6ea242"},
+		func(string) string { return "test-token" },
+		deps,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	deadline, ok := runtime.ctx.Deadline()
+	if !ok || deadline.Before(started.Add(pushCommandTimeout-time.Second)) || deadline.After(started.Add(pushCommandTimeout+time.Second)) {
+		t.Fatalf("push deadline = %v, want approximately %v", deadline, started.Add(pushCommandTimeout))
+	}
+	if runtime.ctx.Value(contextKey{}) != "root" {
+		t.Fatal("push context is not derived from the CLI root context")
+	}
+}
+
+func TestRunRejectsCanceledRootContext(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	if err := runWithContext(ctx, []string{"push"}, func(string) string { return "" }); !errors.Is(err, context.Canceled) {
+		t.Fatalf("canceled root error = %v", err)
+	}
 }
 
 func (*pushRuntimeStub) Close() error { return nil }

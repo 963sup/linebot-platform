@@ -16,7 +16,7 @@ func TestCampaignRequiresExplicitSend(t *testing.T) {
 		{"--kind", "narrowcast", "--text", "hello", "--send"},
 		{"--kind", "narrowcast", "--request", "missing.json", "--send"},
 	} {
-		if err := runCampaign(args, env); err == nil {
+		if err := runCampaign(testContext(), args, env); err == nil {
 			t.Fatalf("unapproved send: %v", args)
 		}
 	}
@@ -27,7 +27,7 @@ func TestCampaignNarrowcastRejectsMalformedRequestFile(t *testing.T) {
 	if err := os.WriteFile(path, []byte(`{"messages":`), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	if err := runCampaign([]string{"--kind", "narrowcast", "--request", path, "--send"}, func(string) string { return "" }); err == nil {
+	if err := runCampaign(testContext(), []string{"--kind", "narrowcast", "--request", path, "--send"}, func(string) string { return "" }); err == nil {
 		t.Fatal("malformed narrowcast request accepted")
 	}
 }

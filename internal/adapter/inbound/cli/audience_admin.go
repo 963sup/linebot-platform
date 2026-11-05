@@ -10,7 +10,7 @@ import (
 	"github.com/963sup/linebot-platform/internal/application/usecases/audience"
 )
 
-func runAudienceAdmin(args []string, getenv func(string) string, output io.Writer, dependencies ...Dependencies) error {
+func runAudienceAdmin(parent context.Context, args []string, getenv func(string) string, output io.Writer, dependencies ...Dependencies) error {
 	deps := dependency(dependencies)
 	flags := flag.NewFlagSet("audience-admin", flag.ContinueOnError)
 	action := flags.String("action", "", "create|append|create-click|create-impression|update-description|delete|create-file|append-file")
@@ -60,7 +60,7 @@ func runAudienceAdmin(args []string, getenv func(string) string, output io.Write
 		return err
 	}
 	defer runtime.Close()
-	ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
+	ctx, cancel := context.WithTimeout(parent, 12*time.Second)
 	defer cancel()
 	providerID := audience.ProviderAudienceID(*id)
 	var result any

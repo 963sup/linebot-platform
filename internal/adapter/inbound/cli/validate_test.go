@@ -9,7 +9,7 @@ func TestMessageValidationFailClosed(t *testing.T) {
 		{"--kind", "bad", "--text", "hello", "--validate"},
 		{"--kind", "push", "--validate"},
 	} {
-		if err := runValidate(args, env); err == nil {
+		if err := runValidate(testContext(), args, env); err == nil {
 			t.Fatalf("invalid validation accepted: %v", args)
 		}
 	}

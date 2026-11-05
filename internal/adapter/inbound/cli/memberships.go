@@ -12,7 +12,7 @@ import (
 	"github.com/963sup/linebot-platform/internal/application/usecases/promotion"
 )
 
-func runMemberships(args []string, getenv func(string) string, output io.Writer, dependencies ...Dependencies) error {
+func runMemberships(parent context.Context, args []string, getenv func(string) string, output io.Writer, dependencies ...Dependencies) error {
 	deps := dependency(dependencies)
 	flags := flag.NewFlagSet("memberships", flag.ContinueOnError)
 	kind := flags.String("kind", "", "memberships|subscription|membership-users|coupons|coupon")
@@ -33,7 +33,7 @@ func runMemberships(args []string, getenv func(string) string, output io.Writer,
 	}
 	// Keep the original memberships --kind coupon(s) CLI syntax compatible.
 	if *kind == "coupons" || *kind == "coupon" {
-		return inspectCoupon(*kind, promotion.CouponID(*couponID), promotion.CouponPageRequest{Cursor: *start, Limit: *limit}, getenv, output, deps)
+		return inspectCoupon(parent, *kind, promotion.CouponID(*couponID), promotion.CouponPageRequest{Cursor: *start, Limit: *limit}, getenv, output, deps)
 	}
 	if deps.MembershipsRuntime == nil {
 		return errors.New("memberships runtime is not configured")
@@ -43,7 +43,7 @@ func runMemberships(args []string, getenv func(string) string, output io.Writer,
 		return err
 	}
 	defer rt.Close()
-	ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
+	ctx, cancel := context.WithTimeout(parent, 12*time.Second)
 	defer cancel()
 	page := membership.PageRequest{Token: *start, Limit: *limit}
 	var result any

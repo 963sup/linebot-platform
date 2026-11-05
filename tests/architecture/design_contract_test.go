@@ -88,7 +88,7 @@ func TestDesignContract(t *testing.T) {
 	if config.Width != 2400 || config.Height != 1650 {
 		t.Fatalf("architecture overview asset size = %dx%d, want 2400x1650", config.Width, config.Height)
 	}
-	assertSHA256(t, imageData, "8b6bff2e44ca6fd55475e8a90055f76064fc9c1c024ddfdd57c00876af348dad")
+	assertSHA256(t, imageData, "1da26ba56535dc3c7f832f88e331643ca935d648fd13e2dcca81841f3aa8b858")
 
 	assets := []struct {
 		name                   string
@@ -97,17 +97,17 @@ func TestDesignContract(t *testing.T) {
 		required               []string
 	}{
 		{
-			name: "go-ddd-hexagonal-architecture-overview.svg", hash: "a4e6d294bb59c0610ec3bc0682839de946dbd38f5e71dd49cf59b9097fc71562",
+			name: "go-ddd-hexagonal-architecture-overview.svg", hash: "707bc4c7965495d025251e396fd5f1d7c563e1969b37b0966fbee1c6fb4b9037",
 			width: "1600", height: "1100", viewBox: "0 0 1600 1100",
 			required: []string{"非規範性概覽", "Staging/Production Not Verified", "dependency 指向 consumer"},
 		},
 		{
-			name: "go-ddd-hexagonal-architecture-codex.svg", hash: "826f15be3787a68dc49947633eccdb1d516d05a31b5291a9ea8d935633a01ff4",
+			name: "go-ddd-hexagonal-architecture-codex.svg", hash: "a842870ac4ba02d343e752bfd81e4fbb4ee103fd9eca9b5d1fedfd904b6ceaa6",
 			width: "3600", height: "2560", viewBox: "0 0 3600 2560",
 			required: []string{"非規範性參考圖", "Layer-first Modular Monolith", "internal/bootstrap", "classified-safe retry", "unknown / manual reconciliation", "Application capability ports；Domain repository 由 Domain 擁有"},
 		},
 		{
-			name: "go-ddd-hexagonal-architecture-engineering.svg", hash: "d16771a959e35158698d6dd2cbd77156b8034149ad1419653983b6cfc9213960",
+			name: "go-ddd-hexagonal-architecture-engineering.svg", hash: "c1ab4cd93a8f550cca61818b973f70caecb578e3310da1e31a8a3da178091233",
 			width: "3200px", height: "2100px", viewBox: "0 0 3200 2100",
 			required: []string{"非規範性", "Layer-first Structure", "Staging/Production Not Verified", "unknown / manual reconciliation"},
 		},
@@ -131,8 +131,118 @@ func TestDesignContract(t *testing.T) {
 					t.Errorf("%s contains obsolete or misleading marker %q", asset.name, marker)
 				}
 			}
+			groups := architectureSVGGroupText(t, data)
+			ownership := groups["ownership-contracts"]
+			for _, marker := range []string{"Application capability port", "Domain repository"} {
+				if !strings.Contains(ownership, marker) {
+					t.Errorf("ownership-contracts group is missing %q", marker)
+				}
+			}
+			for _, obsolete := range []string{"Driven Adapters（實作 Outbound Ports", "符合 Application Port", "Application owns Outbound Ports"} {
+				if strings.Contains(text, obsolete) {
+					t.Errorf("%s contains obsolete absolute ownership sentence %q", asset.name, obsolete)
+				}
+			}
+			if asset.name != "go-ddd-hexagonal-architecture-engineering.svg" {
+				content := groups["architecture-content"]
+				for _, marker := range asset.required {
+					if !strings.Contains(content, marker) {
+						t.Errorf("architecture-content group is missing %q", marker)
+					}
+				}
+			}
+			if asset.name == "go-ddd-hexagonal-architecture-engineering.svg" {
+				quality := groups["quality-targets"]
+				for _, marker := range []string{"Quality Targets", "Staging/Production Not Verified", "Classified-safe retries", "unknown / manual reconciliation"} {
+					if !strings.Contains(quality, marker) {
+						t.Errorf("quality-targets group is missing %q", marker)
+					}
+				}
+				if strings.Contains(quality, "✓") || !strings.Contains(quality, "•") {
+					t.Error("quality-targets must use neutral bullets, not completion checks")
+				}
+				ownership := groups["tactical-design"]
+				for _, marker := range []string{"Application capability port 由 consumer 擁有", "Domain repository 可由 Domain 擁有"} {
+					if !strings.Contains(ownership, marker) {
+						t.Errorf("tactical-design ownership group is missing %q", marker)
+					}
+				}
+			}
 		})
 	}
+}
+
+func TestArchitectureSVGRejectsUnsafeContent(t *testing.T) {
+	const open = `<svg xmlns="http://www.w3.org/2000/svg" xml:lang="zh-Hant" role="img" aria-labelledby="t d" width="1" height="1" viewBox="0 0 1 1"><title id="t">title</title><desc id="d">description</desc>`
+	const close = `</svg>`
+	tests := map[string]string{
+		"doctype":           `<!DOCTYPE svg>` + open + close,
+		"entity":            `<!DOCTYPE svg [<!ENTITY xxe SYSTEM "file:///etc/passwd">]>` + open + close,
+		"stylesheet PI":     `<?xml-stylesheet type="text/css" href="https://example.invalid/a.css"?>` + open + close,
+		"image":             open + `<image href="#local"/>` + close,
+		"use":               open + `<use href="#local"/>` + close,
+		"style import":      open + `<style>@import "https://example.invalid/a.css";</style>` + close,
+		"style http":        open + `<style>rect{fill:url(http://example.invalid/a)}</style>` + close,
+		"style https quote": open + `<style>rect{fill:url("https://example.invalid/a")}</style>` + close,
+		"style protocol":    open + `<style>rect{fill:url(//example.invalid/a)}</style>` + close,
+		"style data":        open + `<style>rect{fill:url(data:image/svg+xml,x)}</style>` + close,
+		"style javascript":  open + `<style>rect{fill:url(javascript:alert(1))}</style>` + close,
+		"external attr":     open + `<rect fill="https://example.invalid/a"/>` + close,
+		"metadata order":    `<svg xmlns="http://www.w3.org/2000/svg" xml:lang="zh-Hant" role="img" aria-labelledby="t d" width="1" height="1" viewBox="0 0 1 1"><desc id="d">description</desc><title id="t">title</title></svg>`,
+	}
+	for name, input := range tests {
+		t.Run(name, func(t *testing.T) {
+			if err := validateArchitectureSVGData([]byte(input), "1", "1", "0 0 1 1"); err == nil {
+				t.Fatal("unsafe SVG was accepted")
+			}
+		})
+	}
+}
+
+func architectureSVGGroupText(t *testing.T, data []byte) map[string]string {
+	t.Helper()
+	decoder := xml.NewDecoder(bytes.NewReader(data))
+	groups := make(map[string]*strings.Builder)
+	var active []string
+	for {
+		token, err := decoder.Token()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			t.Fatalf("decode architecture SVG groups: %v", err)
+		}
+		switch value := token.(type) {
+		case xml.StartElement:
+			if value.Name.Local == "g" {
+				id := ""
+				for _, attr := range value.Attr {
+					if attr.Name.Local == "id" {
+						id = attr.Value
+					}
+				}
+				active = append(active, id)
+				if id != "" && groups[id] == nil {
+					groups[id] = &strings.Builder{}
+				}
+			}
+		case xml.CharData:
+			for _, id := range active {
+				if id != "" {
+					groups[id].Write(value)
+				}
+			}
+		case xml.EndElement:
+			if value.Name.Local == "g" && len(active) > 0 {
+				active = active[:len(active)-1]
+			}
+		}
+	}
+	result := make(map[string]string, len(groups))
+	for id, builder := range groups {
+		result[id] = builder.String()
+	}
+	return result
 }
 
 func assertSHA256(t *testing.T, data []byte, want string) {
@@ -144,31 +254,55 @@ func assertSHA256(t *testing.T, data []byte, want string) {
 
 func validateArchitectureSVG(t *testing.T, data []byte, width, height, viewBox string) {
 	t.Helper()
+	if err := validateArchitectureSVGData(data, width, height, viewBox); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func validateArchitectureSVGData(data []byte, width, height, viewBox string) error {
 	decoder := xml.NewDecoder(bytes.NewReader(data))
 	rootSeen := false
 	var rootTitleID, rootDescID string
 	var titleText, descText strings.Builder
 	depth := 0
+	rootChild := 0
 	currentRootMetadata := ""
+	insideStyle := false
 	for {
 		token, err := decoder.Token()
 		if err == io.EOF {
 			break
 		}
 		if err != nil {
-			t.Fatalf("architecture blueprint SVG is invalid XML: %v", err)
+			return fmt.Errorf("architecture blueprint SVG is invalid XML: %w", err)
+		}
+		if directive, ok := token.(xml.Directive); ok {
+			return fmt.Errorf("architecture blueprint SVG must not contain XML directive %q", directive)
+		}
+		if instruction, ok := token.(xml.ProcInst); ok {
+			if instruction.Target != "xml" {
+				return fmt.Errorf("architecture blueprint SVG must not contain processing instruction %q", instruction.Target)
+			}
 		}
 		start, ok := token.(xml.StartElement)
 		if !ok {
-			if charData, ok := token.(xml.CharData); ok && currentRootMetadata != "" {
-				switch currentRootMetadata {
-				case "title":
-					titleText.Write(charData)
-				case "desc":
-					descText.Write(charData)
+			if charData, ok := token.(xml.CharData); ok {
+				if currentRootMetadata != "" {
+					switch currentRootMetadata {
+					case "title":
+						titleText.Write(charData)
+					case "desc":
+						descText.Write(charData)
+					}
+				}
+				if insideStyle && unsafeSVGReference(string(charData)) {
+					return fmt.Errorf("architecture blueprint SVG style contains external import or URL")
 				}
 			}
 			if end, ok := token.(xml.EndElement); ok {
+				if end.Name.Local == "style" {
+					insideStyle = false
+				}
 				if depth == 2 && (end.Name.Local == "title" || end.Name.Local == "desc") {
 					currentRootMetadata = ""
 				}
@@ -180,7 +314,7 @@ func validateArchitectureSVG(t *testing.T, data []byte, width, height, viewBox s
 		if !rootSeen {
 			rootSeen = true
 			if start.Name.Local != "svg" || start.Name.Space != "http://www.w3.org/2000/svg" {
-				t.Fatalf("architecture blueprint root = {%s}%s, want SVG namespace", start.Name.Space, start.Name.Local)
+				return fmt.Errorf("architecture blueprint root = {%s}%s, want SVG namespace", start.Name.Space, start.Name.Local)
 			}
 			attrs := make(map[string]string, len(start.Attr))
 			for _, attr := range start.Attr {
@@ -188,14 +322,20 @@ func validateArchitectureSVG(t *testing.T, data []byte, width, height, viewBox s
 			}
 			for name, want := range map[string]string{"width": width, "height": height, "viewBox": viewBox, "role": "img", "lang": "zh-Hant"} {
 				if attrs[name] != want {
-					t.Fatalf("architecture blueprint SVG %s = %q, want %q", name, attrs[name], want)
+					return fmt.Errorf("architecture blueprint SVG %s = %q, want %q", name, attrs[name], want)
 				}
 			}
 			labelledBy := strings.Fields(attrs["aria-labelledby"])
 			if len(labelledBy) != 2 || labelledBy[0] == labelledBy[1] {
-				t.Fatal("architecture blueprint SVG must reference distinct title and desc IDs with aria-labelledby")
+				return fmt.Errorf("architecture blueprint SVG must reference distinct title and desc IDs with aria-labelledby")
 			}
 			rootTitleID, rootDescID = labelledBy[0], labelledBy[1]
+		}
+		if depth == 2 {
+			rootChild++
+			if (rootChild == 1 && start.Name.Local != "title") || (rootChild == 2 && start.Name.Local != "desc") {
+				return fmt.Errorf("architecture blueprint SVG title and desc must be the first two root children")
+			}
 		}
 		if depth == 2 && (start.Name.Local == "title" || start.Name.Local == "desc") {
 			var id string
@@ -205,33 +345,45 @@ func validateArchitectureSVG(t *testing.T, data []byte, width, height, viewBox s
 				}
 			}
 			if start.Name.Local == "title" && id != rootTitleID {
-				t.Fatalf("root title id = %q, want %q", id, rootTitleID)
+				return fmt.Errorf("root title id = %q, want %q", id, rootTitleID)
 			}
 			if start.Name.Local == "desc" && id != rootDescID {
-				t.Fatalf("root desc id = %q, want %q", id, rootDescID)
+				return fmt.Errorf("root desc id = %q, want %q", id, rootDescID)
 			}
 			currentRootMetadata = start.Name.Local
 		}
-		if start.Name.Local == "script" || start.Name.Local == "foreignObject" {
-			t.Fatalf("architecture blueprint SVG must not contain active element %q", start.Name.Local)
+		if start.Name.Local == "script" || start.Name.Local == "foreignObject" || start.Name.Local == "image" || start.Name.Local == "use" {
+			return fmt.Errorf("architecture blueprint SVG must not contain active or referencing element %q", start.Name.Local)
+		}
+		if start.Name.Local == "style" {
+			insideStyle = true
 		}
 		for _, attr := range start.Attr {
-			if strings.HasPrefix(strings.ToLower(attr.Name.Local), "on") {
-				t.Fatalf("architecture blueprint SVG must not contain event handler %q", attr.Name.Local)
-			}
-			if attr.Name.Local != "href" {
+			if attr.Name.Local == "xmlns" || attr.Name.Space == "xmlns" {
 				continue
 			}
-			value := strings.ToLower(strings.TrimSpace(attr.Value))
-			if strings.HasPrefix(value, "http:") || strings.HasPrefix(value, "https:") || strings.HasPrefix(value, "//") || strings.HasPrefix(value, "javascript:") || strings.HasPrefix(value, "data:") {
-				t.Fatalf("architecture blueprint SVG contains external or active href %q", attr.Value)
+			if strings.HasPrefix(strings.ToLower(attr.Name.Local), "on") {
+				return fmt.Errorf("architecture blueprint SVG must not contain event handler %q", attr.Name.Local)
+			}
+			if unsafeSVGReference(attr.Value) {
+				return fmt.Errorf("architecture blueprint SVG contains external or active reference %q", attr.Value)
 			}
 		}
 	}
 	if !rootSeen {
-		t.Fatal("architecture blueprint SVG has no root element")
+		return fmt.Errorf("architecture blueprint SVG has no root element")
 	}
 	if strings.TrimSpace(titleText.String()) == "" || strings.TrimSpace(descText.String()) == "" {
-		t.Fatal("architecture blueprint SVG must contain direct non-empty title and desc metadata")
+		return fmt.Errorf("architecture blueprint SVG must contain direct non-empty title and desc metadata")
 	}
+	return nil
+}
+
+func unsafeSVGReference(value string) bool {
+	value = strings.ToLower(strings.Join(strings.Fields(value), ""))
+	value = strings.NewReplacer(`"`, "", `'`, "").Replace(value)
+	return strings.Contains(value, "@import") || strings.Contains(value, "url(http:") || strings.Contains(value, "url(https:") ||
+		strings.Contains(value, "url(//") || strings.Contains(value, "url(data:") || strings.Contains(value, "url(javascript:") ||
+		strings.HasPrefix(value, "http:") || strings.HasPrefix(value, "https:") || strings.HasPrefix(value, "//") ||
+		strings.HasPrefix(value, "data:") || strings.HasPrefix(value, "javascript:")
 }

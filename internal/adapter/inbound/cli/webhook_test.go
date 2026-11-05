@@ -12,7 +12,7 @@ func TestWebhookAdminRequiresExplicitApproval(t *testing.T) {
 		{"--action", "set", "--endpoint", "https://example.com", "--apply", "--confirm", "test"},
 		{"--action", "test", "--endpoint", "http://example.com", "--apply", "--confirm", "test"},
 	} {
-		if err := runWebhookAdmin(args, env, &bytes.Buffer{}); err == nil {
+		if err := runWebhookAdmin(testContext(), args, env, &bytes.Buffer{}); err == nil {
 			t.Fatalf("accepted invalid admin args %v", args)
 		}
 	}
