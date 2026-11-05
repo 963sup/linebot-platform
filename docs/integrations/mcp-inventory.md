@@ -10,6 +10,7 @@
 | google_cloud_cli | remote HTTP | enabled, prompt | Google Cloud Observability read-only queries |
 | terraform | local Docker stdio | enabled, prompt | HashiCorp public Registry documentation only |
 | openapi_line | local npx stdio | enabled, prompt | Pinned LINE OpenAPI discovery and schema reads |
+| line | local npx stdio | enabled, prompt | Official LINE MCP with the approved read-only account tools |
 | firestore_toolbox | local stdio | disabled | Staging-only Firestore tools |
 
 Each MCP is tracked as configured, enabled, started, initialized, authenticated, authorized and verified. A remote HTTP MCP does not require a local server binary.

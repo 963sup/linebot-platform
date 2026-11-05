@@ -7,10 +7,18 @@
 在 Codex Cloud 的 Install script 使用：
 
 ```bash
-bash scripts/setup-codex-cloud.sh
+bash scripts/codex-cloud/install.sh
 ```
 
-腳本依 go.mod 的 Go 1.27.3 要求，下載／驗證已鎖定 module、執行 codexcheck、安裝既定 gopls v0.24.0 至 `$HOME/.local/bin`。不以 go mod tidy 修改依賴、不部署、不執行 OAuth／gcloud、不建立 key、不修改個人模型／approval。MCP 用 HOME 明確路徑啟動，不假設 setup export 的 PATH 延續到 agent phase。
+腳本依 go.mod 的 Go 1.27.3 要求，下載／驗證已鎖定 module、執行 codexcheck、安裝既定 gopls v0.24.0 至 `/workspace/.linebot-tools/bin`。Task phase 的 `/home/agent` 可能唯讀，因此可變工具與快取只寫入 `/workspace`；`$HOME/.agents/skills` 僅供探索驗證。所有階段共同載入 `scripts/codex-cloud/lib/paths.sh`，不依賴 install phase 的 export 延續。不以 go mod tidy 修改依賴、不部署、不執行 OAuth／gcloud、不建立 key、不修改個人模型／approval。
+
+新工作階段依序執行：
+
+```bash
+bash scripts/codex-cloud/start.sh
+```
+
+`start.sh` 會依環境契約強制 fetch、切換 main、reset 至 `origin/main` 並清除未追蹤與 ignored 檔案，然後執行 `verify.sh`。
 
 核准的可選設定：
 
@@ -41,11 +49,12 @@ bash scripts/setup-codex-cloud.sh
 
 ```bash
 go run ./cmd/codexcheck
-bash -n scripts/setup-codex-cloud.sh
+bash -n scripts/codex-cloud/install.sh
+bash -n scripts/codex-cloud/start.sh
+bash scripts/codex-cloud/verify.sh
 go mod verify
 make check
 "$HOME/.local/bin/gopls" version
-bash scripts/check-codex-plugins.sh
 # 只有 Host 確實提供 Codex CLI 才執行：
 codex --version
 codex mcp list

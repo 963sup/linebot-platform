@@ -53,7 +53,7 @@ func TestGuidanceTracksRegisteredCapabilities(t *testing.T) {
 		}
 	}
 	acceptance := read("docs/ai/agents-mcp-plugins-acceptance.md")
-	for _, want := range []string{"8 個角色", "9 宣告、8 啟用、1 個服務維持停用", "1／4／8／9", "0／10"} {
+	for _, want := range []string{"8 個角色", "10 宣告、9 啟用、1 個服務維持停用", "1／4／8／9", "0／10"} {
 		if !strings.Contains(acceptance, want) {
 			t.Errorf("acceptance guidance missing current baseline %q", want)
 		}

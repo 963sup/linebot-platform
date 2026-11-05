@@ -145,7 +145,7 @@ func validateConfig(path string) error {
 	if _, err := parseAgentRegistry(c.Agents); err != nil {
 		return err
 	}
-	expected := []string{"gopls", "terraform", "openapi_line", "firestore_toolbox"}
+	expected := []string{"gopls", "terraform", "line", "openapi_line", "firestore_toolbox"}
 	for name := range remoteEndpoints {
 		expected = append(expected, name)
 	}
@@ -164,7 +164,7 @@ func validateConfig(path string) error {
 		if name != "github" && server.BearerTokenEnvVar != "" {
 			return fmt.Errorf("MCP %s: unexpected bearer token mapping", name)
 		}
-		if name != "firestore_toolbox" && name != "google_cloud_cli" && name != "terraform" && name != "openapi_line" && (len(server.EnvVars) != 0 || len(server.EnabledTools) != 0) {
+		if name != "firestore_toolbox" && name != "google_cloud_cli" && name != "terraform" && name != "line" && name != "openapi_line" && (len(server.EnvVars) != 0 || len(server.EnabledTools) != 0) {
 			return fmt.Errorf("MCP %s: unexpected tool or environment override", name)
 		}
 	}
@@ -212,6 +212,14 @@ func validateConfig(path string) error {
 		!slices.Equal(terra.Args, []string{"run", "-i", "--rm", "hashicorp/terraform-mcp-server:1.4.1", "stdio", "--toolsets=registry"}) ||
 		!sameStrings(terra.EnabledTools, terraTools) || len(terra.EnvVars) != 0 {
 		return errors.New("Terraform MCP must use the pinned official image with public Registry tools only")
+	}
+	line := c.MCPServers["line"]
+	lineTools := []string{"get_profile", "get_message_quota", "get_rich_menu_list", "get_follower_ids", "get_group_summary"}
+	if !line.Enabled || line.Command != "npx" || line.URL != "" || line.DefaultToolsApprovalMode != "prompt" ||
+		!slices.Equal(line.Args, []string{"-y", "@line/line-bot-mcp-server"}) ||
+		!sameStrings(line.EnvVars, []string{"CHANNEL_ACCESS_TOKEN"}) ||
+		!sameStrings(line.EnabledTools, lineTools) {
+		return errors.New("LINE MCP must use the approved read-only tool set")
 	}
 	openAPI := c.MCPServers["openapi_line"]
 	openAPIArgs := []string{"-lc", "exec env npm_config_cache=/workspace/.npm-cache npx -y @ivotoby/openapi-mcp-server@1.16.1 --api-base-url https://api.line.me --openapi-spec /workspace/.linebot-tools/openapi/line-messaging-api.yml --tools dynamic --verbose false"}
@@ -323,8 +331,18 @@ func validate(root string) error {
 	if err := validateDomainModel(root); err != nil {
 		return fmt.Errorf("domain model: %w", err)
 	}
-	for _, name := range []string{"setup-codex-cloud.sh", "check-codex-plugins.sh", "setup-codex-plugins.sh", "cloud-bootstrap.sh", "cloud-verify.sh", "cloud-repair.sh"} {
-		cmd := exec.Command("bash", "-n", filepath.Join(root, "scripts", name))
+	for _, name := range []string{
+		"scripts/check.sh",
+		"scripts/codex-cloud/install.sh",
+		"scripts/codex-cloud/start.sh",
+		"scripts/codex-cloud/verify.sh",
+		"scripts/codex-cloud/repair.sh",
+		"scripts/codex-cloud/lib/common.sh",
+		"scripts/codex-cloud/lib/paths.sh",
+		"scripts/codex-cloud/lib/skills.sh",
+		"scripts/codex-cloud/lib/mcp.sh",
+	} {
+		cmd := exec.Command("bash", "-n", filepath.Join(root, name))
 		if output, err := cmd.CombinedOutput(); err != nil {
 			return fmt.Errorf("invalid %s shell syntax: %w: %s", name, err, strings.TrimSpace(string(output)))
 		}

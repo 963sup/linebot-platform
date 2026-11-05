@@ -1,6 +1,8 @@
 # Codex Cloud Environment
 
-The Cloud Install script prepares pinned local tools; the Start skill checks readiness. Run `bash scripts/cloud-bootstrap.sh` for idempotent preparation and `bash scripts/cloud-verify.sh` for evidence. `cloud-repair.sh` is limited to local pinned tools, PATH, caches and approved Skills. It never performs OAuth, IAM, deployment, network expansion or cloud data writes.
+Codex Cloud scripts are isolated under `scripts/codex-cloud/`. The environment lifecycle order is `install.sh`, `start.sh`, then `verify.sh`; `repair.sh` is an explicit recovery path. All phases source the single PATH contract in `lib/paths.sh`.
+
+`install.sh` prepares pinned local tools without authentication. `start.sh` intentionally discards local checkout changes and synchronizes exactly to `origin/main` before verification. `repair.sh` is limited to pinned local tools, PATH, caches and approved Skills. These scripts never perform OAuth, IAM, deployment, network expansion or cloud data writes.
 
 Publish/Republish is an environment lifecycle action and must be verified separately from repository tests. New tasks use the published environment version; documentation or configuration alone is not runtime evidence.
 
