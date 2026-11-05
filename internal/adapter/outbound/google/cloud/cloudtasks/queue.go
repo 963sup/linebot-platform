@@ -37,6 +37,8 @@ type Queue struct {
 	propagator propagation.TextMapPropagator
 }
 
+var _ ingestion.EventQueue = (*Queue)(nil)
+
 // NewQueue configures a native Cloud Tasks client. Only a previously
 // authorized OIDC service account may invoke the private worker; IAM must
 // separately grant Cloud Tasks task creation and Cloud Run invoker roles.

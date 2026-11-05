@@ -21,8 +21,13 @@ import (
 	"golang.org/x/oauth2"
 )
 
+// The Runtime interfaces below are narrow effect dependencies consumed by
+// this driving CLI adapter. They are not Hexagonal inbound ports: the
+// Application service methods are the inbound use-case API. Runtime
+// construction belongs to the composition root, while method adaptation stays
+// in this adapter.
+//
 // PushRuntime is the narrow dependency required by the push command.
-// Runtime construction belongs to the composition root, not this adapter.
 type PushRuntime interface {
 	Push(ctx context.Context, recipient string, messages []messagingdelivery.Message, retryKey string) error
 	Close() error

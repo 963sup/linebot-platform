@@ -1,5 +1,7 @@
 <?xml version='1.0' encoding='UTF-8'?>
-<svg xmlns="http://www.w3.org/2000/svg" xmlns:ev="http://www.w3.org/2001/xml-events" xmlns:xlink="http://www.w3.org/1999/xlink" baseProfile="full" height="2560" version="1.1" viewBox="0 0 3600 2560" width="3600">
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:ev="http://www.w3.org/2001/xml-events" xmlns:xlink="http://www.w3.org/1999/xlink" xml:lang="zh-Hant" aria-label="Go DDD 與 Hexagonal Architecture 非規範性參考圖" role="img" baseProfile="full" height="2560" version="1.1" viewBox="0 0 3600 2560" width="3600">
+  <title>Go DDD 與 Hexagonal Architecture 非規範性參考圖</title>
+  <desc>本 repository 的 layer-first 架構、依賴方向與實作檢查清單。實際規範以文字契約、manifests 與 architecture tests 為準。</desc>
   <defs>
     <marker id="arr" markerHeight="10" markerWidth="12" orient="auto" refX="10" refY="5">
       <path d="M0 0 L10 5 L0 10 Z" fill="#1760A8"/>
@@ -7,7 +9,7 @@
   </defs>
   <rect fill="#F3F7FC" height="2560" width="3600" x="0" y="0"/>
   <rect fill="#102A43" height="135" rx="22" ry="22" stroke="#102A43" stroke-width="2" width="3550" x="25" y="22"/>
-  <text fill="white" font-family="Noto Sans CJK TC, Noto Sans, sans-serif" font-size="48" font-weight="700" text-anchor="start" x="65" y="80">Golang DDD + Hexagonal Architecture｜Codex 可執行架構藍圖（統一版）</text>
+  <text fill="white" font-family="Noto Sans CJK TC, Noto Sans, sans-serif" font-size="48" font-weight="700" text-anchor="start" x="65" y="80">Golang DDD + Hexagonal Architecture｜非規範性參考圖</text>
   <text fill="#D6E9FA" font-family="Noto Sans CJK TC, Noto Sans, sans-serif" font-size="25" font-weight="400" text-anchor="start" x="65" y="128">Pragmatic DDD · Bounded Context · Ports &amp; Adapters · Idiomatic Go · Cloud Run  |  2026 設計版</text>
   <rect fill="#E5EEF8" height="66" rx="12" ry="12" stroke="#CFDCEB" stroke-width="2" width="3530" x="35" y="176"/>
   <text fill="#132638" font-family="Noto Sans CJK TC, Noto Sans, sans-serif" font-size="25" font-weight="700" text-anchor="start" x="64" y="220">箭頭判讀：</text>
@@ -18,7 +20,7 @@
   <text fill="#AC3340" font-family="Noto Sans CJK TC, Noto Sans, sans-serif" font-size="25" font-weight="700" text-anchor="start" x="1940" y="220">禁止：Domain → Application / Adapter / SDK</text>
   <rect fill="white" height="545" rx="20" ry="20" stroke="#B6C8D8" stroke-width="2" width="3530" x="35" y="265"/>
   <rect fill="#102A43" height="58" rx="14" ry="14" stroke="#102A43" stroke-width="2" width="3530" x="35" y="265"/>
-  <text fill="white" font-family="Noto Sans CJK TC, Noto Sans, sans-serif" font-size="31" font-weight="700" text-anchor="start" x="57" y="306">01  Strategic Design｜先辨識業務邊界，再設計套件</text>
+  <text fill="white" font-family="Noto Sans CJK TC, Noto Sans, sans-serif" font-size="31" font-weight="700" text-anchor="start" x="57" y="306">01  Strategic Design｜通用示例，非本 repository 分類</text>
   <text fill="#D9EAFB" font-family="Noto Sans CJK TC, Noto Sans, sans-serif" font-size="21" font-weight="400" text-anchor="end" x="3545" y="305">不是以 SDK、資料庫或資料表劃分 Bounded Context</text>
   <rect fill="#E6F7ED" height="173" rx="20" ry="20" stroke="#B6C8D8" stroke-width="2" width="1092" x="58" y="344"/>
   <text fill="#157454" font-family="Noto Sans CJK TC, Noto Sans, sans-serif" font-size="28" font-weight="700" text-anchor="start" x="78" y="385">Core Domain｜核心領域</text>
@@ -76,7 +78,7 @@
   <text fill="#485D73" font-family="Noto Sans CJK TC, Noto Sans, sans-serif" font-size="23" font-weight="400" text-anchor="start" x="86" y="1636">符合 Application Port；按需引用 Domain 型別；轉換 SDK DTO</text>
   <rect fill="#FFF3E6" height="190" rx="20" ry="20" stroke="#B6C8D8" stroke-width="2" width="824" x="1423" y="1520"/>
   <text fill="#8F5417" font-family="Noto Sans CJK TC, Noto Sans, sans-serif" font-size="28" font-weight="700" text-anchor="start" x="1443" y="1561">Composition Root｜組裝</text>
-  <text fill="#485D73" font-family="Noto Sans CJK TC, Noto Sans, sans-serif" font-size="23" font-weight="400" text-anchor="start" x="1443" y="1601">cmd/server/main.go → config / clients / wiring</text>
+  <text fill="#485D73" font-family="Noto Sans CJK TC, Noto Sans, sans-serif" font-size="23" font-weight="400" text-anchor="start" x="1443" y="1601">cmd/{webhook,worker,ops} → internal/bootstrap → wiring</text>
   <text fill="#485D73" font-family="Noto Sans CJK TC, Noto Sans, sans-serif" font-size="23" font-weight="400" text-anchor="start" x="1443" y="1636">單一啟動入口負責注入具體實作</text>
   <path d="M 680,1518 L 680,1479" fill="none" stroke="#16866b" stroke-dasharray="9 8" stroke-width="4"/>
   <text fill="#1760A8" font-family="Noto Sans CJK TC, Noto Sans, sans-serif" font-size="25" font-weight="700" text-anchor="start" x="72" y="1752">注意：Outbound Port 預設由 Application 消費方擁有；Go 的 Adapter 以隱式介面符合契約。</text>
@@ -92,7 +94,7 @@
   <text fill="#132638" font-family="Noto Sans CJK TC, Noto Sans, sans-serif" font-size="23" font-weight="400" text-anchor="start" x="2537" y="1020">Application → Domain</text>
   <rect fill="#F4F9FD" height="66" rx="10" ry="10" stroke="#E2EAF2" stroke-width="1" width="1192" x="2340" y="1055"/>
   <text fill="#16664b" font-family="Noto Sans CJK TC, Noto Sans, sans-serif" font-size="24" font-weight="700" text-anchor="start" x="2360" y="1097">契約相容</text>
-  <text fill="#132638" font-family="Noto Sans CJK TC, Noto Sans, sans-serif" font-size="23" font-weight="400" text-anchor="start" x="2537" y="1097">Adapter 符合 Port 契約（不必 import）</text>
+  <text fill="#132638" font-family="Noto Sans CJK TC, Noto Sans, sans-serif" font-size="23" font-weight="400" text-anchor="start" x="2537" y="1097">隱式符合 Port；source dependency 仍指向 consumer contract</text>
   <rect fill="#FFF5F5" height="66" rx="10" ry="10" stroke="#E2EAF2" stroke-width="1" width="1192" x="2340" y="1132"/>
   <text fill="#AC3340" font-family="Noto Sans CJK TC, Noto Sans, sans-serif" font-size="24" font-weight="700" text-anchor="start" x="2360" y="1174">禁止</text>
   <text fill="#132638" font-family="Noto Sans CJK TC, Noto Sans, sans-serif" font-size="23" font-weight="400" text-anchor="start" x="2537" y="1174">Domain → Application / Adapter / Infra</text>
@@ -119,22 +121,22 @@
   <text fill="#132638" font-family="Noto Sans CJK TC, Noto Sans, sans-serif" font-size="23" font-weight="400" text-anchor="start" x="2537" y="1713">先 Modular Monolith；按瓶頸拆服務</text>
   <rect fill="white" height="654" rx="20" ry="20" stroke="#B6C8D8" stroke-width="2" width="1718" x="35" y="1864"/>
   <rect fill="#102A43" height="58" rx="14" ry="14" stroke="#102A43" stroke-width="2" width="1718" x="35" y="1864"/>
-  <text fill="white" font-family="Noto Sans CJK TC, Noto Sans, sans-serif" font-size="31" font-weight="700" text-anchor="start" x="57" y="1905">04  Go 參考套件配置｜依 Bounded Context 縱向切分</text>
+  <text fill="white" font-family="Noto Sans CJK TC, Noto Sans, sans-serif" font-size="31" font-weight="700" text-anchor="start" x="57" y="1905">04  本 repository｜Layer-first Modular Monolith</text>
   <rect fill="#F8FBFF" height="537" rx="20" ry="20" stroke="#B6C8D8" stroke-width="2" width="1665" x="61" y="1942"/>
-  <text fill="#132638" font-family="Noto Sans CJK TC, Noto Sans, sans-serif" font-size="23" font-weight="400" text-anchor="start" x="93" y="1990">cmd/server/main.go                 # Composition Root</text>
+  <text fill="#132638" font-family="Noto Sans CJK TC, Noto Sans, sans-serif" font-size="23" font-weight="400" text-anchor="start" x="93" y="1990">cmd/{webhook,worker,ops}/           # Runtime entrypoints</text>
   <text fill="#132638" font-family="Noto Sans CJK TC, Noto Sans, sans-serif" font-size="23" font-weight="400" text-anchor="start" x="93" y="2032">internal/</text>
-  <text fill="#132638" font-family="Noto Sans CJK TC, Noto Sans, sans-serif" font-size="23" font-weight="400" text-anchor="start" x="93" y="2074">  membership/                      # Bounded Context</text>
-  <text fill="#132638" font-family="Noto Sans CJK TC, Noto Sans, sans-serif" font-size="23" font-weight="400" text-anchor="start" x="93" y="2116">    domain/                        # entity, value object, rules</text>
-  <text fill="#132638" font-family="Noto Sans CJK TC, Noto Sans, sans-serif" font-size="23" font-weight="400" text-anchor="start" x="93" y="2158">    application/                   # use cases + consumer ports</text>
-  <text fill="#132638" font-family="Noto Sans CJK TC, Noto Sans, sans-serif" font-size="23" font-weight="400" text-anchor="start" x="93" y="2200">    adapter/inbound/               # http, line webhook</text>
-  <text fill="#132638" font-family="Noto Sans CJK TC, Noto Sans, sans-serif" font-size="23" font-weight="400" text-anchor="start" x="93" y="2242">    adapter/outbound/              # firestore, tasks, calendar</text>
-  <text fill="#132638" font-family="Noto Sans CJK TC, Noto Sans, sans-serif" font-size="23" font-weight="400" text-anchor="start" x="93" y="2284">  rewards/                         # 另一 Bounded Context</text>
-  <text fill="#132638" font-family="Noto Sans CJK TC, Noto Sans, sans-serif" font-size="23" font-weight="400" text-anchor="start" x="93" y="2326">    domain/  application/  adapter/</text>
-  <text fill="#132638" font-family="Noto Sans CJK TC, Noto Sans, sans-serif" font-size="23" font-weight="400" text-anchor="start" x="93" y="2368">  platform/                        # config, logging, telemetry, SDK</text>
-  <text fill="#132638" font-family="Noto Sans CJK TC, Noto Sans, sans-serif" font-size="23" font-weight="400" text-anchor="start" x="93" y="2410">api/                                # 公開契約（按需）</text>
+  <text fill="#132638" font-family="Noto Sans CJK TC, Noto Sans, sans-serif" font-size="23" font-weight="400" text-anchor="start" x="93" y="2074">  domain/&lt;context&gt;/              # Tactical Domain models</text>
+  <text fill="#132638" font-family="Noto Sans CJK TC, Noto Sans, sans-serif" font-size="23" font-weight="400" text-anchor="start" x="93" y="2116">  application/usecases/            # Use cases + consumer ports</text>
+  <text fill="#132638" font-family="Noto Sans CJK TC, Noto Sans, sans-serif" font-size="23" font-weight="400" text-anchor="start" x="93" y="2158">  adapter/inbound/                 # HTTP / LINE / CLI</text>
+  <text fill="#132638" font-family="Noto Sans CJK TC, Noto Sans, sans-serif" font-size="23" font-weight="400" text-anchor="start" x="93" y="2200">  adapter/outbound/                # Firestore / Tasks / APIs</text>
+  <text fill="#132638" font-family="Noto Sans CJK TC, Noto Sans, sans-serif" font-size="23" font-weight="400" text-anchor="start" x="93" y="2242">  infrastructure/                  # Technical primitives</text>
+  <text fill="#132638" font-family="Noto Sans CJK TC, Noto Sans, sans-serif" font-size="23" font-weight="400" text-anchor="start" x="93" y="2284">  bootstrap/                       # Composition only</text>
+  <text fill="#132638" font-family="Noto Sans CJK TC, Noto Sans, sans-serif" font-size="23" font-weight="400" text-anchor="start" x="93" y="2326">docs/domain/                       # Strategic authority</text>
+  <text fill="#132638" font-family="Noto Sans CJK TC, Noto Sans, sans-serif" font-size="23" font-weight="400" text-anchor="start" x="93" y="2368">tests/architecture/                # Executable boundaries</text>
+  <text fill="#132638" font-family="Noto Sans CJK TC, Noto Sans, sans-serif" font-size="23" font-weight="400" text-anchor="start" x="93" y="2410">go.mod                              # Dependency versions</text>
   <rect fill="white" height="654" rx="20" ry="20" stroke="#B6C8D8" stroke-width="2" width="1791" x="1774" y="1864"/>
   <rect fill="#102A43" height="58" rx="14" ry="14" stroke="#102A43" stroke-width="2" width="1791" x="1774" y="1864"/>
-  <text fill="white" font-family="Noto Sans CJK TC, Noto Sans, sans-serif" font-size="31" font-weight="700" text-anchor="start" x="1796" y="1905">05  Codex Implementation Contract｜建置與驗證規則</text>
+  <text fill="white" font-family="Noto Sans CJK TC, Noto Sans, sans-serif" font-size="31" font-weight="700" text-anchor="start" x="1796" y="1905">05  Implementation Checklist｜非規範性導覽</text>
   <rect fill="#F8FBFF" height="537" rx="20" ry="20" stroke="#B6C8D8" stroke-width="2" width="1739" x="1800" y="1942"/>
   <text fill="#132638" font-family="Noto Sans CJK TC, Noto Sans, sans-serif" font-size="22" font-weight="400" text-anchor="start" x="1825" y="1988">01  先釐清 Context、Ubiquitous Language、Invariants、整合契約</text>
   <text fill="#132638" font-family="Noto Sans CJK TC, Noto Sans, sans-serif" font-size="22" font-weight="400" text-anchor="start" x="1825" y="2034">02  規則寫在 Domain；工作流程在 Application；I/O 在 Adapter</text>
@@ -146,5 +148,5 @@
   <text fill="#132638" font-family="Noto Sans CJK TC, Noto Sans, sans-serif" font-size="22" font-weight="400" text-anchor="start" x="1825" y="2310">08  go test ./...、go vet ./...、race / integration tests（依環境）</text>
   <text fill="#132638" font-family="Noto Sans CJK TC, Noto Sans, sans-serif" font-size="22" font-weight="400" text-anchor="start" x="1825" y="2356">09  維持單一 config 契約、Secret 分離、可觀測性與最小 IAM</text>
   <text fill="#132638" font-family="Noto Sans CJK TC, Noto Sans, sans-serif" font-size="22" font-weight="400" text-anchor="start" x="1825" y="2402">10  不為填滿圖而新增層、套件、介面、微服務或事件匯流排</text>
-  <text fill="#485D73" font-family="Noto Sans CJK TC, Noto Sans, sans-serif" font-size="18" font-weight="400" text-anchor="start" x="42" y="2541">示意是規範性概念圖，不是完整程式規格；實際 Context 邊界、交易與 SDK 依現有需求驗證。</text>
+  <text fill="#485D73" font-family="Noto Sans CJK TC, Noto Sans, sans-serif" font-size="18" font-weight="400" text-anchor="start" x="42" y="2541">非規範性示意圖；實際邊界以文字契約、domain manifests 與 architecture tests 為準。</text>
 </svg>

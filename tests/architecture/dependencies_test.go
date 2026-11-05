@@ -49,11 +49,14 @@ func TestDependencyDirection(t *testing.T) {
 			}
 			return nil
 		}},
-		{"outbound adapters only import ports, domain, infrastructure, and outbound peers", "../../internal/adapter/outbound", func(p string) error {
+		{"outbound adapters only import ports, domain, infrastructure, and approved shared codec", "../../internal/adapter/outbound", func(p string) error {
 			if !strings.HasPrefix(p, internalPath) {
 				return nil
 			}
-			for _, allowed := range []string{"application", "domain", "infrastructure", "adapter/outbound"} {
+			if p == internalPath+"adapter/outbound/google/api/codec" {
+				return nil
+			}
+			for _, allowed := range []string{"application", "domain", "infrastructure"} {
 				if strings.HasPrefix(p, internalPath+allowed) {
 					return nil
 				}
@@ -95,6 +98,26 @@ func TestDependencyDirection(t *testing.T) {
 			})
 		})
 	}
+}
+
+func TestOutboundAdapterPeerImportsStayWithinApprovedSharedCodec(t *testing.T) {
+	const outboundPrefix = internalPath + "adapter/outbound/"
+	const sharedCodec = outboundPrefix + "google/api/codec"
+	walkProductionGoFiles(t, "../../internal/adapter/outbound", func(path string, file *ast.File) {
+		for _, imp := range file.Imports {
+			value, err := strconv.Unquote(imp.Path.Value)
+			if err != nil {
+				t.Errorf("%s: invalid import %s: %v", path, imp.Path.Value, err)
+				continue
+			}
+			if !strings.HasPrefix(value, outboundPrefix) {
+				continue
+			}
+			if value != sharedCodec || !strings.Contains(filepath.ToSlash(path), "/internal/adapter/outbound/google/api/") {
+				t.Errorf("%s: outbound adapters must not couple to peer adapter %q", path, value)
+			}
+		}
+	})
 }
 
 // TestApplicationSerializationBoundary keeps transport serialization out of

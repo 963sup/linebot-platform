@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='UTF-8'?>
-<svg xmlns="http://www.w3.org/2000/svg" xmlns:ev="http://www.w3.org/2001/xml-events" xmlns:xlink="http://www.w3.org/1999/xlink" aria-label="Golang DDD + Hexagonal Architecture，繁體中文與英文向量設計藍圖" baseProfile="full" height="2100px" role="img" version="1.1" viewBox="0 0 3200 2100" width="3200px">
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:ev="http://www.w3.org/2001/xml-events" xmlns:xlink="http://www.w3.org/1999/xlink" xml:lang="zh-Hant" aria-label="Golang DDD + Hexagonal Architecture，繁體中文與英文非規範性向量設計藍圖" baseProfile="full" height="2100px" role="img" version="1.1" viewBox="0 0 3200 2100" width="3200px">
   <title>Golang DDD + Hexagonal Architecture — 設計藍圖</title>
-  <desc>可選取文字的 Go 領域驅動設計與六角架構藍圖。涵蓋 Strategic Design、Application、Domain、Ports、Adapters、Infrastructure、Tactical Design、Repository Structure、Go Idioms、Production Readiness 與 Dependency Direction。 修訂版：明確區分 Go compile-time import、runtime invocation 與 implicit interface satisfaction。</desc>
+  <desc>非規範性 Go 領域驅動設計與六角架構藍圖。涵蓋 Strategic Design、Application、Domain、Ports、Adapters、Infrastructure、Tactical Design、Repository Structure、Go Idioms、production-readiness targets 與 Dependency Direction。Staging/Production 尚未驗證；實際契約以文字與測試為準。</desc>
   <defs>
     <marker id="runtimeArrow" markerHeight="12" markerUnits="userSpaceOnUse" markerWidth="14" orient="auto" refX="12" refY="6">
       <path d="M 1 1 L 12 6 L 1 11 Z" fill="#1261c7"/>
@@ -15,14 +15,14 @@
   <circle cx="115" cy="92" fill="#d9f6fe" r="47" stroke="#5fd6ee" stroke-width="4"/>
   <text fill="#0b3057" font-family="&quot;Noto Sans CJK TC&quot;, &quot;Microsoft JhengHei&quot;, &quot;PingFang TC&quot;, sans-serif" font-size="43" font-weight="700" text-anchor="middle" x="115" y="108">Go</text>
   <text fill="#ffffff" font-family="&quot;Noto Sans CJK TC&quot;, &quot;Microsoft JhengHei&quot;, &quot;PingFang TC&quot;, sans-serif" font-size="60" font-weight="700" text-anchor="start" x="196" y="81">Golang DDD + Hexagonal Architecture 設計藍圖（統一版）</text>
-  <text fill="#d0e7fb" font-family="&quot;Noto Sans CJK TC&quot;, &quot;Microsoft JhengHei&quot;, &quot;PingFang TC&quot;, sans-serif" font-size="26" font-weight="400" text-anchor="start" x="200" y="134">Strategic Design  ·  Tactical Design  ·  Ports &amp; Adapters  ·  Go Idioms  ·  Production-Ready</text>
+  <text fill="#d0e7fb" font-family="&quot;Noto Sans CJK TC&quot;, &quot;Microsoft JhengHei&quot;, &quot;PingFang TC&quot;, sans-serif" font-size="26" font-weight="400" text-anchor="start" x="200" y="134">Strategic Design  ·  Tactical Design  ·  Ports &amp; Adapters  ·  Go Idioms  ·  Quality Targets</text>
   <line stroke="#6d96ba" stroke-linecap="round" stroke-width="3" x1="2547" x2="2547" y1="48" y2="137"/>
   <text fill="#7ee5b5" font-family="&quot;Noto Sans CJK TC&quot;, &quot;Microsoft JhengHei&quot;, &quot;PingFang TC&quot;, sans-serif" font-size="24" font-weight="700" text-anchor="start" x="2584" y="69">✓</text>
   <text fill="#ffffff" font-family="&quot;Noto Sans CJK TC&quot;, &quot;Microsoft JhengHei&quot;, &quot;PingFang TC&quot;, sans-serif" font-size="23" font-weight="400" text-anchor="start" x="2620" y="69">Domain-Driven Design (DDD)</text>
   <text fill="#7ee5b5" font-family="&quot;Noto Sans CJK TC&quot;, &quot;Microsoft JhengHei&quot;, &quot;PingFang TC&quot;, sans-serif" font-size="24" font-weight="700" text-anchor="start" x="2584" y="104">✓</text>
   <text fill="#ffffff" font-family="&quot;Noto Sans CJK TC&quot;, &quot;Microsoft JhengHei&quot;, &quot;PingFang TC&quot;, sans-serif" font-size="23" font-weight="400" text-anchor="start" x="2620" y="104">Hexagonal Architecture</text>
   <text fill="#7ee5b5" font-family="&quot;Noto Sans CJK TC&quot;, &quot;Microsoft JhengHei&quot;, &quot;PingFang TC&quot;, sans-serif" font-size="24" font-weight="700" text-anchor="start" x="2584" y="139">✓</text>
-  <text fill="#ffffff" font-family="&quot;Noto Sans CJK TC&quot;, &quot;Microsoft JhengHei&quot;, &quot;PingFang TC&quot;, sans-serif" font-size="23" font-weight="400" text-anchor="start" x="2620" y="139">Idiomatic Go · Production</text>
+  <text fill="#ffffff" font-family="&quot;Noto Sans CJK TC&quot;, &quot;Microsoft JhengHei&quot;, &quot;PingFang TC&quot;, sans-serif" font-size="21" font-weight="400" text-anchor="start" x="2620" y="139">Baseline implemented · External verification pending</text>
   <g id="strategic-design">
     <rect fill="#ffffff" height="714" rx="22" ry="22" stroke="#cadeee" stroke-width="2" width="735" x="24" y="182"/>
     <rect fill="#164978" height="66" rx="21" ry="21" stroke="none" stroke-width="1.5" width="735" x="24" y="182"/>
@@ -182,7 +182,7 @@
   <text fill="#14314b" font-family="&quot;Noto Sans CJK TC&quot;, &quot;Microsoft JhengHei&quot;, &quot;PingFang TC&quot;, sans-serif" font-size="21" font-weight="700" text-anchor="middle" x="1990" y="982">Policies</text>
   <text fill="#4c647b" font-family="&quot;Noto Sans CJK TC&quot;, &quot;Microsoft JhengHei&quot;, &quot;PingFang TC&quot;, sans-serif" font-size="19" font-weight="400" text-anchor="middle" x="1990" y="1017">領域政策</text>
   <rect fill="#f5ead8" height="48" rx="14" ry="14" stroke="#cda666" stroke-width="1" width="715" x="1260" y="1058"/>
-  <text fill="#b5660b" font-family="&quot;Noto Sans CJK TC&quot;, &quot;Microsoft JhengHei&quot;, &quot;PingFang TC&quot;, sans-serif" font-size="21" font-weight="700" text-anchor="middle" x="1617" y="1091">Domain Events  ·  領域事實（由 Application 協調發布）</text>
+  <text fill="#b5660b" font-family="&quot;Noto Sans CJK TC&quot;, &quot;Microsoft JhengHei&quot;, &quot;PingFang TC&quot;, sans-serif" font-size="18" font-weight="700" text-anchor="middle" x="1617" y="1091">Domain Events · modeled facts；需發布時 state + outbox atomic commit，commit 後 dispatch</text>
   <rect fill="#e9f8ef" height="274" rx="25" ry="25" stroke="#18794f" stroke-width="2.5" width="281" x="2131" y="843"/>
   <text fill="#18794f" font-family="&quot;Noto Sans CJK TC&quot;, &quot;Microsoft JhengHei&quot;, &quot;PingFang TC&quot;, sans-serif" font-size="34" font-weight="700" text-anchor="middle" x="2272" y="896">出站 Port</text>
   <text fill="#18794f" font-family="&quot;Noto Sans CJK TC&quot;, &quot;Microsoft JhengHei&quot;, &quot;PingFang TC&quot;, sans-serif" font-size="24" font-weight="700" text-anchor="middle" x="2272" y="932">Outbound Port</text>
@@ -215,7 +215,7 @@
   <line marker-end="url(runtimeArrow)" stroke="#1261c7" stroke-linecap="round" stroke-width="3" x1="1790" x2="1790" y1="1250" y2="1259"/>
   <line marker-end="url(runtimeArrow)" stroke="#1261c7" stroke-linecap="round" stroke-width="3" x1="2179" x2="2179" y1="1250" y2="1259"/>
   <rect fill="#e8f1ff" height="94" rx="20" ry="20" stroke="#a0bce9" stroke-width="2" width="1589" x="807" y="1385"/>
-  <text fill="#0b3057" font-family="&quot;Noto Sans CJK TC&quot;, &quot;Microsoft JhengHei&quot;, &quot;PingFang TC&quot;, sans-serif" font-size="27" font-weight="700" text-anchor="middle" x="1602" y="1421">基礎設施與組裝根  Infrastructure &amp; Composition Root</text>
+  <text fill="#0b3057" font-family="&quot;Noto Sans CJK TC&quot;, &quot;Microsoft JhengHei&quot;, &quot;PingFang TC&quot;, sans-serif" font-size="27" font-weight="700" text-anchor="middle" x="1602" y="1421">Infrastructure primitives｜Bootstrap composition（責任分離）</text>
   <g>
     <rect fill="white" height="36" rx="14" ry="14" stroke="#cadeee" stroke-width="1.7" width="234" x="845" y="1432"/>
     <text fill="#14314b" font-family="&quot;Noto Sans CJK TC&quot;, &quot;Microsoft JhengHei&quot;, &quot;PingFang TC&quot;, sans-serif" font-size="19" font-weight="700" text-anchor="middle" x="962.0" y="1456.65">Config / Secrets</text>
@@ -296,33 +296,33 @@
   <text fill="#6d44a9" font-family="&quot;Noto Sans CJK TC&quot;, &quot;Microsoft JhengHei&quot;, &quot;PingFang TC&quot;, sans-serif" font-size="26" font-weight="700" text-anchor="middle" x="2807" y="464">Aggregate Root</text>
   <text fill="#6d44a9" font-family="&quot;Noto Sans CJK TC&quot;, &quot;Microsoft JhengHei&quot;, &quot;PingFang TC&quot;, sans-serif" font-size="27" font-weight="700" text-anchor="middle" x="2807" y="501">聚合根</text>
   <rect fill="#f0eaff" height="53" rx="13" ry="13" stroke="none" stroke-width="0" width="688" x="2464" y="664"/>
-  <text fill="#6d44a9" font-family="&quot;Noto Sans CJK TC&quot;, &quot;Microsoft JhengHei&quot;, &quot;PingFang TC&quot;, sans-serif" font-size="19" font-weight="700" text-anchor="middle" x="2808" y="686">概念關聯非 import／call；*Repository Port 預設由使用方擁有</text>
+  <text fill="#6d44a9" font-family="&quot;Noto Sans CJK TC&quot;, &quot;Microsoft JhengHei&quot;, &quot;PingFang TC&quot;, sans-serif" font-size="17" font-weight="700" text-anchor="middle" x="2808" y="686">Application capability port 由 consumer 擁有；Domain repository 可由 Domain 擁有</text>
   <text fill="#4c647b" font-family="&quot;Noto Sans CJK TC&quot;, &quot;Microsoft JhengHei&quot;, &quot;PingFang TC&quot;, sans-serif" font-size="17" font-weight="400" text-anchor="middle" x="2808" y="708">只引入必要的抽象：Policies / Factories / Specifications 等可選用</text>
   <g id="repository-structure">
     <rect fill="#ffffff" height="422" rx="22" ry="22" stroke="#cadeee" stroke-width="2" width="733" x="2443" y="755"/>
     <rect fill="#164978" height="66" rx="21" ry="21" stroke="none" stroke-width="1.5" width="733" x="2443" y="755"/>
     <rect fill="#164978" height="28" rx="0" ry="0" stroke="none" stroke-width="1.5" width="733" x="2443" y="793"/>
-    <text fill="white" font-family="&quot;Noto Sans CJK TC&quot;, &quot;Microsoft JhengHei&quot;, &quot;PingFang TC&quot;, sans-serif" font-size="31" font-weight="700" text-anchor="start" x="2473" y="800">建議結構  Repository Structure</text>
+    <text fill="white" font-family="&quot;Noto Sans CJK TC&quot;, &quot;Microsoft JhengHei&quot;, &quot;PingFang TC&quot;, sans-serif" font-size="31" font-weight="700" text-anchor="start" x="2473" y="800">本 repository  Layer-first Structure</text>
   </g>
   <rect fill="#f4f9ff" height="31" rx="4" ry="4" stroke="none" stroke-width="1.5" width="691" x="2462" y="809"/>
-  <text fill="#2a5688" font-family="&quot;Noto Sans Mono CJK TC&quot;, &quot;Cascadia Code&quot;, monospace" font-size="21" font-weight="700" text-anchor="start" x="2470" y="832">cmd/</text>
-  <text fill="#4c647b" font-family="&quot;Noto Sans CJK TC&quot;, &quot;Microsoft JhengHei&quot;, &quot;PingFang TC&quot;, sans-serif" font-size="19" font-weight="400" text-anchor="start" x="2795" y="832">啟動與組裝入口</text>
+  <text fill="#2a5688" font-family="&quot;Noto Sans Mono CJK TC&quot;, &quot;Cascadia Code&quot;, monospace" font-size="21" font-weight="700" text-anchor="start" x="2470" y="832">cmd/{webhook,worker,ops}/</text>
+  <text fill="#4c647b" font-family="&quot;Noto Sans CJK TC&quot;, &quot;Microsoft JhengHei&quot;, &quot;PingFang TC&quot;, sans-serif" font-size="19" font-weight="400" text-anchor="start" x="2795" y="832">Runtime entrypoints</text>
   <text fill="#2a5688" font-family="&quot;Noto Sans Mono CJK TC&quot;, &quot;Cascadia Code&quot;, monospace" font-size="21" font-weight="700" text-anchor="start" x="2470" y="863">internal/</text>
   <text fill="#4c647b" font-family="&quot;Noto Sans CJK TC&quot;, &quot;Microsoft JhengHei&quot;, &quot;PingFang TC&quot;, sans-serif" font-size="19" font-weight="400" text-anchor="start" x="2795" y="863">限制內部套件</text>
   <rect fill="#f4f9ff" height="31" rx="4" ry="4" stroke="none" stroke-width="1.5" width="691" x="2462" y="871"/>
-  <text fill="#2a5688" font-family="&quot;Noto Sans Mono CJK TC&quot;, &quot;Cascadia Code&quot;, monospace" font-size="21" font-weight="700" text-anchor="start" x="2470" y="894">  platform/</text>
-  <text fill="#4c647b" font-family="&quot;Noto Sans CJK TC&quot;, &quot;Microsoft JhengHei&quot;, &quot;PingFang TC&quot;, sans-serif" font-size="19" font-weight="400" text-anchor="start" x="2795" y="894">跨 Context 技術支援</text>
-  <text fill="#2a5688" font-family="&quot;Noto Sans Mono CJK TC&quot;, &quot;Cascadia Code&quot;, monospace" font-size="21" font-weight="700" text-anchor="start" x="2470" y="925">  &lt;context&gt;/</text>
-  <text fill="#4c647b" font-family="&quot;Noto Sans CJK TC&quot;, &quot;Microsoft JhengHei&quot;, &quot;PingFang TC&quot;, sans-serif" font-size="19" font-weight="400" text-anchor="start" x="2795" y="925">各 Bounded Context</text>
+  <text fill="#2a5688" font-family="&quot;Noto Sans Mono CJK TC&quot;, &quot;Cascadia Code&quot;, monospace" font-size="21" font-weight="700" text-anchor="start" x="2470" y="894">  domain/&lt;context&gt;/</text>
+  <text fill="#4c647b" font-family="&quot;Noto Sans CJK TC&quot;, &quot;Microsoft JhengHei&quot;, &quot;PingFang TC&quot;, sans-serif" font-size="19" font-weight="400" text-anchor="start" x="2795" y="894">Tactical models</text>
+  <text fill="#2a5688" font-family="&quot;Noto Sans Mono CJK TC&quot;, &quot;Cascadia Code&quot;, monospace" font-size="21" font-weight="700" text-anchor="start" x="2470" y="925">  application/usecases/</text>
+  <text fill="#4c647b" font-family="&quot;Noto Sans CJK TC&quot;, &quot;Microsoft JhengHei&quot;, &quot;PingFang TC&quot;, sans-serif" font-size="19" font-weight="400" text-anchor="start" x="2795" y="925">Capabilities + ports</text>
   <rect fill="#f4f9ff" height="31" rx="4" ry="4" stroke="none" stroke-width="1.5" width="691" x="2462" y="933"/>
-  <text fill="#2a5688" font-family="&quot;Noto Sans Mono CJK TC&quot;, &quot;Cascadia Code&quot;, monospace" font-size="21" font-weight="700" text-anchor="start" x="2470" y="956">    domain/</text>
-  <text fill="#4c647b" font-family="&quot;Noto Sans CJK TC&quot;, &quot;Microsoft JhengHei&quot;, &quot;PingFang TC&quot;, sans-serif" font-size="19" font-weight="400" text-anchor="start" x="2795" y="956">模型 / 規則 / 不變條件</text>
-  <text fill="#2a5688" font-family="&quot;Noto Sans Mono CJK TC&quot;, &quot;Cascadia Code&quot;, monospace" font-size="21" font-weight="700" text-anchor="start" x="2470" y="987">    application/</text>
-  <text fill="#4c647b" font-family="&quot;Noto Sans CJK TC&quot;, &quot;Microsoft JhengHei&quot;, &quot;PingFang TC&quot;, sans-serif" font-size="19" font-weight="400" text-anchor="start" x="2795" y="987">Use Cases / Ports</text>
+  <text fill="#2a5688" font-family="&quot;Noto Sans Mono CJK TC&quot;, &quot;Cascadia Code&quot;, monospace" font-size="21" font-weight="700" text-anchor="start" x="2470" y="956">  adapter/{inbound,outbound}/</text>
+  <text fill="#4c647b" font-family="&quot;Noto Sans CJK TC&quot;, &quot;Microsoft JhengHei&quot;, &quot;PingFang TC&quot;, sans-serif" font-size="19" font-weight="400" text-anchor="start" x="2795" y="956">Transport + providers</text>
+  <text fill="#2a5688" font-family="&quot;Noto Sans Mono CJK TC&quot;, &quot;Cascadia Code&quot;, monospace" font-size="21" font-weight="700" text-anchor="start" x="2470" y="987">  infrastructure/</text>
+  <text fill="#4c647b" font-family="&quot;Noto Sans CJK TC&quot;, &quot;Microsoft JhengHei&quot;, &quot;PingFang TC&quot;, sans-serif" font-size="19" font-weight="400" text-anchor="start" x="2795" y="987">Technical primitives</text>
   <rect fill="#f4f9ff" height="31" rx="4" ry="4" stroke="none" stroke-width="1.5" width="691" x="2462" y="995"/>
-  <text fill="#2a5688" font-family="&quot;Noto Sans Mono CJK TC&quot;, &quot;Cascadia Code&quot;, monospace" font-size="21" font-weight="700" text-anchor="start" x="2470" y="1018">    adapter/</text>
-  <text fill="#4c647b" font-family="&quot;Noto Sans CJK TC&quot;, &quot;Microsoft JhengHei&quot;, &quot;PingFang TC&quot;, sans-serif" font-size="19" font-weight="400" text-anchor="start" x="2795" y="1018">外部依賴與傳輸適配</text>
-  <text fill="#2a5688" font-family="&quot;Noto Sans Mono CJK TC&quot;, &quot;Cascadia Code&quot;, monospace" font-size="21" font-weight="700" text-anchor="start" x="2470" y="1049">      inbound/</text>
+  <text fill="#2a5688" font-family="&quot;Noto Sans Mono CJK TC&quot;, &quot;Cascadia Code&quot;, monospace" font-size="21" font-weight="700" text-anchor="start" x="2470" y="1018">  bootstrap/</text>
+  <text fill="#4c647b" font-family="&quot;Noto Sans CJK TC&quot;, &quot;Microsoft JhengHei&quot;, &quot;PingFang TC&quot;, sans-serif" font-size="19" font-weight="400" text-anchor="start" x="2795" y="1018">Composition only</text>
+  <text fill="#2a5688" font-family="&quot;Noto Sans Mono CJK TC&quot;, &quot;Cascadia Code&quot;, monospace" font-size="21" font-weight="700" text-anchor="start" x="2470" y="1049">tests/architecture/</text>
   <text fill="#4c647b" font-family="&quot;Noto Sans CJK TC&quot;, &quot;Microsoft JhengHei&quot;, &quot;PingFang TC&quot;, sans-serif" font-size="19" font-weight="400" text-anchor="start" x="2795" y="1049">HTTP / Webhook / CLI</text>
   <rect fill="#f4f9ff" height="31" rx="4" ry="4" stroke="none" stroke-width="1.5" width="691" x="2462" y="1057"/>
   <text fill="#2a5688" font-family="&quot;Noto Sans Mono CJK TC&quot;, &quot;Cascadia Code&quot;, monospace" font-size="21" font-weight="700" text-anchor="start" x="2470" y="1080">      outbound/</text>
@@ -334,7 +334,7 @@
     <rect fill="#ffffff" height="417" rx="22" ry="22" stroke="#cadeee" stroke-width="2" width="733" x="2443" y="1194"/>
     <rect fill="#164978" height="66" rx="21" ry="21" stroke="none" stroke-width="1.5" width="733" x="2443" y="1194"/>
     <rect fill="#164978" height="28" rx="0" ry="0" stroke="none" stroke-width="1.5" width="733" x="2443" y="1232"/>
-    <text fill="white" font-family="&quot;Noto Sans CJK TC&quot;, &quot;Microsoft JhengHei&quot;, &quot;PingFang TC&quot;, sans-serif" font-size="31" font-weight="700" text-anchor="start" x="2473" y="1239">品質與治理  Production-Ready</text>
+    <text fill="white" font-family="&quot;Noto Sans CJK TC&quot;, &quot;Microsoft JhengHei&quot;, &quot;PingFang TC&quot;, sans-serif" font-size="25" font-weight="700" text-anchor="start" x="2473" y="1239">Quality Targets｜Staging/Production Not Verified</text>
   </g>
   <circle cx="2471" cy="1288" fill="#18794f" r="9" stroke="none" stroke-width="2"/>
   <text fill="white" font-family="&quot;Noto Sans CJK TC&quot;, &quot;Microsoft JhengHei&quot;, &quot;PingFang TC&quot;, sans-serif" font-size="13" font-weight="700" text-anchor="middle" x="2471" y="1293">✓</text>
@@ -348,8 +348,8 @@
   <line stroke="#cadeee" stroke-linecap="round" stroke-width="1" x1="2461" x2="2802" y1="1392" y2="1392"/>
   <circle cx="2471" cy="1410" fill="#18794f" r="9" stroke="none" stroke-width="2"/>
   <text fill="white" font-family="&quot;Noto Sans CJK TC&quot;, &quot;Microsoft JhengHei&quot;, &quot;PingFang TC&quot;, sans-serif" font-size="13" font-weight="700" text-anchor="middle" x="2471" y="1415">✓</text>
-  <text fill="#14314b" font-family="&quot;Noto Sans CJK TC&quot;, &quot;Microsoft JhengHei&quot;, &quot;PingFang TC&quot;, sans-serif" font-size="18" font-weight="700" text-anchor="start" x="2488" y="1416">逾時與重試  Retry</text>
-  <text fill="#4c647b" font-family="&quot;Noto Sans CJK TC&quot;, &quot;Microsoft JhengHei&quot;, &quot;PingFang TC&quot;, sans-serif" font-size="15" font-weight="400" text-anchor="start" x="2488" y="1438">Timeout / Backoff / Dead-letter</text>
+  <text fill="#14314b" font-family="&quot;Noto Sans CJK TC&quot;, &quot;Microsoft JhengHei&quot;, &quot;PingFang TC&quot;, sans-serif" font-size="18" font-weight="700" text-anchor="start" x="2488" y="1416">分類後重試  Classified-safe retries</text>
+  <text fill="#4c647b" font-family="&quot;Noto Sans CJK TC&quot;, &quot;Microsoft JhengHei&quot;, &quot;PingFang TC&quot;, sans-serif" font-size="15" font-weight="400" text-anchor="start" x="2488" y="1438">Ambiguous side effect → unknown / manual reconciliation</text>
   <line stroke="#cadeee" stroke-linecap="round" stroke-width="1" x1="2461" x2="2802" y1="1453" y2="1453"/>
   <circle cx="2471" cy="1471" fill="#18794f" r="9" stroke="none" stroke-width="2"/>
   <text fill="white" font-family="&quot;Noto Sans CJK TC&quot;, &quot;Microsoft JhengHei&quot;, &quot;PingFang TC&quot;, sans-serif" font-size="13" font-weight="700" text-anchor="middle" x="2471" y="1476">✓</text>
@@ -400,7 +400,7 @@
   <text fill="#1261c7" font-family="&quot;Noto Sans CJK TC&quot;, &quot;Microsoft JhengHei&quot;, &quot;PingFang TC&quot;, sans-serif" font-size="22" font-weight="700" text-anchor="start" x="69" y="1880">3. Application owns Outbound Ports</text>
   <text fill="#4c647b" font-family="&quot;Noto Sans CJK TC&quot;, &quot;Microsoft JhengHei&quot;, &quot;PingFang TC&quot;, sans-serif" font-size="18" font-weight="400" text-anchor="start" x="88" y="1903">應用層宣告所需外部能力契約。</text>
   <text fill="#1261c7" font-family="&quot;Noto Sans CJK TC&quot;, &quot;Microsoft JhengHei&quot;, &quot;PingFang TC&quot;, sans-serif" font-size="22" font-weight="700" text-anchor="start" x="69" y="1925">4. Driven Adapters satisfy Port</text>
-  <text fill="#4c647b" font-family="&quot;Noto Sans CJK TC&quot;, &quot;Microsoft JhengHei&quot;, &quot;PingFang TC&quot;, sans-serif" font-size="18" font-weight="400" text-anchor="start" x="88" y="1948">Go 隱式符合介面；不要求 import Port。</text>
+  <text fill="#4c647b" font-family="&quot;Noto Sans CJK TC&quot;, &quot;Microsoft JhengHei&quot;, &quot;PingFang TC&quot;, sans-serif" font-size="18" font-weight="400" text-anchor="start" x="88" y="1948">隱式符合；Adapter dependency 指向 consumer contract。</text>
   <text fill="#1261c7" font-family="&quot;Noto Sans CJK TC&quot;, &quot;Microsoft JhengHei&quot;, &quot;PingFang TC&quot;, sans-serif" font-size="22" font-weight="700" text-anchor="start" x="69" y="1970">5. Composition Root → implementations</text>
   <text fill="#4c647b" font-family="&quot;Noto Sans CJK TC&quot;, &quot;Microsoft JhengHei&quot;, &quot;PingFang TC&quot;, sans-serif" font-size="18" font-weight="400" text-anchor="start" x="88" y="1993">在啟動入口組裝具體實作與依賴。</text>
   <rect fill="#fff0f1" height="293" rx="15" ry="15" stroke="#e8b1b4" stroke-width="1.5" width="662" x="1054" y="1709"/>

@@ -71,13 +71,14 @@ func (a AutomationRequest) Output() valueobjects.Output          { return a.outp
 func (a AutomationRequest) Status() valueobjects.Status          { return a.status }
 func (a AutomationRequest) Revision() uint64                     { return a.revision }
 
-// PendingEvents returns a detached event snapshot for publication after persistence.
+// PendingEvents returns a detached snapshot of modeled Domain facts. This
+// tactical model does not itself persist or publish them.
 func (a AutomationRequest) PendingEvents() []events.AutomationEvent {
 	return append([]events.AutomationEvent(nil), a.pending...)
 }
 
-// AcknowledgeEvents clears modeled-only events after aggregate state has been
-// saved successfully. This context does not publish integration events yet.
+// AcknowledgeEvents clears modeled-only facts after aggregate state has been
+// saved successfully. It does not imply event publication.
 func (a *AutomationRequest) AcknowledgeEvents() {
 	if a != nil {
 		a.pending = nil

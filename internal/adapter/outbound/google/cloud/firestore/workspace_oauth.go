@@ -45,6 +45,13 @@ type OAuthStore struct {
 	now    func() time.Time
 }
 
+var (
+	_ identity.OAuthSessionRepository = (*OAuthStore)(nil)
+	_ identity.ConnectionStore        = (*OAuthStore)(nil)
+	_ identity.IntegrationOutbox      = (*OAuthStore)(nil)
+	_ repositories.ConnectionReader   = (*OAuthStore)(nil)
+)
+
 func NewOAuthStore(client *sdk.Client, keys *oauth.Keyring) (*OAuthStore, error) {
 	if client == nil || keys == nil {
 		return nil, errors.New("Firestore client and OAuth keyring are required")

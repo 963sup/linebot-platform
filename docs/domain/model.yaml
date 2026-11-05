@@ -89,7 +89,7 @@ contexts:
       - {term: audience-sync, definition: "Process aligning a definition with provider representation.", forbidden_aliases: [upload-job], code_symbols: []}
     owns: [audience-definition, audience-sync-intent]
     aggregates:
-      - {name: AudienceDefinition, root: audience-definition, consistency_boundary: "Definition identity and selection criteria change together.", owns: [selection-criteria, audience-lifecycle], repository: AudienceRepository, confidence: medium, evidence: [internal/domain/audience/aggregates/audience_definition_test.go]}
+      - {name: AudienceDefinition, root: audience-definition, consistency_boundary: "Definition identity and selection criteria change together.", owns: [selection-criteria, audience-lifecycle], repository: internal/domain/audience/repositories.AudienceRepository, confidence: medium, evidence: [internal/domain/audience/aggregates/audience_definition_test.go]}
     data_ownership:
       - {resource: audience-definition, authority: local-authoritative, owner: audience, write_policy: "Changes require an audience command.", evidence: [internal/application/usecases/audience/service.go]}
       - {resource: provider-audience-membership, authority: provider-authoritative, owner: line-provider, write_policy: "Observed through an ACL.", evidence: [internal/adapter/outbound/line]}
@@ -114,7 +114,7 @@ contexts:
       - {term: surface-assignment, definition: "Intent to expose a surface to selected recipients.", forbidden_aliases: [link-rich-menu], code_symbols: []}
       - {term: presentation-asset, definition: "Referenced media used by a surface.", forbidden_aliases: [storage-object], code_symbols: []}
     owns: [interaction-surface, surface-assignment]
-    aggregates: [{name: InteractionSurface, root: interaction-surface, consistency_boundary: "A surface version and its regions publish together.", owns: [surface-version, interaction-regions, asset-references], repository: InteractionSurfaceRepository, confidence: medium, evidence: [internal/domain/experience-presentation/aggregates/interaction_surface_test.go]}]
+    aggregates: [{name: InteractionSurface, root: interaction-surface, consistency_boundary: "A surface version and its regions publish together.", owns: [surface-version, interaction-regions, asset-references], repository: internal/domain/experience-presentation/repositories.InteractionSurfaceRepository, confidence: medium, evidence: [internal/domain/experience-presentation/aggregates/interaction_surface_test.go]}]
     data_ownership:
       - {resource: desired-presentation, authority: local-authoritative, owner: experience-presentation, write_policy: "Published through an InteractionSurface transition.", evidence: [internal/application/usecases/experience-presentation/service.go]}
       - {resource: deployed-provider-presentation, authority: provider-authoritative, owner: line-provider, write_policy: "Managed through an ACL.", evidence: [internal/adapter/outbound/line]}
@@ -139,7 +139,7 @@ contexts:
       - {term: eligibility-decision, definition: "Decision whether a subject may receive an offer.", forbidden_aliases: [membership-response], code_symbols: []}
       - {term: promotion-delivery-intent, definition: "Approved promotion content prepared for delivery.", forbidden_aliases: [push-request], code_symbols: []}
     owns: [promotion-lifecycle, offer-rules]
-    aggregates: [{name: Promotion, root: promotion, consistency_boundary: "Offer rules and lifecycle transition atomically.", owns: [offer, eligibility-policy, lifecycle], repository: PromotionRepository, confidence: medium, evidence: [internal/domain/promotion/aggregates/promotion_test.go]}]
+    aggregates: [{name: Promotion, root: promotion, consistency_boundary: "Offer rules and lifecycle transition atomically.", owns: [offer, eligibility-policy, lifecycle], repository: internal/domain/promotion/repositories.PromotionRepository, confidence: medium, evidence: [internal/domain/promotion/aggregates/promotion_test.go]}]
     data_ownership:
       - {resource: promotion-definition, authority: local-authoritative, owner: promotion, write_policy: "Only promotion commands mutate it.", evidence: [internal/application/usecases/promotion/service.go]}
       - {resource: provider-coupon-state, authority: provider-authoritative, owner: line-provider, write_policy: "Imported through an ACL.", evidence: [internal/adapter/outbound/line]}
@@ -186,7 +186,7 @@ contexts:
       - {term: workspace-action, definition: "Provider-independent action within an approved request.", forbidden_aliases: [calendar-method], code_symbols: []}
       - {term: execution-outcome, definition: "Recorded result including unknown remote outcome.", forbidden_aliases: [http-response], code_symbols: []}
     owns: [automation-request, approval, execution-outcome]
-    aggregates: [{name: AutomationRequest, root: automation-request, consistency_boundary: "Intent approval and admission state change atomically.", owns: [approval, requested-actions, admission-state], repository: AutomationRequestRepository, confidence: medium, evidence: [internal/domain/workspace-automation/aggregates/automation_request_test.go]}]
+    aggregates: [{name: AutomationRequest, root: automation-request, consistency_boundary: "Intent approval and admission state change atomically.", owns: [approval, requested-actions, admission-state], repository: internal/domain/workspace-automation/repositories.AutomationRequestRepository, confidence: medium, evidence: [internal/domain/workspace-automation/aggregates/automation_request_test.go]}]
     data_ownership:
       - {resource: automation-audit, authority: local-authoritative, owner: workspace-automation, write_policy: "Append outcomes through the workflow.", evidence: [internal/application/usecases/workspace-automation/service.go]}
       - {resource: workspace-resource, authority: provider-authoritative, owner: google-workspace, write_policy: "Mutated only by an authorized ACL call.", evidence: [internal/adapter/outbound/google/api]}

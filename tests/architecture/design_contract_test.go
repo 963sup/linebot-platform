@@ -88,15 +88,51 @@ func TestDesignContract(t *testing.T) {
 	if config.Width != 2400 || config.Height != 1650 {
 		t.Fatalf("architecture overview asset size = %dx%d, want 2400x1650", config.Width, config.Height)
 	}
-	assertSHA256(t, imageData, "146e8adb372f9a5c04b68726d9c013df43198f9286780cc06d1a9c6d40bbe36e")
+	assertSHA256(t, imageData, "8b6bff2e44ca6fd55475e8a90055f76064fc9c1c024ddfdd57c00876af348dad")
 
-	svgPath := filepath.Join(root, "docs", "assets", "architecture", "go-ddd-hexagonal-architecture-overview.svg")
-	svgData, err := os.ReadFile(svgPath)
-	if err != nil {
-		t.Fatal(err)
+	assets := []struct {
+		name                   string
+		hash                   string
+		width, height, viewBox string
+		required               []string
+	}{
+		{
+			name: "go-ddd-hexagonal-architecture-overview.svg", hash: "89d2fbd36fd9677a78ee6882871e8ec36d73dea540f0ec32e0de697433753a5d",
+			width: "1600", height: "1100", viewBox: "0 0 1600 1100",
+			required: []string{"非規範性概覽", "Staging/Production Not Verified", "dependency 指向 consumer"},
+		},
+		{
+			name: "go-ddd-hexagonal-architecture-codex.svg", hash: "64f86a5bff8622729284adeb029f82778d2cc8e10851142f9511c6bb2213485b",
+			width: "3600", height: "2560", viewBox: "0 0 3600 2560",
+			required: []string{"非規範性參考圖", "Layer-first Modular Monolith", "internal/bootstrap"},
+		},
+		{
+			name: "go-ddd-hexagonal-architecture-engineering.svg", hash: "1752116505ddd35913a678eb429871d73688bd6bdac21485aab2b84cf3e5197a",
+			width: "3200px", height: "2100px", viewBox: "0 0 3200 2100",
+			required: []string{"非規範性", "Layer-first Structure", "Staging/Production Not Verified", "unknown / manual reconciliation"},
+		},
 	}
-	assertSHA256(t, svgData, "ac6f866d5f06a5487c287753d9a8de925858729bed31c7523cdd0069aa9ca0cf")
-	validateArchitectureSVG(t, svgData)
+	for _, asset := range assets {
+		t.Run(asset.name, func(t *testing.T) {
+			data, err := os.ReadFile(filepath.Join(root, "docs", "assets", "architecture", asset.name))
+			if err != nil {
+				t.Fatal(err)
+			}
+			assertSHA256(t, data, asset.hash)
+			validateArchitectureSVG(t, data, asset.width, asset.height, asset.viewBox)
+			text := string(data)
+			for _, marker := range asset.required {
+				if !strings.Contains(text, marker) {
+					t.Errorf("%s is missing semantic marker %q", asset.name, marker)
+				}
+			}
+			for _, marker := range []string{"Codex 可執行架構藍圖", "示意是規範性概念圖", "Production-Ready", "cmd/server/main.go", "internal/&lt;context&gt;"} {
+				if strings.Contains(text, marker) {
+					t.Errorf("%s contains obsolete or misleading marker %q", asset.name, marker)
+				}
+			}
+		})
+	}
 }
 
 func assertSHA256(t *testing.T, data []byte, want string) {
@@ -106,10 +142,12 @@ func assertSHA256(t *testing.T, data []byte, want string) {
 	}
 }
 
-func validateArchitectureSVG(t *testing.T, data []byte) {
+func validateArchitectureSVG(t *testing.T, data []byte, width, height, viewBox string) {
 	t.Helper()
 	decoder := xml.NewDecoder(bytes.NewReader(data))
 	rootSeen := false
+	titleSeen := false
+	descSeen := false
 	for {
 		token, err := decoder.Token()
 		if err == io.EOF {
@@ -131,11 +169,20 @@ func validateArchitectureSVG(t *testing.T, data []byte) {
 			for _, attr := range start.Attr {
 				attrs[attr.Name.Local] = attr.Value
 			}
-			for name, want := range map[string]string{"width": "1600", "height": "1100", "viewBox": "0 0 1600 1100"} {
+			for name, want := range map[string]string{"width": width, "height": height, "viewBox": viewBox, "role": "img", "lang": "zh-Hant"} {
 				if attrs[name] != want {
 					t.Fatalf("architecture blueprint SVG %s = %q, want %q", name, attrs[name], want)
 				}
 			}
+			if strings.TrimSpace(attrs["aria-label"]) == "" {
+				t.Fatal("architecture blueprint SVG must have a non-empty aria-label")
+			}
+		}
+		if start.Name.Local == "title" {
+			titleSeen = true
+		}
+		if start.Name.Local == "desc" {
+			descSeen = true
 		}
 		if start.Name.Local == "script" || start.Name.Local == "foreignObject" {
 			t.Fatalf("architecture blueprint SVG must not contain active element %q", start.Name.Local)
@@ -155,5 +202,8 @@ func validateArchitectureSVG(t *testing.T, data []byte) {
 	}
 	if !rootSeen {
 		t.Fatal("architecture blueprint SVG has no root element")
+	}
+	if !titleSeen || !descSeen {
+		t.Fatal("architecture blueprint SVG must contain title and desc metadata")
 	}
 }

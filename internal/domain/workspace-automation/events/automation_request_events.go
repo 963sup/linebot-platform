@@ -3,7 +3,8 @@ package events
 
 import valueobjects "github.com/963sup/linebot-platform/internal/domain/workspace-automation/value-objects"
 
-// AutomationEvent is a marker for workspace automation domain events.
+// AutomationEvent marks an in-memory modeled Domain fact. No persistence or
+// publication contract is implied by this tactical type.
 type AutomationEvent interface{ AutomationEvent() }
 
 type AutomationRequested struct {

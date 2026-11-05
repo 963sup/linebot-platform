@@ -136,6 +136,11 @@ func ValidateRepository(root string, inventory *EndpointInventory, model *Domain
 			}
 		}
 		for j, aggregate := range context.Aggregates {
+			if aggregate.Repository != "" {
+				if err := requireGoSymbol(root, fmt.Sprintf("%s.aggregates[%d].repository", path, j), aggregate.Repository); err != nil {
+					return err
+				}
+			}
 			for k, evidence := range aggregate.Evidence {
 				if err := requireExistingPath(root, fmt.Sprintf("%s.aggregates[%d].evidence[%d]", path, j, k), evidence); err != nil {
 					return err

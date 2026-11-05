@@ -12,13 +12,13 @@ PNG 是高階 DDD／Hexagonal Architecture 概覽的渲染版本；其中右下�
 
 [Go DDD 與 Hexagonal Architecture 概念藍圖（SVG）](../assets/architecture/go-ddd-hexagonal-architecture-overview.svg)
 
-補充的非規範性詳細圖：[Codex Architecture](../assets/architecture/go-ddd-hexagonal-architecture-codex.svg) · [Engineering Blueprint](../assets/architecture/go-ddd-hexagonal-architecture-engineering.svg)。圖中的 context-first 樹僅為通用示例，本 repository 不採用該目錄配置。
+補充的非規範性詳細圖：[Codex Architecture](../assets/architecture/go-ddd-hexagonal-architecture-codex.svg) · [Engineering Blueprint](../assets/architecture/go-ddd-hexagonal-architecture-engineering.svg)。三份 SVG 都採用本 repository 的 layer-first 結構，並可獨立辨識為非規範性圖解。
 
-Overview assets: PNG 2400×1650, SHA-256 `146e8adb372f9a5c04b68726d9c013df43198f9286780cc06d1a9c6d40bbe36e`; SVG 1600×1100, SHA-256 `ac6f866d5f06a5487c287753d9a8de925858729bed31c7523cdd0069aa9ca0cf`.
+Overview PNG 是 SVG 的 2400px 寬渲染投影；可重現的輸出命令與資產維護規則見 [architecture assets README](../assets/architecture/README.md)。完整性雜湊由 architecture test 鎖定。
 
 此圖是目標能力的概念藍圖，不是 repository 狀態或目錄生成器：
 
-- 圖中的 context-first 目錄只是示例；本 repository 維持 layer-first modular monolith，不搬成 `internal/context` 或 `internal/platform`。
+- 圖中的 repository 結構必須維持 layer-first modular monolith，不得改成 `internal/context` 或 `internal/platform`。
 - Aggregate、Factory、Repository、Policy、Specification 等只在存在真實行為、production consumer 與測試時建立，不預建空 package。
 - 圖中的 Production-Ready 不能宣稱 production-ready 狀態，只是目標。正確狀態是「Production baseline implemented; Staging/Production not verified.」
 - `identity` 以外的 candidate／hypothesis contexts 不因圖片而 promoted。

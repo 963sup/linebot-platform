@@ -135,6 +135,9 @@ func TestValidateRepositoryFailures(t *testing.T) {
 		{"missing aggregate evidence", "aggregates[0].evidence[0]", func(m *DomainModel, _ *CapabilityMap) {
 			m.Contexts[0].Aggregates[0].Evidence = []string{"internal/missing-aggregate-evidence"}
 		}},
+		{"missing aggregate repository symbol", "aggregates[0].repository", func(m *DomainModel, _ *CapabilityMap) {
+			m.Contexts[0].Aggregates[0].Repository += "Missing"
+		}},
 		{"missing data ownership evidence", "data_ownership[0].evidence[0]", func(m *DomainModel, _ *CapabilityMap) {
 			m.Contexts[0].DataOwnership[0].Evidence = []string{"internal/missing-data-ownership-evidence"}
 		}},

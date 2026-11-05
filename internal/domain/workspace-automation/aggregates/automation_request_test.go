@@ -129,7 +129,7 @@ func TestInvalidTransitionsDoNotMutate(t *testing.T) {
 	}
 }
 
-func TestEventsAreOrderedAndDetached(t *testing.T) {
+func TestModeledFactsAreOrderedDetachedAndAcknowledged(t *testing.T) {
 	request, approval, _ := fixture(t)
 	if err := request.Approve(approval); err != nil {
 		t.Fatal(err)
@@ -156,7 +156,7 @@ func TestEventsAreOrderedAndDetached(t *testing.T) {
 	}
 	request.AcknowledgeEvents()
 	if len(request.PendingEvents()) != 0 {
-		t.Fatal("AcknowledgeEvents did not clear committed events")
+		t.Fatal("AcknowledgeEvents did not clear modeled facts")
 	}
 	scopes := request.RequiredScopes()
 	scopes[0] = "tampered"
