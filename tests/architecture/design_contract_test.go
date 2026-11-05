@@ -39,8 +39,10 @@ func TestDesignContract(t *testing.T) {
 		"Interface implementation",
 		"Domain Event 與 Integration Event",
 		"Production baseline implemented; Staging/Production not verified.",
-		"../assets/architecture/go-ddd-hexagonal-architecture-blueprint.png",
-		"../assets/architecture/go-ddd-hexagonal-architecture-blueprint.svg",
+		"../assets/architecture/go-ddd-hexagonal-architecture-overview.png",
+		"../assets/architecture/go-ddd-hexagonal-architecture-overview.svg",
+		"../assets/architecture/go-ddd-hexagonal-architecture-codex.svg",
+		"../assets/architecture/go-ddd-hexagonal-architecture-engineering.svg",
 		"pending",
 		"sending",
 		"sent",
@@ -68,7 +70,7 @@ func TestDesignContract(t *testing.T) {
 		}
 	}
 
-	imagePath := filepath.Join(root, "docs", "assets", "architecture", "go-ddd-hexagonal-architecture-blueprint.png")
+	imagePath := filepath.Join(root, "docs", "assets", "architecture", "go-ddd-hexagonal-architecture-overview.png")
 	imageData, err := os.ReadFile(imagePath)
 	if err != nil {
 		t.Fatal(err)
@@ -83,14 +85,17 @@ func TestDesignContract(t *testing.T) {
 	if config.Width < 1000 || config.Height < 600 {
 		t.Fatalf("architecture blueprint asset is unexpectedly small: %dx%d", config.Width, config.Height)
 	}
-	assertSHA256(t, imageData, "ef0d102f2ca863586c27251e5f4848da66426669384dd2a323daa1db4de26d5e")
+	if config.Width != 2400 || config.Height != 1650 {
+		t.Fatalf("architecture overview asset size = %dx%d, want 2400x1650", config.Width, config.Height)
+	}
+	assertSHA256(t, imageData, "146e8adb372f9a5c04b68726d9c013df43198f9286780cc06d1a9c6d40bbe36e")
 
-	svgPath := filepath.Join(root, "docs", "assets", "architecture", "go-ddd-hexagonal-architecture-blueprint.svg")
+	svgPath := filepath.Join(root, "docs", "assets", "architecture", "go-ddd-hexagonal-architecture-overview.svg")
 	svgData, err := os.ReadFile(svgPath)
 	if err != nil {
 		t.Fatal(err)
 	}
-	assertSHA256(t, svgData, "e546c4d23e2b53e600aadbd0926fbeab768606e171d94f70c87854e64a3ce148")
+	assertSHA256(t, svgData, "ac6f866d5f06a5487c287753d9a8de925858729bed31c7523cdd0069aa9ca0cf")
 	validateArchitectureSVG(t, svgData)
 }
 
@@ -126,7 +131,7 @@ func validateArchitectureSVG(t *testing.T, data []byte) {
 			for _, attr := range start.Attr {
 				attrs[attr.Name.Local] = attr.Value
 			}
-			for name, want := range map[string]string{"width": "3600", "height": "2560", "viewBox": "0 0 3600 2560"} {
+			for name, want := range map[string]string{"width": "1600", "height": "1100", "viewBox": "0 0 1600 1100"} {
 				if attrs[name] != want {
 					t.Fatalf("architecture blueprint SVG %s = %q, want %q", name, attrs[name], want)
 				}

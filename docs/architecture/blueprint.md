@@ -4,15 +4,17 @@
 
 ## 視覺藍圖（Illustrative / non-normative）
 
-PNG 是高階 DDD／Hexagonal Architecture 概覽；其中右下方區塊只是品質閘門名稱，不能宣稱本 repository 已通過部署驗收：
+PNG 是高階 DDD／Hexagonal Architecture 概覽的渲染版本；其中右下方區塊只是品質閘門名稱，不能宣稱本 repository 已通過部署驗收：
 
-![Go DDD 與 Hexagonal Architecture 概念藍圖](../assets/architecture/go-ddd-hexagonal-architecture-blueprint.png)
+![Go DDD 與 Hexagonal Architecture 概念藍圖](../assets/architecture/go-ddd-hexagonal-architecture-overview.png)
 
-SVG 是較詳細的實作契約導覽；圖中的 context-first 樹仍只是示例，本 repository 不採用該目錄配置：
+相同概覽的可編輯向量來源：
 
-![Go DDD 與 Hexagonal Architecture 概念藍圖（SVG）](../assets/architecture/go-ddd-hexagonal-architecture-blueprint.svg)
+[Go DDD 與 Hexagonal Architecture 概念藍圖（SVG）](../assets/architecture/go-ddd-hexagonal-architecture-overview.svg)
 
-Repository assets: PNG 1536×1024, SHA-256 `ef0d102f2ca863586c27251e5f4848da66426669384dd2a323daa1db4de26d5e`; SVG 3600×2560, SHA-256 `e546c4d23e2b53e600aadbd0926fbeab768606e171d94f70c87854e64a3ce148`.
+補充的非規範性詳細圖：[Codex Architecture](../assets/architecture/go-ddd-hexagonal-architecture-codex.svg) · [Engineering Blueprint](../assets/architecture/go-ddd-hexagonal-architecture-engineering.svg)。圖中的 context-first 樹僅為通用示例，本 repository 不採用該目錄配置。
+
+Overview assets: PNG 2400×1650, SHA-256 `146e8adb372f9a5c04b68726d9c013df43198f9286780cc06d1a9c6d40bbe36e`; SVG 1600×1100, SHA-256 `ac6f866d5f06a5487c287753d9a8de925858729bed31c7523cdd0069aa9ca0cf`.
 
 此圖是目標能力的概念藍圖，不是 repository 狀態或目錄生成器：
 
