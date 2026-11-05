@@ -2,19 +2,19 @@
 
 Configuration state is not runtime proof. Each MCP must be evaluated separately as configured, enabled, started, initialized, authenticated, authorized and verified.
 
-| MCP | 狀態 |
+| MCP | Repository configured state |
 | --- | --- |
-| `gopls` | 啟用 |
-| `repomix` | 啟用 |
-| `context7` | 啟用 |
-| `github` | 啟用 |
-| `openaiDeveloperDocs` | 啟用 |
-| `google_developer_knowledge` | 啟用 |
-| `google_cloud_cli` | 啟用 |
-| `terraform` | 啟用 |
-| `line` | 啟用 |
-| `openapi_line` | 啟用 |
-| `firestore_toolbox` | 停用 |
+| `gopls` | `configured-enabled` |
+| `repomix` | `configured-enabled` |
+| `context7` | `configured-enabled` |
+| `github` | `configured-enabled` |
+| `openaiDeveloperDocs` | `configured-enabled` |
+| `google_developer_knowledge` | `configured-enabled` |
+| `google_cloud_cli` | `configured-enabled` |
+| `terraform` | `configured-enabled` |
+| `line` | `configured-enabled` |
+| `openapi_line` | `configured-enabled` |
+| `firestore_toolbox` | `configured-disabled` |
 
 ## Routing
 

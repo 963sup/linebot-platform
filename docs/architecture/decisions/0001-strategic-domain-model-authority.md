@@ -2,6 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-11-04
+- Superseded in part by: ADR 0003, only for explicitly authorized candidate tactical model packages
 
 ## Context
 
@@ -9,7 +10,7 @@ The repository contains 102 LINE operations, multiple application capability pac
 
 Treating endpoint groups, package names, or SDK modules as bounded contexts would freeze accidental technical structure into the Domain model. Conversely, maintaining the same model manually in design documents, diagrams, inventories, and code would create conflicting sources of truth.
 
-Identity is currently the only context with production evidence for an aggregate, entity, value objects, policies, specifications, domain events, repository contract, and behavioral tests. Other possible boundaries lack enough verified ownership, language, lifecycle, or provider-independent invariants.
+Identity is currently the only context with repository implementation evidence for an aggregate, entity, value objects, policies, specifications, domain events, repository contract, and behavioral tests. This means production Go code plus repository tests, not deployed Production evidence; other possible boundaries lack enough verified ownership, language, lifecycle, or provider-independent invariants.
 
 ## Decision
 
@@ -22,7 +23,7 @@ The repository uses the following authority order:
 5. Production Go code and tests for implementation evidence.
 6. Generated context-map documentation as a non-authoritative projection.
 
-Identity is recorded as `implemented/supporting`. Every other initial context is `candidate/unclassified` and creates no package, migration, or ownership commitment.
+Identity is recorded as `implemented/supporting`. Every other initial context is `candidate/unclassified` and, absent a later explicit decision, creates no package, migration, or ownership commitment. ADR 0003 later authorizes five tactical model packages without changing their strategic status or these promotion gates.
 
 Context status has these gates:
 

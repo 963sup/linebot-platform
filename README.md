@@ -8,12 +8,12 @@
 
 | 能力 | 實作位置 | 狀態 |
 |---|---|---|
-| `GET /healthz` | `cmd/webhook`、`adapter/inbound/http/health` | 可在沒有憑證下運行 |
-| `POST /webhook/line` | `adapter/inbound/http/line` | 使用 LINE SDK `webhook.ParseRequest` 驗證簽章並同步處理文字訊息 |
-| Reply Text | `application/usecases/conversation` 與 LINE adapter | 使用 LINE Messaging API SDK |
+| `GET /healthz` | `cmd/webhook`、`internal/adapter/inbound/http/health` | 可在沒有憑證下運行 |
+| `POST /webhook/line` | `internal/adapter/inbound/http/line` | 使用 LINE SDK `webhook.ParseRequest` 驗證簽章並同步處理文字訊息 |
+| Reply Text | `internal/application/usecases/conversation-operations` 與 LINE adapter | 使用 LINE Messaging API SDK |
 | Reply Flex | 同上 | 傳入 `flex` 或 `卡片` 時回覆簡單 bubble |
 | Push Text／Flex | `cmd/ops` | 僅 CLI `push --send` 會實際呼叫 API，且需要接收者與 retry key |
-| Profile（明確查詢） | `cmd/ops`、`application/usecases/contacts`、LINE adapter | `profile --lookup` 只在 CLI 查詢；已有離線契約測試，未完成真實 Channel 驗收 |
+| Profile（明確查詢） | `cmd/ops`、`internal/application/usecases/contact-directory`、LINE adapter | `profile --lookup` 只在 CLI 查詢；已有離線契約測試，未完成真實 Channel 驗收 |
 | Firestore、Cloud Tasks（背景佇列） | `internal/adapter/outbound/google/cloud/` | 具備選用 Durable Inbox/Outbox 與派送 Adapter，尚未部署 |
 | Storage、Secret Manager | `internal/infrastructure/google/cloud/` | 原生 Client Factory，未接入業務 |
 | Sheets、Drive、Calendar、Google Tasks（待辦） | `internal/infrastructure/google/api/` | 原生 Client Factory 已建立；個人資料仍需使用者 OAuth 授權 |
@@ -102,11 +102,11 @@ Profile 回應包含個人資料，請勿將 stdout、Shell 紀錄或查詢結�
 
 ## 架構與限制
 
-- `domain/identity/`：PR #28 的變更已合併至 `main`，包含 `AccountLink` Aggregate、`GoogleConnection` Entity、`value-objects/`（Go package `valueobjects`）、Policy、Specification、Factory、Repository 讀取契約及 Domain Events。OAuth 憑證仍保存在 Adapter 的加密持久化機制，並非 Domain 狀態；其他 Bounded Context 須依真實業務不變量逐步建模。
-- `application/`：Messaging Port、Reply／Push、文字回覆，以及持久 Ingestion／Worker Use Case。
-- `adapter/`：同步與持久 Webhook、具 OIDC 驗證的 Worker、Firestore、Cloud Tasks、LINE 發送。
-- `infrastructure/`：LINE 受管理 HTTP Runtime、Firestore／Cloud Tasks 的可選 Durable 業務接線，以及其餘 Provider 的原生 Typed Client Factories（`client_ready`）；SDK 已可建構不代表其真實服務已獲授權。
-- `bootstrap/`：設定、組裝、啟動與 shutdown。
+- `internal/domain/identity/`：PR #28 的變更已合併至 `main`，包含 `AccountLink` Aggregate、`GoogleConnection` Entity、`value-objects/`（Go package `valueobjects`）、Policy、Specification、Factory、Domain-owned Repository 讀取契約及 Domain Events。OAuth 憑證仍保存在 Adapter 的加密持久化機制，並非 Domain 狀態；其他 Bounded Context 須依真實業務不變量逐步建模。
+- `internal/application/`：consumer-owned capability ports、Reply／Push、文字回覆，以及持久 Ingestion／Worker Use Case。
+- `internal/adapter/`：同步與持久 Webhook、具 OIDC 驗證的 Worker，以及實作 Application capability port 或 Domain repository contract 的 Firestore、Cloud Tasks、LINE adapter。
+- `internal/infrastructure/`：LINE 受管理 HTTP Runtime、Firestore／Cloud Tasks 的可選 Durable 業務接線，以及其餘 Provider 的原生 Typed Client Factories（`client_ready`）；SDK 已可建構不代表其真實服務已獲授權。
+- `internal/bootstrap/`：設定、組裝、啟動與 shutdown。
 - `cmd/webhook`、`cmd/worker`、`cmd/ops`：已具可編譯入口；Worker 尚未部署。
 
 **重要：預設 `LINE_EVENT_MODE=sync` 僅供本地開發，不持久化事件。Cloud Run 拒絕 sync；公開 Webhook 的 durable 模式只持有 `LINE_CHANNEL_SECRET`，發送 Token 僅交由私有 Worker 持有。** Durable 模式目前僅有程式碼與離線測試，缺少真實 Staging、unsend／edit、正式 IAM 與人工故障修復驗證；不能宣稱 production-ready 或端到端 exactly-once。
@@ -115,7 +115,7 @@ Profile 回應包含個人資料，請勿將 stdout、Shell 紀錄或查詢結�
 
 - [docs/sdk/catalog.toml](docs/sdk/catalog.toml) 將 `go.mod` 中的全部直接依賴對應到 Provider、用途、import package 與預定的 Factory／Adapter；`go.mod` 仍是唯一版本來源。
 - [sdk-integration Skill](.agents/skills/sdk-integration/SKILL.md) 指導 Codex 按需查詢 SDK 原始碼、gopls、官方文件，再依 Hexagonal Architecture 實作與測試。
-- `go run ./cmd/codexcheck` 驗證 Catalog 與直接依賴一致、程式配置有效，並確保**已核准 SDK 依賴及預留 SDK 空白骨架不因清理而被移除**；CI 已納入這項檢查。這不代表其他 SDK 已初始化或取得 API 權限。
+- `go run ./cmd/codexcheck` 驗證 Catalog、`go.mod` 與 dependency manifest 一致，並確保已核准 SDK 依賴不因清理而被移除；空目錄或 `.gitkeep` 不是保留契約。CI 已納入這項檢查。這不代表其他 SDK 已初始化或取得 API 權限。
 - 發現新的 SDK 功能時，只需按需擴充既有 Adapter／Factory；無須建立萬用動態 SDK Client。完整流程見 [SDK 整合架構](docs/architecture/sdk-integration.md)。
 
 ## Managed LINE SDK Runtime（階段 2）
@@ -144,7 +144,7 @@ Google Tasks、Calendar 的授權詳見 [Workspace OAuth 與 API](docs/sdk/works
 ## Codex Cloud 開發環境
 
 - [`.codex/config.toml`](.codex/config.toml) 配置 gopls／Context7／OpenAI Docs MCP、可在明確授權下寫入的 GitHub MCP，並保留停用中的 Firestore Toolbox。Codex Cloud agent-phase 需允許 `developers.openai.com`，在 Republish 後的新工作階段驗證連線。
-- [六個專用 Agents](docs/ai/agents.md) 負責 DDD、LINE SDK、Cloud Platform、Go Review、官方文件查證，以及交付前的 Code Cleanup & Release Validation。
+- [已註冊的協作角色](docs/ai/agents.md) 依根目錄 `AGENTS.md` 的單一清單負責架構、研究、Domain、Application、Integration、Platform、Environment 與獨立 Review；README 不另行固定角色數量。
 - `bash scripts/codex-cloud/install.sh` 是 Codex Cloud **Install script**；新工作階段以 `bash scripts/codex-cloud/start.sh` 強制同步 main 並驗證環境。
 - 專案配置以 `go run ./cmd/codexcheck` 驗證，無須 Python；詳見 [Codex Cloud 建置步驟](docs/ai/codex-cloud.md)，其中的環境發布與 MCP 授權**尚未執行**。
 
@@ -158,7 +158,7 @@ Google Tasks、Calendar 的授權詳見 [Workspace OAuth 與 API](docs/sdk/works
 ## CI 快取與驗證完整性
 
 - GitHub Actions 使用既有 `actions/setup-go` 的內建 **Go Modules／Build Cache**（以 `go.sum` 為快取依據）。先前無快取的 [#41558587334](https://github.com/963sup/linebot-platform/actions/runs/41558587334) 中，`go vet` 約 91 秒、`go test -race` 約 144 秒，是主要耗時來源。
-- 快取用於降低重複編譯成本，**不會**跳過 `go mod tidy`／鎖定檔驗證、`gofmt`、`go vet`、`go test -race -count=1` 或 `go build`；首次冷快取仍可能耗時較長。未使用的 SDK 依賴與預留目錄不刪除。
+- 快取用於降低重複編譯成本，**不會**跳過 `go mod tidy`／鎖定檔驗證、`gofmt`、`go vet`、`go test -race -count=1` 或 `go build`；首次冷快取仍可能耗時較長。經核准但尚未 runtime 啟用的 SDK 依賴由 `go.mod`、SDK Catalog 與 dependency manifest 保留，不以預留目錄保留。
 
 ## Outbox 狀態監控與人工處置（規劃中）
 

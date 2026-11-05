@@ -118,7 +118,7 @@ Port 必須小型且由消費者需求定義，不 mirror 整份 SDK。多個 ca
 
 Inbound adapters 負責 HTTP、gRPC、webhook、CLI、message protocol 的解析、驗證、mapping 與呼叫 use case；不得繞過 Application 修改 Domain 或資料庫。
 
-Outbound adapters 實作 ports，負責 SDK request/response、序列化、錯誤映射、retry、timeout、pagination、batch 與 transaction。Persistence model 與 Domain model 分離，mapping 屬於 adapter。
+Outbound adapters 實作 consuming Application capability 擁有的 port，或 Domain 擁有的 repository contract；它們負責 SDK request/response、序列化、錯誤映射、retry、timeout、pagination、batch 與 transaction。Persistence model 與 Domain model 分離，mapping 屬於 adapter。
 
 ### Infrastructure / Bootstrap
 
@@ -136,11 +136,11 @@ flowchart LR
         TASK[Cloud Tasks consumer]
     end
 
-    subgraph Hexagon[Application hexagon]
+    subgraph Hexagon[Application / Domain hexagon]
         IN[Inbound Ports]
         UC[Application Use Cases]
         DOM[Domain Model]
-        OUT[Outbound Ports]
+        OUT[Application Capability Ports / Domain Repository Contracts]
         IN --> UC
         UC --> DOM
         UC --> OUT
@@ -160,7 +160,7 @@ flowchart LR
     OUT -. implemented by .-> EXT
 ```
 
-左側 Adapter 驅動 Inbound Port；右側 Adapter 實作由 Application 擁有的 Outbound Port。圖中的 runtime 呼叫方向可以向外，但 Go import 必須朝核心反轉：Adapter import Port，Port 不 import Adapter。
+左側 Adapter 驅動 Application inbound API；右側 Adapter 實作由 consuming Application capability 擁有的 port，或由 Domain 擁有的 repository contract。圖中的 runtime 呼叫方向可以向外，但 Go import 必須朝 contract owner 反轉：Adapter import contract，contract 不 import Adapter。
 
 ## 2. 唯一依賴方向
 
@@ -176,9 +176,9 @@ flowchart LR
         CLI[CLI / Messaging]
     end
 
-    subgraph Core[Application Core]
+    subgraph Core[Application / Domain Core]
         APP[Application Use Cases]
-        PORTS[Application-owned Ports]
+        PORTS[Application Capability Ports / Domain Repository Contracts]
         DOMAIN[Domain]
     end
 
@@ -209,7 +209,7 @@ flowchart LR
 
 - Domain 不得反向依賴 Application、Adapter、Infrastructure 或 SDK。
 - Application 不得 import 具體 outbound adapter、client factory 或 SDK。
-- Adapter 以 Go implicit interface 實作 port；port 不得 import adapter。
+- Adapter 以 Go implicit interface 實作 Application capability port 或 Domain repository contract；contract 不得 import adapter。
 - Infrastructure 可依賴 SDK，但不可把 SDK 型別穿透到 Domain/Application。
 - Infrastructure 不得 import Application use case、Domain Policy 或 Adapter；它提供可被 Adapter／Bootstrap 組裝的技術 client、transport 與 lifecycle primitive。
 - Inbound Adapter 不得直接 import outbound Adapter、persistence 或 provider client。
@@ -233,7 +233,7 @@ Interface 定義在 consumer 一側，Adapter 可用 `var _ Port = (*Adapter)(ni
 ## 3. DDD 與高內聚
 
 1. 以 bounded context 分隔語言、aggregate 與業務規則；`shared/` 只放真正穩定的 immutable primitives。
-2. Repository contract 放在使用它的 Domain/Application 邊界，實作放 outbound adapter；不得同時維護重複 contract。
+2. Domain persistence 語意的 repository contract 放在 owning Domain；workflow 或外部能力的 persistence port 放在 consuming Application capability，實作放 outbound adapter；不得同時維護重複 contract。
 3. Domain Event 表示已發生的業務事實；可靠發布需透過 transaction + outbox 或等價機制。
 4. Policy、Specification、Factory 只在有獨立業務行為時建立，不用分類名稱製造空 Package。
 5. 簡單 CRUD 不強行套用 Aggregate、CQRS 或大量 DTO；架構重量應與 domain complexity 成比例。

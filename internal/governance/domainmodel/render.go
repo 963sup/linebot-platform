@@ -57,12 +57,16 @@ func RenderContextMap(model *DomainModel, capabilities *CapabilityMap, dependenc
 			fmt.Fprintf(&out, "| %s | %s | %s |\n", cell(c.ID), cell(invariant.ID), cell(invariant.Statement))
 		}
 	}
-	out.WriteString("\n## Relationships\n\n```mermaid\nflowchart LR\n")
+	out.WriteString("\n## Relationships\n\n| Upstream | Downstream | Contract | Interaction | Pattern | Decision | Confidence |\n|---|---|---|---|---|---|---|\n")
+	for _, r := range relations {
+		fmt.Fprintf(&out, "| %s | %s | %s | %s | %s | %s | %s |\n", cell(r.Upstream), cell(r.Downstream), cell(r.Contract), cell(r.Interaction), cell(r.Pattern), cell(r.DecisionStatus), cell(r.Confidence))
+	}
+	out.WriteString("\n```mermaid\nflowchart LR\n")
 	for _, c := range contexts {
 		fmt.Fprintf(&out, "    %s[\"%s\\n%s\"]\n", mermaidID(c.ID), mermaidText(c.ID), mermaidText(c.Status))
 	}
 	for _, r := range relations {
-		fmt.Fprintf(&out, "    %s -->|%s / %s / %s| %s\n", mermaidID(r.Upstream), mermaidText(r.Contract), mermaidText(r.Interaction), mermaidText(r.Pattern), mermaidID(r.Downstream))
+		fmt.Fprintf(&out, "    %s -->|%s / %s / %s / %s / %s| %s\n", mermaidID(r.Upstream), mermaidText(r.Contract), mermaidText(r.Interaction), mermaidText(r.Pattern), mermaidText(r.DecisionStatus), mermaidText(r.Confidence), mermaidID(r.Downstream))
 	}
 	out.WriteString("```\n\n## Ubiquitous Language\n\n| Context | Term | Definition |\n|---|---|---|\n")
 	for _, c := range contexts {

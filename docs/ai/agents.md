@@ -38,7 +38,7 @@ The primary orchestrator interprets requests, orders dependencies, assigns one w
 - Use GitHub MCP for repository, branch, PR and CI evidence.
 - MCP declarations do not prove startup, authentication, authorization or tool availability.
 
-Cross-cutting Go work follows this evidence loop: Repomix scope map, gopls semantic confirmation, smallest-role implementation, repository checks, then independent review. Repomix output is a context snapshot and never overrides current source or gopls.
+Cross-cutting Go work uses this evidence loop when the tools are available and verified: Repomix scope map, gopls semantic confirmation, smallest-role implementation, repository checks, then independent review. If Repomix or gopls is unavailable, use direct search or Go CLI fallbacks and report that tool as `Not Verified`; Repomix output is a context snapshot and never overrides current source or gopls.
 
 ## Environment policy
 

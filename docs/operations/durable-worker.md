@@ -54,7 +54,8 @@ Reference: [Google Cloud Tasks task deduplication](https://docs.cloud.google.com
 1. Run `go run ./cmd/codexcheck` and `make check`. These are code-level tests and do not prove deployed IAM or storage correctness.
 2. In an authorized, isolated Firestore Emulator test, verify atomic first write vs redelivery, claim concurrency, terminal state transitions, TTL serialization and recovery behavior.
 3. Use staging identities to test the actual Cloud Tasks CreateTask -> private Worker authentication path and the separate Scheduler dispatch endpoint.
-4. Validate idempotency under crashed worker, slow LINE call and unknown network outcome, with only dedicated test LINE accounts.
-5. Verify no raw message, reply token or user ID appears in structured logs or Cloud Tasks body. Require staging acceptance before any production readiness statement.
+4. Capacity verification is currently `BLOCKED`: the repository has no deployable staging-only blocking fixture. After separately reviewing a fixed-digest test image or fixture that is isolated by Staging IAM and absent from the production image, use at least 17 synchronous blocked requests to verify that no more than 16 enter the handler, the seventeenth receives `503 Service Unavailable` with a valid `Retry-After`, Cloud Tasks retries it later instead of creating an in-process backlog, and shutdown stops admission while draining active handlers. Record the tested Revision's actual `containerConcurrency=16` setting.
+5. Validate idempotency under crashed worker, slow LINE call and unknown network outcome, with only dedicated test LINE accounts.
+6. Verify no raw message, reply token or user ID appears in structured logs or Cloud Tasks body. Require staging acceptance before any production readiness statement.
 
 The private Worker image template does **not** modify the existing staging-only deployment safety gate. No Cloud Run, Cloud Build, Firestore, Cloud Tasks, Scheduler or IAM resource is provisioned by committing this document.

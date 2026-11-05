@@ -19,6 +19,7 @@
 | A IAM | 匿名呼叫 `/tasks/v2/line-reply`、`/tasks/v2/dispatch`；無授權 OIDC audience／email；合法 OIDC | 前三種拒絕，合法身分才通過，Cloud Run IAM 狀態與審核紀錄 |
 | B 憑證隔離 | 檢查兩服務實際 Revision runtime env/Secret references（安全遮蔽）；以錯誤 `LINE_CHANNEL_ACCESS_TOKEN` 注入 Public dry-deploy | Webhook **無**發送 Token；錯誤配置 fail closed；Private Worker 能使用 Staging Token |
 | C Firestore | 對 12+ Workers 競爭同 EventKey；插入斷線及交錯 Transaction | 一個 Inbox、一個 Outbox、最多一個 Sending Claim；拒絕重開 Sent／Unknown |
+| C2 Worker capacity | 對 private Worker 發出至少 17 個同步阻塞請求，保持前 16 個 handler in-flight，再送第 17 個；其後釋放阻塞並啟動受控 shutdown | 最多 16 個進入 handler；第 17 個立即收到 `503 Service Unavailable` 與有效 `Retry-After`；Cloud Tasks 依該回應稍後重試而非程序內排隊；shutdown 停止新 admission 並等待既有 handler drain |
 | D Redelivery | 同一 webhookEventId 的簽章合法重送（LINE 測試 Channel）；首次模擬入庫後 CreateTask 失敗 | Pending 可恢復且不覆寫原本的 Message；Sending/Sent/Unknown 不會第二次 LINE Reply |
 | E Reply 時效 | 收到後 45 秒以上延遲；原始時間距今超過 20 分鐘的重送 | 不嘗試已過期 Reply；以原始 Event Timestamp 約束期限，結果標為 Expired |
 | F Reconcile | 模擬 115+ Pending、過期 Sending、Queue CreateTask 暫時失敗、Worker Crash | 不會因固定前 100 筆飢餓；Unknown 不會自行重送；冷卻後可補派 Pending |
@@ -26,6 +27,8 @@
 | G2 Identity Outbox | 查詢 `identity_outbox_v1` due pending 與 expired publishing lease；競爭 claim、完成 publish 與 lease recovery | 兩個 Identity 複合索引均為 Ready；`expires_at` TTL policy 可定位；published 不會被 recovery 降級，單一 lease 不會重複派送 |
 | H 觀測／告警 | 隔離 Staging 執行 `ops events --check`、Inject Unknown 或長 Pending；停用一次 Scheduler | Job 非零 exit；Cloud Monitoring 分辨失敗和「未執行」，告警收件者收到並確認 |
 | I Rollback | 在隔離測試環境以固定 image digest 回退已核准版本，保留資料結構向前相容 | 混合新舊 Worker 無重複發送，回復遺漏/延遲工作可解釋，簽核紀錄 |
+
+**C2 目前為 `BLOCKED`。** Repository 只有單元測試用 blocking fake，沒有可部署的 staging-only blocking handler 或 fault-injection image，因此目前不能確定性地保持及釋放 16 個真實 handler。執行 C2 前必須另行審核一個與 production route/image 分離、固定 digest、只允許隔離 Staging IAM 呼叫的測試 fixture；證據還必須包含實際 Cloud Run Revision 的 `containerConcurrency=16`。不得把測試 blocking route 編入 production image，也不得用真實 LINE 傳送來模擬阻塞。
 
 ## 觀測與安全判準
 

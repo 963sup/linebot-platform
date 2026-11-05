@@ -2,6 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-11-04
+- Superseded in part by: ADR 0003, only for explicitly authorized candidate tactical model packages
 
 ## Context
 
@@ -15,7 +16,7 @@ Record complete Context hypotheses with explicit decision status and confidence.
 
 Record every direct `go.mod` dependency in `docs/domain/dependency-capabilities.yaml`, cross-check its version and SDK catalog status, and distinguish domain signals from supporting capabilities, generic infrastructure, and tooling. Generic infrastructure cannot own a Context. A `declared` dependency cannot be represented as integrated behavior.
 
-Messaging Delivery is provisionally classified Core with medium confidence. Identity remains the only implemented Context. All other classifications and boundaries remain hypotheses until business review and a promotion ADR.
+Messaging Delivery is provisionally classified Core with medium confidence. Identity remains the only strategically implemented Context. All other classifications and boundaries remain hypotheses until business review and a promotion ADR. ADR 0003 later permits five of those hypotheses to have tactical model packages; that implementation evidence is not strategic validation.
 
 ## Consequences
 

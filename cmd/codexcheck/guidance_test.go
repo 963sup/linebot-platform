@@ -33,11 +33,11 @@ func TestGuidanceTracksRegisteredCapabilities(t *testing.T) {
 	}
 	mcpDoc := read("docs/ai/mcp-and-plugins.md")
 	for name, server := range c.MCPServers {
-		state := "停用"
+		state := "configured-disabled"
 		if server.Enabled {
-			state = "啟用"
+			state = "configured-enabled"
 		}
-		if !strings.Contains(mcpDoc, "| `"+name+"` | "+state+" |") {
+		if !strings.Contains(mcpDoc, "| `"+name+"` | `"+state+"` |") {
 			t.Errorf("MCP %s state missing or stale", name)
 		}
 	}

@@ -2,6 +2,7 @@
 
 技能檔案各自位於 `.agents/skills/<skill-name>/SKILL.md`，用來規範可重複的工作程序：
 
+- `agent-tool-preflight`：在動工前核對必要工具、MCP、Skill 與安全 fallback。
 - `linebot-domain-change`：維護聚合與 domain 規則。
 - `linebot-messaging-feature`：逐 endpoint 新增 Messaging API。
 - `linebot-webhook-safety`：驗證簽章、冪等、持久工作與取消。
@@ -19,5 +20,5 @@
 - Go：`golang-code-style`、`golang-continuous-integration`、`golang-context`、`golang-dependency-management`、`golang-error-handling`、`golang-naming`、`golang-observability`、`golang-project-layout`、`golang-security`、`golang-testing`。
 
 此 lockfile 僅是**外部來源的版本／內容指紋清單**：不代表已下載、安裝、重新計算雜湊或通過安全稽核；來源可能已更新。首次啟用前必須先驗證來源及 `SKILL.md`／可執行腳本、校驗實際 hash、檢查權限與 license，不能自動信任或執行。
-本地 `.agents/skills/` 的六項自訂技能是另一套檔案，不應被外部 lock 覆蓋。
+本地 `.agents/skills/` 的專案自訂技能是另一套檔案；實際清單以該目錄中的 `SKILL.md` 為準，不應被外部 lock 覆蓋。
 

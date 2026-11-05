@@ -280,7 +280,7 @@ func TestRenderContextMapDeterministic(t *testing.T) {
 	if !bytes.Equal(first, second) {
 		t.Errorf("RenderContextMap(reordered) differs from original")
 	}
-	for _, want := range []string{"```mermaid", "Subdomains", "Aggregates and Data Ownership", "IDN-001", "identity", "Endpoint Capabilities", "Go Module Capability Evidence"} {
+	for _, want := range []string{"```mermaid", "Subdomains", "Aggregates and Data Ownership", "IDN-001", "identity", "Endpoint Capabilities", "Go Module Capability Evidence", "| Decision | Confidence |", "RecipientSelection / synchronous / published-language / hypothesis / medium"} {
 		if !bytes.Contains(first, []byte(want)) {
 			t.Errorf("RenderContextMap output missing %q", want)
 		}

@@ -22,13 +22,17 @@ Natural-language request → read `AGENTS.md` → discover provider via catalog 
 
 Load only the relevant provider's sources; do not eagerly ingest every SDK or duplicate the official documentation in the repository. No generic dynamic `SDK.Call(provider, method, payload)` API.
 
-## Runtime dependency direction
+## Composition、runtime call 與 source dependency
 
-`cmd/{webhook,worker,ops}` → `internal/bootstrap` (explicit composition root) → application use cases and provider adapters → infrastructure-owned typed SDK clients.
+Composition ownership：`cmd/{webhook,worker,ops}` 將程序組裝委派給 explicit composition root `internal/bootstrap`；Bootstrap 建立所需的 Application use case、Adapter 與 Infrastructure typed client，並注入具體實作。
 
-- Domain: business invariants and models, no external provider SDK.
-- Application: use cases and provider-neutral Ports; no provider SDK types/imports.
-- Adapter: maps SDK-native data and errors to application contracts.
+Runtime call 可以由 Application 經 capability port 呼叫 Adapter，也可以由 Application 協調使用 Domain repository contract；這不表示 Application 或 Domain 在 source code 中 import 具體 Adapter。
+
+Compile-time source dependency 指向 contract owner：Adapter import consuming Application capability 的 port 或 Domain repository contract；Application 與 Domain contract 不 import Adapter。Infrastructure 提供技術 client 與 lifecycle primitive，不 import Application use case、Domain policy 或 Adapter。
+
+- Application: use cases and provider-neutral capability ports; no provider SDK types/imports.
+- Domain: business invariants, models and necessary repository contracts; no external provider SDK.
+- Adapter: maps SDK-native data and errors to the Application capability port or Domain repository contract it implements.
 - Infrastructure: typed SDK factories, credential wiring, transport, telemetry and provider-specific policies. Prefer SDK-native retry/transport mechanisms and avoid double retry.
 - Bootstrap: construct only required clients, inject them explicitly, and close owned resources during shutdown or partial-startup failure.
 

@@ -2,6 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-11-04
+- Supersedes: ADR 0001 and ADR 0002 only where they otherwise prohibit the tactical packages authorized below
 
 ## Context
 
@@ -14,6 +15,8 @@ Messaging Delivery also needs a hard wire and persistence boundary because the p
 Implement provider-independent tactical models for Audience, Experience Presentation, Promotion, Workspace Automation, and Messaging Delivery. Implement Membership, Contact Directory, Insights Reporting, and Content Intelligence as Application-owned read/process models rather than inventing Aggregates.
 
 Keep these Contexts at `candidate/hypothesis` until product and domain review validates their language, ownership, and boundaries. Their tests are implementation evidence, not strategic validation evidence. Identity remains the only strategically promoted `implemented` Context.
+
+This is a limited supersession. The strategic authority order, promotion gates, ownership requirements, and migration controls from ADR 0001 and ADR 0002 remain in force.
 
 Use versioned Messaging Delivery boundaries:
 
@@ -30,3 +33,7 @@ A production rollout still requires an explicit drain, retention, compatibility,
 - Cross-Context Domain imports are rejected by architecture tests.
 - Provider adapters and composition wiring for candidate Contexts remain separate delivery work.
 - Existing durable work remains addressable by the stable collection names, but staging and production compatibility remain `Not Verified` and blocked on an explicit rollout procedure.
+
+## Current implementation note
+
+The authorized tactical models now have provider adapters and composition wiring under `internal/adapter/` and `internal/bootstrap/`. This records repository implementation evidence only. Staging and Production deployment, compatibility, drain, retention, rollback, IAM, and provider behavior remain `Not Verified`.

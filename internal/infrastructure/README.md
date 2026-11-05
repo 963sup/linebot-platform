@@ -2,7 +2,7 @@
 
 基礎設施程式碼已併入 `main`（PR #8，2026-11-03）。此處負責官方 SDK Client Factory、認證邊界、HTTP Transport、錯誤分類、觀測資料與資源生命週期；**已實作不等於已部署或取得服務權限**。
 
-- **LINE**：`internal/infrastructure/line` 具備可注入 `*http.Client` 的原生 Messaging Client Factory，`httpclient` 提供獨立 Transport、Timeout、Close，`observability` 僅記錄去敏運作資訊，`resilience` 提供安全錯誤分類。Webhook 與 Push CLI 已由 Bootstrap 管理資源；LINE SDK `WithContext` 的共享可變狀態由 Adapter 的逐請求副本隔離。
+- **LINE**：`internal/infrastructure/line` 具備可注入 `*http.Client` 的原生 Messaging Client Factory，`httpclient` 提供獨立 Transport、Timeout、Close，`observability` 僅記錄去敏運作資訊，`resilience` 提供安全錯誤分類。Bootstrap 只組裝 Webhook 與 Push CLI 的資源及 closer；process entrypoint 建立 signal context，CLI Adapter 負責命令 context、deadline 與 runtime close。LINE SDK `WithContext` 的共享可變狀態由 Adapter 的逐請求副本隔離。
 - **Google Cloud**：Firestore、Cloud Tasks、Secret Manager、Storage 的 Typed Client Factories 已存在。Firestore Inbox/Outbox Adapter 及 Cloud Tasks Queue Adapter、私有 OIDC Worker／Reconcile 在 **`LINE_EVENT_MODE=durable`** 明確設定後才會啟用；不代表雲端帳號或 IAM 已配置。
 - **Google Workspace**：Google Tasks、Calendar、Sheets、Drive 都使用 `google.golang.org/api` 的原生 Factory；使用者 OAuth 同意、Scope、Token 保管、正式業務 Adapter 均尚未完成。
 - **AI**：OpenAI、Gemini Developer API、Vertex AI 的原生 Factory 已建立；未接入 Webhook 業務，也不會在啟動時自動呼叫付費 API。

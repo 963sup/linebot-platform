@@ -6,8 +6,8 @@ Build maintainable Go services with pragmatic DDD, Hexagonal Architecture and id
 
 - [`docs/architecture/blueprint.md`](docs/architecture/blueprint.md) is the single architecture and dependency contract. The visual blueprint embedded there is illustrative; the text and architecture tests are normative.
 - Domain must not import transport, cloud SDKs, databases or infrastructure adapters.
-- Application owns use-case orchestration and consumer-oriented ports.
-- Adapters isolate external SDK types and implement ports.
+- Application owns use-case orchestration and consumer-owned capability ports; Domain may own repository contracts that express Domain persistence semantics.
+- Adapters isolate external SDK types and implement the contract owned by the consuming Application capability or Domain repository.
 - Use interfaces only at real variation or testing boundaries.
 - Preserve domain invariants, explicit errors, context propagation, idempotency and retry behavior.
 

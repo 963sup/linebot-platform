@@ -12,6 +12,6 @@
 | Coupon / Membership | 會員清單、訂閱、會員 ID、Coupon 列表與詳情已接入唯讀 CLI；建立／關閉 Coupon 已接入需資格確認的 Operator CLI，實際使用仍需確認地區、資格與授權 | Partial / Restricted |
 | Channel / account link | Bot Info、Webhook Endpoint GET、Quota、發送統計、Aggregation、Narrowcast Progress 已接入唯讀 CLI；Webhook 寫入及 Account Link Token 已接入受控 Operator CLI；Channel Access Token 8 項已接入獨立 operator-only Runtime，必須由 0600 JSON 檔提供憑證並將結果寫至 0600 輸出檔；真實 OAuth 身分與資格仍未驗證 | Partial (offline contract only) |
 
-本次 Draft PR #24 的盤點目標是 102/102 項離線契約整合；在 CI 通過及 PR 合併前，這是候選整合狀態，不是 main 的已驗收數字。這項基礎設施工作不擴充 Webhook 全事件、DDD 模型、AI 或 Google Cloud 部署。
+目前 repository inventory 追蹤 102/102 項 LINE 操作，並以 `integrated_offline` 表示程式碼接線與離線契約證據；這不是逐項 `operation_verified`，也不是 Staging、真實帳號資格或 Production 驗收。這項基礎設施範圍不等於已擴充 Webhook 全事件、完成所有 DDD 模型、啟用 AI 或部署 Google Cloud。
 
 此表只是能力分組，不能代替端點級覆蓋追蹤。參閱 [Endpoint Inventory](endpoint-inventory.yaml)：固定官方 LINE OpenAPI revision，列出 Messaging API、Insights、Audience Group、Channel Access Token 共 102 個操作。狀態 `integrated_offline` 僅表示程式碼接線及離線契約測試，**不代表真實 LINE Channel／地區資格／Production 已驗證**。每次擴充都必須核對 pinned SDK 的真實 Go symbols、更新 inventory 並新增測試；未知帳號權限標記 `review`，受地區／功能資格限制的操作標記 `required_eligibility_review`。

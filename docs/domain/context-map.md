@@ -81,6 +81,19 @@
 
 ## Relationships
 
+| Upstream | Downstream | Contract | Interaction | Pattern | Decision | Confidence |
+|---|---|---|---|---|---|---|
+| audience | messaging-delivery | RecipientSelection | synchronous | published-language | hypothesis | medium |
+| contact-directory | messaging-delivery | RecipientReference | synchronous | published-language | hypothesis | medium |
+| content-intelligence | experience-presentation | ContentDraft | synchronous | customer-supplier | hypothesis | low |
+| content-intelligence | messaging-delivery | ContentDraft | synchronous | customer-supplier | hypothesis | low |
+| experience-presentation | messaging-delivery | InteractionMessage | asynchronous | published-language | hypothesis | low |
+| identity | workspace-automation | AuthorizedWorkspaceAccount | synchronous | anti-corruption-layer | hypothesis | high |
+| membership | promotion | EligibilityDecision | synchronous | published-language | hypothesis | low |
+| messaging-delivery | insights-reporting | DeliveryFact | asynchronous | published-language | hypothesis | medium |
+| promotion | messaging-delivery | PromotionDeliveryIntent | asynchronous | published-language | hypothesis | low |
+| workspace-automation | messaging-delivery | NotificationIntent | asynchronous | published-language | hypothesis | low |
+
 ```mermaid
 flowchart LR
     ctx_audience["audience\ncandidate"]
@@ -93,16 +106,16 @@ flowchart LR
     ctx_messaging_delivery["messaging-delivery\ncandidate"]
     ctx_promotion["promotion\ncandidate"]
     ctx_workspace_automation["workspace-automation\ncandidate"]
-    ctx_audience -->|RecipientSelection / synchronous / published-language| ctx_messaging_delivery
-    ctx_contact_directory -->|RecipientReference / synchronous / published-language| ctx_messaging_delivery
-    ctx_content_intelligence -->|ContentDraft / synchronous / customer-supplier| ctx_experience_presentation
-    ctx_content_intelligence -->|ContentDraft / synchronous / customer-supplier| ctx_messaging_delivery
-    ctx_experience_presentation -->|InteractionMessage / asynchronous / published-language| ctx_messaging_delivery
-    ctx_identity -->|AuthorizedWorkspaceAccount / synchronous / anti-corruption-layer| ctx_workspace_automation
-    ctx_membership -->|EligibilityDecision / synchronous / published-language| ctx_promotion
-    ctx_messaging_delivery -->|DeliveryFact / asynchronous / published-language| ctx_insights_reporting
-    ctx_promotion -->|PromotionDeliveryIntent / asynchronous / published-language| ctx_messaging_delivery
-    ctx_workspace_automation -->|NotificationIntent / asynchronous / published-language| ctx_messaging_delivery
+    ctx_audience -->|RecipientSelection / synchronous / published-language / hypothesis / medium| ctx_messaging_delivery
+    ctx_contact_directory -->|RecipientReference / synchronous / published-language / hypothesis / medium| ctx_messaging_delivery
+    ctx_content_intelligence -->|ContentDraft / synchronous / customer-supplier / hypothesis / low| ctx_experience_presentation
+    ctx_content_intelligence -->|ContentDraft / synchronous / customer-supplier / hypothesis / low| ctx_messaging_delivery
+    ctx_experience_presentation -->|InteractionMessage / asynchronous / published-language / hypothesis / low| ctx_messaging_delivery
+    ctx_identity -->|AuthorizedWorkspaceAccount / synchronous / anti-corruption-layer / hypothesis / high| ctx_workspace_automation
+    ctx_membership -->|EligibilityDecision / synchronous / published-language / hypothesis / low| ctx_promotion
+    ctx_messaging_delivery -->|DeliveryFact / asynchronous / published-language / hypothesis / medium| ctx_insights_reporting
+    ctx_promotion -->|PromotionDeliveryIntent / asynchronous / published-language / hypothesis / low| ctx_messaging_delivery
+    ctx_workspace_automation -->|NotificationIntent / asynchronous / published-language / hypothesis / low| ctx_messaging_delivery
 ```
 
 ## Ubiquitous Language

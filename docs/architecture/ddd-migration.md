@@ -66,7 +66,7 @@ Run `go test ./internal/domain/...`, `go test ./tests/architecture/...`, `go tes
 
 ## Identity full-chain closure plan (PR #28)
 
-**Scope:** `Domain → Application → Adapter → Infrastructure → Bootstrap → cmd → go.mod / go.sum / SDK Catalog / CI`.
+**Scope:** Domain、Application、Adapter、Infrastructure、Bootstrap、cmd、`go.mod`／`go.sum`、SDK Catalog 與 CI。此清單表示變更涵蓋面，不表示 compile-time import 或 runtime call 方向；兩種方向均以 [architecture blueprint](blueprint.md) 為準。
 
 ### End-to-end ownership and deletion decisions
 

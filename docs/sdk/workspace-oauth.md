@@ -56,7 +56,7 @@ calendarClient, err := api.NewCalendar(ctx, authorizedHTTP)
 - `internal/adapter/outbound/google/api/{calendar,tasks}` 以明確 `switch` 呼叫原生 Go SDK，保留資源／方法、必要參數、常見查詢參數及 JSON body；不使用任意 HTTP Endpoint 或反射。
 - `internal/application/usecases/workspace-automation` 強制唯讀／寫入／危險操作的明確授權；不允許公有 Webhook 呼叫管理功能。
 - `cmd/ops workspace` 僅限明確 `APP_ENV=local` 且無 `K_SERVICE` 的操作，從 owner-only `0600` 檔案載入**外部已核發的短期使用者 Access Token**，結果寫入新的 `0600` 私有檔案；這不是完整 OAuth Consent 或長期 Token 更新方案。
-- Draft PR #28 的 Identity Domain 已與 OAuth Use Case、Firestore 加密 Token Repository 與 TokenSource 接線，並收斂重複的 `OAuthConnection` DTO。一次性 State、PKCE、撤銷與 Token CAS 的離線檢查已納入 CI；**LINE 使用者瀏覽器再驗證、OAuth 路由掛載與真實 Google 授權／IAM 驗收仍未完成**，不得直接部署為公共綁定介面。
+- Identity Domain 已與 OAuth Use Case、Firestore 加密 Token Repository 與 TokenSource 完成離線接線，並收斂重複的 `OAuthConnection` DTO。一次性 State、PKCE、撤銷與 Token CAS 的離線檢查已納入 CI；**LINE 使用者瀏覽器再驗證、OAuth 路由掛載與真實 Google 授權／IAM／Staging 驗收仍未完成**，不得直接部署為公共綁定介面。
 - 不需要執行真實 API 才能驗證 Adapter 的 HTTP Route；先執行 `make check`，再以獨立授權測試帳號驗證。
 
 > **本次整合狀態**：Calendar／Tasks 52 項方法已完成離線接線；Drive／Sheets 仍僅具 Client Factory，因此模組共用 Catalog 的 `client_ready` 不能代表四個服務都未整合，也不能代表完整 OAuth 已完成。詳見 `docs/google/README.md`。
@@ -71,7 +71,7 @@ Forms v1 的 10 個官方方法沿用現有 Workspace Typed SDK 及操作確認�
 
 ## Identity 全鏈依賴／Go Module 對照（PR #28）
 
-`cmd/` 與 `bootstrap/` 只有組裝與啟動責任；`internal/application/usecases/identity` 驗證 Domain ID、連結狀態與 Scope，`workspace-automation` 擁有 Workspace 操作授權。Firestore Adapter 實作 Identity 所需 contract，Google OAuth Adapter 與 Infrastructure 提供使用者授權 TokenSource。
+`cmd/` 與 `internal/bootstrap/` 只有組裝與啟動責任；`internal/application/usecases/identity` 驗證 Domain ID、連結狀態與 Scope，`workspace-automation` 擁有 Workspace 操作授權。Firestore Adapter 實作 Identity 所需 contract，Google OAuth Adapter 與 Infrastructure 提供使用者授權 TokenSource。
 
 | Module（`go.mod`） | 負責的 Import Packages | 現況 |
 | --- | --- | --- |

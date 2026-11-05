@@ -1,6 +1,6 @@
 # Security Policy
 
-此儲存庫目前僅為目錄骨架，沒有已發布的 LINE Bot 或正式運行服務。
+此儲存庫目前是具 Webhook、CLI、SDK adapters 與可選 durable event pipeline 程式碼的開發用 MVP。Repository 已具可測試的 production baseline，但尚未完成具授權的 Staging／Production 部署、IAM、OAuth、TTL、排程或真實 LINE Channel 驗收，因此不是正式運行服務。
 
 ## 安全議題回報
 

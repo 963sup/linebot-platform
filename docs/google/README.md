@@ -21,7 +21,7 @@
 
 - Calendar v3：38/38；Tasks v1：14/14。合計 52/52 項 `integrated_offline`，以 `google.golang.org/api v0.310.0` 為準。
 - `freebusy.query` 雖使用 HTTP POST，但**不修改資料**，Operator 應以 `--read` 操作；其他寫入與 Watch 註冊需明確 `--apply --confirm`。
-- 這不等同完整個人 OAuth：目前僅提供本機操作者載入短期 Access Token 的封閉入口，未建立 Authorization Code／PKCE 回呼、Token Repository 或真實 Google 帳號驗收。
+- 這不等同完整個人 OAuth：本機 CLI 路徑目前僅提供操作者載入短期 Access Token 的封閉入口。另有 opt-in 的 Authorization Code／PKCE、Callback Handler 與 Token Repository 離線元件，但尚未掛載可信的 LINE 使用者登入流程，也未通過真實 Google 帳號、IAM 或 Staging 驗收。
 
 ## Forms v1（離線整合候選，非真實帳號驗證）
 

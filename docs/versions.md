@@ -5,7 +5,7 @@ Go module 已加入，`go.mod`／`go.sum` 由 Go 工具鏈與 CI 管理；此表
 實作時請先查閱各專案當下 README／release：
 - LINE Go SDK：`github.com/line/line-bot-sdk-go/v8/linebot`，其 README 要求 Go 1.26+。
 - OpenAI Go SDK：`github.com/openai/openai-go/v3`，其 README 要求 Go 1.26+，並特別列出 HTTP/2 安全修補的最低 patch。
-- Google Gen AI Go SDK（Gemini 等）：`google.golang.org/genai`；實作路徑 `internal/adapter/outbound/genai/` 與 `internal/infrastructure/google/genai/`。
+- Google Gen AI Go SDK（Gemini 等）：`google.golang.org/genai`；目前只有 `internal/infrastructure/google/genai/` client factory，Hexagonal outbound adapter 尚未實作。
 - Google Cloud：依服務採 `cloud.google.com/go/<service>`。
 - Google Workspace／Discovery：`google.golang.org/api`。
 - 程序內韌性選配：`go.linecorp.com/garr`。
@@ -31,8 +31,8 @@ Go module 已加入，`go.mod`／`go.sum` 由 Go 工具鏈與 CI 管理；此表
 | `cloud.google.com/go/storage` | v1.70.0 | Client Factory 已建，業務 Adapter 未接線 |
 | `cloud.google.com/go/cloudtasks` | v1.21.1 | 原生 Client Factory、背景任務 Queue Adapter、OIDC Worker 與 Reconcile 程式碼已實作；尚未正式部署 |
 | `cloud.google.com/go/secretmanager` | v1.23.1 | Client Factory 已建，尚未使用正式憑證 |
-| `google.golang.org/api` | v0.310.0 | Drive、Sheets Factory 保留；Calendar 38、Tasks 14 項操作於本次 Draft PR 加入 Adapter 與 CLI；完整使用者 OAuth Consent／Token Repository 尚未完成 |
-| `golang.org/x/oauth2` | v0.37.0 | 先前為間接依賴；本次將既有模組列為直接依賴，供共用 Workspace User TokenSource 使用，未新增 Go Module |
+| `google.golang.org/api` | v0.310.0 | Drive、Sheets Factory 保留；Calendar 38、Tasks 14 與 Forms 10 項操作已有離線 Adapter／CLI 契約；真實使用者 OAuth Consent 與 Staging 驗收仍為 `Not Verified` |
+| `golang.org/x/oauth2` | v0.37.0 | 直接依賴；供 Authorization Code + PKCE、Workspace User TokenSource 與離線 Token Repository 接線使用；可信 LINE principal、公開路由與真實 OAuth 驗收仍為 `Not Verified` |
 | `go.linecorp.com/garr` | v0.1.1 | Worker pool / retry / circuit breaker 選用、未啟用 |
 | `google.golang.org/grpc` | v1.84.0 | Firestore／Cloud Tasks 狀態碼與 gRPC 錯誤處理的直接依賴（原間接依賴升級分類，未新增下載） |
 
@@ -40,6 +40,6 @@ Google Tasks API 使用現有模組的 `google.golang.org/api/tasks/v1`，**沒�
 
 PR #8 實作的 Firestore／Cloud Tasks Adapter 直接使用 `google.golang.org/grpc/codes`／`status`，因此 `go mod tidy` 將既有 gRPC module 轉為直接依賴；`go.sum` 不新增未經驗證的 checksum。
 
-**原有 12 個直接依賴加上本次直接使用的 OAuth2，共 13 個直接依賴。** 核准依賴由 `go.mod`／`go.sum`、[SDK Catalog](sdk/catalog.toml) 與 build-tag dependency manifest 共同保留，不要求空白 SDK 目錄。`integrated` 表示程式碼已接線，不表示 IAM／OAuth／部署完成。詳見 [main 基礎設施狀態](architecture/infrastructure-status.md)。
+核准依賴及其總數以 `go.mod` 為準，並由 `go.sum`、[SDK Catalog](sdk/catalog.toml) 與 build-tag dependency manifest 共同保留，不要求空白 SDK 目錄。`integrated` 表示程式碼已接線，不表示 IAM／OAuth／部署完成。詳見 [main 基礎設施狀態](architecture/infrastructure-status.md)。
 
 Go 版本鎖定為 **1.27.3**。若 `go mod tidy` 因間接依賴調整版本，應以實際可重現建置結果重新審查本表。Google Cloud Client Libraries 的多 module 架構不等於只安裝一個 `google-cloud-go` root module。

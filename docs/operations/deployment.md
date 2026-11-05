@@ -1,6 +1,8 @@
 # Google Cloud Build / Cloud Run 部署
 
-此專案使用 Google Cloud Run。部署目標固定為下列既有資源：
+**Not Verified / 尚未部署驗證：** 本頁是預期的 production 部署契約與人工操作範本，不表示下列資源、IAM、Revision 或外部服務已存在、可用或通過 Staging／Production 驗收。執行任何會建立或更新付費資源的命令，仍須取得環境擁有者的明確授權並保留驗證證據。
+
+此專案預計使用 Google Cloud Run。經授權部署時，目標名稱固定如下：
 
 | 資源 | 值 |
 | --- | --- |
@@ -14,9 +16,9 @@
 
 ## 建置與部署身分
 
-Cloud Build 使用 `line-bot-build@bubbly-area-513305-s0.iam.gserviceaccount.com`。它具備限定於建置來源 bucket 的讀取權、`line-bot` Artifact Registry repository 的寫入權，以及 Cloud Build、Cloud Logging、Cloud Run 與 runtime service account 代管所需的最小權限。
+Cloud Build 預期使用 `line-bot-build@bubbly-area-513305-s0.iam.gserviceaccount.com`。部署前必須驗證它只具備限定於建置來源 bucket 的讀取權、`line-bot` Artifact Registry repository 的寫入權，以及 Cloud Build、Cloud Logging、Cloud Run 與 runtime service account 代管所需的最小權限。
 
-Cloud Run 使用 `line-bot-runtime@bubbly-area-513305-s0.iam.gserviceaccount.com`。它可讀寫指定 Firestore database、將事件寫入 Cloud Tasks，並以 `line-bot-scheduler@bubbly-area-513305-s0.iam.gserviceaccount.com` 建立 OIDC Task。Cloud Tasks service agent 可為此 invoker service account 建立 OIDC token；private worker 僅授予該 invoker `roles/run.invoker`。
+Cloud Run 預期使用 `line-bot-runtime@bubbly-area-513305-s0.iam.gserviceaccount.com`。部署前必須驗證它只能讀寫指定 Firestore database、將事件寫入 Cloud Tasks，並以 `line-bot-scheduler@bubbly-area-513305-s0.iam.gserviceaccount.com` 建立 OIDC Task。另須驗證 Cloud Tasks service agent 能為此 invoker service account 建立 OIDC token，且 private worker 只授予該 invoker `roles/run.invoker`。這些 IAM 敘述是目標狀態，不是目前環境已驗證的事實。
 
 ## Runtime 設定與 Secret 分離
 
@@ -31,13 +33,13 @@ Cloud Run 使用 `line-bot-runtime@bubbly-area-513305-s0.iam.gserviceaccount.com
 | Cloud Run platform | `PORT`、`K_SERVICE` | 由平台注入，不手動設定。 |
 | 操作人員 shell | `LINEBOT_STAGING_PROJECT` | 只有隔離 staging 的 `ops events` 使用；不注入任一服務。 |
 
-- `line-bot-public` 使用 `APP_ENV=production`、`LINE_EVENT_MODE=durable` 與 JSON logs；它只取得 `LINE_CHANNEL_SECRET` 的 Secret Manager reference，不取得 Access Token。
-- `line-bot-private` 使用相同 durable、Firestore、Cloud Tasks 與 OIDC 設定；它只取得 `LINE_CHANNEL_ACCESS_TOKEN` 的 Secret Manager reference，不取得 Channel Secret。
-- `line-bot-private` 的 Cloud Run concurrency 固定為 16，與應用程式的有界 request admission cap 一致。超過容量的 task 會收到 `503 Service Unavailable` 與 `Retry-After`，交由 Cloud Tasks 稍後重試，不在程序內建立無界 backlog。
+- 經授權部署的 `line-bot-public` 必須使用 `APP_ENV=production`、`LINE_EVENT_MODE=durable` 與 JSON logs；它只可取得 `LINE_CHANNEL_SECRET` 的 Secret Manager reference，不得取得 Access Token。
+- 經授權部署的 `line-bot-private` 必須使用相同 durable、Firestore、Cloud Tasks 與 OIDC 設定；它只可取得 `LINE_CHANNEL_ACCESS_TOKEN` 的 Secret Manager reference，不得取得 Channel Secret。
+- `line-bot-private` 的目標 Cloud Run concurrency 為 16，與應用程式的有界 request admission cap 一致。超過容量的 task 應收到 `503 Service Unavailable` 與 `Retry-After`，交由 Cloud Tasks 稍後重試，不在程序內建立無界 backlog；實際平台設定與行為仍須依 Staging capacity gate 驗證。
 - `K_SERVICE` 由 Cloud Run 自動注入，程式以此拒絕套用 local profile。
 - 既有服務的 `GOOGLE_CLOUD_PROJECT`、`FIRESTORE_DATABASE`、`OPENAI_MODEL`、`AUTO_TASKS`、`AUTO_CALENDAR`、`CALENDAR_SERVICE_ACCOUNT`、`WORKER_MODE` 及錯置 Secret 會在部署時移除。
 
-`line-bot-public` 以 Cloud Run 的 `--no-invoker-iam-check` 接受未驗證的 LINE webhook 請求；簽章由應用程式使用原始 request body 驗證。`line-bot-private` 維持 IAM 驗證，並驗證 Cloud Tasks OIDC audience 和 invoker service account。
+目標設定中，`line-bot-public` 以 Cloud Run 的 `--no-invoker-iam-check` 接受未驗證的 LINE webhook 請求；簽章由應用程式使用原始 request body 驗證。`line-bot-private` 必須維持 IAM 驗證，並驗證 Cloud Tasks OIDC audience 和 invoker service account。兩者的 live 行為均尚未由本儲存庫驗證。
 
 ## 固定映像來源
 
@@ -66,9 +68,9 @@ gcloud builds submit . \
 
 查詢每個 image 的 sha256 digest 後，才可進行部署。
 
-## 部署既有服務
+## 部署目標服務
 
-`cloudbuild.deploy.yaml` 可建立或更新兩個 Cloud Run service。它預設拒絕執行，並在部署前確認 project、Queue、Secrets 和兩個不可變映像均存在。
+`cloudbuild.deploy.yaml` 可建立或更新兩個 Cloud Run service，因此只能在明確授權的目標環境執行。它預設拒絕執行，並在部署前確認 project、Queue、Secrets 和兩個不可變映像均存在；這組 preflight 結果 does not imply production readiness，也不驗證 IAM、LINE、Firestore 或 Cloud Tasks 的 live 行為。
 
 ```bash
 gcloud builds submit . \
