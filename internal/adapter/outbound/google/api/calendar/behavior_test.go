@@ -12,7 +12,6 @@ import (
 	"testing"
 
 	"github.com/963sup/linebot-platform/internal/adapter/outbound/google/api/codec"
-	"github.com/963sup/linebot-platform/internal/application/usecases/workspace"
 	googlecalendar "google.golang.org/api/calendar/v3"
 	"google.golang.org/api/option"
 )
@@ -46,7 +45,7 @@ func TestCalendarEventsPreserveOptionsAndSanitizeErrors(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	req := workspace.Command{
+	req := testCommand(t, codec.Request{
 		Operation:  "events.insert",
 		Parameters: map[string]any{"calendarId": json.RawMessage(`"primary"`)},
 		Options: map[string]any{
@@ -54,25 +53,23 @@ func TestCalendarEventsPreserveOptionsAndSanitizeErrors(t *testing.T) {
 			"conferenceDataVersion": json.RawMessage(`1`),
 		},
 		Body: json.RawMessage(`{"summary":"event","start":{"date":"2026-11-05"},"end":{"date":"2026-11-06"}}`),
-	}
+	})
 	result, err := adapter.ExecuteCalendar(context.Background(), req)
 	if err != nil {
 		t.Fatal(err)
 	}
-	encoded, err := json.Marshal(result.Value)
-	if err != nil || !strings.Contains(string(encoded), `"event1"`) {
-		t.Fatalf("response lost: %v", result.Value)
+	if !json.Valid(result.Payload) || !strings.Contains(string(result.Payload), `"event1"`) {
+		t.Fatalf("response lost: %v", result.Payload)
 	}
 	if calls.Load() != 1 {
 		t.Fatalf("called provider %d times", calls.Load())
 	}
 	invalid := req
-	invalid.Options = map[string]any{"unknownOption": json.RawMessage(`true`)}
+	invalid = testCommand(t, codec.Request{Operation: "events.insert", Parameters: map[string]any{"calendarId": json.RawMessage(`"primary"`)}, Options: map[string]any{"unknownOption": json.RawMessage(`true`)}, Body: json.RawMessage(`{}`)})
 	if _, err := adapter.ExecuteCalendar(context.Background(), invalid); err == nil {
 		t.Fatal("unrecognized query option accepted")
 	}
-	invalid = req
-	invalid.Parameters = map[string]any{"calendarId": json.RawMessage(`false`)}
+	invalid = testCommand(t, codec.Request{Operation: "events.insert", Parameters: map[string]any{"calendarId": json.RawMessage(`false`)}, Body: json.RawMessage(`{}`)})
 	if _, err := adapter.ExecuteCalendar(context.Background(), invalid); err == nil {
 		t.Fatal("invalid calendar identifier accepted")
 	}
@@ -96,9 +93,9 @@ func TestCalendarProviderFailureDoesNotExposeResponseBody(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = adapter.ExecuteCalendar(context.Background(), workspace.Command{
+	_, err = adapter.ExecuteCalendar(context.Background(), testCommand(t, codec.Request{
 		Operation: "events.list", Parameters: map[string]any{"calendarId": json.RawMessage(`"primary"`)},
-	})
+	}))
 	var external *codec.RemoteError
 	if !errors.As(err, &external) || external.Status != 403 {
 		t.Fatalf("expected 403 classification, got %v", err)

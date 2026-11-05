@@ -18,7 +18,7 @@
 
 ## SDK-Aware Codex Foundation — 開發知識與驗證
 
-- [x] 建立直接依賴 Catalog，對齊本階段全部 12 個 `go.mod` 直接依賴（新增的直接分類為既有 gRPC 模組）。
+- [x] 建立直接依賴 Catalog，並由 `codexcheck` 持續對齊 `go.mod`；不在自由格式文件硬編碼模組總數。
 - [x] 建立通用 `sdk-integration` Skill 與查證參考，保留原五個開發 Agent，另新增 Code Cleanup & Release Validation（共六個）。
 - [x] 擴充 `cmd/codexcheck` 驗證 Catalog、架構邊界及測試，並由既有 CI 執行。
 - [x] 同步 README、Skills、架構、版本與開發文件。
@@ -47,7 +47,7 @@
 - [x] 發送前持久化單次 Claim，結果未知標示 unknown，不進行盲目重試；保留跨執行個體事件 Fingerprint 去重。
 - [ ] GCP Staging／Cloud Tasks OIDC／LINE Sandbox 的真實跨服務驗證。
 
-## 近期實作順序與四項不可退化條件（Identity Domain 遷移進行中）
+## 近期實作順序與不可退化條件
 
 1. **命名與架構 Gate（PR #28 已合併）**：所有 Bounded Context 的 Value Objects 目錄使用 `value-objects/`，Go package 為 `valueobjects`；架構測試禁止同義異名目錄。Identity 已建立八類具體元件並逐步接入 OAuth／Firestore；後續變更仍需按最新 commit 驗證。
 2. **DDD 不退化（Identity 本批完成，其他 Context 後續）**：Identity 的 Aggregate、Entity、VO、Policy、Specification、Factory、Repository Reader、Domain Events 已實作與測試；仍待移除 OAuth 技術 DTO 的重疊欄位並設計持久事件 Outbox。Conversation/Message 在確定真實不變量後才建立 Domain Model，不把 LINE SDK DTO 當成領域模型。
@@ -57,25 +57,35 @@
 
 **完成證據**：每個 PR 列出不變量、涉及 Port/Adapter、可重現測試命令、CI URL、未驗證的外部資源／身分與回滾步驟。不得單憑目錄存在或文件宣稱已完成功能。
 
-## Outbox 可靠性與營運驗收（堆疊 Draft PR，尚未合併）
+### Tactical model baseline
 
-- [ ] [PR #11](https://github.com/963sup/linebot-platform/pull/11)：經簽章 LINE redelivery、原始 Event Timestamp + 20 分鐘上限、只恢復從未發送的 Pending/Expired；公開 Webhook 憑證隔離。Go CI 已通過，但真實 LINE 驗收未完成。
-- [ ] [PR #12](https://github.com/963sup/linebot-platform/pull/12)：有序且公平的 bounded Reconcile、`next_dispatch_at` 與必要 Index、常設 Firestore Emulator Transaction／Race Tests。Go/Emulator CI 已通過；線上索引和 Backfill 未完成。
+- [x] `implemented_offline`：Audience、Experience Presentation、Promotion、Workspace Automation 與 Messaging Delivery 具備 provider-independent Aggregate、Value Object、Domain Event、Repository contract 與行為測試。
+- [x] `implemented_offline`：Membership、Contact Directory、Insights Reporting 與 Content Intelligence 明確建模為 Application-owned read/process model，未虛構 Aggregate。
+- [x] `implemented_offline`：架構測試禁止 Domain Context 互相匯入，Application 禁止 provider SDK type，並要求已建立的 Domain Context 同時存在行為與測試。
+- [ ] `business_validated`：上述 Context（Identity 除外）仍是 `candidate/hypothesis`；需經業務訪談確認語言、owner、邊界與 Core／Supporting 分類後才能提升狀態。
+- [ ] `production_integrated`：候選 Context 的 provider adapter、persistence adapter、composition wiring 與資料遷移尚未全部完成，不以 tactical code 宣稱可部署。
+
+## Outbox 可靠性與營運驗收
+
+- [x] `implemented_offline`：經簽章 LINE redelivery、原始 Event Timestamp、只恢復從未發送的工作、bounded Reconcile 與必要離線契約測試已存在於 `main`。
+- [ ] `staging_verified`：線上索引、TTL、Backfill、Cloud Tasks OIDC、Scheduler 與故障恢復仍需經授權環境驗證。
 - [ ] 只讀 Outbox 運維 CLI、Staging 驗收契約及告警策略：由下一個單獨 Draft PR 規劃；任何 Cloud Run Job、Monitoring、Scheduler 與 LINE 真實帳號驗收仍待明確核准。
 - [ ] Production readiness：完成 `docs/operations/staging-acceptance.md` 每一項 Gate 的真實證據，並取得 deployment/rollout 授權。
 
-## 設定契約整合（本次獨立 Draft PR，尚未合併）
+## 設定契約整合
 
-- [ ] Webhook / Worker 共用 `internal/bootstrap/loadRuntimeConfig`，以 Role 與 APP_ENV 決定合法設定；local 開發預設不需憑證，staging/production 必須 durable，Cloud Run `K_SERVICE` 拒絕降級 local。
-- [ ] 以獨立 `SecretConfig` 持有 LINE 簽章 Secret 與發送 Token；公開 Webhook 不持有發送 Token、私有 Worker 不持有簽章 Secret；普通設定不得包含 Token 值。
-- [ ] `config_contract.go` 是設定鍵名稱、角色、Secret 分類與預設值的唯一來源；`cmd/configcheck --check` 驗證 Go 產生文件與 `.env.example` 一致，`make check` 與 CI 強制執行。
-- [ ] `make dev` 提供不載入 `.env` 的安全本機啟動；`--validate` 可離線進行啟動前檢查。
-- [ ] Logger LOG_LEVEL/LOG_FORMAT 安全設計；固定路由的 HTTP status/duration，不輸出敏感資料。
+- [x] `implemented_offline`：Webhook／Worker 共用 `loadRuntimeConfig`，以 Role、APP_ENV 與 `K_SERVICE` 驗證合法 profile。
+- [x] `implemented_offline`：獨立 `SecretConfig` 分離簽章 Secret 與發送 Token，普通設定不持有 Token 值。
+- [x] `implemented_offline`：`config_contract.go` 是設定鍵唯一來源，`configcheck`、`.env.example` 與生成文件由 CI 驗證。
+- [x] `implemented_offline`：`make dev` 不載入 `.env`，`--validate` 可無副作用執行啟動前檢查。
+- [x] `implemented_offline`：LOG_LEVEL／LOG_FORMAT、固定路由 telemetry 與敏感資料排除已有離線測試。
 - [ ] Production Gate 仍未完成：Secret Manager references、IAM、OIDC、Firestore TTL、Scheduler、LINE redelivery、正式 logs/alerts 需要經授權 Staging 測試，不能因 CI 通過宣稱 Production-ready。
 
 ## P3 — 全公開 API、AI 與雲端
 
-- [x] 依固定官方 OpenAPI revision 建立 102 項 LINE endpoint inventory（Messaging、Insights、Audience、Channel Access Token）；main 原先已有 69 項離線接線。\n- [ ] [Draft PR #24](https://github.com/963sup/linebot-platform/pull/24)：補齊 33 項 Operator-only SDK Port → Use Case → Adapter → CLI 與 offline contract tests；在 CI 通過與合併前，不視為正式完成。
+- [x] `governed_offline`：依固定官方 OpenAPI revision 建立 102 項 LINE endpoint inventory；每一項都有唯一 capability/accounting 記錄，治理器驗證數量、唯一性、狀態與 ownership 目錄。
+- [ ] `operation_verified`：目前 Gate 不證明每個 operation 都有專屬 symbol 與 contract test；逐項接線證據需另以可解析 symbol/test manifest 補齊，不能由 YAML 自我宣告推論。
+- [ ] `staging_verified`：逐項核對真實 Channel 權限、地區資格、速率限制與帳號能力；離線 accounting 不代表外部授權成功。
 - [ ] 全訊息型別、全 Webhook 業務事件等後續能力目前暫緩；本輪僅以固定 102 項 API 為目標。
-- [ ] OpenAI / Gemini 可替換 adapter；Google Cloud／Workspace。
+- [ ] OpenAI／Gemini 業務能力與 Workspace automation 的 Domain 語言；既有 client factory 或 provider operation 不等同業務 Context。
 - [ ] 批准後部署 staging，驗證後再考慮 production。

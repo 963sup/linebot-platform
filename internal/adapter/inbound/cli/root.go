@@ -10,7 +10,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/963sup/linebot-platform/internal/application/ports/outbound"
+	messagingdelivery "github.com/963sup/linebot-platform/internal/application/usecases/messaging-delivery"
 )
 
 const channelTokenEnv = "LINE_CHANNEL_ACCESS_TOKEN"
@@ -101,16 +101,16 @@ func run(args []string, getenv func(string) string) error {
 	if *to == "" {
 		return errors.New("--to is required")
 	}
-	var message outbound.Message
+	var message messagingdelivery.Message
 	if *title != "" || *body != "" {
 		if *text != "" {
 			return errors.New("choose either --text or --flex-*")
 		}
-		message = outbound.Message{Kind: outbound.KindFlex, Flex: outbound.FlexCard{
+		message = messagingdelivery.Message{Kind: messagingdelivery.KindFlex, Flex: messagingdelivery.FlexCard{
 			AltText: *alt, Title: *title, Body: *body,
 		}}
 	} else {
-		message = outbound.Message{Kind: outbound.KindText, Text: *text}
+		message = messagingdelivery.Message{Kind: messagingdelivery.KindText, Text: *text}
 	}
 	if err := message.Validate(); err != nil {
 		return err
@@ -138,7 +138,7 @@ func run(args []string, getenv func(string) string) error {
 	defer runtime.Close()
 	// Printed before sending so an uncertain result can be retried with the same key.
 	fmt.Fprintln(os.Stderr, "LINE push retry key:", *key)
-	return runtime.Push(context.Background(), *to, []outbound.Message{message}, *key)
+	return runtime.Push(context.Background(), *to, []messagingdelivery.Message{message}, *key)
 }
 
 // Run dispatches operator commands without leaking CLI logic into cmd/ops.

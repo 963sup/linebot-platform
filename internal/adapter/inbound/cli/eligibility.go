@@ -4,24 +4,23 @@ import (
 	"context"
 	"errors"
 	"flag"
-	"fmt"
 	"io"
 	"time"
 
-	"github.com/963sup/linebot-platform/internal/application/ports/outbound"
-	"github.com/963sup/linebot-platform/internal/application/usecases/engagement"
+	insightsreporting "github.com/963sup/linebot-platform/internal/application/usecases/insights-reporting"
+	messagingdelivery "github.com/963sup/linebot-platform/internal/application/usecases/messaging-delivery"
+	"github.com/963sup/linebot-platform/internal/application/usecases/promotion"
 )
 
-// Eligibility-gated APIs must never be accessible from the public webhook.
 func runEligibility(args []string, getenv func(string) string, output io.Writer) error {
 	flags := flag.NewFlagSet("eligibility", flag.ContinueOnError)
 	action := flags.String("action", "", "push-phone|push-template-phone|pnp-stats|pnp-template-stats|create-coupon|close-coupon")
 	id := flags.String("id", "", "YYYYMMDD for statistics, coupon ID for close")
-	request := flags.String("request", "", "JSON payload file; never pass phone numbers as CLI flags")
+	request := flags.String("request", "", "JSON payload file")
 	apply := flags.Bool("apply", false, "authorize remote mutation")
 	read := flags.Bool("read", false, "authorize query")
-	confirm := flags.String("confirm", "", "must equal the remote write action")
-	reviewed := flags.Bool("eligibility-reviewed", false, "acknowledge channel/region entitlement review")
+	confirm := flags.String("confirm", "", "must equal action")
+	reviewed := flags.Bool("eligibility-reviewed", false, "acknowledge entitlement review")
 	if err := flags.Parse(args); err != nil {
 		return err
 	}
@@ -35,37 +34,55 @@ func runEligibility(args []string, getenv func(string) string, output io.Writer)
 	if !isRead && (!*apply || *read || *confirm != *action) {
 		return errors.New("mutations require --apply --confirm ACTION")
 	}
-	cmd := engagement.EligibilityCommand{Action: *action, ID: *id}
+	var document any
 	if *request != "" {
-		payload, err := readPrivateBounded(*request, 256<<10)
+		data, err := readPrivateBounded(*request, 256<<10)
 		if err != nil {
 			return err
 		}
-		value, err := decodeLINEJSON(payload)
+		document, err = decodeLINEJSON(data)
 		if err != nil {
 			return errors.New("request must be valid JSON")
 		}
-		cmd.Payload = outbound.LINERequest{Value: value}
-	}
-	if err := engagement.ValidateEligibilityCommand(cmd); err != nil {
-		return err
 	}
 	if eligibilityRuntimeFactory == nil {
 		return errors.New("eligibility runtime is not configured")
 	}
-	r, err := eligibilityRuntimeFactory(getenv(channelTokenEnv))
+	runtime, err := eligibilityRuntimeFactory(getenv(channelTokenEnv))
 	if err != nil {
 		return err
 	}
-	defer r.Close()
+	defer runtime.Close()
 	ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
 	defer cancel()
-	data, err := r.Execute(ctx, cmd)
+	var result any
+	switch *action {
+	case "push-phone":
+		err = runtime.PushMessagesByPhone(ctx, messagingdelivery.PhoneDeliveryRequest{Payload: document})
+	case "push-template-phone":
+		err = runtime.PushTemplatedMessagesByPhone(ctx, messagingdelivery.PhoneDeliveryRequest{Payload: document})
+	case "pnp-stats", "pnp-template-stats":
+		day, parseErr := time.Parse("20060102", *id)
+		if parseErr != nil {
+			return errors.New("statistics ID must be YYYYMMDD")
+		}
+		if *action == "pnp-stats" {
+			result, err = runtime.PNPMessageStatistics(ctx, insightsreporting.DailyQuery{Day: day})
+		} else {
+			result, err = runtime.PNPTemplatedMessageStatistics(ctx, insightsreporting.DailyQuery{Day: day})
+		}
+	case "create-coupon":
+		result, err = runtime.CreateCouponDocument(ctx, promotion.ProviderCouponDocument{Value: document})
+	case "close-coupon":
+		err = runtime.CloseCoupon(ctx, promotion.CouponID(*id))
+	default:
+		return errors.New("unsupported eligibility action")
+	}
 	if err != nil {
 		return err
 	}
-	if len(data) > 0 {
-		_, err = fmt.Fprintln(output, string(data))
+	if result != nil {
+		return writeJSON(output, result)
 	}
-	return err
+	return nil
 }

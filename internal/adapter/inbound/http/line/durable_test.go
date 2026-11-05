@@ -10,35 +10,34 @@ import (
 	"testing"
 	"time"
 
-	"github.com/963sup/linebot-platform/internal/application/ports/outbound"
-	"github.com/963sup/linebot-platform/internal/application/usecases/ingestion"
+	messagingdelivery "github.com/963sup/linebot-platform/internal/application/usecases/messaging-delivery"
 )
 
 type persisted struct {
-	seen map[string]outbound.EventJob
+	seen map[string]messagingdelivery.EventJob
 }
 
-func (f *persisted) Record(_ context.Context, job outbound.EventJob) (bool, error) {
+func (f *persisted) Record(_ context.Context, job messagingdelivery.EventJob) (bool, error) {
 	if _, ok := f.seen[job.Key]; ok {
 		return false, nil
 	}
 	f.seen[job.Key] = job
 	return true, nil
 }
-func (f *persisted) Claim(context.Context, string, string, time.Time) (outbound.EventJob, bool, error) {
-	return outbound.EventJob{}, false, nil
+func (f *persisted) Claim(context.Context, string, string, time.Time) (messagingdelivery.EventJob, bool, error) {
+	return messagingdelivery.EventJob{}, false, nil
 }
-func (f *persisted) Complete(context.Context, string, string, outbound.DeliveryState) error {
+func (f *persisted) Complete(context.Context, string, string, messagingdelivery.DeliveryState) error {
 	return nil
 }
 func (f *persisted) Recover(context.Context, time.Time, int) ([]string, error) { return nil, nil }
 
 type workQueue struct {
-	keys []ingestion.EventKey
+	keys []messagingdelivery.EventKey
 	fail bool
 }
 
-func (q *workQueue) Enqueue(_ context.Context, key ingestion.EventKey) error {
+func (q *workQueue) Enqueue(_ context.Context, key messagingdelivery.EventKey) error {
 	if q.fail {
 		return errors.New("network failure")
 	}
@@ -49,9 +48,9 @@ func (q *workQueue) Enqueue(_ context.Context, key ingestion.EventKey) error {
 func TestDurableWebhookSignatureDestinationDedupAndEnqueueFailure(t *testing.T) {
 	secret := "test-secret"
 	destination := "Uxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-	store := &persisted{seen: map[string]outbound.EventJob{}}
+	store := &persisted{seen: map[string]messagingdelivery.EventJob{}}
 	queue := &workQueue{}
-	ingestor, _ := ingestion.NewIngestor(store, queue)
+	ingestor, _ := messagingdelivery.NewIngestor(store, queue)
 	h := NewDurableHandler(secret, destination, ingestor, nil)
 	body := fmt.Sprintf(`{"destination":"Uxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx","events":[{"type":"message","mode":"active","timestamp":%d,"webhookEventId":"01H00ABCDEF0123456789ABCDE","deliveryContext":{"isRedelivery":false},"source":{"type":"user","userId":"Uxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"},"replyToken":"reply-token","message":{"id":"1234567890123","type":"text","text":"hello"}}]}`, time.Now().UnixMilli())
 	for n := 0; n < 2; n++ {
@@ -79,5 +78,29 @@ func TestDurableWebhookSignatureDestinationDedupAndEnqueueFailure(t *testing.T) 
 	h.ServeHTTP(bad, httptest.NewRequest(http.MethodPost, "/webhook/line", strings.NewReader(body)))
 	if bad.Code != http.StatusUnauthorized {
 		t.Fatalf("invalid signature status: %d", bad.Code)
+	}
+}
+
+func TestDurableWebhookIgnoresStandbyAndRejectsMissingDeliveryContext(t *testing.T) {
+	secret := "test-secret"
+	destination := "Uxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+	store := &persisted{seen: map[string]messagingdelivery.EventJob{}}
+	queue := &workQueue{}
+	ingestor, _ := messagingdelivery.NewIngestor(store, queue)
+	handler := NewDurableHandler(secret, destination, ingestor, nil)
+	base := fmt.Sprintf(`{"destination":"%s","events":[{"type":"message","mode":"%%s","timestamp":%d,"webhookEventId":"01H00ABCDEF0123456789ABCDE",%%s"source":{"type":"user","userId":"%s"},"replyToken":"reply-token","message":{"id":"1234567890123","type":"text","text":"hello"}}]}`, destination, time.Now().UnixMilli(), destination)
+
+	standby := fmt.Sprintf(base, "standby", `"deliveryContext":{"isRedelivery":false},`)
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, signedRequest(secret, standby))
+	if w.Code != http.StatusOK || len(queue.keys) != 0 {
+		t.Fatalf("standby event status=%d queued=%d", w.Code, len(queue.keys))
+	}
+
+	missing := fmt.Sprintf(base, "active", "")
+	w = httptest.NewRecorder()
+	handler.ServeHTTP(w, signedRequest(secret, missing))
+	if w.Code != http.StatusBadRequest || len(queue.keys) != 0 {
+		t.Fatalf("missing delivery context status=%d queued=%d", w.Code, len(queue.keys))
 	}
 }

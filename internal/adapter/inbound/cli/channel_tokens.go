@@ -11,8 +11,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/963sup/linebot-platform/internal/application/ports/outbound"
-	"github.com/963sup/linebot-platform/internal/application/usecases/channel"
+	credentiallifecycle "github.com/963sup/linebot-platform/internal/application/usecases/credential-lifecycle"
 )
 
 // tokenRequest is the private-file wire format. Secret-bearing JSON metadata
@@ -26,29 +25,39 @@ type tokenRequest struct {
 	AccessToken         string `json:"accessToken,omitempty"`
 }
 
-func tokenRequestFromPrivateFile(path string) (channel.TokenCommand, error) {
+type tokenCommand struct {
+	Action              string
+	GrantType           string
+	ClientID            string
+	ClientSecret        string
+	ClientAssertionType string
+	ClientAssertion     string
+	AccessToken         string
+}
+
+func tokenRequestFromPrivateFile(path string) (tokenCommand, error) {
 	if path == "" {
-		return channel.TokenCommand{}, errors.New("private token request file is required")
+		return tokenCommand{}, errors.New("private token request file is required")
 	}
 	info, err := os.Lstat(filepath.Clean(path))
 	if err != nil || !info.Mode().IsRegular() || info.Mode().Perm()&0o077 != 0 {
-		return channel.TokenCommand{}, errors.New("token request must be a regular file readable only by its owner")
+		return tokenCommand{}, errors.New("token request must be a regular file readable only by its owner")
 	}
 	data, err := readPrivateBounded(path, 256<<10)
 	if err != nil {
-		return channel.TokenCommand{}, err
+		return tokenCommand{}, err
 	}
 	var request tokenRequest
 	dec := json.NewDecoder(bytes.NewReader(data))
 	dec.DisallowUnknownFields()
 	if err := dec.Decode(&request); err != nil {
-		return channel.TokenCommand{}, errors.New("invalid private token request JSON")
+		return tokenCommand{}, errors.New("invalid private token request JSON")
 	}
 	var additional any
 	if err := dec.Decode(&additional); err != io.EOF {
-		return channel.TokenCommand{}, errors.New("extra token request content")
+		return tokenCommand{}, errors.New("extra token request content")
 	}
-	return channel.TokenCommand{
+	return tokenCommand{
 		GrantType:           request.GrantType,
 		ClientID:            request.ClientID,
 		ClientSecret:        request.ClientSecret,
@@ -56,6 +65,34 @@ func tokenRequestFromPrivateFile(path string) (channel.TokenCommand, error) {
 		ClientAssertion:     request.ClientAssertion,
 		AccessToken:         request.AccessToken,
 	}, nil
+}
+
+func validateTokenCommand(command tokenCommand) error {
+	switch command.Action {
+	case "issue-stateless":
+		if command.GrantType == "" || ((command.ClientID == "" || command.ClientSecret == "") && (command.ClientAssertionType == "" || command.ClientAssertion == "")) {
+			return errors.New("issue-stateless requires a grant and one credential form")
+		}
+	case "key-ids", "issue-jwt":
+		if command.ClientAssertionType == "" || command.ClientAssertion == "" || (command.Action == "issue-jwt" && command.GrantType == "") {
+			return errors.New("JWT operation requires assertion credentials")
+		}
+	case "verify-jwt", "verify-short", "revoke-short":
+		if command.AccessToken == "" {
+			return errors.New("access token is required")
+		}
+	case "revoke-jwt":
+		if command.ClientID == "" || command.ClientSecret == "" || command.AccessToken == "" {
+			return errors.New("revoke-jwt requires client credentials and token")
+		}
+	case "issue-short":
+		if command.GrantType == "" || command.ClientID == "" || command.ClientSecret == "" {
+			return errors.New("issue-short requires client credentials")
+		}
+	default:
+		return errors.New("unsupported token action")
+	}
+	return nil
 }
 
 // runChannelTokens is available ONLY in the local ops CLI. It never accepts
@@ -95,21 +132,45 @@ func runChannelTokens(args []string) error {
 		return err
 	}
 	cmd.Action = *action
-	if err := channel.ValidateTokenCommand(cmd); err != nil {
+	if err := validateTokenCommand(cmd); err != nil {
 		return err
 	}
-	invoke := func() (outbound.LINEResult, error) {
+	invoke := func() (any, error) {
 		if tokenRuntimeFactory == nil {
-			return outbound.LINEResult{}, errors.New("token runtime is not configured")
+			return nil, errors.New("token runtime is not configured")
 		}
 		rt, err := tokenRuntimeFactory()
 		if err != nil {
-			return outbound.LINEResult{}, err
+			return nil, err
 		}
 		defer rt.Close()
 		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
 		defer cancel()
-		return rt.Execute(ctx, cmd)
+		client := credentiallifecycle.ClientCredential{ClientID: cmd.ClientID, ClientSecret: cmd.ClientSecret}
+		assertion := credentiallifecycle.AssertionCredential{Type: cmd.ClientAssertionType, Assertion: cmd.ClientAssertion}
+		switch cmd.Action {
+		case "issue-stateless":
+			if cmd.ClientID != "" {
+				return rt.IssueStatelessWithClient(ctx, cmd.GrantType, client)
+			}
+			return rt.IssueStatelessWithAssertion(ctx, cmd.GrantType, assertion)
+		case "key-ids":
+			return rt.ValidKeyIDs(ctx, assertion)
+		case "issue-jwt":
+			return rt.IssueJWT(ctx, cmd.GrantType, assertion)
+		case "verify-jwt":
+			return rt.VerifyJWT(ctx, cmd.AccessToken)
+		case "revoke-jwt":
+			return nil, rt.RevokeJWT(ctx, client, cmd.AccessToken)
+		case "issue-short":
+			return rt.IssueShortLived(ctx, cmd.GrantType, client)
+		case "verify-short":
+			return rt.VerifyShortLived(ctx, cmd.AccessToken)
+		case "revoke-short":
+			return nil, rt.RevokeShortLived(ctx, cmd.AccessToken)
+		default:
+			return nil, errors.New("unsupported token action")
+		}
 	}
 	if isRevoke {
 		_, err := invoke()
@@ -120,10 +181,33 @@ func runChannelTokens(args []string) error {
 		if err != nil {
 			return nil, err
 		}
-		payload, err := json.Marshal(result.Value)
+		payload, err := marshalCredentialResult(result)
 		if err != nil || string(payload) == "null" {
 			return nil, errors.New("invalid LINE token result")
 		}
 		return payload, nil
 	})
+}
+
+func marshalCredentialResult(result any) ([]byte, error) {
+	switch value := result.(type) {
+	case credentiallifecycle.IssuedCredential:
+		return json.Marshal(struct {
+			AccessToken string    `json:"access_token"`
+			TokenType   string    `json:"token_type,omitempty"`
+			ExpiresAt   time.Time `json:"expires_at,omitempty"`
+		}{value.AccessToken, value.TokenType, value.ExpiresAt})
+	case credentiallifecycle.Verification:
+		return json.Marshal(struct {
+			Active    bool      `json:"active"`
+			ClientID  string    `json:"client_id,omitempty"`
+			ExpiresAt time.Time `json:"expires_at,omitempty"`
+		}{value.Active, value.ClientID, value.ExpiresAt})
+	case []string:
+		return json.Marshal(struct {
+			Kids []string `json:"kids"`
+		}{value})
+	default:
+		return nil, errors.New("invalid LINE token result")
+	}
 }

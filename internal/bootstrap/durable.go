@@ -9,7 +9,7 @@ import (
 	linein "github.com/963sup/linebot-platform/internal/adapter/inbound/http/line"
 	queueout "github.com/963sup/linebot-platform/internal/adapter/outbound/google/cloud/cloudtasks"
 	storeout "github.com/963sup/linebot-platform/internal/adapter/outbound/google/cloud/firestore"
-	"github.com/963sup/linebot-platform/internal/application/usecases/ingestion"
+	ingestion "github.com/963sup/linebot-platform/internal/application/usecases/messaging-delivery"
 	queueinfra "github.com/963sup/linebot-platform/internal/infrastructure/google/cloud/cloudtasks"
 	storeinfra "github.com/963sup/linebot-platform/internal/infrastructure/google/cloud/firestore"
 )

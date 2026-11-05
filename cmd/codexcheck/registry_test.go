@@ -8,13 +8,22 @@ import (
 )
 
 func TestAgentRegistryBoundaries(t *testing.T) {
-	for _, n := range []int64{0, 1, 3, 4, 5} {
+	for _, n := range []int64{-1, 0, 1, 4, 8, 9, 10} {
 		_, err := parseAgentRegistry(map[string]any{
 			"enabled": true, "max_concurrent_threads_per_session": n, "max_depth": int64(1),
 			"example": map[string]any{"description": "test", "config_file": "agents/example.toml"},
 		})
-		if (err == nil) != (n >= 1 && n <= 4) {
+		if (err == nil) != (n >= 1 && n <= 9) {
 			t.Errorf("threads %d: %v", n, err)
+		}
+	}
+	for _, depth := range []int64{0, 1, 2} {
+		_, err := parseAgentRegistry(map[string]any{
+			"enabled": true, "max_concurrent_threads_per_session": int64(9), "max_depth": depth,
+			"example": map[string]any{"description": "test", "config_file": "agents/example.toml"},
+		})
+		if (err == nil) != (depth == 1) {
+			t.Errorf("depth %d: %v", depth, err)
 		}
 	}
 	for _, bad := range []map[string]any{
@@ -23,7 +32,7 @@ func TestAgentRegistryBoundaries(t *testing.T) {
 		{"description": "test", "config_file": "agents/example.toml", "unknown": true},
 		{"description": "", "config_file": "agents/example.toml"},
 	} {
-		_, err := parseAgentRegistry(map[string]any{"enabled": true, "max_concurrent_threads_per_session": int64(4), "max_depth": int64(1), "example": bad})
+		_, err := parseAgentRegistry(map[string]any{"enabled": true, "max_concurrent_threads_per_session": int64(9), "max_depth": int64(1), "example": bad})
 		if err == nil {
 			t.Errorf("accepted invalid role: %v", bad)
 		}
@@ -116,7 +125,7 @@ func TestRejectConfigDrift(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, tc := range []struct{ name, from, to string }{
-		{"threads", "max_concurrent_threads_per_session = 4", "max_concurrent_threads_per_session = 5"},
+		{"threads", "max_concurrent_threads_per_session = 9", "max_concurrent_threads_per_session = 10"},
 		{"knowledge-secret", `env_http_headers = { "X-Goog-Api-Key" = "DEVELOPERKNOWLEDGE_API_KEY" }`, `http_headers = { "X-Goog-Api-Key" = "do-not-store-keys" }`},
 		{"unknown", "project_doc_max_bytes = 65536", "project_doc_max_bytes = 65536\nunknown_key = true"},
 	} {

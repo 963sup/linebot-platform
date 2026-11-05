@@ -8,7 +8,7 @@ import (
 	"io"
 	"time"
 
-	"github.com/963sup/linebot-platform/internal/application/usecases/channel"
+	providerconfiguration "github.com/963sup/linebot-platform/internal/application/usecases/provider-configuration"
 )
 
 // Mutating webhook configuration is only permitted through a manually
@@ -28,7 +28,7 @@ func runWebhookAdmin(args []string, getenv func(string) string, output io.Writer
 	if getenv == nil || output == nil {
 		return errors.New("CLI configuration required")
 	}
-	if err := channel.ValidateWebhookURL(*endpoint); err != nil {
+	if err := providerconfiguration.ValidateWebhookEndpoint(*endpoint); err != nil {
 		return err
 	}
 	if webhookRuntimeFactory == nil {
@@ -42,9 +42,9 @@ func runWebhookAdmin(args []string, getenv func(string) string, output io.Writer
 	ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
 	defer cancel()
 	if *action == "set" {
-		return rt.Set(ctx, *endpoint)
+		return rt.ConfigureWebhook(ctx, *endpoint)
 	}
-	result, err := rt.Test(ctx, *endpoint)
+	result, err := rt.TestWebhook(ctx, *endpoint)
 	if err != nil {
 		return err
 	}

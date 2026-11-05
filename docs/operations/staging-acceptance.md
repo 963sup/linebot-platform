@@ -16,7 +16,7 @@
 
 | Gate | 測試與失敗注入 | 成功證據（附 staging 資源與時間） |
 |---|---|---|
-| A IAM | 匿名呼叫 `/tasks/line-reply`、`/tasks/dispatch`；無授權 OIDC audience／email；合法 OIDC | 前三種拒絕，合法身分才通過，Cloud Run IAM 狀態與審核紀錄 |
+| A IAM | 匿名呼叫 `/tasks/v2/line-reply`、`/tasks/v2/dispatch`；無授權 OIDC audience／email；合法 OIDC | 前三種拒絕，合法身分才通過，Cloud Run IAM 狀態與審核紀錄 |
 | B 憑證隔離 | 檢查兩服務實際 Revision runtime env/Secret references（安全遮蔽）；以錯誤 `LINE_CHANNEL_ACCESS_TOKEN` 注入 Public dry-deploy | Webhook **無**發送 Token；錯誤配置 fail closed；Private Worker 能使用 Staging Token |
 | C Firestore | 對 12+ Workers 競爭同 EventKey；插入斷線及交錯 Transaction | 一個 Inbox、一個 Outbox、最多一個 Sending Claim；拒絕重開 Sent／Unknown |
 | D Redelivery | 同一 webhookEventId 的簽章合法重送（LINE 測試 Channel）；首次模擬入庫後 CreateTask 失敗 | Pending 可恢復且不覆寫原本的 Message；Sending/Sent/Unknown 不會第二次 LINE Reply |

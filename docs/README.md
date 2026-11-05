@@ -1,6 +1,7 @@
 # 文件索引
 
 - [架構概覽](architecture/overview.md)
+- [Strategic Domain Model 與 Context Map](domain/README.md)
 - [SDK 整合與 Codex 開發流程](architecture/sdk-integration.md)
 - [SDK Catalog（直接依賴與接線狀態）](sdk/catalog.toml)
 - [main 基礎設施狀態／依賴與歷史殘留稽核](architecture/infrastructure-status.md)

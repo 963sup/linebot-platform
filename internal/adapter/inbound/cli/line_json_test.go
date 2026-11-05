@@ -17,4 +17,8 @@ func TestDecodeLINEJSONPreservesLargeInteger(t *testing.T) {
 	if string(encoded) != `{"audienceGroupId":9007199254740993}` {
 		t.Fatalf("large integer lost precision: %s", encoded)
 	}
+	object := value.(map[string]any)
+	if got := audienceNumber(object, "audienceGroupId"); got != 9007199254740993 {
+		t.Fatalf("audienceNumber() = %d", got)
+	}
 }

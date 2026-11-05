@@ -34,6 +34,15 @@ capabilities = ["codex-config-validation", "toml-parse"]
 reference = "https://github.com/BurntSushi/toml"
 
 [[modules]]
+module = "go.yaml.in/yaml/v3"
+provider = "yaml"
+kind = "tooling"
+status = "integrated"
+imports = ["go.yaml.in/yaml/v3"]
+capabilities = ["strict-yaml-manifest-validation", "domain-model-governance"]
+reference = "https://pkg.go.dev/go.yaml.in/yaml/v3"
+
+[[modules]]
 module = "cloud.google.com/go/firestore"
 provider = "google-cloud"
 kind = "service"

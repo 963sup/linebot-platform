@@ -7,7 +7,7 @@ import (
 )
 
 func TestCloudBuildConfigurationTargetsLineBotProduction(t *testing.T) {
-	for _, file := range []string{"cloudbuild.yaml", "cloudbuild.worker.yaml", "cloudbuild.deploy.yaml"} {
+	for _, file := range []string{"cloudbuild.yaml", "cloudbuild.deploy.yaml"} {
 		contents, err := os.ReadFile("../../" + file)
 		if err != nil {
 			t.Fatal(err)

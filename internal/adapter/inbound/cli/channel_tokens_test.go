@@ -2,24 +2,47 @@ package cli
 
 import (
 	"context"
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"reflect"
 	"testing"
 
-	"github.com/963sup/linebot-platform/internal/application/ports/outbound"
-	"github.com/963sup/linebot-platform/internal/application/usecases/channel"
+	credentiallifecycle "github.com/963sup/linebot-platform/internal/application/usecases/credential-lifecycle"
 )
 
 type fakeTokenRuntime struct {
-	command channel.TokenCommand
-	result  outbound.LINEResult
+	client credentiallifecycle.ClientCredential
+	grant  string
+	result credentiallifecycle.IssuedCredential
 }
 
-func (f *fakeTokenRuntime) Execute(_ context.Context, command channel.TokenCommand) (outbound.LINEResult, error) {
-	f.command = command
+func (f *fakeTokenRuntime) IssueShortLived(_ context.Context, grant string, client credentiallifecycle.ClientCredential) (credentiallifecycle.IssuedCredential, error) {
+	f.grant, f.client = grant, client
 	return f.result, nil
 }
+func (*fakeTokenRuntime) IssueStatelessWithClient(context.Context, string, credentiallifecycle.ClientCredential) (credentiallifecycle.IssuedCredential, error) {
+	return credentiallifecycle.IssuedCredential{}, nil
+}
+func (*fakeTokenRuntime) IssueStatelessWithAssertion(context.Context, string, credentiallifecycle.AssertionCredential) (credentiallifecycle.IssuedCredential, error) {
+	return credentiallifecycle.IssuedCredential{}, nil
+}
+func (*fakeTokenRuntime) ValidKeyIDs(context.Context, credentiallifecycle.AssertionCredential) ([]string, error) {
+	return nil, nil
+}
+func (*fakeTokenRuntime) IssueJWT(context.Context, string, credentiallifecycle.AssertionCredential) (credentiallifecycle.IssuedCredential, error) {
+	return credentiallifecycle.IssuedCredential{}, nil
+}
+func (*fakeTokenRuntime) VerifyJWT(context.Context, string) (credentiallifecycle.Verification, error) {
+	return credentiallifecycle.Verification{}, nil
+}
+func (*fakeTokenRuntime) RevokeJWT(context.Context, credentiallifecycle.ClientCredential, string) error {
+	return nil
+}
+func (*fakeTokenRuntime) VerifyShortLived(context.Context, string) (credentiallifecycle.Verification, error) {
+	return credentiallifecycle.Verification{}, nil
+}
+func (*fakeTokenRuntime) RevokeShortLived(context.Context, string) error { return nil }
 
 func (*fakeTokenRuntime) Close() {}
 
@@ -100,7 +123,7 @@ func TestTokenResultEncodingStaysPrivateAndAtCLIBoundary(t *testing.T) {
 	if err := os.WriteFile(request, []byte(`{"grantType":"client_credentials","clientId":"id","clientSecret":"secret"}`), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	runtime := &fakeTokenRuntime{result: outbound.LINEResult{Value: outbound.LINEObject{"access_token": "issued-secret"}}}
+	runtime := &fakeTokenRuntime{result: credentiallifecycle.IssuedCredential{AccessToken: "issued-secret"}}
 	previous := tokenRuntimeFactory
 	t.Cleanup(func() { tokenRuntimeFactory = previous })
 	tokenRuntimeFactory = func() (TokenRuntime, error) { return runtime, nil }
@@ -118,10 +141,11 @@ func TestTokenResultEncodingStaysPrivateAndAtCLIBoundary(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if string(payload) != `{"access_token":"issued-secret"}` {
+	var encoded map[string]any
+	if err := json.Unmarshal(payload, &encoded); err != nil || encoded["access_token"] != "issued-secret" {
 		t.Fatalf("unexpected token result: %s", payload)
 	}
-	if runtime.command.ClientSecret != "secret" || runtime.command.Action != "issue-short" {
+	if runtime.client.ClientSecret != "secret" || runtime.grant != "client_credentials" {
 		t.Fatal("token command was not routed intact")
 	}
 }

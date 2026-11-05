@@ -9,8 +9,14 @@ import (
 	"io"
 	"time"
 
-	"github.com/963sup/linebot-platform/internal/application/usecases/channel"
+	insightsreporting "github.com/963sup/linebot-platform/internal/application/usecases/insights-reporting"
+	providerconfiguration "github.com/963sup/linebot-platform/internal/application/usecases/provider-configuration"
 )
+
+type providerInspectionRuntime interface {
+	providerconfiguration.ChannelReader
+	insightsreporting.DeliveryReader
+}
 
 func runInspect(args []string, getenv func(string) string, output io.Writer) error {
 	flags := flag.NewFlagSet("inspect", flag.ContinueOnError)
@@ -29,11 +35,6 @@ func runInspect(args []string, getenv func(string) string, output io.Writer) err
 	if getenv == nil || output == nil {
 		return errors.New("missing CLI configuration")
 	}
-	query := channel.Inspection{Kind: *kind, Date: *date, RequestID: *requestID, Start: *start, Limit: *limit}
-	// Validate kinds and inputs without making external connections.
-	if err := channel.ValidateInspection(query); err != nil {
-		return err
-	}
 	if channelInspectionRuntimeFactory == nil {
 		return errors.New("channel inspection runtime is not configured")
 	}
@@ -42,13 +43,54 @@ func runInspect(args []string, getenv func(string) string, output io.Writer) err
 		return err
 	}
 	defer runtime.Close()
+	reader, ok := any(runtime).(providerInspectionRuntime)
+	if !ok {
+		return errors.New("channel inspection runtime does not implement provider-configuration and insights-reporting")
+	}
 	ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
 	defer cancel()
-	data, err := runtime.Inspect(ctx, query)
+	var data any
+	switch *kind {
+	case "bot-info":
+		data, err = reader.BotInfo(ctx)
+	case "webhook-endpoint":
+		data, err = reader.WebhookEndpoint(ctx)
+	case "message-quota":
+		data, err = reader.MessageQuota(ctx)
+	case "message-quota-consumption":
+		data, err = reader.MessageQuotaConsumption(ctx)
+	case "aggregation-usage":
+		data, err = reader.AggregationUnitUsage(ctx)
+	case "aggregation-names":
+		data, err = reader.AggregationUnitNames(ctx, fmt.Sprint(*limit), *start)
+	case "narrowcast-progress":
+		data, err = reader.NarrowcastProgress(ctx, *requestID)
+	case "delivery-reply", "delivery-push", "delivery-multicast", "delivery-broadcast":
+		day, parseErr := time.Parse("20060102", *date)
+		if parseErr != nil {
+			return errors.New("delivery date must be valid YYYYMMDD")
+		}
+		query := insightsreporting.DailyQuery{Day: day}
+		switch *kind {
+		case "delivery-reply":
+			data, err = reader.DeliveryReply(ctx, query)
+		case "delivery-push":
+			data, err = reader.DeliveryPush(ctx, query)
+		case "delivery-multicast":
+			data, err = reader.DeliveryMulticast(ctx, query)
+		default:
+			data, err = reader.DeliveryBroadcast(ctx, query)
+		}
+	default:
+		return errors.New("unsupported channel inspection kind")
+	}
 	if err != nil {
 		return err
 	}
-	payload, err := json.Marshal(data.Value)
+	if snapshot, ok := data.(providerconfiguration.ChannelSnapshot); ok {
+		data = snapshot.Value
+	}
+	payload, err := json.Marshal(data)
 	if err != nil || string(payload) == "null" {
 		return fmt.Errorf("LINE report is empty")
 	}

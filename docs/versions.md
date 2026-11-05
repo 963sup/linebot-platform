@@ -15,12 +15,14 @@ Go module 已加入，`go.mod`／`go.sum` 由 Go 工具鏈與 CI 管理；此表
 ## 開發工具依賴
 
 - `github.com/BurntSushi/toml v1.6.0`：Go 的 TOML 解析套件，用於 `cmd/codexcheck` 驗證專案 Codex 與 Agents 設定；不會被 LINE Bot 的執行時程式直接 import。
+- `go.yaml.in/yaml/v3 v3.0.5`：治理工具的 strict YAML parser，用於驗證 endpoint inventory 與 Strategic DDD manifests；不進入 LINE Bot runtime。
 
 ## main 的直接依賴版本（go.mod）
 
 | SDK module | 宣告版本 | 功能狀態 |
 |---|---|---|
 | `github.com/BurntSushi/toml` | v1.6.0 | `cmd/codexcheck` 的 TOML／Agents／SDK Catalog 驗證工具 |
+| `go.yaml.in/yaml/v3` | v3.0.5 | endpoint inventory 與 Strategic DDD manifest 驗證工具 |
 | `github.com/google/uuid` | v1.6.0 | 直接依賴；Push CLI 使用 UUID v4 作為 LINE retry key |
 | `github.com/line/line-bot-sdk-go/v8` | v8.23.0 | Webhook、Reply、Push、Flex 由 SDK 接線 |
 | `github.com/openai/openai-go/v3` | v3.91.1 | 原生 Client Factory 已建，尚未接入業務 |

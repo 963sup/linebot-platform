@@ -2,12 +2,11 @@ package line
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"io"
 	"os"
 
-	"github.com/963sup/linebot-platform/internal/application/ports/outbound"
+	"github.com/963sup/linebot-platform/internal/application/usecases/audience"
 	"github.com/line/line-bot-sdk-go/v8/linebot/manage_audience"
 )
 
@@ -45,35 +44,21 @@ func (s *AudienceManager) blobFor(ctx context.Context) (*manage_audience.ManageA
 	return c.WithContext(ctx), nil
 }
 
-func decodeLINERequest(request outbound.LINERequest, target any) error {
-	payload, err := json.Marshal(request.Value)
-	if err != nil {
-		return errors.New("invalid LINE request")
-	}
-	if err := json.Unmarshal(payload, target); err != nil {
-		return errors.New("invalid LINE request")
-	}
-	return nil
-}
-
-func (s *AudienceManager) CreateAudienceGroup(ctx context.Context, payload outbound.LINERequest) (outbound.LINEResult, error) {
-	var req manage_audience.CreateAudienceGroupRequest
-	if err := decodeLINERequest(payload, &req); err != nil {
-		return outbound.LINEResult{}, errors.New("invalid LINE audience request")
-	}
+func (s *AudienceManager) CreateGroup(ctx context.Context, command audience.CreateGroupCommand) (audience.ProviderAudience, error) {
+	req := manage_audience.CreateAudienceGroupRequest{Description: command.Description, Audiences: mapAudienceRecipients(command.Recipients)}
 	c, err := s.clientFor(ctx)
 	if err != nil {
-		return outbound.LINEResult{}, err
+		return audience.ProviderAudience{}, err
 	}
 	r, v, err := c.CreateAudienceGroupWithHttpInfo(&req)
-	return typedReportResult("createAudienceGroup", r, v, err)
+	if err != nil {
+		return audience.ProviderAudience{}, lineWriteError("createAudienceGroup", r, err)
+	}
+	return mapProviderAudience(v, false)
 }
 
-func (s *AudienceManager) AddAudienceToGroup(ctx context.Context, payload outbound.LINERequest) error {
-	var req manage_audience.AddAudienceToAudienceGroupRequest
-	if err := decodeLINERequest(payload, &req); err != nil {
-		return errors.New("invalid audience append request")
-	}
+func (s *AudienceManager) AppendRecipients(ctx context.Context, command audience.AppendRecipientsCommand) error {
+	req := manage_audience.AddAudienceToAudienceGroupRequest{AudienceGroupId: int64(command.ID), Audiences: mapAudienceRecipients(command.Recipients)}
 	c, err := s.clientFor(ctx)
 	if err != nil {
 		return err
@@ -82,51 +67,48 @@ func (s *AudienceManager) AddAudienceToGroup(ctx context.Context, payload outbou
 	return lineWriteError("addAudienceToAudienceGroup", r, err)
 }
 
-func (s *AudienceManager) CreateClickAudience(ctx context.Context, payload outbound.LINERequest) (outbound.LINEResult, error) {
-	var req manage_audience.CreateClickBasedAudienceGroupRequest
-	if err := decodeLINERequest(payload, &req); err != nil {
-		return outbound.LINEResult{}, errors.New("invalid click audience request")
-	}
+func (s *AudienceManager) CreateClickGroup(ctx context.Context, command audience.CreateInteractionGroupCommand) (audience.ProviderAudience, error) {
+	req := manage_audience.CreateClickBasedAudienceGroupRequest{Description: command.Description, RequestId: command.SourceRequestID}
 	c, err := s.clientFor(ctx)
 	if err != nil {
-		return outbound.LINEResult{}, err
+		return audience.ProviderAudience{}, err
 	}
 	r, v, err := c.CreateClickBasedAudienceGroupWithHttpInfo(&req)
-	return typedReportResult("createClickBasedAudienceGroup", r, v, err)
+	if err != nil {
+		return audience.ProviderAudience{}, lineWriteError("createClickBasedAudienceGroup", r, err)
+	}
+	return mapProviderAudience(v, false)
 }
 
-func (s *AudienceManager) CreateImpressionAudience(ctx context.Context, payload outbound.LINERequest) (outbound.LINEResult, error) {
-	var req manage_audience.CreateImpBasedAudienceGroupRequest
-	if err := decodeLINERequest(payload, &req); err != nil {
-		return outbound.LINEResult{}, errors.New("invalid impression audience request")
-	}
+func (s *AudienceManager) CreateImpressionGroup(ctx context.Context, command audience.CreateInteractionGroupCommand) (audience.ProviderAudience, error) {
+	req := manage_audience.CreateImpBasedAudienceGroupRequest{Description: command.Description, RequestId: command.SourceRequestID}
 	c, err := s.clientFor(ctx)
 	if err != nil {
-		return outbound.LINEResult{}, err
+		return audience.ProviderAudience{}, err
 	}
 	r, v, err := c.CreateImpBasedAudienceGroupWithHttpInfo(&req)
-	return typedReportResult("createImpBasedAudienceGroup", r, v, err)
+	if err != nil {
+		return audience.ProviderAudience{}, lineWriteError("createImpBasedAudienceGroup", r, err)
+	}
+	return mapProviderAudience(v, false)
 }
 
-func (s *AudienceManager) UpdateAudienceDescription(ctx context.Context, id int64, payload outbound.LINERequest) error {
-	var req manage_audience.UpdateAudienceGroupDescriptionRequest
-	if err := decodeLINERequest(payload, &req); err != nil {
-		return errors.New("invalid audience description request")
-	}
+func (s *AudienceManager) UpdateDescription(ctx context.Context, id audience.ProviderAudienceID, description string) error {
+	req := manage_audience.UpdateAudienceGroupDescriptionRequest{Description: description}
 	c, err := s.clientFor(ctx)
 	if err != nil {
 		return err
 	}
-	r, _, err := c.UpdateAudienceGroupDescriptionWithHttpInfo(id, &req)
+	r, _, err := c.UpdateAudienceGroupDescriptionWithHttpInfo(int64(id), &req)
 	return lineWriteError("updateAudienceGroupDescription", r, err)
 }
 
-func (s *AudienceManager) DeleteAudienceGroup(ctx context.Context, id int64) error {
+func (s *AudienceManager) DeleteGroup(ctx context.Context, id audience.ProviderAudienceID) error {
 	c, err := s.clientFor(ctx)
 	if err != nil {
 		return err
 	}
-	r, _, err := c.DeleteAudienceGroupWithHttpInfo(id)
+	r, _, err := c.DeleteAudienceGroupWithHttpInfo(int64(id))
 	return lineWriteError("deleteAudienceGroup", r, err)
 }
 
@@ -150,30 +132,43 @@ func audienceTempFile(contents []byte) (*os.File, func(), error) {
 	return f, cleanup, nil
 }
 
-func (s *AudienceManager) CreateAudienceFromFile(ctx context.Context, contents []byte, description string, isIFA bool, uploadDescription string) (outbound.LINEResult, error) {
+func (s *AudienceManager) CreateFromFile(ctx context.Context, file audience.AudienceFile) (audience.ProviderAudience, error) {
 	c, err := s.blobFor(ctx)
 	if err != nil {
-		return outbound.LINEResult{}, err
+		return audience.ProviderAudience{}, err
 	}
-	f, cleanup, err := audienceTempFile(contents)
+	f, cleanup, err := audienceTempFile(file.Data)
 	if err != nil {
-		return outbound.LINEResult{}, err
+		return audience.ProviderAudience{}, err
 	}
 	defer cleanup()
-	r, v, err := c.CreateAudienceForUploadingUserIdsWithHttpInfo(f, description, isIFA, uploadDescription)
-	return typedReportResult("createAudienceForUploadingUserIds", r, v, err)
+	r, v, err := c.CreateAudienceForUploadingUserIdsWithHttpInfo(f, file.Description, file.IFAAudience, file.UploadDescription)
+	if err != nil {
+		return audience.ProviderAudience{}, lineWriteError("createAudienceForUploadingUserIds", r, err)
+	}
+	return mapProviderAudience(v, false)
 }
 
-func (s *AudienceManager) AddAudienceFromFile(ctx context.Context, id int64, contents []byte, uploadDescription string) error {
+func (s *AudienceManager) AppendFromFile(ctx context.Context, id audience.ProviderAudienceID, file audience.AudienceFile) error {
 	c, err := s.blobFor(ctx)
 	if err != nil {
 		return err
 	}
-	f, cleanup, err := audienceTempFile(contents)
+	f, cleanup, err := audienceTempFile(file.Data)
 	if err != nil {
 		return err
 	}
 	defer cleanup()
-	r, _, err := c.AddUserIdsToAudienceWithHttpInfo(f, id, uploadDescription)
+	r, _, err := c.AddUserIdsToAudienceWithHttpInfo(f, int64(id), file.UploadDescription)
 	return lineWriteError("addUserIdsToAudience", r, err)
 }
+
+func mapAudienceRecipients(values []string) []manage_audience.Audience {
+	result := make([]manage_audience.Audience, 0, len(values))
+	for _, value := range values {
+		result = append(result, manage_audience.Audience{Id: value})
+	}
+	return result
+}
+
+var _ audience.ProviderManager = (*AudienceManager)(nil)

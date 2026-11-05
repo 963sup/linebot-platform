@@ -38,7 +38,7 @@
 ## P2 implementation status (PR #27, offline only)
 
 - Google OAuth flow / PKCE / nonce / ID Token signature+issuer+audience validation and requested-vs-granted scope verification: implemented and covered by offline unit tests.
-- `internal/application/usecases/workspace/link.go`: orchestrates Begin / one-time Complete / Disconnect; requires a **trusted** already-authenticated LINE owner.
+- `internal/application/usecases/identity/link_service.go`: orchestrates Begin / one-time Complete / Disconnect; requires a **trusted** already-authenticated LINE owner.
 - `internal/adapter/outbound/google/cloud/firestore/workspace_oauth.go`: transactional single-use State, encrypted connection repository, versioned token updates and disconnected tombstones.
 - `internal/infrastructure/google/api/oauth/keyring.go`: AES-256-GCM with document-associated data and key version support. `internal/infrastructure/google/cloud/secretmanager/oauth_keys.go` loads pinned key versions from an injected authorized Secret Manager client.
 - `internal/adapter/outbound/google/api/oauth/provider.go`: Google OAuth provider adapter, fixed revocation endpoint and persist-before-use TokenSource. Across replicas, stale CAS updates are rejected and latest persisted credentials are reread; **this is not proof of zero token-refresh races during a real Google outage**.

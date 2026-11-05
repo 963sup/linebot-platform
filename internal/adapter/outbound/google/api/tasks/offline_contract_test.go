@@ -7,10 +7,20 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/963sup/linebot-platform/internal/application/usecases/workspace"
+	"github.com/963sup/linebot-platform/internal/adapter/outbound/google/api/codec"
+	workspace "github.com/963sup/linebot-platform/internal/application/usecases/workspace-automation"
 	"google.golang.org/api/option"
 	googletasks "google.golang.org/api/tasks/v1"
 )
+
+func testCommand(t *testing.T, request codec.Request) workspace.OperationCommand {
+	t.Helper()
+	command, err := codec.Command(request)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return command
+}
 
 func TestAllTasksSDKOperationsUsePinnedRoutes(t *testing.T) {
 	var got string
@@ -57,9 +67,9 @@ func TestAllTasksSDKOperationsUsePinnedRoutes(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.operation, func(t *testing.T) {
 			got = ""
-			req := workspace.Command{
+			req := testCommand(t, codec.Request{
 				Operation: tc.operation, Parameters: tc.params, Body: tc.body,
-			}
+			})
 			_, err := adapter.ExecuteTasks(context.Background(), req)
 			if err != nil {
 				t.Fatalf("SDK request: %v", err)

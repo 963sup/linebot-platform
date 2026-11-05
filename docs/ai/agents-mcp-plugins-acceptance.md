@@ -6,9 +6,9 @@
 
 | 項目 | 通過條件 |
 | --- | --- |
-| 註冊 | 原有 27 角色保留，新 go_code_refactor 與 config 一對一；無重複／未知鍵／越界路徑 |
-| 並行上限 | Validator 接受 1／3／5，拒絕 0／6；此單元測試不是 Host 排程證明 |
-| MCP | 保留 16 宣告、5 啟用；11 個服務維持停用；無明文 secrets |
+| 註冊 | 固定 8 個角色與 config 一對一；無重複／未知鍵／越界路徑 |
+| 並行上限 | Validator 接受 1／4／8／9，拒絕 0／10；深度只接受 1；此單元測試不是 Host 排程證明 |
+| MCP | 保留 7 宣告、5 啟用、2 個服務維持停用；無明文 secrets |
 | 安裝來源 | 僅核准來源、精確 commit、實際 FETCH_HEAD 一致 |
 | 安全安裝 | 不能越界、跟隨 symlink、覆寫個人內容；失敗不發布半成品；重跑冪等 |
 | Marketplace | CLI 不支援即 blocked；既有來源 pin 不符不覆寫；認證失敗不繞過 |
@@ -19,7 +19,7 @@
 
 | 能力 | 最小驗收 | 未具備環境時 |
 | --- | --- | --- |
-| 28 個角色 | 在信任專案確認載入，啟動受控唯讀／獨立測試任務；確認模型有效 | 未驗證，不能由 TOML 推論 |
+| 8 個角色 | 在信任專案確認載入，啟動受控唯讀／獨立測試任務；確認模型有效 | 未驗證，不能由 TOML 推論 |
 | gopls | 已儲存 Go 檔的符號／references／diagnostics | Go CLI fallback 並註明 |
 | Context7 | 查詢目前使用 SDK 的一段版本文件 | 官方文件 fallback |
 | GitHub | 唯讀取得指定 repo／branch HEAD | 不宣稱遠端 CI 或 SHA |
@@ -30,7 +30,7 @@
 
 ## Agent 路由與故障注入
 
-依 agents.md 五個任務案例檢查 owner、寫入範圍、必要 MCP 與交接。停用 gopls／模擬 Context7 網路失敗／移除測試用憑證時，應明示 fallback，不修改個人權限。五個 thread 滿載時不得超過 Host 上限；兩個寫入任務有共用檔案必須串行。沒有部署授權時不執行 Cloud Run／LINE 發送。
+依 agents.md 的任務案例檢查 owner、寫入範圍、必要 MCP 與交接。停用 gopls／模擬 Context7 網路失敗／移除測試用憑證時，應明示 fallback，不修改個人權限。九個 child threads 滿載時，第十個必須被明確拒絕；兩個寫入任務有共用檔案必須串行。沒有部署授權時不執行 Cloud Run／LINE 發送。
 
 實作角色、獨立 reviewer、最後整合檢查分開記錄；只有自我檢查不能聲稱完成獨立審查。涉及 production／OAuth／IAM 的整合驗證不屬此開發工具 PR 自動操作範圍。
 

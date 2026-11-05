@@ -9,7 +9,7 @@ import (
 func TestReadDynamicAgentRegistry(t *testing.T) {
 	body := `[agents]
 enabled = true
-max_concurrent_threads_per_session = 4
+max_concurrent_threads_per_session = 9
 max_depth = 1
 [agents.example]
 description = "test role"

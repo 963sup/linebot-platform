@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/963sup/linebot-platform/internal/application/ports/outbound"
+	messagingdelivery "github.com/963sup/linebot-platform/internal/application/usecases/messaging-delivery"
 	"github.com/google/uuid"
 )
 
@@ -33,7 +33,7 @@ func runCampaign(args []string, getenv func(string) string) error {
 		return errors.New("valid campaign kind required")
 	}
 	var users []string
-	var request outbound.LINERequest
+	var request messagingdelivery.NarrowcastRequest
 	if *kind == "narrowcast" {
 		if *recipients != "" || *message != "" || *requestFile == "" {
 			return errors.New("narrowcast requires --request and does not accept --to or --text")
@@ -49,7 +49,7 @@ func runCampaign(args []string, getenv func(string) string) error {
 		if err != nil {
 			return errors.New("narrowcast request must be valid JSON")
 		}
-		request = outbound.LINERequest{Value: value}
+		request = messagingdelivery.NarrowcastRequest{Payload: value}
 	} else if strings.TrimSpace(*message) == "" || *requestFile != "" {
 		return errors.New("broadcast and multicast require --text and do not accept --request")
 	} else if *kind == "broadcast" {
@@ -85,10 +85,10 @@ func runCampaign(args []string, getenv func(string) string) error {
 	defer rt.Close()
 	ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
 	defer cancel()
-	msgs := []outbound.Message{{Kind: outbound.KindText, Text: *message}}
+	msgs := []messagingdelivery.Message{{Kind: messagingdelivery.KindText, Text: *message}}
 	fmt.Fprintln(os.Stderr, "LINE campaign retry key:", *key)
 	if *kind == "narrowcast" {
-		return rt.Narrowcast(ctx, request, *key)
+		return rt.SendNarrowcast(ctx, request, *key)
 	}
 	if *kind == "broadcast" {
 		return rt.Broadcast(ctx, msgs, *key)

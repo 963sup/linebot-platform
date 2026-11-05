@@ -2,135 +2,184 @@ package cli
 
 import (
 	"context"
-	"encoding/json"
 	"time"
 
-	"github.com/963sup/linebot-platform/internal/application/ports/outbound"
-	"github.com/963sup/linebot-platform/internal/application/usecases/channel"
-	"github.com/963sup/linebot-platform/internal/application/usecases/contacts"
-	"github.com/963sup/linebot-platform/internal/application/usecases/engagement"
-	"github.com/963sup/linebot-platform/internal/application/usecases/insights"
-	"github.com/963sup/linebot-platform/internal/application/usecases/messaging"
-	"github.com/963sup/linebot-platform/internal/application/usecases/workspace"
+	accountlinktoken "github.com/963sup/linebot-platform/internal/application/usecases/account-link-token"
+	"github.com/963sup/linebot-platform/internal/application/usecases/audience"
+	contactdirectory "github.com/963sup/linebot-platform/internal/application/usecases/contact-directory"
+	conversationoperations "github.com/963sup/linebot-platform/internal/application/usecases/conversation-operations"
+	credentiallifecycle "github.com/963sup/linebot-platform/internal/application/usecases/credential-lifecycle"
+	experiencepresentation "github.com/963sup/linebot-platform/internal/application/usecases/experience-presentation"
+	insightsreporting "github.com/963sup/linebot-platform/internal/application/usecases/insights-reporting"
+	mediatransfer "github.com/963sup/linebot-platform/internal/application/usecases/media-transfer"
+	"github.com/963sup/linebot-platform/internal/application/usecases/membership"
+	messagingdelivery "github.com/963sup/linebot-platform/internal/application/usecases/messaging-delivery"
+	"github.com/963sup/linebot-platform/internal/application/usecases/promotion"
+	providerconfiguration "github.com/963sup/linebot-platform/internal/application/usecases/provider-configuration"
+	requestvalidation "github.com/963sup/linebot-platform/internal/application/usecases/request-validation"
+	workspaceautomation "github.com/963sup/linebot-platform/internal/application/usecases/workspace-automation"
 	"golang.org/x/oauth2"
 )
 
 // PushRuntime is the narrow dependency required by the push command.
 // Runtime construction belongs to the composition root, not this adapter.
 type PushRuntime interface {
-	Push(ctx context.Context, recipient string, messages []outbound.Message, retryKey string) error
+	Push(ctx context.Context, recipient string, messages []messagingdelivery.Message, retryKey string) error
 	Close() error
 }
 
 type ProfileRuntime interface {
-	Get(ctx context.Context, userID string) (outbound.UserProfile, error)
+	GetProfile(context.Context, contactdirectory.ProfileQuery) (contactdirectory.ProfileSnapshot, error)
 	Close() error
 }
 
 type ValidationRuntime interface {
-	Validate(ctx context.Context, kind string, messages []outbound.Message) error
+	Validate(context.Context, requestvalidation.Request) (requestvalidation.Report, error)
 	Close() error
 }
 
 type StatusRuntime interface {
-	Inspect(ctx context.Context, state outbound.EventState, limit int, now time.Time) (outbound.EventStatusReport, error)
+	Inspect(ctx context.Context, state messagingdelivery.EventState, limit int, now time.Time) (messagingdelivery.EventStatusReport, error)
 	Close() error
 }
 
 type WorkspaceRuntime interface {
-	Execute(context.Context, string, workspace.Command, workspace.Approval) ([]byte, error)
+	Execute(context.Context, workspaceautomation.API, workspaceautomation.OperationCommand, workspaceautomation.OperationApproval) (workspaceautomation.OperationResult, error)
 }
 
 type LinkTokenRuntime interface {
-	IssueLinkToken(context.Context, string) (outbound.LINEResult, error)
+	Issue(context.Context, accountlinktoken.Subject) (accountlinktoken.Token, error)
 	Close() error
 }
 
 type ActionsRuntime interface {
-	Execute(context.Context, messaging.ConversationActionCommand) error
+	Leave(context.Context, conversationoperations.Conversation) error
+	ShowLoading(context.Context, conversationoperations.LoadingIndicator) error
+	MarkRead(context.Context, conversationoperations.ReadTarget) error
+	MarkReadByToken(context.Context, conversationoperations.ReadToken) error
 	Close() error
 }
 
 type EligibilityRuntime interface {
-	Execute(context.Context, engagement.EligibilityCommand) (json.RawMessage, error)
+	PushMessagesByPhone(context.Context, messagingdelivery.PhoneDeliveryRequest) error
+	PushTemplatedMessagesByPhone(context.Context, messagingdelivery.PhoneDeliveryRequest) error
+	PNPMessageStatistics(context.Context, insightsreporting.DailyQuery) (insightsreporting.CountReport, error)
+	PNPTemplatedMessageStatistics(context.Context, insightsreporting.DailyQuery) (insightsreporting.CountReport, error)
+	CreateCouponDocument(context.Context, promotion.ProviderCouponDocument) (promotion.CouponView, error)
+	CloseCoupon(context.Context, promotion.CouponID) error
 	Close() error
 }
 
 type AudienceRuntime interface {
-	Inspect(context.Context, engagement.AudienceQuery) (json.RawMessage, error)
+	Get(context.Context, audience.ProviderAudienceID, bool) (audience.ProviderAudience, error)
+	List(context.Context, audience.PageRequest, bool) (audience.ProviderAudiencePage, error)
 	Close() error
 }
 
 type ContactsRuntime interface {
-	Inspect(context.Context, contacts.Inspection) (outbound.LINEResult, error)
+	ListFollowers(context.Context, contactdirectory.PageRequest) (contactdirectory.RecipientPage, error)
+	GetSummary(context.Context, contactdirectory.RecipientReference) (contactdirectory.ConversationSummary, error)
+	ListMembers(context.Context, contactdirectory.RecipientReference, contactdirectory.PageRequest) (contactdirectory.RecipientPage, error)
+	GetMemberProfile(context.Context, contactdirectory.RecipientReference, contactdirectory.RecipientID) (contactdirectory.ProfileSnapshot, error)
 	Close() error
 }
 
 type CouponsRuntime interface {
-	Inspect(context.Context, engagement.CouponQuery) (json.RawMessage, error)
+	List(context.Context, promotion.CouponPageRequest) (promotion.CouponPage, error)
+	Get(context.Context, promotion.CouponID) (promotion.CouponView, error)
 	Close() error
 }
 
 type InsightsRuntime interface {
-	Inspect(context.Context, insights.Query) (outbound.LINEResult, error)
+	Demographics(context.Context) (insightsreporting.DemographicsReport, error)
+	Deliveries(context.Context, insightsreporting.DailyQuery) (insightsreporting.CountReport, error)
+	Followers(context.Context, insightsreporting.DailyQuery) (insightsreporting.CountReport, error)
+	MessageEvent(context.Context, insightsreporting.MessageEventQuery) (insightsreporting.MessageEventReport, error)
+	StatisticsPerUnit(context.Context, insightsreporting.UnitStatisticsQuery) (insightsreporting.StatisticsReport, error)
+	PresentationSummary(context.Context, insightsreporting.PresentationStatisticsQuery) (insightsreporting.StatisticsReport, error)
+	PresentationDaily(context.Context, insightsreporting.PresentationStatisticsQuery) (insightsreporting.StatisticsReport, error)
 	Close() error
 }
 
 type MembershipsRuntime interface {
-	Inspect(context.Context, engagement.MembershipQuery) (json.RawMessage, error)
+	ListMemberships(context.Context, membership.PageRequest) (membership.MembershipPage, error)
+	GetSubscription(context.Context, membership.RecipientID) (membership.SubscriptionView, error)
+	ListMembers(context.Context, membership.MembershipID, membership.PageRequest) (membership.MemberPage, error)
 	Close() error
 }
 
 type MenusRuntime interface {
-	Inspect(context.Context, engagement.RichMenuQuery) (json.RawMessage, error)
+	List(context.Context) ([]experiencepresentation.ProviderSurface, error)
+	Get(context.Context, experiencepresentation.ProviderSurfaceID) (experiencepresentation.ProviderSurface, error)
+	Default(context.Context) (experiencepresentation.ProviderSurface, error)
+	ListAliases(context.Context) ([]experiencepresentation.ProviderAlias, error)
+	GetAlias(context.Context, experiencepresentation.AliasID) (experiencepresentation.ProviderAlias, error)
+	ForRecipient(context.Context, experiencepresentation.RecipientID) (experiencepresentation.ProviderSurface, error)
+	BatchProgress(context.Context, string) (experiencepresentation.BatchProgress, error)
 	Close() error
 }
 
 type ChannelInspectionRuntime interface {
-	Inspect(context.Context, channel.Inspection) (outbound.LINEResult, error)
+	providerconfiguration.ChannelReader
+	insightsreporting.DeliveryReader
 	Close() error
 }
 
 type ContentRuntime interface {
-	Inspect(context.Context, contacts.ContentQuery) (outbound.BinaryContent, outbound.LINEResult, error)
+	MessageContent(context.Context, string, mediatransfer.ContentVariant) (mediatransfer.BinaryContent, error)
+	MessageContentStatus(context.Context, string) (mediatransfer.PreparationStatus, error)
 	Close() error
 }
 
 type MenuImageRuntime interface {
-	RichMenuImage(context.Context, string) (outbound.BinaryContent, error)
+	PresentationImage(context.Context, string) (mediatransfer.BinaryContent, error)
 	Close() error
 }
 
 type MenuManagementRuntime interface {
-	Execute(context.Context, engagement.MenuCommand) error
+	experiencepresentation.ProviderCommandGateway
 	Close() error
 }
 
 type MenuImageUploadRuntime interface {
-	Upload(context.Context, string, string, []byte) error
+	StorePresentationImage(context.Context, string, mediatransfer.BinaryContent) error
 	Close() error
 }
 
 type WebhookRuntime interface {
-	Set(context.Context, string) error
-	Test(context.Context, string) (outbound.WebhookEndpointTest, error)
+	ConfigureWebhook(context.Context, string) error
+	TestWebhook(context.Context, string) (providerconfiguration.WebhookTestResult, error)
 	Close() error
 }
 
 type TokenRuntime interface {
-	Execute(context.Context, channel.TokenCommand) (outbound.LINEResult, error)
+	IssueStatelessWithClient(context.Context, string, credentiallifecycle.ClientCredential) (credentiallifecycle.IssuedCredential, error)
+	IssueStatelessWithAssertion(context.Context, string, credentiallifecycle.AssertionCredential) (credentiallifecycle.IssuedCredential, error)
+	ValidKeyIDs(context.Context, credentiallifecycle.AssertionCredential) ([]string, error)
+	IssueJWT(context.Context, string, credentiallifecycle.AssertionCredential) (credentiallifecycle.IssuedCredential, error)
+	VerifyJWT(context.Context, string) (credentiallifecycle.Verification, error)
+	RevokeJWT(context.Context, credentiallifecycle.ClientCredential, string) error
+	IssueShortLived(context.Context, string, credentiallifecycle.ClientCredential) (credentiallifecycle.IssuedCredential, error)
+	VerifyShortLived(context.Context, string) (credentiallifecycle.Verification, error)
+	RevokeShortLived(context.Context, string) error
 	Close()
 }
 
 type AudienceManagementRuntime interface {
-	Execute(context.Context, engagement.AudienceCommand) (json.RawMessage, error)
+	CreateGroup(context.Context, audience.CreateGroupCommand) (audience.ProviderAudience, error)
+	AppendRecipients(context.Context, audience.AppendRecipientsCommand) error
+	CreateInteractionGroup(context.Context, audience.CreateInteractionGroupCommand, bool) (audience.ProviderAudience, error)
+	UpdateDescription(context.Context, audience.ProviderAudienceID, string) error
+	Delete(context.Context, audience.ProviderAudienceID) error
+	CreateFromFile(context.Context, audience.AudienceFile) (audience.ProviderAudience, error)
+	AppendFromFile(context.Context, audience.ProviderAudienceID, audience.AudienceFile) error
 	Close() error
 }
 
 type BulkMessagingRuntime interface {
-	Broadcast(context.Context, []outbound.Message, string) error
-	Multicast(context.Context, []string, []outbound.Message, string) error
-	Narrowcast(context.Context, outbound.LINERequest, string) error
+	Broadcast(context.Context, []messagingdelivery.Message, string) error
+	Multicast(context.Context, []string, []messagingdelivery.Message, string) error
+	SendNarrowcast(context.Context, messagingdelivery.NarrowcastRequest, string) error
 	Close() error
 }
 

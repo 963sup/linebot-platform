@@ -29,7 +29,7 @@ go run ./cmd/ops events --project "$LINEBOT_STAGING_PROJECT" --check \
 
 | 狀態 | 意義 | 允許的安全處置 |
 |---|---|---|
-| `pending` | 尚未 claim、等待或等候 Reconcile | 檢查 `next_dispatch_at`、Queue/IAM、定期 Scheduler；僅使用既有經驗證的私有 `/tasks/dispatch` 修復。 |
+| `pending` | 尚未 claim、等待或等候 Reconcile | 檢查 `next_dispatch_at`、Queue/IAM、定期 Scheduler；僅使用既有經驗證的私有 `/tasks/v2/dispatch` 修復。 |
 | `sending` | 已發生單次 Claim；LINE 請求結果仍可能不明 | 檢查 Lease 與 Worker 狀態，**不得**人工再發送；到期由 Reconcile 轉 Unknown。 |
 | `sent` | 本地記錄 LINE API 已接受 Reply | 不等於使用者實際收到；本工具不需要處理。 |
 | `expired` | Reply 無法在有效期限內安全嘗試 | 當作未回覆的操作事件分析；若要 Push，應另建立有使用者授權及新業務身份的發送流程。 |
@@ -40,7 +40,7 @@ go run ./cmd/ops events --project "$LINEBOT_STAGING_PROJECT" --check \
 ## 建議告警與操作可觀測性
 
 - 每 5 分鐘經隔離 Staging 身分執行一次 `ops events --check`，用 Job failed execution 與 no-execution 雙告警覆蓋卡死、權限失效、查詢失敗。
-- Worker /tasks/line-reply 與 /tasks/dispatch 的 5xx、OIDC 401/403（頻率上升）、Cloud Tasks Queue depth 與 dispatch latency 皆需 Cloud Monitoring dashboard。
+- Worker /tasks/v2/line-reply 與 /tasks/v2/dispatch 的 5xx、OIDC 401/403（頻率上升）、Cloud Tasks Queue depth 與 dispatch latency 皆需 Cloud Monitoring dashboard。
 - 不要將每筆事件 Key、Reply Token、User ID、原始 HTTP Body 加入 metrics label 或 structured logs。
 - Alarm 的 threshold 經真實測試先調整，避免一個 Expired 狀態在 TTL 期間造成持續告警；高流量時需看速率／分位，而非只看 Count。
 - 定期 `Inspect` 讀取會產生 Firestore query 成本，按實際規模調整頻率；若需要高頻度與高精度度量，再評估安全且 bounded 的 metrics pipeline，不以無界掃描達成。

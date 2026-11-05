@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/963sup/linebot-platform/internal/application/usecases/promotion"
 )
 
 func TestCouponReadOnlySDKEndpoints(t *testing.T) {
@@ -22,8 +24,8 @@ func TestCouponReadOnlySDKEndpoints(t *testing.T) {
 		name string
 		fn   func() error
 	}{
-		{"coupons", func() error { _, err := s.CouponList(ctx, "", 10); return err }},
-		{"coupon", func() error { _, err := s.CouponDetail(ctx, "coupon-1"); return err }},
+		{"coupons", func() error { _, err := s.ListCoupons(ctx, promotion.CouponPageRequest{Limit: 10}); return err }},
+		{"coupon", func() error { _, err := s.GetCoupon(ctx, promotion.CouponID("coupon-1")); return err }},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			if err := tc.fn(); err != nil {

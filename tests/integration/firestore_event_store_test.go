@@ -13,7 +13,7 @@ import (
 
 	sdk "cloud.google.com/go/firestore"
 	fsadapter "github.com/963sup/linebot-platform/internal/adapter/outbound/google/cloud/firestore"
-	"github.com/963sup/linebot-platform/internal/application/ports/outbound"
+	messagingdelivery "github.com/963sup/linebot-platform/internal/application/usecases/messaging-delivery"
 )
 
 func emulatorStore(t *testing.T) (*sdk.Client, *fsadapter.Store) {
@@ -35,11 +35,11 @@ func emulatorStore(t *testing.T) (*sdk.Client, *fsadapter.Store) {
 	return client, store
 }
 
-func eventJob(id int, received time.Time) outbound.EventJob {
-	return outbound.EventJob{
+func eventJob(id int, received time.Time) messagingdelivery.EventJob {
+	return messagingdelivery.EventJob{
 		Key:        fmt.Sprintf("%064x", id),
 		ReplyToken: "emulator-token",
-		Message:    outbound.Message{Kind: outbound.KindText, Text: "fixed reply"},
+		Message:    messagingdelivery.Message{Kind: messagingdelivery.KindText, Text: "fixed reply"},
 		OccurredAt: received,
 		CreatedAt:  received,
 		ReplyUntil: received.Add(45 * time.Second),
@@ -92,10 +92,10 @@ func TestFirestoreTransactionAndConcurrentClaim(t *testing.T) {
 	if count.Load() != 1 {
 		t.Fatalf("expected exactly one durable claim, got %d", count.Load())
 	}
-	if err := store.Complete(ctx, job.Key, winningLease, outbound.DeliverySent); err != nil {
+	if err := store.Complete(ctx, job.Key, winningLease, messagingdelivery.DeliverySent); err != nil {
 		t.Fatal(err)
 	}
-	_, err = store.Record(ctx, outbound.EventJob{
+	_, err = store.Record(ctx, messagingdelivery.EventJob{
 		Key: job.Key, ReplyToken: job.ReplyToken, Message: job.Message,
 		OccurredAt: now, CreatedAt: now.Add(20 * time.Second),
 		ReplyUntil: now.Add(time.Minute),

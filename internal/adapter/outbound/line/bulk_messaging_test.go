@@ -6,7 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/963sup/linebot-platform/internal/application/ports/outbound"
+	messagingdelivery "github.com/963sup/linebot-platform/internal/application/usecases/messaging-delivery"
 )
 
 func TestCampaignUsesNativeSDKEdgesAndRetryKey(t *testing.T) {
@@ -28,8 +28,8 @@ func TestCampaignUsesNativeSDKEdgesAndRetryKey(t *testing.T) {
 	if err := sender.Multicast(context.Background(), []string{"U123"}, testText(), retryKey); err != nil {
 		t.Fatal(err)
 	}
-	request := outbound.LINERequest{Value: map[string]any{"messages": []any{map[string]any{"type": "text", "text": "hello"}}, "recipient": map[string]any{"type": "operator", "and": []any{}}}}
-	if err := sender.Narrowcast(context.Background(), request, retryKey); err != nil {
+	request := messagingdelivery.NarrowcastRequest{Payload: map[string]any{"messages": []any{map[string]any{"type": "text", "text": "hello"}}, "recipient": map[string]any{"type": "operator", "and": []any{}}}}
+	if err := sender.SendNarrowcast(context.Background(), request, retryKey); err != nil {
 		t.Fatal(err)
 	}
 	if len(urls) != 3 || urls[0] != "/v2/bot/message/broadcast" || urls[1] != "/v2/bot/message/multicast" || urls[2] != "/v2/bot/message/narrowcast" {

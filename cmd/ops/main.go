@@ -2,18 +2,24 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"os"
 	"time"
 
 	"github.com/963sup/linebot-platform/internal/adapter/inbound/cli"
-	"github.com/963sup/linebot-platform/internal/application/ports/outbound"
-	"github.com/963sup/linebot-platform/internal/application/usecases/channel"
-	"github.com/963sup/linebot-platform/internal/application/usecases/contacts"
-	"github.com/963sup/linebot-platform/internal/application/usecases/engagement"
-	"github.com/963sup/linebot-platform/internal/application/usecases/insights"
-	"github.com/963sup/linebot-platform/internal/application/usecases/messaging"
+	accountlinktoken "github.com/963sup/linebot-platform/internal/application/usecases/account-link-token"
+	"github.com/963sup/linebot-platform/internal/application/usecases/audience"
+	contactdirectory "github.com/963sup/linebot-platform/internal/application/usecases/contact-directory"
+	conversationoperations "github.com/963sup/linebot-platform/internal/application/usecases/conversation-operations"
+	credentiallifecycle "github.com/963sup/linebot-platform/internal/application/usecases/credential-lifecycle"
+	experiencepresentation "github.com/963sup/linebot-platform/internal/application/usecases/experience-presentation"
+	insightsreporting "github.com/963sup/linebot-platform/internal/application/usecases/insights-reporting"
+	mediatransfer "github.com/963sup/linebot-platform/internal/application/usecases/media-transfer"
+	"github.com/963sup/linebot-platform/internal/application/usecases/membership"
+	messagingdelivery "github.com/963sup/linebot-platform/internal/application/usecases/messaging-delivery"
+	"github.com/963sup/linebot-platform/internal/application/usecases/promotion"
+	providerconfiguration "github.com/963sup/linebot-platform/internal/application/usecases/provider-configuration"
+	requestvalidation "github.com/963sup/linebot-platform/internal/application/usecases/request-validation"
 	"github.com/963sup/linebot-platform/internal/bootstrap"
 	"golang.org/x/oauth2"
 )
@@ -140,7 +146,7 @@ func main() {
 			if err != nil {
 				return nil, err
 			}
-			return menuManagementRuntime{runtime}, nil
+			return menuManagementRuntime{ProviderCommandGateway: runtime.MenuCommands, runtime: runtime}, nil
 		},
 		MenuImageUploadRuntime: func(token string) (cli.MenuImageUploadRuntime, error) {
 			runtime, err := bootstrap.NewLINEOpsRuntime(token)
@@ -191,42 +197,83 @@ type pushRuntime struct {
 
 type webhookRuntime struct{ *bootstrap.LINEOpsRuntime }
 
-func (r webhookRuntime) Set(ctx context.Context, endpoint string) error {
-	return r.WebhookAdmin.Set(ctx, endpoint)
+func (r webhookRuntime) ConfigureWebhook(ctx context.Context, endpoint string) error {
+	return r.WebhookAdmin.ConfigureWebhook(ctx, endpoint)
 }
 
-func (r webhookRuntime) Test(ctx context.Context, endpoint string) (outbound.WebhookEndpointTest, error) {
-	return r.WebhookAdmin.Test(ctx, endpoint)
+func (r webhookRuntime) TestWebhook(ctx context.Context, endpoint string) (providerconfiguration.WebhookTestResult, error) {
+	return r.WebhookAdmin.TestWebhook(ctx, endpoint)
 }
 
 type tokenRuntime struct{ *bootstrap.LINETokenOpsRuntime }
 
-func (r tokenRuntime) Execute(ctx context.Context, cmd channel.TokenCommand) (outbound.LINEResult, error) {
-	return r.Tokens.Execute(ctx, cmd)
+func (r tokenRuntime) IssueStatelessWithClient(ctx context.Context, grant string, credential credentiallifecycle.ClientCredential) (credentiallifecycle.IssuedCredential, error) {
+	return r.Credentials.IssueStatelessWithClient(ctx, grant, credential)
+}
+func (r tokenRuntime) IssueStatelessWithAssertion(ctx context.Context, grant string, credential credentiallifecycle.AssertionCredential) (credentiallifecycle.IssuedCredential, error) {
+	return r.Credentials.IssueStatelessWithAssertion(ctx, grant, credential)
+}
+func (r tokenRuntime) ValidKeyIDs(ctx context.Context, credential credentiallifecycle.AssertionCredential) ([]string, error) {
+	return r.Credentials.ValidKeyIDs(ctx, credential)
+}
+func (r tokenRuntime) IssueJWT(ctx context.Context, grant string, credential credentiallifecycle.AssertionCredential) (credentiallifecycle.IssuedCredential, error) {
+	return r.Credentials.IssueJWT(ctx, grant, credential)
+}
+func (r tokenRuntime) VerifyJWT(ctx context.Context, token string) (credentiallifecycle.Verification, error) {
+	return r.Credentials.VerifyJWT(ctx, token)
+}
+func (r tokenRuntime) RevokeJWT(ctx context.Context, credential credentiallifecycle.ClientCredential, token string) error {
+	return r.Credentials.RevokeJWT(ctx, credential, token)
+}
+func (r tokenRuntime) IssueShortLived(ctx context.Context, grant string, credential credentiallifecycle.ClientCredential) (credentiallifecycle.IssuedCredential, error) {
+	return r.Credentials.IssueShortLived(ctx, grant, credential)
+}
+func (r tokenRuntime) VerifyShortLived(ctx context.Context, token string) (credentiallifecycle.Verification, error) {
+	return r.Credentials.VerifyShortLived(ctx, token)
+}
+func (r tokenRuntime) RevokeShortLived(ctx context.Context, token string) error {
+	return r.Credentials.RevokeShortLived(ctx, token)
 }
 
 type audienceManagementRuntime struct{ *bootstrap.LINEOpsRuntime }
 
-func (r audienceManagementRuntime) Execute(ctx context.Context, cmd engagement.AudienceCommand) (json.RawMessage, error) {
-	result, err := r.AudienceManager.Execute(ctx, cmd)
-	return marshalLINEResult(result, err)
+func (r audienceManagementRuntime) CreateGroup(ctx context.Context, cmd audience.CreateGroupCommand) (audience.ProviderAudience, error) {
+	return r.AudienceManager.CreateGroup(ctx, cmd)
+}
+func (r audienceManagementRuntime) AppendRecipients(ctx context.Context, cmd audience.AppendRecipientsCommand) error {
+	return r.AudienceManager.AppendRecipients(ctx, cmd)
+}
+func (r audienceManagementRuntime) CreateInteractionGroup(ctx context.Context, cmd audience.CreateInteractionGroupCommand, impression bool) (audience.ProviderAudience, error) {
+	return r.AudienceManager.CreateInteractionGroup(ctx, cmd, impression)
+}
+func (r audienceManagementRuntime) UpdateDescription(ctx context.Context, id audience.ProviderAudienceID, description string) error {
+	return r.AudienceManager.UpdateDescription(ctx, id, description)
+}
+func (r audienceManagementRuntime) Delete(ctx context.Context, id audience.ProviderAudienceID) error {
+	return r.AudienceManager.Delete(ctx, id)
+}
+func (r audienceManagementRuntime) CreateFromFile(ctx context.Context, file audience.AudienceFile) (audience.ProviderAudience, error) {
+	return r.AudienceManager.CreateFromFile(ctx, file)
+}
+func (r audienceManagementRuntime) AppendFromFile(ctx context.Context, id audience.ProviderAudienceID, file audience.AudienceFile) error {
+	return r.AudienceManager.AppendFromFile(ctx, id, file)
 }
 
 type bulkMessagingRuntime struct{ *bootstrap.LINEOpsRuntime }
 
-func (r bulkMessagingRuntime) Broadcast(ctx context.Context, messages []outbound.Message, retryKey string) error {
+func (r bulkMessagingRuntime) Broadcast(ctx context.Context, messages []messagingdelivery.Message, retryKey string) error {
 	return r.BulkMessaging.Broadcast(ctx, messages, retryKey)
 }
 
-func (r bulkMessagingRuntime) Multicast(ctx context.Context, users []string, messages []outbound.Message, retryKey string) error {
+func (r bulkMessagingRuntime) Multicast(ctx context.Context, users []string, messages []messagingdelivery.Message, retryKey string) error {
 	return r.BulkMessaging.Multicast(ctx, users, messages, retryKey)
 }
 
-func (r bulkMessagingRuntime) Narrowcast(ctx context.Context, payload outbound.LINERequest, retryKey string) error {
-	return r.BulkMessaging.Narrowcast(ctx, payload, retryKey)
+func (r bulkMessagingRuntime) SendNarrowcast(ctx context.Context, payload messagingdelivery.NarrowcastRequest, retryKey string) error {
+	return r.BulkMessaging.SendNarrowcast(ctx, payload, retryKey)
 }
 
-func (r pushRuntime) Push(ctx context.Context, recipient string, messages []outbound.Message, retryKey string) error {
+func (r pushRuntime) Push(ctx context.Context, recipient string, messages []messagingdelivery.Message, retryKey string) error {
 	return r.Messaging.Push(ctx, recipient, messages, retryKey)
 }
 
@@ -234,16 +281,16 @@ type profileRuntime struct {
 	*bootstrap.LINEOpsRuntime
 }
 
-func (r profileRuntime) Get(ctx context.Context, userID string) (outbound.UserProfile, error) {
-	return r.Profiles.Get(ctx, userID)
+func (r profileRuntime) GetProfile(ctx context.Context, query contactdirectory.ProfileQuery) (contactdirectory.ProfileSnapshot, error) {
+	return r.Profiles.GetProfile(ctx, query)
 }
 
 type validationRuntime struct {
 	*bootstrap.LINEOpsRuntime
 }
 
-func (r validationRuntime) Validate(ctx context.Context, kind string, messages []outbound.Message) error {
-	return r.Validation.Validate(ctx, kind, messages)
+func (r validationRuntime) Validate(ctx context.Context, request requestvalidation.Request) (requestvalidation.Report, error) {
+	return r.Validation.Validate(ctx, request)
 }
 
 type statusRuntime struct {
@@ -258,8 +305,20 @@ type actionsRuntime struct {
 	*bootstrap.LINEOpsRuntime
 }
 
-func (r actionsRuntime) Execute(ctx context.Context, cmd messaging.ConversationActionCommand) error {
-	return r.Actions.Execute(ctx, cmd)
+func (r actionsRuntime) Leave(ctx context.Context, value conversationoperations.Conversation) error {
+	return r.Actions.Leave(ctx, value)
+}
+
+func (r actionsRuntime) ShowLoading(ctx context.Context, value conversationoperations.LoadingIndicator) error {
+	return r.Actions.ShowLoading(ctx, value)
+}
+
+func (r actionsRuntime) MarkRead(ctx context.Context, value conversationoperations.ReadTarget) error {
+	return r.Actions.MarkRead(ctx, value)
+}
+
+func (r actionsRuntime) MarkReadByToken(ctx context.Context, value conversationoperations.ReadToken) error {
+	return r.Actions.MarkReadByToken(ctx, value)
 }
 
 type eligibilityRuntime struct {
@@ -270,58 +329,158 @@ type audienceRuntime struct {
 	*bootstrap.LINEOpsRuntime
 }
 
-func (r audienceRuntime) Inspect(ctx context.Context, query engagement.AudienceQuery) (json.RawMessage, error) {
-	result, err := r.Audiences.Inspect(ctx, query)
-	return marshalLINEResult(result, err)
+func (r audienceRuntime) Get(ctx context.Context, id audience.ProviderAudienceID, shared bool) (audience.ProviderAudience, error) {
+	return r.Audiences.Get(ctx, id, shared)
+}
+
+func (r audienceRuntime) List(ctx context.Context, page audience.PageRequest, shared bool) (audience.ProviderAudiencePage, error) {
+	return r.Audiences.List(ctx, page, shared)
 }
 
 type contactsRuntime struct {
 	*bootstrap.LINEOpsRuntime
 }
 
-func (r contactsRuntime) Inspect(ctx context.Context, query contacts.Inspection) (outbound.LINEResult, error) {
-	return r.Contacts.Inspect(ctx, query)
+func (r contactsRuntime) ListFollowers(ctx context.Context, page contactdirectory.PageRequest) (contactdirectory.RecipientPage, error) {
+	return r.Contacts.ListFollowers(ctx, page)
+}
+func (r contactsRuntime) GetSummary(ctx context.Context, ref contactdirectory.RecipientReference) (contactdirectory.ConversationSummary, error) {
+	return r.Contacts.GetSummary(ctx, ref)
+}
+func (r contactsRuntime) ListMembers(ctx context.Context, ref contactdirectory.RecipientReference, page contactdirectory.PageRequest) (contactdirectory.RecipientPage, error) {
+	return r.Contacts.ListMembers(ctx, ref, page)
+}
+func (r contactsRuntime) GetMemberProfile(ctx context.Context, ref contactdirectory.RecipientReference, id contactdirectory.RecipientID) (contactdirectory.ProfileSnapshot, error) {
+	return r.Contacts.GetMemberProfile(ctx, ref, id)
 }
 
 type couponsRuntime struct {
 	*bootstrap.LINEOpsRuntime
 }
 
+func (r couponsRuntime) List(ctx context.Context, page promotion.CouponPageRequest) (promotion.CouponPage, error) {
+	return r.Coupons.List(ctx, page)
+}
+
+func (r couponsRuntime) Get(ctx context.Context, id promotion.CouponID) (promotion.CouponView, error) {
+	return r.Coupons.Get(ctx, id)
+}
+
 type insightsRuntime struct {
 	*bootstrap.LINEOpsRuntime
 }
 
-func (r insightsRuntime) Inspect(ctx context.Context, query insights.Query) (outbound.LINEResult, error) {
-	return r.Insights.Inspect(ctx, query)
+func (r insightsRuntime) Demographics(ctx context.Context) (insightsreporting.DemographicsReport, error) {
+	return r.Insights.Demographics(ctx)
+}
+func (r insightsRuntime) Deliveries(ctx context.Context, q insightsreporting.DailyQuery) (insightsreporting.CountReport, error) {
+	return r.Insights.Deliveries(ctx, q)
+}
+func (r insightsRuntime) Followers(ctx context.Context, q insightsreporting.DailyQuery) (insightsreporting.CountReport, error) {
+	return r.Insights.Followers(ctx, q)
+}
+func (r insightsRuntime) MessageEvent(ctx context.Context, q insightsreporting.MessageEventQuery) (insightsreporting.MessageEventReport, error) {
+	return r.Insights.MessageEvent(ctx, q)
+}
+func (r insightsRuntime) StatisticsPerUnit(ctx context.Context, q insightsreporting.UnitStatisticsQuery) (insightsreporting.StatisticsReport, error) {
+	return r.Insights.StatisticsPerUnit(ctx, q)
+}
+func (r insightsRuntime) PresentationSummary(ctx context.Context, q insightsreporting.PresentationStatisticsQuery) (insightsreporting.StatisticsReport, error) {
+	return r.Insights.PresentationSummary(ctx, q)
+}
+func (r insightsRuntime) PresentationDaily(ctx context.Context, q insightsreporting.PresentationStatisticsQuery) (insightsreporting.StatisticsReport, error) {
+	return r.Insights.PresentationDaily(ctx, q)
 }
 
 type membershipsRuntime struct {
 	*bootstrap.LINEOpsRuntime
 }
 
-func (r membershipsRuntime) Inspect(ctx context.Context, query engagement.MembershipQuery) (json.RawMessage, error) {
-	result, err := r.Memberships.Inspect(ctx, query)
-	return marshalLINEResult(result, err)
+func (r membershipsRuntime) ListMemberships(ctx context.Context, page membership.PageRequest) (membership.MembershipPage, error) {
+	return r.Memberships.ListMemberships(ctx, page)
+}
+
+func (r membershipsRuntime) GetSubscription(ctx context.Context, id membership.RecipientID) (membership.SubscriptionView, error) {
+	return r.Memberships.GetSubscription(ctx, id)
+}
+
+func (r membershipsRuntime) ListMembers(ctx context.Context, id membership.MembershipID, page membership.PageRequest) (membership.MemberPage, error) {
+	return r.Memberships.ListMembers(ctx, id, page)
 }
 
 type menusRuntime struct {
 	*bootstrap.LINEOpsRuntime
 }
 
+func (r menusRuntime) List(ctx context.Context) ([]experiencepresentation.ProviderSurface, error) {
+	return r.Menus.List(ctx)
+}
+func (r menusRuntime) Get(ctx context.Context, id experiencepresentation.ProviderSurfaceID) (experiencepresentation.ProviderSurface, error) {
+	return r.Menus.Get(ctx, id)
+}
+func (r menusRuntime) Default(ctx context.Context) (experiencepresentation.ProviderSurface, error) {
+	return r.Menus.Default(ctx)
+}
+func (r menusRuntime) ListAliases(ctx context.Context) ([]experiencepresentation.ProviderAlias, error) {
+	return r.Menus.ListAliases(ctx)
+}
+func (r menusRuntime) GetAlias(ctx context.Context, id experiencepresentation.AliasID) (experiencepresentation.ProviderAlias, error) {
+	return r.Menus.GetAlias(ctx, id)
+}
+func (r menusRuntime) ForRecipient(ctx context.Context, id experiencepresentation.RecipientID) (experiencepresentation.ProviderSurface, error) {
+	return r.Menus.ForRecipient(ctx, id)
+}
+func (r menusRuntime) BatchProgress(ctx context.Context, id string) (experiencepresentation.BatchProgress, error) {
+	return r.Menus.BatchProgress(ctx, id)
+}
+
 type channelInspectionRuntime struct {
 	*bootstrap.LINEOpsRuntime
 }
 
-func (r channelInspectionRuntime) Inspect(ctx context.Context, query channel.Inspection) (outbound.LINEResult, error) {
-	return r.Channel.Inspect(ctx, query)
+func (r channelInspectionRuntime) BotInfo(ctx context.Context) (providerconfiguration.ChannelSnapshot, error) {
+	return r.Channel.BotInfo(ctx)
+}
+func (r channelInspectionRuntime) WebhookEndpoint(ctx context.Context) (providerconfiguration.ChannelSnapshot, error) {
+	return r.Channel.WebhookEndpoint(ctx)
+}
+func (r channelInspectionRuntime) MessageQuota(ctx context.Context) (providerconfiguration.ChannelSnapshot, error) {
+	return r.Channel.MessageQuota(ctx)
+}
+func (r channelInspectionRuntime) MessageQuotaConsumption(ctx context.Context) (providerconfiguration.ChannelSnapshot, error) {
+	return r.Channel.MessageQuotaConsumption(ctx)
+}
+func (r channelInspectionRuntime) AggregationUnitUsage(ctx context.Context) (providerconfiguration.ChannelSnapshot, error) {
+	return r.Channel.AggregationUnitUsage(ctx)
+}
+func (r channelInspectionRuntime) AggregationUnitNames(ctx context.Context, limit, start string) (providerconfiguration.ChannelSnapshot, error) {
+	return r.Channel.AggregationUnitNames(ctx, limit, start)
+}
+func (r channelInspectionRuntime) NarrowcastProgress(ctx context.Context, id string) (providerconfiguration.ChannelSnapshot, error) {
+	return r.Channel.NarrowcastProgress(ctx, id)
+}
+func (r channelInspectionRuntime) DeliveryReply(ctx context.Context, q insightsreporting.DailyQuery) (insightsreporting.CountReport, error) {
+	return r.DeliveryReports.DeliveryReply(ctx, q)
+}
+func (r channelInspectionRuntime) DeliveryPush(ctx context.Context, q insightsreporting.DailyQuery) (insightsreporting.CountReport, error) {
+	return r.DeliveryReports.DeliveryPush(ctx, q)
+}
+func (r channelInspectionRuntime) DeliveryMulticast(ctx context.Context, q insightsreporting.DailyQuery) (insightsreporting.CountReport, error) {
+	return r.DeliveryReports.DeliveryMulticast(ctx, q)
+}
+func (r channelInspectionRuntime) DeliveryBroadcast(ctx context.Context, q insightsreporting.DailyQuery) (insightsreporting.CountReport, error) {
+	return r.DeliveryReports.DeliveryBroadcast(ctx, q)
 }
 
 type contentRuntime struct {
 	*bootstrap.LINEOpsRuntime
 }
 
-func (r contentRuntime) Inspect(ctx context.Context, query contacts.ContentQuery) (outbound.BinaryContent, outbound.LINEResult, error) {
-	return r.Content.Inspect(ctx, query)
+func (r contentRuntime) MessageContent(ctx context.Context, id string, variant mediatransfer.ContentVariant) (mediatransfer.BinaryContent, error) {
+	return r.Content.MessageContent(ctx, id, variant)
+}
+func (r contentRuntime) MessageContentStatus(ctx context.Context, id string) (mediatransfer.PreparationStatus, error) {
+	return r.Content.MessageContentStatus(ctx, id)
 }
 
 type menuImageRuntime struct {
@@ -329,58 +488,47 @@ type menuImageRuntime struct {
 }
 
 type menuManagementRuntime struct {
-	*bootstrap.LINEOpsRuntime
+	experiencepresentation.ProviderCommandGateway
+	runtime *bootstrap.LINEOpsRuntime
 }
 
-func (r menuManagementRuntime) Execute(ctx context.Context, cmd engagement.MenuCommand) error {
-	return r.MenuManager.Execute(ctx, cmd)
-}
+func (r menuManagementRuntime) Close() error { return r.runtime.Close() }
 
 type menuImageUploadRuntime struct {
 	*bootstrap.LINEOpsRuntime
 }
 
-func (r menuImageUploadRuntime) Upload(ctx context.Context, id, contentType string, data []byte) error {
-	return r.RichMenuImages.Upload(ctx, id, contentType, data)
+func (r menuImageUploadRuntime) StorePresentationImage(ctx context.Context, id string, content mediatransfer.BinaryContent) error {
+	return r.RichMenuImages.StorePresentationImage(ctx, id, content)
 }
 
-func (r menuImageRuntime) RichMenuImage(ctx context.Context, id string) (outbound.BinaryContent, error) {
-	return r.MenuImageReader.RichMenuImage(ctx, id)
+func (r menuImageRuntime) PresentationImage(ctx context.Context, id string) (mediatransfer.BinaryContent, error) {
+	return r.MenuImageReader.PresentationImage(ctx, id)
 }
 
-func (r menusRuntime) Inspect(ctx context.Context, query engagement.RichMenuQuery) (json.RawMessage, error) {
-	result, err := r.Menus.Inspect(ctx, query)
-	return marshalLINEResult(result, err)
+func (r eligibilityRuntime) PushMessagesByPhone(ctx context.Context, request messagingdelivery.PhoneDeliveryRequest) error {
+	return r.PhoneDelivery.PushMessagesByPhone(ctx, request)
+}
+func (r eligibilityRuntime) PushTemplatedMessagesByPhone(ctx context.Context, request messagingdelivery.PhoneDeliveryRequest) error {
+	return r.PhoneDelivery.PushTemplatedMessagesByPhone(ctx, request)
+}
+func (r eligibilityRuntime) PNPMessageStatistics(ctx context.Context, q insightsreporting.DailyQuery) (insightsreporting.CountReport, error) {
+	return r.PhoneReports.PNPMessageStatistics(ctx, q)
+}
+func (r eligibilityRuntime) PNPTemplatedMessageStatistics(ctx context.Context, q insightsreporting.DailyQuery) (insightsreporting.CountReport, error) {
+	return r.PhoneReports.PNPTemplatedMessageStatistics(ctx, q)
+}
+func (r eligibilityRuntime) CreateCouponDocument(ctx context.Context, doc promotion.ProviderCouponDocument) (promotion.CouponView, error) {
+	return r.CouponCreator.CreateCouponDocument(ctx, doc)
+}
+func (r eligibilityRuntime) CloseCoupon(ctx context.Context, id promotion.CouponID) error {
+	return r.CouponCreator.CloseCoupon(ctx, id)
 }
 
-func (r couponsRuntime) Inspect(ctx context.Context, query engagement.CouponQuery) (json.RawMessage, error) {
-	result, err := r.Coupons.Inspect(ctx, query)
-	return marshalLINEResult(result, err)
+func (r linkTokenRuntime) Issue(ctx context.Context, subject accountlinktoken.Subject) (accountlinktoken.Token, error) {
+	return r.AccountLink.Issue(ctx, subject)
 }
 
-func (r eligibilityRuntime) Execute(ctx context.Context, cmd engagement.EligibilityCommand) (json.RawMessage, error) {
-	result, err := r.Eligibility.Execute(ctx, cmd)
-	return marshalLINEResult(result, err)
-}
-
-func marshalLINEResult(result outbound.LINEResult, err error) (json.RawMessage, error) {
-	if err != nil {
-		return nil, err
-	}
-	if result.Value == nil {
-		return nil, nil
-	}
-	payload, err := json.Marshal(result.Value)
-	if err != nil {
-		return nil, fmt.Errorf("encode LINE result: %w", err)
-	}
-	return payload, nil
-}
-
-func (r linkTokenRuntime) IssueLinkToken(ctx context.Context, userID string) (outbound.LINEResult, error) {
-	return r.AccountLink.IssueLinkToken(ctx, userID)
-}
-
-func (r statusRuntime) Inspect(ctx context.Context, state outbound.EventState, limit int, now time.Time) (outbound.EventStatusReport, error) {
+func (r statusRuntime) Inspect(ctx context.Context, state messagingdelivery.EventState, limit int, now time.Time) (messagingdelivery.EventStatusReport, error) {
 	return r.Reader.Inspect(ctx, state, limit, now)
 }

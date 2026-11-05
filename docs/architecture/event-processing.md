@@ -11,12 +11,13 @@
 ## 資料流程
 
 1. **驗章 + 去重**：以 SHA-256(channel + separator + webhookEventId) 產生固定、不洩漏來源的事件 Key。
-2. **Firestore 交易**：在同一 Transaction 建立 `line_inbox_v1` 和 `line_outbox_v1`，重送不覆蓋原本的 Reply Token。
-3. **Cloud Tasks**：將唯一 opaque Key 送往 HTTPS `/tasks/line-reply`，Task ID 由「事件 Key + 10 秒派送時窗」決定；同一時窗的 `AlreadyExists` 視為成功，但下一時窗可以建立新的恢復任務。原因是 Cloud Tasks 可能保留已完成任務名稱長達 24 小時，若所有 Reconcile 永遠使用相同 ID，可能無法恢復 Pending。Worker 仍以 Firestore 的單次 Claim 作為實際發送去重保障。其他派送錯誤回 HTTP 503，保留可修復的 Outbox。
+2. **Firestore 交易**：在同一 Transaction 建立 `line_inbox_v1` 和 `line_outbox_v1`；Outbox 新文件帶 `schema_version=2`，重送不覆蓋原本的 Reply Token。既有無版本文件只經受限相容還原，不以改 collection 名稱隱性遺棄工作。
+3. **Cloud Tasks**：將版本化 Delivery ID 送往 HTTPS `/tasks/v2/line-reply`，Task ID 由「Delivery ID + 10 秒派送時窗」決定；同一時窗的 `AlreadyExists` 視為成功，但下一時窗可以建立新的恢復任務。Worker 仍以 Firestore 的單次 Claim 作為實際發送去重保障。其他派送錯誤回 HTTP 503，保留可修復的 Outbox。
+   舊 `/tasks/line-reply` 與 `/tasks/dispatch` 僅供已存在工作 drain，沿用相同 OIDC 驗證且使用嚴格 legacy decoder；新 task/scheduler 不得再建立舊路由工作。
 4. **Worker 安全驗證**：必須通過 Google 簽章 OIDC Token、正確 Audience 和呼叫者服務帳號 Email。Cloud Run 另外必須啟用私有 Ingress 和 IAM Authentication。
 5. **Single-use Claim**：Worker 使用 Firestore Transaction 將 `pending` 改為 `sending`，再嘗試 LINE Reply；第二個 Worker 不會再次傳送。
 6. **終態**：`sent`、`expired`、`unknown`。網路逾時／結果不確定時，不能盲目重試外部發送。
-7. **Reconcile**：以明確設定的 Cloud Scheduler 定期呼叫具 OIDC 保護的 `POST /tasks/dispatch`，重排 Pending、將過期的 Sending 移到 Unknown；不會重新發送 Unknown。
+7. **Reconcile**：以明確設定的 Cloud Scheduler 定期呼叫具 OIDC 保護的 `POST /tasks/v2/dispatch`，重排 Pending、將過期的 Sending 移到 Unknown；不會重新發送 Unknown。
 
 ## Reply Token、隱私和 TTL
 

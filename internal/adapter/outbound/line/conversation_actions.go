@@ -5,33 +5,30 @@ import (
 	"encoding/json"
 	"errors"
 
-	"github.com/963sup/linebot-platform/internal/application/ports/outbound"
+	accountlinktoken "github.com/963sup/linebot-platform/internal/application/usecases/account-link-token"
+	conversationoperations "github.com/963sup/linebot-platform/internal/application/usecases/conversation-operations"
 	"github.com/line/line-bot-sdk-go/v8/linebot/messaging_api"
 )
 
-func (s *Sender) LeaveGroup(ctx context.Context, groupID string) error {
+func (s *Sender) Leave(ctx context.Context, conversation conversationoperations.Conversation) error {
 	client, err := s.clientFor(ctx)
 	if err != nil {
 		return err
 	}
-	r, _, err := client.LeaveGroupWithHttpInfo(groupID)
-	return lineWriteError("leaveGroup", r, err)
+	switch conversation.Kind {
+	case conversationoperations.Group:
+		r, _, err := client.LeaveGroupWithHttpInfo(conversation.ID)
+		return lineWriteError("leaveGroup", r, err)
+	case conversationoperations.Room:
+		r, _, err := client.LeaveRoomWithHttpInfo(conversation.ID)
+		return lineWriteError("leaveRoom", r, err)
+	default:
+		return errors.New("unsupported LINE conversation kind")
+	}
 }
 
-func (s *Sender) LeaveRoom(ctx context.Context, roomID string) error {
-	client, err := s.clientFor(ctx)
-	if err != nil {
-		return err
-	}
-	r, _, err := client.LeaveRoomWithHttpInfo(roomID)
-	return lineWriteError("leaveRoom", r, err)
-}
-
-func (s *Sender) ShowLoading(ctx context.Context, payload outbound.LINERequest) error {
-	var request messaging_api.ShowLoadingAnimationRequest
-	if err := decodeLINERequest(payload, &request); err != nil {
-		return errors.New("invalid LINE loading request")
-	}
+func (s *Sender) ShowLoading(ctx context.Context, indicator conversationoperations.LoadingIndicator) error {
+	request := messaging_api.ShowLoadingAnimationRequest{ChatId: indicator.ChatID, LoadingSeconds: int32(indicator.Duration.Seconds())}
 	client, err := s.clientFor(ctx)
 	if err != nil {
 		return err
@@ -40,11 +37,8 @@ func (s *Sender) ShowLoading(ctx context.Context, payload outbound.LINERequest) 
 	return lineWriteError("showLoadingAnimation", r, err)
 }
 
-func (s *Sender) MarkMessagesRead(ctx context.Context, payload outbound.LINERequest) error {
-	var request messaging_api.MarkMessagesAsReadRequest
-	if err := decodeLINERequest(payload, &request); err != nil {
-		return errors.New("invalid LINE mark-read request")
-	}
+func (s *Sender) MarkRead(ctx context.Context, target conversationoperations.ReadTarget) error {
+	request := messaging_api.MarkMessagesAsReadRequest{Chat: &messaging_api.ChatReference{UserId: target.UserID}}
 	client, err := s.clientFor(ctx)
 	if err != nil {
 		return err
@@ -53,11 +47,8 @@ func (s *Sender) MarkMessagesRead(ctx context.Context, payload outbound.LINERequ
 	return lineWriteError("markMessagesAsRead", r, err)
 }
 
-func (s *Sender) MarkMessagesReadByToken(ctx context.Context, payload outbound.LINERequest) error {
-	var request messaging_api.MarkMessagesAsReadByTokenRequest
-	if err := decodeLINERequest(payload, &request); err != nil {
-		return errors.New("invalid LINE mark-read-token request")
-	}
+func (s *Sender) MarkReadByToken(ctx context.Context, token conversationoperations.ReadToken) error {
+	request := messaging_api.MarkMessagesAsReadByTokenRequest{MarkAsReadToken: token.Token}
 	client, err := s.clientFor(ctx)
 	if err != nil {
 		return err
@@ -74,3 +65,22 @@ func (s *Sender) IssueLinkToken(ctx context.Context, userID string) (json.RawMes
 	r, v, err := client.IssueLinkTokenWithHttpInfo(userID)
 	return reportResult("issueLinkToken", r, v, err)
 }
+
+func (s *Sender) Issue(ctx context.Context, subject accountlinktoken.Subject) (accountlinktoken.Token, error) {
+	payload, err := s.IssueLinkToken(ctx, subject.ID)
+	if err != nil {
+		return accountlinktoken.Token{}, err
+	}
+	var response struct {
+		LinkToken string `json:"linkToken"`
+	}
+	if err := json.Unmarshal(payload, &response); err != nil || response.LinkToken == "" {
+		return accountlinktoken.Token{}, errors.New("invalid LINE link token response")
+	}
+	return accountlinktoken.Token{Value: response.LinkToken}, nil
+}
+
+var (
+	_ conversationoperations.Gateway = (*Sender)(nil)
+	_ accountlinktoken.Gateway       = (*Sender)(nil)
+)

@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/963sup/linebot-platform/internal/application/ports/outbound"
+	identity "github.com/963sup/linebot-platform/internal/application/usecases/identity"
 	"github.com/963sup/linebot-platform/internal/domain/identity/factories"
 	oauth "github.com/963sup/linebot-platform/internal/infrastructure/google/api/oauth"
 )
@@ -56,9 +56,9 @@ func TestStoredCiphertextRemainsDecodableWithoutMigration(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	auth := outbound.OAuthAuthorization{
+	auth := identity.OAuthAuthorization{
 		Link: link, Version: 9,
-		Credentials: outbound.OAuthCredentials{
+		Credentials: identity.OAuthCredentials{
 			AccessToken: "private-access", RefreshToken: "private-refresh",
 			TokenType: "Bearer", Expiry: time.Date(2026, 11, 1, 0, 0, 0, 0, time.UTC),
 		},

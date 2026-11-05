@@ -4,11 +4,10 @@ import (
 	"context"
 	"errors"
 	"flag"
-	"fmt"
 	"io"
 	"time"
 
-	"github.com/963sup/linebot-platform/internal/application/usecases/engagement"
+	experiencepresentation "github.com/963sup/linebot-platform/internal/application/usecases/experience-presentation"
 )
 
 func runMenus(args []string, getenv func(string) string, output io.Writer) error {
@@ -25,10 +24,6 @@ func runMenus(args []string, getenv func(string) string, output io.Writer) error
 	if getenv == nil || output == nil {
 		return errors.New("missing CLI configuration")
 	}
-	q := engagement.RichMenuQuery{Kind: *kind, ID: *id}
-	if err := engagement.ValidateRichMenuQuery(q); err != nil {
-		return err
-	}
 	if menusRuntimeFactory == nil {
 		return errors.New("menus runtime is not configured")
 	}
@@ -39,10 +34,36 @@ func runMenus(args []string, getenv func(string) string, output io.Writer) error
 	defer rt.Close()
 	ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
 	defer cancel()
-	result, err := rt.Inspect(ctx, q)
+	var result any
+	switch *kind {
+	case "list":
+		if *id != "" {
+			return errors.New("rich menu ID not accepted for this query")
+		}
+		result, err = rt.List(ctx)
+	case "menu":
+		result, err = rt.Get(ctx, experiencepresentation.ProviderSurfaceID(*id))
+	case "default":
+		if *id != "" {
+			return errors.New("rich menu ID not accepted for this query")
+		}
+		result, err = rt.Default(ctx)
+	case "alias-list":
+		if *id != "" {
+			return errors.New("rich menu ID not accepted for this query")
+		}
+		result, err = rt.ListAliases(ctx)
+	case "alias":
+		result, err = rt.GetAlias(ctx, experiencepresentation.AliasID(*id))
+	case "user":
+		result, err = rt.ForRecipient(ctx, experiencepresentation.RecipientID(*id))
+	case "batch-progress":
+		result, err = rt.BatchProgress(ctx, *id)
+	default:
+		return errors.New("unsupported rich menu query kind")
+	}
 	if err != nil {
 		return err
 	}
-	_, err = fmt.Fprintln(output, string(result))
-	return err
+	return writeJSON(output, result)
 }

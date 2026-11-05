@@ -12,9 +12,9 @@ Build maintainable Go services with pragmatic DDD, Hexagonal Architecture and id
 
 ## Agent routing
 
-The primary session is the orchestrator. Delegate only to the eight registered roles: `architect`, `researcher`, `domain`, `application`, `integration`, `platform`, `environment`, and `reviewer`. Delegation depth is one, maximum concurrent child threads is four, and the orchestrator must not spawn another orchestrator.
+The primary session is the orchestrator. Delegate only to the eight registered roles: `architect`, `researcher`, `domain`, `application`, `integration`, `platform`, `environment`, and `reviewer`. Delegation depth is one, maximum concurrent child threads is nine, and the orchestrator must not spawn another orchestrator.
 
-Use one write owner per file. Do not spawn agents for trivial localized changes. Reviewers are independent and do not modify the implementation they review.
+Nine is a capacity limit, not a default fan-out. Use the smallest necessary role set; role instances may repeat only for disjoint scopes. Use one write owner per file, sequence waves that share contracts or files, and close completed child threads promptly. Keep the ninth slot available for an independent reviewer, replacement, or non-overlapping research when practical. Do not spawn agents for trivial localized changes. Reviewers are independent, read-only, and do not modify the implementation they review.
 
 Reviewer specialization uses profiles under `docs/agent-workflows/reviewer-profiles/`: `architecture`, `api-contract`, `security`, `performance`, `testing`, `release`, and `incident`. Profiles are checklists only; they do not create new Agents, permissions, MCPs, concurrency, or delegation depth. Never add `reviewer-*` Agent TOMLs.
 

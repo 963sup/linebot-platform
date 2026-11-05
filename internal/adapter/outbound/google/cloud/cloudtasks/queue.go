@@ -13,7 +13,7 @@ import (
 
 	sdk "cloud.google.com/go/cloudtasks/apiv2"
 	"cloud.google.com/go/cloudtasks/apiv2/cloudtaskspb"
-	"github.com/963sup/linebot-platform/internal/application/usecases/ingestion"
+	ingestion "github.com/963sup/linebot-platform/internal/application/usecases/messaging-delivery"
 	queueinfra "github.com/963sup/linebot-platform/internal/infrastructure/google/cloud/cloudtasks"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -47,8 +47,8 @@ func NewQueue(client *sdk.Client, queueName, workerURL, audience, invokerEmail s
 	}
 	u, err := url.Parse(workerURL)
 	if err != nil || u.Scheme != "https" || u.Host == "" || u.User != nil ||
-		u.RawQuery != "" || u.Fragment != "" || u.Path != "/tasks/line-reply" {
-		return nil, errors.New("worker URL must be HTTPS and end with /tasks/line-reply")
+		u.RawQuery != "" || u.Fragment != "" || u.Path != "/tasks/v2/line-reply" {
+		return nil, errors.New("worker URL must be HTTPS and end with /tasks/v2/line-reply")
 	}
 	aud, err := url.Parse(audience)
 	if err != nil || aud.Scheme != "https" || aud.Host == "" || aud.User != nil ||
@@ -80,8 +80,9 @@ func (q *Queue) Enqueue(ctx context.Context, key ingestion.EventKey) error {
 	}
 	value := key.String()
 	payload, err := json.Marshal(struct {
-		Key string `json:"key"`
-	}{Key: value})
+		SchemaVersion int    `json:"schema_version"`
+		DeliveryID    string `json:"delivery_id"`
+	}{SchemaVersion: 2, DeliveryID: value})
 	if err != nil {
 		return err
 	}

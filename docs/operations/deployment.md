@@ -40,7 +40,7 @@ Cloud Run 使用 `line-bot-runtime@bubbly-area-513305-s0.iam.gserviceaccount.com
 
 ## 固定映像來源
 
-`Dockerfile`、`Dockerfile.worker` 與三份 Cloud Build configuration 的 builder images 均固定為 sha256 digest。部署流程只接受 Artifact Registry 的 `@sha256:` image reference；不可使用 mutable tag 部署。
+單一 `Dockerfile` 與兩份 Cloud Build configuration 的基礎／builder images 均固定為 sha256 digest。部署流程只接受 Artifact Registry 的 `@sha256:` image reference；不可使用 mutable tag 部署。
 
 ## 驗證
 
@@ -54,18 +54,13 @@ go test ./tests/contract -count=1
 
 ## 建置 public 與 private 映像
 
-Cloud Build YAML 先執行 Go module 驗證、gofmt、vet、race test 與 build，成功才建立並推送映像。
+`cloudbuild.yaml` 只執行一次 Go module 驗證、gofmt、vet 與 race test，並在共享的 `/workspace` 產出兩個 binary；成功後兩個 Docker step 只封裝 distroless runtime 並行推送，不重複下載 Go modules 或編譯。CPU 密集的 race build 使用 Cloud Build `E2_HIGHCPU_8` worker。
 
 ```bash
 gcloud builds submit . \
   --project=bubbly-area-513305-s0 \
   --config=cloudbuild.yaml \
-  --substitutions=_REGION=asia-east1,_AR_REPOSITORY=line-bot,_IMAGE_NAME=line-bot-public
-
-gcloud builds submit . \
-  --project=bubbly-area-513305-s0 \
-  --config=cloudbuild.worker.yaml \
-  --substitutions=_REGION=asia-east1,_AR_REPOSITORY=line-bot,_IMAGE_NAME=line-bot-private
+  --substitutions=_REGION=asia-east1,_AR_REPOSITORY=line-bot
 ```
 
 查詢每個 image 的 sha256 digest 後，才可進行部署。

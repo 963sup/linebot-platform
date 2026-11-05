@@ -1,16 +1,22 @@
-.PHONY: bootstrap check config-check config-docs dev fmt-check vet test integration-compile build run-webhook run-worker run-ops
+.PHONY: bootstrap check config-check config-docs domain-check domain-docs dev fmt-check vet test integration-compile build run-webhook run-worker run-ops
 
 bootstrap:
 	go mod tidy
 	go mod download
 
-check: config-check fmt-check vet test integration-compile build
+check: config-check domain-check fmt-check vet test integration-compile build
 
 config-check:
 	go run ./cmd/configcheck --check
 
 config-docs:
 	go run ./cmd/configcheck --write-doc
+
+domain-check:
+	go run ./cmd/domainmodel -mode=check
+
+domain-docs:
+	go run ./cmd/domainmodel -mode=write
 
 # No implicit .env loading: make dev starts the safe, credential-free local MVP.
 dev:

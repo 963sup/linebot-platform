@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/963sup/linebot-platform/internal/application/usecases/audience"
 	"github.com/line/line-bot-sdk-go/v8/linebot/manage_audience"
 )
 
@@ -31,10 +32,10 @@ func TestAudienceReadOnlySDKEndpoints(t *testing.T) {
 		name string
 		fn   func() error
 	}{
-		{"group", func() error { _, e := s.AudienceGroup(ctx, 1); return e }},
-		{"shared", func() error { _, e := s.SharedAudienceGroup(ctx, 1); return e }},
-		{"list", func() error { _, e := s.AudienceGroups(ctx, 1, 10); return e }},
-		{"sharedlist", func() error { _, e := s.SharedAudienceGroups(ctx, 1, 10); return e }},
+		{"group", func() error { _, e := s.GetAudience(ctx, 1, false); return e }},
+		{"shared", func() error { _, e := s.GetAudience(ctx, 1, true); return e }},
+		{"list", func() error { _, e := s.ListAudiences(ctx, audience.PageRequest{Number: 1, Size: 10}, false); return e }},
+		{"sharedlist", func() error { _, e := s.ListAudiences(ctx, audience.PageRequest{Number: 1, Size: 10}, true); return e }},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			if err := tc.fn(); err != nil {

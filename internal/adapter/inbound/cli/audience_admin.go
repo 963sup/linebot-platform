@@ -4,21 +4,19 @@ import (
 	"context"
 	"errors"
 	"flag"
-	"fmt"
 	"io"
 	"time"
 
-	"github.com/963sup/linebot-platform/internal/application/ports/outbound"
-	"github.com/963sup/linebot-platform/internal/application/usecases/engagement"
+	"github.com/963sup/linebot-platform/internal/application/usecases/audience"
 )
 
 func runAudienceAdmin(args []string, getenv func(string) string, output io.Writer) error {
 	flags := flag.NewFlagSet("audience-admin", flag.ContinueOnError)
 	action := flags.String("action", "", "create|append|create-click|create-impression|update-description|delete|create-file|append-file")
-	id := flags.Int64("audience-id", 0, "existing audience group ID for edit/delete/file append")
-	request := flags.String("request", "", "JSON request file, used for JSON operations")
+	id := flags.Int64("audience-id", 0, "existing audience group ID")
+	request := flags.String("request", "", "JSON request file")
 	file := flags.String("file", "", "file of user IDs to upload, maximum 20 MiB")
-	description := flags.String("description", "", "audience description for create-file")
+	description := flags.String("description", "", "audience description")
 	uploadDescription := flags.String("upload-description", "", "description of this file upload")
 	ifa := flags.Bool("ifa", false, "explicit IFA audience choice")
 	apply := flags.Bool("apply", false, "authorize mutation")
@@ -26,51 +24,89 @@ func runAudienceAdmin(args []string, getenv func(string) string, output io.Write
 	if err := flags.Parse(args); err != nil {
 		return err
 	}
-	if len(flags.Args()) != 0 || getenv == nil || output == nil ||
-		!*apply || *confirm == "" || *confirm != *action {
+	if len(flags.Args()) != 0 || getenv == nil || output == nil || !*apply || *confirm != *action {
 		return errors.New("audience-admin requires --apply --confirm ACTION")
 	}
-	cmd := engagement.AudienceCommand{
-		Action: *action, ID: *id, Description: *description,
-		UploadDescription: *uploadDescription, IFAAudience: *ifa,
-	}
+	var document map[string]any
 	if *request != "" {
-		b, err := readPrivateBounded(*request, 256<<10)
+		data, err := readPrivateBounded(*request, 256<<10)
 		if err != nil {
 			return err
 		}
-		value, err := decodeLINEJSON(b)
+		value, err := decodeLINEJSON(data)
 		if err != nil {
 			return errors.New("request must be valid JSON")
 		}
-		cmd.Request = outbound.LINERequest{Value: value}
+		var ok bool
+		document, ok = value.(map[string]any)
+		if !ok {
+			return errors.New("request must be a JSON object")
+		}
 	}
+	var data []byte
 	if *file != "" {
-		b, err := readPrivateBounded(*file, 20<<20)
+		var err error
+		data, err = readPrivateBounded(*file, audience.MaxAudienceFileSize)
 		if err != nil {
 			return err
 		}
-		cmd.File = b
-	}
-	if err := engagement.ValidateAudienceCommand(cmd); err != nil {
-		return err
 	}
 	if audienceManagementRuntimeFactory == nil {
 		return errors.New("audience management runtime is not configured")
 	}
-	r, err := audienceManagementRuntimeFactory(getenv(channelTokenEnv))
+	runtime, err := audienceManagementRuntimeFactory(getenv(channelTokenEnv))
 	if err != nil {
 		return err
 	}
-	defer r.Close()
+	defer runtime.Close()
 	ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
 	defer cancel()
-	result, err := r.Execute(ctx, cmd)
+	providerID := audience.ProviderAudienceID(*id)
+	var result any
+	switch *action {
+	case "create":
+		result, err = runtime.CreateGroup(ctx, audience.CreateGroupCommand{Description: textField(document, "description"), Recipients: audienceRecipients(document)})
+	case "append":
+		err = runtime.AppendRecipients(ctx, audience.AppendRecipientsCommand{ID: audience.ProviderAudienceID(audienceNumber(document, "audienceGroupId")), Recipients: audienceRecipients(document)})
+	case "create-click", "create-impression":
+		result, err = runtime.CreateInteractionGroup(ctx, audience.CreateInteractionGroupCommand{Description: textField(document, "description"), SourceRequestID: textField(document, "requestId")}, *action == "create-impression")
+	case "update-description":
+		err = runtime.UpdateDescription(ctx, providerID, textField(document, "description"))
+	case "delete":
+		err = runtime.Delete(ctx, providerID)
+	case "create-file":
+		result, err = runtime.CreateFromFile(ctx, audience.AudienceFile{Data: data, Description: *description, UploadDescription: *uploadDescription, IFAAudience: *ifa})
+	case "append-file":
+		err = runtime.AppendFromFile(ctx, providerID, audience.AudienceFile{Data: data, UploadDescription: *uploadDescription})
+	default:
+		return errors.New("unsupported audience action")
+	}
 	if err != nil {
 		return err
 	}
-	if len(result) > 0 {
-		_, err = fmt.Fprintln(output, string(result))
+	if result != nil {
+		return writeJSON(output, result)
 	}
-	return err
+	return nil
+}
+
+func textField(object map[string]any, name string) string {
+	value, _ := object[name].(string)
+	return value
+}
+func audienceNumber(object map[string]any, name string) int64 {
+	value, _ := numberField(object, name)
+	return value
+}
+func audienceRecipients(object map[string]any) []string {
+	raw, _ := object["audiences"].([]any)
+	result := make([]string, 0, len(raw))
+	for _, item := range raw {
+		if entry, ok := item.(map[string]any); ok {
+			if id := textField(entry, "id"); id != "" {
+				result = append(result, id)
+			}
+		}
+	}
+	return result
 }

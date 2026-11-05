@@ -5,12 +5,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"strings"
 	"testing"
 	"time"
 
 	"cloud.google.com/go/cloudtasks/apiv2/cloudtaskspb"
-	"github.com/963sup/linebot-platform/internal/application/usecases/ingestion"
+	ingestion "github.com/963sup/linebot-platform/internal/application/usecases/messaging-delivery"
 	queueinfra "github.com/963sup/linebot-platform/internal/infrastructure/google/cloud/cloudtasks"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -42,7 +41,7 @@ func TestEnqueueStableIdAndOIDC(t *testing.T) {
 	var lastTaskName string
 	q := &Queue{
 		name:     testQueue,
-		worker:   "https://worker.example.test/tasks/line-reply",
+		worker:   "https://worker.example.test/tasks/v2/line-reply",
 		audience: "https://worker.example.test",
 		email:    "tasks-invoker@example.iam.gserviceaccount.com",
 		now:      func() time.Time { return clock },
@@ -58,18 +57,21 @@ func TestEnqueueStableIdAndOIDC(t *testing.T) {
 		}
 		lastTaskName = req.Task.Name
 		request := req.Task.GetHttpRequest()
-		if request.GetHttpMethod() != cloudtaskspb.HttpMethod_POST || request.GetUrl() != "https://worker.example.test/tasks/line-reply" {
+		if request.GetHttpMethod() != cloudtaskspb.HttpMethod_POST || request.GetUrl() != "https://worker.example.test/tasks/v2/line-reply" {
 			t.Fatal("worker HTTP request mismatch")
 		}
 		if request.GetOidcToken().GetServiceAccountEmail() != q.email || request.GetOidcToken().GetAudience() != q.audience {
 			t.Fatal("OIDC identity mismatch")
 		}
-		var body map[string]string
+		var body struct {
+			SchemaVersion int    `json:"schema_version"`
+			DeliveryID    string `json:"delivery_id"`
+		}
 		if err := json.Unmarshal(request.Body, &body); err != nil {
 			t.Fatal(err)
 		}
-		if len(body) != 1 || body["key"] != testKey || strings.Contains(string(request.Body), "reply") {
-			t.Fatal("task body must contain only the opaque key")
+		if body.SchemaVersion != 2 || body.DeliveryID != testKey {
+			t.Fatal("task body must contain only the versioned delivery identity")
 		}
 		return nil, status.Error(codes.AlreadyExists, "duplicate")
 	}

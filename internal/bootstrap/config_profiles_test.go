@@ -12,7 +12,7 @@ func durableSettings() map[string]string {
 		KeyBotDestination: "U0123456789abcdef0123456789abcdef",
 		KeyProjectID:      "test-project",
 		KeyQueueName:      "projects/test-project/locations/asia-east1/queues/line-queue",
-		KeyWorkerURL:      "https://worker.example.test/tasks/line-reply",
+		KeyWorkerURL:      "https://worker.example.test/tasks/v2/line-reply",
 		KeyOIDCAudience:   "https://worker.example.test",
 		KeyInvokerEmail:   "invoker@test-project.iam.gserviceaccount.com",
 	}

@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	experiencepresentation "github.com/963sup/linebot-platform/internal/application/usecases/experience-presentation"
 )
 
 func TestRichMenuReadsUseNativeSDK(t *testing.T) {
@@ -22,13 +24,16 @@ func TestRichMenuReadsUseNativeSDK(t *testing.T) {
 		name string
 		fn   func() error
 	}{
-		{"list", func() error { _, e := s.RichMenuList(ctx); return e }},
-		{"get", func() error { _, e := s.RichMenu(ctx, "richmenu-1"); return e }},
-		{"default", func() error { _, e := s.DefaultRichMenu(ctx); return e }},
-		{"alias-list", func() error { _, e := s.RichMenuAliasList(ctx); return e }},
-		{"alias", func() error { _, e := s.RichMenuAlias(ctx, "alias-1"); return e }},
-		{"user", func() error { _, e := s.UserRichMenu(ctx, "U123"); return e }},
-		{"progress", func() error { _, e := s.RichMenuBatchProgress(ctx, "request-1"); return e }},
+		{"list", func() error { _, e := s.ListSurfaces(ctx); return e }},
+		{"get", func() error {
+			_, e := s.GetSurface(ctx, experiencepresentation.ProviderSurfaceID("richmenu-1"))
+			return e
+		}},
+		{"default", func() error { _, e := s.GetDefaultSurface(ctx); return e }},
+		{"alias-list", func() error { _, e := s.ListAliases(ctx); return e }},
+		{"alias", func() error { _, e := s.GetAlias(ctx, experiencepresentation.AliasID("alias-1")); return e }},
+		{"user", func() error { _, e := s.GetRecipientSurface(ctx, experiencepresentation.RecipientID("U123")); return e }},
+		{"progress", func() error { _, e := s.GetBatchProgress(ctx, "request-1"); return e }},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			if err := tc.fn(); err != nil {

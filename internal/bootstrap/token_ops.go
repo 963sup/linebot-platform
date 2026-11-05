@@ -2,7 +2,7 @@ package bootstrap
 
 import (
 	"github.com/963sup/linebot-platform/internal/adapter/outbound/line"
-	"github.com/963sup/linebot-platform/internal/application/usecases/channel"
+	credentiallifecycle "github.com/963sup/linebot-platform/internal/application/usecases/credential-lifecycle"
 	"github.com/963sup/linebot-platform/internal/infrastructure/httpclient"
 	lineinfra "github.com/963sup/linebot-platform/internal/infrastructure/line"
 )
@@ -10,8 +10,8 @@ import (
 // LINETokenOpsRuntime is intentionally separate from Messaging runtime; no
 // Channel Token API client is ever constructed inside a public webhook.
 type LINETokenOpsRuntime struct {
-	Tokens    *channel.TokenOperations
-	transport *httpclient.Managed
+	Credentials *credentiallifecycle.Service
+	transport   *httpclient.Managed
 }
 
 func NewLINETokenOpsRuntime() (*LINETokenOpsRuntime, error) {
@@ -28,11 +28,11 @@ func NewLINETokenOpsRuntime() (*LINETokenOpsRuntime, error) {
 	if err != nil {
 		return fail(err)
 	}
-	usecase, err := channel.NewTokenOperations(adapter)
+	service, err := credentiallifecycle.New(adapter)
 	if err != nil {
 		return fail(err)
 	}
-	return &LINETokenOpsRuntime{Tokens: usecase, transport: transport}, nil
+	return &LINETokenOpsRuntime{Credentials: service, transport: transport}, nil
 }
 
 func (r *LINETokenOpsRuntime) Close() {

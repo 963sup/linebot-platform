@@ -1,10 +1,7 @@
-# Cloud Build build/publish template; no Cloud Run deployment.
-# Before executing: create Artifact Registry, configure least-privileged build SA
-# and grant its Cloud Logging + Artifact Registry permissions. No triggers are installed here.
+# Builds both production images after one shared verification pass.
 substitutions:
   _REGION: 'asia-east1'
   _AR_REPOSITORY: 'line-bot'
-  _IMAGE_NAME: 'line-bot-public'
 
 serviceAccount: 'projects/bubbly-area-513305-s0/serviceAccounts/line-bot-build@bubbly-area-513305-s0.iam.gserviceaccount.com'
 
@@ -24,25 +21,26 @@ steps:
         fi
         go vet ./...
         go test -race -count=1 ./...
-        go build ./...
+        mkdir -p /workspace/.release
+        CGO_ENABLED=0 GOOS=linux go build -trimpath -o /workspace/.release/webhook ./cmd/webhook
+        CGO_ENABLED=0 GOOS=linux go build -trimpath -o /workspace/.release/worker ./cmd/worker
 
-  - id: 'build-webhook-image'
+  - id: 'build-public-image'
     name: 'gcr.io/cloud-builders/docker@sha256:fbc05705e6f24467e40ae8a4097ab9b8fae1116551f838fa2c55f4367427fc36'
     waitFor: ['verify-go']
-    args:
-      - 'build'
-      - '--file'
-      - 'Dockerfile'
-      - '--tag'
-      - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPOSITORY}/${_IMAGE_NAME}:$BUILD_ID'
-      - '.'
+    args: ['build', '--file', 'Dockerfile', '--build-arg', 'BINARY=webhook', '--tag', '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPOSITORY}/line-bot-public:$BUILD_ID', '.']
 
-# Cloud Build pushes this image to Artifact Registry only after a successful build.
-# An image appearing here does NOT deploy or open a Cloud Run endpoint.
+  - id: 'build-private-image'
+    name: 'gcr.io/cloud-builders/docker@sha256:fbc05705e6f24467e40ae8a4097ab9b8fae1116551f838fa2c55f4367427fc36'
+    waitFor: ['verify-go']
+    args: ['build', '--file', 'Dockerfile', '--build-arg', 'BINARY=worker', '--tag', '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPOSITORY}/line-bot-private:$BUILD_ID', '.']
+
 images:
-  - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPOSITORY}/${_IMAGE_NAME}:$BUILD_ID'
+  - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPOSITORY}/line-bot-public:$BUILD_ID'
+  - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPOSITORY}/line-bot-private:$BUILD_ID'
 
 options:
   logging: CLOUD_LOGGING_ONLY
+  machineType: 'E2_HIGHCPU_8'
 
 timeout: '1800s'

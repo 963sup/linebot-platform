@@ -15,6 +15,7 @@ coverage.out
 *.test
 *.prof
 *.pprof
+.release/
 
 # Terraform state and local values
 .terraform/

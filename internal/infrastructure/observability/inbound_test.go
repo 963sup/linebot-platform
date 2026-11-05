@@ -94,7 +94,7 @@ func TestInboundEarlyHintsPreservesFinalStatus(t *testing.T) {
 	}))
 	defer server.Close()
 
-	response, err := server.Client().Get(server.URL + "/tasks/line-reply")
+	response, err := server.Client().Get(server.URL + "/tasks/v2/line-reply")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -135,7 +135,7 @@ func TestInboundFlushTracksCommittedStatus(t *testing.T) {
 				w.WriteHeader(http.StatusUnauthorized)
 			}))
 			recorder := httptest.NewRecorder()
-			handler.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/tasks/line-reply", nil))
+			handler.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/tasks/v2/line-reply", nil))
 			if !recorder.Flushed || recorder.Code != tc.wantStatus {
 				t.Fatalf("underlying response: flushed=%t status=%d, want %d",
 					recorder.Flushed, recorder.Code, tc.wantStatus)
@@ -157,7 +157,7 @@ func TestInboundUnsupportedFlushPreservesLaterStatus(t *testing.T) {
 		w.WriteHeader(http.StatusUnauthorized)
 	}))
 	recorder := httptest.NewRecorder()
-	handler.ServeHTTP(responseWriterWithoutFlush{recorder}, httptest.NewRequest(http.MethodPost, "/tasks/dispatch", nil))
+	handler.ServeHTTP(responseWriterWithoutFlush{recorder}, httptest.NewRequest(http.MethodPost, "/tasks/v2/dispatch", nil))
 	if recorder.Code != http.StatusUnauthorized || !strings.Contains(out.String(), `"status_code":401`) {
 		t.Fatalf("unsupported Flush changed final status or telemetry: code=%d log=%s",
 			recorder.Code, out.String())

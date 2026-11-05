@@ -1,0 +1,807 @@
+# Generated from repository evidence, but maintained as an application capability manifest.
+# LINE endpoint groups and provider names are not Domain Contexts.
+schema_version: 1
+provider: line
+source_inventory: docs/line/endpoint-inventory.yaml
+operations:
+  - operation: "getWebhookEndpoint"
+    status: not-domain-relevant
+    capability: "provider-boundary-operation"
+    current_implementation: "internal/application/usecases/provider-configuration"
+    ownership:
+      application: "internal/application/usecases/provider-configuration"
+      integration: "internal/adapter/outbound/line"
+    reason: "Transport, provider configuration, validation, media transfer, or token lifecycle is owned by the Application/LINE adapter boundary rather than a Domain Context."
+  - operation: "setWebhookEndpoint"
+    status: not-domain-relevant
+    capability: "provider-boundary-operation"
+    current_implementation: "internal/application/usecases/provider-configuration"
+    ownership:
+      application: "internal/application/usecases/provider-configuration"
+      integration: "internal/adapter/outbound/line"
+    reason: "Transport, provider configuration, validation, media transfer, or token lifecycle is owned by the Application/LINE adapter boundary rather than a Domain Context."
+  - operation: "testWebhookEndpoint"
+    status: not-domain-relevant
+    capability: "provider-boundary-operation"
+    current_implementation: "internal/application/usecases/provider-configuration"
+    ownership:
+      application: "internal/application/usecases/provider-configuration"
+      integration: "internal/adapter/outbound/line"
+    reason: "Transport, provider configuration, validation, media transfer, or token lifecycle is owned by the Application/LINE adapter boundary rather than a Domain Context."
+  - operation: "getMessageContent"
+    status: not-domain-relevant
+    capability: "provider-boundary-operation"
+    current_implementation: "internal/application/usecases/media-transfer"
+    ownership:
+      application: "internal/application/usecases/media-transfer"
+      integration: "internal/adapter/outbound/line"
+    reason: "Transport, provider configuration, validation, media transfer, or token lifecycle is owned by the Application/LINE adapter boundary rather than a Domain Context."
+  - operation: "getMessageContentPreview"
+    status: not-domain-relevant
+    capability: "provider-boundary-operation"
+    current_implementation: "internal/application/usecases/media-transfer"
+    ownership:
+      application: "internal/application/usecases/media-transfer"
+      integration: "internal/adapter/outbound/line"
+    reason: "Transport, provider configuration, validation, media transfer, or token lifecycle is owned by the Application/LINE adapter boundary rather than a Domain Context."
+  - operation: "getMessageContentTranscodingByMessageId"
+    status: not-domain-relevant
+    capability: "provider-boundary-operation"
+    current_implementation: "internal/application/usecases/media-transfer"
+    ownership:
+      application: "internal/application/usecases/media-transfer"
+      integration: "internal/adapter/outbound/line"
+    reason: "Transport, provider configuration, validation, media transfer, or token lifecycle is owned by the Application/LINE adapter boundary rather than a Domain Context."
+  - operation: "replyMessage"
+    status: mapped
+    capability: "message-delivery"
+    context: "messaging-delivery"
+    current_implementation: "internal/application/usecases/messaging-delivery"
+    ownership:
+      application: "internal/application/usecases/messaging-delivery"
+      integration: "internal/adapter/outbound/line"
+  - operation: "pushMessage"
+    status: mapped
+    capability: "message-delivery"
+    context: "messaging-delivery"
+    current_implementation: "internal/application/usecases/messaging-delivery"
+    ownership:
+      application: "internal/application/usecases/messaging-delivery"
+      integration: "internal/adapter/outbound/line"
+  - operation: "multicast"
+    status: mapped
+    capability: "message-delivery"
+    context: "messaging-delivery"
+    current_implementation: "internal/application/usecases/messaging-delivery"
+    ownership:
+      application: "internal/application/usecases/messaging-delivery"
+      integration: "internal/adapter/outbound/line"
+  - operation: "narrowcast"
+    status: mapped
+    capability: "message-delivery"
+    context: "messaging-delivery"
+    current_implementation: "internal/application/usecases/messaging-delivery"
+    ownership:
+      application: "internal/application/usecases/messaging-delivery"
+      integration: "internal/adapter/outbound/line"
+  - operation: "getNarrowcastProgress"
+    status: provisional
+    capability: "delivery-observability"
+    context: "messaging-delivery"
+    current_implementation: "internal/application/usecases/provider-configuration"
+    ownership:
+      application: "internal/application/usecases/provider-configuration"
+      integration: "internal/adapter/outbound/line"
+  - operation: "broadcast"
+    status: mapped
+    capability: "message-delivery"
+    context: "messaging-delivery"
+    current_implementation: "internal/application/usecases/messaging-delivery"
+    ownership:
+      application: "internal/application/usecases/messaging-delivery"
+      integration: "internal/adapter/outbound/line"
+  - operation: "getMessageQuota"
+    status: provisional
+    capability: "delivery-observability"
+    context: "messaging-delivery"
+    current_implementation: "internal/application/usecases/provider-configuration"
+    ownership:
+      application: "internal/application/usecases/provider-configuration"
+      integration: "internal/adapter/outbound/line"
+  - operation: "getMessageQuotaConsumption"
+    status: provisional
+    capability: "delivery-observability"
+    context: "messaging-delivery"
+    current_implementation: "internal/application/usecases/provider-configuration"
+    ownership:
+      application: "internal/application/usecases/provider-configuration"
+      integration: "internal/adapter/outbound/line"
+  - operation: "getNumberOfSentReplyMessages"
+    status: provisional
+    capability: "delivery-observability"
+    context: "messaging-delivery"
+    current_implementation: "internal/application/usecases/insights-reporting"
+    ownership:
+      application: "internal/application/usecases/insights-reporting"
+      integration: "internal/adapter/outbound/line"
+  - operation: "getNumberOfSentPushMessages"
+    status: provisional
+    capability: "delivery-observability"
+    context: "messaging-delivery"
+    current_implementation: "internal/application/usecases/insights-reporting"
+    ownership:
+      application: "internal/application/usecases/insights-reporting"
+      integration: "internal/adapter/outbound/line"
+  - operation: "getNumberOfSentMulticastMessages"
+    status: provisional
+    capability: "delivery-observability"
+    context: "messaging-delivery"
+    current_implementation: "internal/application/usecases/insights-reporting"
+    ownership:
+      application: "internal/application/usecases/insights-reporting"
+      integration: "internal/adapter/outbound/line"
+  - operation: "getNumberOfSentBroadcastMessages"
+    status: provisional
+    capability: "delivery-observability"
+    context: "messaging-delivery"
+    current_implementation: "internal/application/usecases/insights-reporting"
+    ownership:
+      application: "internal/application/usecases/insights-reporting"
+      integration: "internal/adapter/outbound/line"
+  - operation: "validateReply"
+    status: not-domain-relevant
+    capability: "provider-boundary-operation"
+    current_implementation: "internal/application/usecases/request-validation"
+    ownership:
+      application: "internal/application/usecases/request-validation"
+      integration: "internal/adapter/outbound/line"
+    reason: "Transport, provider configuration, validation, media transfer, or token lifecycle is owned by the Application/LINE adapter boundary rather than a Domain Context."
+  - operation: "validatePush"
+    status: not-domain-relevant
+    capability: "provider-boundary-operation"
+    current_implementation: "internal/application/usecases/request-validation"
+    ownership:
+      application: "internal/application/usecases/request-validation"
+      integration: "internal/adapter/outbound/line"
+    reason: "Transport, provider configuration, validation, media transfer, or token lifecycle is owned by the Application/LINE adapter boundary rather than a Domain Context."
+  - operation: "validateMulticast"
+    status: not-domain-relevant
+    capability: "provider-boundary-operation"
+    current_implementation: "internal/application/usecases/request-validation"
+    ownership:
+      application: "internal/application/usecases/request-validation"
+      integration: "internal/adapter/outbound/line"
+    reason: "Transport, provider configuration, validation, media transfer, or token lifecycle is owned by the Application/LINE adapter boundary rather than a Domain Context."
+  - operation: "validateNarrowcast"
+    status: not-domain-relevant
+    capability: "provider-boundary-operation"
+    current_implementation: "internal/application/usecases/request-validation"
+    ownership:
+      application: "internal/application/usecases/request-validation"
+      integration: "internal/adapter/outbound/line"
+    reason: "Transport, provider configuration, validation, media transfer, or token lifecycle is owned by the Application/LINE adapter boundary rather than a Domain Context."
+  - operation: "validateBroadcast"
+    status: not-domain-relevant
+    capability: "provider-boundary-operation"
+    current_implementation: "internal/application/usecases/request-validation"
+    ownership:
+      application: "internal/application/usecases/request-validation"
+      integration: "internal/adapter/outbound/line"
+    reason: "Transport, provider configuration, validation, media transfer, or token lifecycle is owned by the Application/LINE adapter boundary rather than a Domain Context."
+  - operation: "getAggregationUnitUsage"
+    status: unclassified
+    capability: "pending-business-classification"
+    current_implementation: "internal/application/usecases/provider-configuration"
+    ownership:
+      application: "internal/application/usecases/provider-configuration"
+      integration: "internal/adapter/outbound/line"
+    reason: "Current Application code exposes the provider operation, but repository evidence does not establish an independent business owner, invariant, or validated Context."
+  - operation: "getAggregationUnitNameList"
+    status: unclassified
+    capability: "pending-business-classification"
+    current_implementation: "internal/application/usecases/provider-configuration"
+    ownership:
+      application: "internal/application/usecases/provider-configuration"
+      integration: "internal/adapter/outbound/line"
+    reason: "Current Application code exposes the provider operation, but repository evidence does not establish an independent business owner, invariant, or validated Context."
+  - operation: "getProfile"
+    status: mapped
+    capability: "contact-directory"
+    current_implementation: "internal/application/usecases/contact-directory"
+    ownership:
+      application: "internal/application/usecases/contact-directory"
+      integration: "internal/adapter/outbound/line"
+  - operation: "getFollowers"
+    status: unclassified
+    capability: "pending-business-classification"
+    current_implementation: "internal/application/usecases/contact-directory"
+    ownership:
+      application: "internal/application/usecases/contact-directory"
+      integration: "internal/adapter/outbound/line"
+    reason: "Current Application code exposes the provider operation, but repository evidence does not establish an independent business owner, invariant, or validated Context."
+  - operation: "getBotInfo"
+    status: not-domain-relevant
+    capability: "provider-boundary-operation"
+    current_implementation: "internal/application/usecases/provider-configuration"
+    ownership:
+      application: "internal/application/usecases/provider-configuration"
+      integration: "internal/adapter/outbound/line"
+    reason: "Transport, provider configuration, validation, media transfer, or token lifecycle is owned by the Application/LINE adapter boundary rather than a Domain Context."
+  - operation: "getGroupMemberProfile"
+    status: mapped
+    capability: "contact-directory"
+    current_implementation: "internal/application/usecases/contact-directory"
+    ownership:
+      application: "internal/application/usecases/contact-directory"
+      integration: "internal/adapter/outbound/line"
+  - operation: "getRoomMemberProfile"
+    status: mapped
+    capability: "contact-directory"
+    current_implementation: "internal/application/usecases/contact-directory"
+    ownership:
+      application: "internal/application/usecases/contact-directory"
+      integration: "internal/adapter/outbound/line"
+  - operation: "getGroupMembersIds"
+    status: mapped
+    capability: "contact-directory"
+    current_implementation: "internal/application/usecases/contact-directory"
+    ownership:
+      application: "internal/application/usecases/contact-directory"
+      integration: "internal/adapter/outbound/line"
+  - operation: "getRoomMembersIds"
+    status: mapped
+    capability: "contact-directory"
+    current_implementation: "internal/application/usecases/contact-directory"
+    ownership:
+      application: "internal/application/usecases/contact-directory"
+      integration: "internal/adapter/outbound/line"
+  - operation: "leaveGroup"
+    status: mapped
+    capability: "message-delivery"
+    context: "messaging-delivery"
+    current_implementation: "internal/application/usecases/conversation-operations"
+    ownership:
+      application: "internal/application/usecases/conversation-operations"
+      integration: "internal/adapter/outbound/line"
+  - operation: "leaveRoom"
+    status: mapped
+    capability: "message-delivery"
+    context: "messaging-delivery"
+    current_implementation: "internal/application/usecases/conversation-operations"
+    ownership:
+      application: "internal/application/usecases/conversation-operations"
+      integration: "internal/adapter/outbound/line"
+  - operation: "getGroupSummary"
+    status: mapped
+    capability: "contact-directory"
+    current_implementation: "internal/application/usecases/contact-directory"
+    ownership:
+      application: "internal/application/usecases/contact-directory"
+      integration: "internal/adapter/outbound/line"
+  - operation: "getGroupMemberCount"
+    status: mapped
+    capability: "contact-directory"
+    current_implementation: "internal/application/usecases/contact-directory"
+    ownership:
+      application: "internal/application/usecases/contact-directory"
+      integration: "internal/adapter/outbound/line"
+  - operation: "getRoomMemberCount"
+    status: mapped
+    capability: "contact-directory"
+    current_implementation: "internal/application/usecases/contact-directory"
+    ownership:
+      application: "internal/application/usecases/contact-directory"
+      integration: "internal/adapter/outbound/line"
+  - operation: "createRichMenu"
+    status: provisional
+    capability: "experience-presentation"
+    context: "experience-presentation"
+    current_implementation: "internal/application/usecases/experience-presentation"
+    ownership:
+      application: "internal/application/usecases/experience-presentation"
+      integration: "internal/adapter/outbound/line"
+  - operation: "validateRichMenuObject"
+    status: not-domain-relevant
+    capability: "provider-boundary-operation"
+    current_implementation: "internal/application/usecases/experience-presentation"
+    ownership:
+      application: "internal/application/usecases/experience-presentation"
+      integration: "internal/adapter/outbound/line"
+    reason: "Transport, provider configuration, validation, media transfer, or token lifecycle is owned by the Application/LINE adapter boundary rather than a Domain Context."
+  - operation: "getRichMenuImage"
+    status: not-domain-relevant
+    capability: "provider-boundary-operation"
+    current_implementation: "internal/application/usecases/media-transfer"
+    ownership:
+      application: "internal/application/usecases/media-transfer"
+      integration: "internal/adapter/outbound/line"
+    reason: "Transport, provider configuration, validation, media transfer, or token lifecycle is owned by the Application/LINE adapter boundary rather than a Domain Context."
+  - operation: "setRichMenuImage"
+    status: not-domain-relevant
+    capability: "provider-boundary-operation"
+    current_implementation: "internal/application/usecases/media-transfer"
+    ownership:
+      application: "internal/application/usecases/media-transfer"
+      integration: "internal/adapter/outbound/line"
+    reason: "Transport, provider configuration, validation, media transfer, or token lifecycle is owned by the Application/LINE adapter boundary rather than a Domain Context."
+  - operation: "getRichMenu"
+    status: provisional
+    capability: "experience-presentation"
+    context: "experience-presentation"
+    current_implementation: "internal/application/usecases/experience-presentation"
+    ownership:
+      application: "internal/application/usecases/experience-presentation"
+      integration: "internal/adapter/outbound/line"
+  - operation: "deleteRichMenu"
+    status: provisional
+    capability: "experience-presentation"
+    context: "experience-presentation"
+    current_implementation: "internal/application/usecases/experience-presentation"
+    ownership:
+      application: "internal/application/usecases/experience-presentation"
+      integration: "internal/adapter/outbound/line"
+  - operation: "getRichMenuList"
+    status: provisional
+    capability: "experience-presentation"
+    context: "experience-presentation"
+    current_implementation: "internal/application/usecases/experience-presentation"
+    ownership:
+      application: "internal/application/usecases/experience-presentation"
+      integration: "internal/adapter/outbound/line"
+  - operation: "setDefaultRichMenu"
+    status: provisional
+    capability: "experience-presentation"
+    context: "experience-presentation"
+    current_implementation: "internal/application/usecases/experience-presentation"
+    ownership:
+      application: "internal/application/usecases/experience-presentation"
+      integration: "internal/adapter/outbound/line"
+  - operation: "getDefaultRichMenuId"
+    status: provisional
+    capability: "experience-presentation"
+    context: "experience-presentation"
+    current_implementation: "internal/application/usecases/experience-presentation"
+    ownership:
+      application: "internal/application/usecases/experience-presentation"
+      integration: "internal/adapter/outbound/line"
+  - operation: "cancelDefaultRichMenu"
+    status: provisional
+    capability: "experience-presentation"
+    context: "experience-presentation"
+    current_implementation: "internal/application/usecases/experience-presentation"
+    ownership:
+      application: "internal/application/usecases/experience-presentation"
+      integration: "internal/adapter/outbound/line"
+  - operation: "createRichMenuAlias"
+    status: provisional
+    capability: "experience-presentation"
+    context: "experience-presentation"
+    current_implementation: "internal/application/usecases/experience-presentation"
+    ownership:
+      application: "internal/application/usecases/experience-presentation"
+      integration: "internal/adapter/outbound/line"
+  - operation: "getRichMenuAlias"
+    status: provisional
+    capability: "experience-presentation"
+    context: "experience-presentation"
+    current_implementation: "internal/application/usecases/experience-presentation"
+    ownership:
+      application: "internal/application/usecases/experience-presentation"
+      integration: "internal/adapter/outbound/line"
+  - operation: "updateRichMenuAlias"
+    status: provisional
+    capability: "experience-presentation"
+    context: "experience-presentation"
+    current_implementation: "internal/application/usecases/experience-presentation"
+    ownership:
+      application: "internal/application/usecases/experience-presentation"
+      integration: "internal/adapter/outbound/line"
+  - operation: "deleteRichMenuAlias"
+    status: provisional
+    capability: "experience-presentation"
+    context: "experience-presentation"
+    current_implementation: "internal/application/usecases/experience-presentation"
+    ownership:
+      application: "internal/application/usecases/experience-presentation"
+      integration: "internal/adapter/outbound/line"
+  - operation: "getRichMenuAliasList"
+    status: provisional
+    capability: "experience-presentation"
+    context: "experience-presentation"
+    current_implementation: "internal/application/usecases/experience-presentation"
+    ownership:
+      application: "internal/application/usecases/experience-presentation"
+      integration: "internal/adapter/outbound/line"
+  - operation: "getRichMenuIdOfUser"
+    status: provisional
+    capability: "experience-presentation"
+    context: "experience-presentation"
+    current_implementation: "internal/application/usecases/experience-presentation"
+    ownership:
+      application: "internal/application/usecases/experience-presentation"
+      integration: "internal/adapter/outbound/line"
+  - operation: "unlinkRichMenuIdFromUser"
+    status: provisional
+    capability: "experience-presentation"
+    context: "experience-presentation"
+    current_implementation: "internal/application/usecases/experience-presentation"
+    ownership:
+      application: "internal/application/usecases/experience-presentation"
+      integration: "internal/adapter/outbound/line"
+  - operation: "linkRichMenuIdToUser"
+    status: provisional
+    capability: "experience-presentation"
+    context: "experience-presentation"
+    current_implementation: "internal/application/usecases/experience-presentation"
+    ownership:
+      application: "internal/application/usecases/experience-presentation"
+      integration: "internal/adapter/outbound/line"
+  - operation: "linkRichMenuIdToUsers"
+    status: provisional
+    capability: "experience-presentation"
+    context: "experience-presentation"
+    current_implementation: "internal/application/usecases/experience-presentation"
+    ownership:
+      application: "internal/application/usecases/experience-presentation"
+      integration: "internal/adapter/outbound/line"
+  - operation: "unlinkRichMenuIdFromUsers"
+    status: provisional
+    capability: "experience-presentation"
+    context: "experience-presentation"
+    current_implementation: "internal/application/usecases/experience-presentation"
+    ownership:
+      application: "internal/application/usecases/experience-presentation"
+      integration: "internal/adapter/outbound/line"
+  - operation: "richMenuBatch"
+    status: provisional
+    capability: "experience-presentation"
+    context: "experience-presentation"
+    current_implementation: "internal/application/usecases/experience-presentation"
+    ownership:
+      application: "internal/application/usecases/experience-presentation"
+      integration: "internal/adapter/outbound/line"
+  - operation: "validateRichMenuBatchRequest"
+    status: not-domain-relevant
+    capability: "provider-boundary-operation"
+    current_implementation: "internal/application/usecases/experience-presentation"
+    ownership:
+      application: "internal/application/usecases/experience-presentation"
+      integration: "internal/adapter/outbound/line"
+    reason: "Transport, provider configuration, validation, media transfer, or token lifecycle is owned by the Application/LINE adapter boundary rather than a Domain Context."
+  - operation: "getRichMenuBatchProgress"
+    status: provisional
+    capability: "experience-presentation"
+    context: "experience-presentation"
+    current_implementation: "internal/application/usecases/experience-presentation"
+    ownership:
+      application: "internal/application/usecases/experience-presentation"
+      integration: "internal/adapter/outbound/line"
+  - operation: "issueLinkToken"
+    status: unclassified
+    capability: "pending-business-classification"
+    current_implementation: "internal/application/usecases/account-link-token"
+    ownership:
+      application: "internal/application/usecases/account-link-token"
+      integration: "internal/adapter/outbound/line"
+    reason: "Current Application code exposes the provider operation, but repository evidence does not establish an independent business owner, invariant, or validated Context."
+  - operation: "markMessagesAsRead"
+    status: unclassified
+    capability: "pending-business-classification"
+    current_implementation: "internal/application/usecases/conversation-operations"
+    ownership:
+      application: "internal/application/usecases/conversation-operations"
+      integration: "internal/adapter/outbound/line"
+    reason: "Current Application code exposes the provider operation, but repository evidence does not establish an independent business owner, invariant, or validated Context."
+  - operation: "pushMessagesByPhone"
+    status: mapped
+    capability: "message-delivery"
+    context: "messaging-delivery"
+    current_implementation: "internal/application/usecases/messaging-delivery"
+    ownership:
+      application: "internal/application/usecases/messaging-delivery"
+      integration: "internal/adapter/outbound/line"
+  - operation: "pushTemplatedMessagesByPhone"
+    status: mapped
+    capability: "message-delivery"
+    context: "messaging-delivery"
+    current_implementation: "internal/application/usecases/messaging-delivery"
+    ownership:
+      application: "internal/application/usecases/messaging-delivery"
+      integration: "internal/adapter/outbound/line"
+  - operation: "getPNPMessageStatistics"
+    status: provisional
+    capability: "delivery-observability"
+    context: "messaging-delivery"
+    current_implementation: "internal/application/usecases/insights-reporting"
+    ownership:
+      application: "internal/application/usecases/insights-reporting"
+      integration: "internal/adapter/outbound/line"
+  - operation: "getPNPTemplatedMessageStatistics"
+    status: provisional
+    capability: "delivery-observability"
+    context: "messaging-delivery"
+    current_implementation: "internal/application/usecases/insights-reporting"
+    ownership:
+      application: "internal/application/usecases/insights-reporting"
+      integration: "internal/adapter/outbound/line"
+  - operation: "getMembershipSubscription"
+    status: provisional
+    capability: "membership-inspection"
+    context: "membership"
+    current_implementation: "internal/application/usecases/membership"
+    ownership:
+      application: "internal/application/usecases/membership"
+      integration: "internal/adapter/outbound/line"
+  - operation: "getMembershipList"
+    status: provisional
+    capability: "membership-inspection"
+    context: "membership"
+    current_implementation: "internal/application/usecases/membership"
+    ownership:
+      application: "internal/application/usecases/membership"
+      integration: "internal/adapter/outbound/line"
+  - operation: "getJoinedMembershipUsers"
+    status: provisional
+    capability: "membership-inspection"
+    context: "membership"
+    current_implementation: "internal/application/usecases/membership"
+    ownership:
+      application: "internal/application/usecases/membership"
+      integration: "internal/adapter/outbound/line"
+  - operation: "listCoupon"
+    status: provisional
+    capability: "promotion-management"
+    context: "promotion"
+    current_implementation: "internal/application/usecases/promotion"
+    ownership:
+      application: "internal/application/usecases/promotion"
+      integration: "internal/adapter/outbound/line"
+  - operation: "createCoupon"
+    status: provisional
+    capability: "promotion-management"
+    context: "promotion"
+    current_implementation: "internal/application/usecases/promotion"
+    ownership:
+      application: "internal/application/usecases/promotion"
+      integration: "internal/adapter/outbound/line"
+  - operation: "getCouponDetail"
+    status: provisional
+    capability: "promotion-management"
+    context: "promotion"
+    current_implementation: "internal/application/usecases/promotion"
+    ownership:
+      application: "internal/application/usecases/promotion"
+      integration: "internal/adapter/outbound/line"
+  - operation: "closeCoupon"
+    status: provisional
+    capability: "promotion-management"
+    context: "promotion"
+    current_implementation: "internal/application/usecases/promotion"
+    ownership:
+      application: "internal/application/usecases/promotion"
+      integration: "internal/adapter/outbound/line"
+  - operation: "showLoadingAnimation"
+    status: unclassified
+    capability: "pending-business-classification"
+    current_implementation: "internal/application/usecases/conversation-operations"
+    ownership:
+      application: "internal/application/usecases/conversation-operations"
+      integration: "internal/adapter/outbound/line"
+    reason: "Current Application code exposes the provider operation, but repository evidence does not establish an independent business owner, invariant, or validated Context."
+  - operation: "markMessagesAsReadByToken"
+    status: unclassified
+    capability: "pending-business-classification"
+    current_implementation: "internal/application/usecases/conversation-operations"
+    ownership:
+      application: "internal/application/usecases/conversation-operations"
+      integration: "internal/adapter/outbound/line"
+    reason: "Current Application code exposes the provider operation, but repository evidence does not establish an independent business owner, invariant, or validated Context."
+  - operation: "getFriendsDemographics"
+    status: mapped
+    capability: "communication-insights"
+    current_implementation: "internal/application/usecases/insights-reporting"
+    ownership:
+      application: "internal/application/usecases/insights-reporting"
+      integration: "internal/adapter/outbound/line"
+  - operation: "getNumberOfMessageDeliveries"
+    status: mapped
+    capability: "communication-insights"
+    current_implementation: "internal/application/usecases/insights-reporting"
+    ownership:
+      application: "internal/application/usecases/insights-reporting"
+      integration: "internal/adapter/outbound/line"
+  - operation: "getNumberOfFollowers"
+    status: mapped
+    capability: "communication-insights"
+    current_implementation: "internal/application/usecases/insights-reporting"
+    ownership:
+      application: "internal/application/usecases/insights-reporting"
+      integration: "internal/adapter/outbound/line"
+  - operation: "getMessageEvent"
+    status: mapped
+    capability: "communication-insights"
+    current_implementation: "internal/application/usecases/insights-reporting"
+    ownership:
+      application: "internal/application/usecases/insights-reporting"
+      integration: "internal/adapter/outbound/line"
+  - operation: "getStatisticsPerUnit"
+    status: mapped
+    capability: "communication-insights"
+    current_implementation: "internal/application/usecases/insights-reporting"
+    ownership:
+      application: "internal/application/usecases/insights-reporting"
+      integration: "internal/adapter/outbound/line"
+  - operation: "getRichMenuInsightSummary"
+    status: mapped
+    capability: "communication-insights"
+    current_implementation: "internal/application/usecases/insights-reporting"
+    ownership:
+      application: "internal/application/usecases/insights-reporting"
+      integration: "internal/adapter/outbound/line"
+  - operation: "getRichMenuInsightDaily"
+    status: mapped
+    capability: "communication-insights"
+    current_implementation: "internal/application/usecases/insights-reporting"
+    ownership:
+      application: "internal/application/usecases/insights-reporting"
+      integration: "internal/adapter/outbound/line"
+  - operation: "createAudienceGroup"
+    status: provisional
+    capability: "audience-management"
+    context: "audience"
+    current_implementation: "internal/application/usecases/audience"
+    ownership:
+      application: "internal/application/usecases/audience"
+      integration: "internal/adapter/outbound/line"
+  - operation: "addAudienceToAudienceGroup"
+    status: provisional
+    capability: "audience-management"
+    context: "audience"
+    current_implementation: "internal/application/usecases/audience"
+    ownership:
+      application: "internal/application/usecases/audience"
+      integration: "internal/adapter/outbound/line"
+  - operation: "createAudienceForUploadingUserIds"
+    status: provisional
+    capability: "audience-management"
+    context: "audience"
+    current_implementation: "internal/application/usecases/audience"
+    ownership:
+      application: "internal/application/usecases/audience"
+      integration: "internal/adapter/outbound/line"
+  - operation: "addUserIdsToAudience"
+    status: provisional
+    capability: "audience-management"
+    context: "audience"
+    current_implementation: "internal/application/usecases/audience"
+    ownership:
+      application: "internal/application/usecases/audience"
+      integration: "internal/adapter/outbound/line"
+  - operation: "createClickBasedAudienceGroup"
+    status: provisional
+    capability: "audience-management"
+    context: "audience"
+    current_implementation: "internal/application/usecases/audience"
+    ownership:
+      application: "internal/application/usecases/audience"
+      integration: "internal/adapter/outbound/line"
+  - operation: "createImpBasedAudienceGroup"
+    status: provisional
+    capability: "audience-management"
+    context: "audience"
+    current_implementation: "internal/application/usecases/audience"
+    ownership:
+      application: "internal/application/usecases/audience"
+      integration: "internal/adapter/outbound/line"
+  - operation: "updateAudienceGroupDescription"
+    status: provisional
+    capability: "audience-management"
+    context: "audience"
+    current_implementation: "internal/application/usecases/audience"
+    ownership:
+      application: "internal/application/usecases/audience"
+      integration: "internal/adapter/outbound/line"
+  - operation: "deleteAudienceGroup"
+    status: provisional
+    capability: "audience-management"
+    context: "audience"
+    current_implementation: "internal/application/usecases/audience"
+    ownership:
+      application: "internal/application/usecases/audience"
+      integration: "internal/adapter/outbound/line"
+  - operation: "getAudienceData"
+    status: provisional
+    capability: "audience-management"
+    context: "audience"
+    current_implementation: "internal/application/usecases/audience"
+    ownership:
+      application: "internal/application/usecases/audience"
+      integration: "internal/adapter/outbound/line"
+  - operation: "getAudienceGroups"
+    status: provisional
+    capability: "audience-management"
+    context: "audience"
+    current_implementation: "internal/application/usecases/audience"
+    ownership:
+      application: "internal/application/usecases/audience"
+      integration: "internal/adapter/outbound/line"
+  - operation: "getSharedAudienceData"
+    status: provisional
+    capability: "audience-management"
+    context: "audience"
+    current_implementation: "internal/application/usecases/audience"
+    ownership:
+      application: "internal/application/usecases/audience"
+      integration: "internal/adapter/outbound/line"
+  - operation: "getSharedAudienceGroups"
+    status: provisional
+    capability: "audience-management"
+    context: "audience"
+    current_implementation: "internal/application/usecases/audience"
+    ownership:
+      application: "internal/application/usecases/audience"
+      integration: "internal/adapter/outbound/line"
+  - operation: "issueStatelessChannelToken"
+    status: not-domain-relevant
+    capability: "provider-boundary-operation"
+    current_implementation: "internal/application/usecases/credential-lifecycle"
+    ownership:
+      application: "internal/application/usecases/credential-lifecycle"
+      integration: "internal/adapter/outbound/line"
+    reason: "Transport, provider configuration, validation, media transfer, or token lifecycle is owned by the Application/LINE adapter boundary rather than a Domain Context."
+  - operation: "getsAllValidChannelAccessTokenKeyIds"
+    status: not-domain-relevant
+    capability: "provider-boundary-operation"
+    current_implementation: "internal/application/usecases/credential-lifecycle"
+    ownership:
+      application: "internal/application/usecases/credential-lifecycle"
+      integration: "internal/adapter/outbound/line"
+    reason: "Transport, provider configuration, validation, media transfer, or token lifecycle is owned by the Application/LINE adapter boundary rather than a Domain Context."
+  - operation: "issueChannelTokenByJWT"
+    status: not-domain-relevant
+    capability: "provider-boundary-operation"
+    current_implementation: "internal/application/usecases/credential-lifecycle"
+    ownership:
+      application: "internal/application/usecases/credential-lifecycle"
+      integration: "internal/adapter/outbound/line"
+    reason: "Transport, provider configuration, validation, media transfer, or token lifecycle is owned by the Application/LINE adapter boundary rather than a Domain Context."
+  - operation: "verifyChannelTokenByJWT"
+    status: not-domain-relevant
+    capability: "provider-boundary-operation"
+    current_implementation: "internal/application/usecases/credential-lifecycle"
+    ownership:
+      application: "internal/application/usecases/credential-lifecycle"
+      integration: "internal/adapter/outbound/line"
+    reason: "Transport, provider configuration, validation, media transfer, or token lifecycle is owned by the Application/LINE adapter boundary rather than a Domain Context."
+  - operation: "revokeChannelTokenByJWT"
+    status: not-domain-relevant
+    capability: "provider-boundary-operation"
+    current_implementation: "internal/application/usecases/credential-lifecycle"
+    ownership:
+      application: "internal/application/usecases/credential-lifecycle"
+      integration: "internal/adapter/outbound/line"
+    reason: "Transport, provider configuration, validation, media transfer, or token lifecycle is owned by the Application/LINE adapter boundary rather than a Domain Context."
+  - operation: "issueChannelToken"
+    status: not-domain-relevant
+    capability: "provider-boundary-operation"
+    current_implementation: "internal/application/usecases/credential-lifecycle"
+    ownership:
+      application: "internal/application/usecases/credential-lifecycle"
+      integration: "internal/adapter/outbound/line"
+    reason: "Transport, provider configuration, validation, media transfer, or token lifecycle is owned by the Application/LINE adapter boundary rather than a Domain Context."
+  - operation: "verifyChannelToken"
+    status: not-domain-relevant
+    capability: "provider-boundary-operation"
+    current_implementation: "internal/application/usecases/credential-lifecycle"
+    ownership:
+      application: "internal/application/usecases/credential-lifecycle"
+      integration: "internal/adapter/outbound/line"
+    reason: "Transport, provider configuration, validation, media transfer, or token lifecycle is owned by the Application/LINE adapter boundary rather than a Domain Context."
+  - operation: "revokeChannelToken"
+    status: not-domain-relevant
+    capability: "provider-boundary-operation"
+    current_implementation: "internal/application/usecases/credential-lifecycle"
+    ownership:
+      application: "internal/application/usecases/credential-lifecycle"
+      integration: "internal/adapter/outbound/line"
+    reason: "Transport, provider configuration, validation, media transfer, or token lifecycle is owned by the Application/LINE adapter boundary rather than a Domain Context."

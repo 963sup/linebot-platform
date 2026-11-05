@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/963sup/linebot-platform/internal/application/ports/outbound"
+	"github.com/963sup/linebot-platform/internal/application/usecases/audience"
 	"github.com/line/line-bot-sdk-go/v8/linebot/manage_audience"
 )
 
@@ -30,35 +30,69 @@ func (s *AudienceReader) clientFor(ctx context.Context) (*manage_audience.Manage
 	return call.WithContext(ctx), nil
 }
 
-func (s *AudienceReader) AudienceGroup(ctx context.Context, id int64) (outbound.LINEResult, error) {
+func (s *AudienceReader) GetAudience(ctx context.Context, id audience.ProviderAudienceID, shared bool) (audience.ProviderAudience, error) {
 	client, err := s.clientFor(ctx)
 	if err != nil {
-		return outbound.LINEResult{}, err
+		return audience.ProviderAudience{}, err
 	}
-	response, result, err := client.GetAudienceDataWithHttpInfo(id)
-	return typedReportResult("getAudienceData", response, result, err)
+	var result any
+	var responseErr error
+	if shared {
+		response, value, callErr := client.GetSharedAudienceDataWithHttpInfo(int64(id))
+		responseErr = lineWriteError("getSharedAudienceData", response, callErr)
+		result = value
+	} else {
+		response, value, callErr := client.GetAudienceDataWithHttpInfo(int64(id))
+		responseErr = lineWriteError("getAudienceData", response, callErr)
+		result = value
+	}
+	if responseErr != nil {
+		return audience.ProviderAudience{}, responseErr
+	}
+	return mapProviderAudience(result, shared)
 }
-func (s *AudienceReader) SharedAudienceGroup(ctx context.Context, id int64) (outbound.LINEResult, error) {
+func (s *AudienceReader) ListAudiences(ctx context.Context, page audience.PageRequest, shared bool) (audience.ProviderAudiencePage, error) {
 	client, err := s.clientFor(ctx)
 	if err != nil {
-		return outbound.LINEResult{}, err
+		return audience.ProviderAudiencePage{}, err
 	}
-	response, result, err := client.GetSharedAudienceDataWithHttpInfo(id)
-	return typedReportResult("getSharedAudienceData", response, result, err)
-}
-func (s *AudienceReader) AudienceGroups(ctx context.Context, page, size int64) (outbound.LINEResult, error) {
-	client, err := s.clientFor(ctx)
+	var result any
+	var responseErr error
+	if shared {
+		response, value, callErr := client.GetSharedAudienceGroupsWithHttpInfo(page.Number, "", "", page.Size, "", false)
+		responseErr = lineWriteError("getSharedAudienceGroups", response, callErr)
+		result = value
+	} else {
+		response, value, callErr := client.GetAudienceGroupsWithHttpInfo(page.Number, "", "", page.Size, false, "")
+		responseErr = lineWriteError("getAudienceGroups", response, callErr)
+		result = value
+	}
+	if responseErr != nil {
+		return audience.ProviderAudiencePage{}, responseErr
+	}
+	object, err := providerObject(result)
 	if err != nil {
-		return outbound.LINEResult{}, err
+		return audience.ProviderAudiencePage{}, err
 	}
-	response, result, err := client.GetAudienceGroupsWithHttpInfo(page, "", "", size, false, "")
-	return typedReportResult("getAudienceGroups", response, result, err)
+	output := audience.ProviderAudiencePage{Page: page.Number, NextPage: int64Value(object, "nextPage")}
+	values, _ := object["audienceGroups"].([]any)
+	for _, value := range values {
+		mapped, mapErr := mapProviderAudience(value, shared)
+		if mapErr != nil {
+			return audience.ProviderAudiencePage{}, mapErr
+		}
+		output.Audiences = append(output.Audiences, mapped)
+	}
+	return output, nil
 }
-func (s *AudienceReader) SharedAudienceGroups(ctx context.Context, page, size int64) (outbound.LINEResult, error) {
-	client, err := s.clientFor(ctx)
+
+func mapProviderAudience(value any, shared bool) (audience.ProviderAudience, error) {
+	object, err := providerObject(value)
 	if err != nil {
-		return outbound.LINEResult{}, err
+		return audience.ProviderAudience{}, err
 	}
-	response, result, err := client.GetSharedAudienceGroupsWithHttpInfo(page, "", "", size, "", false)
-	return typedReportResult("getSharedAudienceGroups", response, result, err)
+	created := timeValue(object, "created")
+	return audience.ProviderAudience{ID: audience.ProviderAudienceID(int64Value(object, "audienceGroupId")), Description: stringValue(object, "description"), Status: stringValue(object, "status"), Shared: shared, CreatedAt: created}, nil
 }
+
+var _ audience.ProviderReader = (*AudienceReader)(nil)

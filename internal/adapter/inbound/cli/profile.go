@@ -8,6 +8,8 @@ import (
 	"io"
 	"strings"
 	"time"
+
+	contactdirectory "github.com/963sup/linebot-platform/internal/application/usecases/contact-directory"
 )
 
 // runProfile is intentionally CLI-only: no public HTTP route or automatic
@@ -44,7 +46,9 @@ func runProfile(args []string, getenv func(string) string, output io.Writer) err
 	defer runtime.Close()
 	ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
 	defer cancel()
-	profile, err := runtime.Get(ctx, *userID)
+	profile, err := runtime.GetProfile(ctx, contactdirectory.ProfileQuery{Recipient: contactdirectory.RecipientReference{
+		ID: *userID, Kind: contactdirectory.RecipientUser,
+	}})
 	if err != nil {
 		return err
 	}
@@ -52,5 +56,5 @@ func runProfile(args []string, getenv func(string) string, output io.Writer) err
 		UserID      string `json:"user_id"`
 		DisplayName string `json:"display_name"`
 		PictureURL  string `json:"picture_url,omitempty"`
-	}{UserID: profile.ID, DisplayName: profile.DisplayName, PictureURL: profile.PictureURL})
+	}{UserID: profile.Recipient.ID, DisplayName: profile.DisplayName, PictureURL: profile.PictureURL})
 }

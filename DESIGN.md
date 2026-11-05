@@ -4,6 +4,8 @@
 
 本設計以 `go.mod` 宣告的 Go 1.27.3 為基準，優先追求簡潔、明確、低 allocation 與可觀測性。Firestore、Cloud Tasks、Storage、Secret Manager、Google APIs/GenAI、LINE、OpenAI、MCP、HTTP、gRPC 與 OpenTelemetry 都是外部技術，必須隔離在 adapter/infrastructure。
 
+本文件只定義架構與依賴規則。可演進的 Subdomain、Bounded Context、通用語言與不變條件以 `docs/domain/model.yaml` 為唯一機器來源；LINE operation 到 Application capability 的追溯以 `docs/domain/capability-map.yaml` 為準；`go.mod` 與 SDK 能力的推論以 `docs/domain/dependency-capabilities.yaml` 為準。`docs/domain/context-map.md` 是自動生成的閱讀投影，不得手工維護。Dependency、provider 與 endpoint 可以作為有信心等級的假設證據，但不能單獨把技術名稱提升為已驗證的 Domain Context。
+
 設計目標是讓新能力沿既有邊界成長，而不是靠增加平行目錄、萬用介面或 Provider abstraction 擴張。非目標包括：為了套模板搬動無行為差異的 Package、預建所有 DDD 分類、以文件宣稱效能，以及將本服務的 `internal` Package 當成跨 repository 公開 API。
 
 ## 0. 標準目錄樹
@@ -29,14 +31,11 @@ project/
 │   │       ├── services/                    # domain services without a natural aggregate owner
 │   │       └── errors.go                    # context-wide business errors, if needed
 │   ├── application/
-│   │   ├── ports/
-│   │   │   ├── inbound/                    # shared external-to-application contracts
-│   │   │   └── outbound/                   # shared app-required capabilities
 │   │   └── usecases/<capability>/
 │   │       ├── command.go                  # write behavior, when needed
 │   │       ├── query.go                    # read behavior, when needed
 │   │       ├── dto.go                      # application-owned data only
-│   │       └── ports.go                    # single-consumer minimal interfaces
+│   │       └── ports.go                    # capability-local consumer-owned interfaces
 │   ├── adapter/
 │   │   ├── inbound/{http,grpc,webhook,cli,messaging}/
 │   │   └── outbound/
@@ -88,9 +87,9 @@ Application 不得 import Firestore、gRPC、Google、LINE、OpenAI、MCP 或其
 
 ### Ports
 
-`internal/application/ports/inbound/` 定義跨多個 inbound adapter 共用的 Application 契約；`internal/application/ports/outbound/` 定義多個 use case 共用的 repository、clock、publisher、task queue、identity 或 client capability。
+Inbound 呼叫契約與 outbound capability 介面都由使用它的 `internal/application/usecases/<capability>/` 擁有。不建立全域 Application ports bucket；否則介面會按 provider 或技術分組，而不是按 consumer 的語意與變更原因分組。
 
-Port 必須小型且由消費者需求定義，不 mirror 整份 SDK。若只有單一 use case 使用，Port 應放在 `application/usecases/<capability>/ports.go`；只有語意相同且由多個 use case 共用時才提升到 `application/ports`。Domain repository contract 回傳 Domain model 並表達 Domain persistence 語意；Application outbound port 表達工作流程或外部能力，兩者不得重複同一 contract。
+Port 必須小型且由消費者需求定義，不 mirror 整份 SDK。多個 capability 需要相似能力時，仍先保留各自的 consumer-owned contract；只有經證實的共同 Domain 語意才可形成明確的 Domain repository contract 或 published language，不得重建雜項全域 ports 目錄。Domain repository contract 回傳 Domain model 並表達 Domain persistence 語意；Application outbound port 表達工作流程或外部能力，兩者不得重複同一 contract。
 
 ### Adapters
 
@@ -337,7 +336,7 @@ stateDiagram-v2
     Reconciliation --> [*]: explicit resolution
 ```
 
-`sending` 與 `unknown` 禁止自動回到 `pending`，因為 timeout 可能代表 LINE 已接收訊息。狀態名稱必須與 `application/ports/outbound.EventState` 保持一致。
+`sending` 與 `unknown` 禁止自動回到 `pending`，因為 timeout 可能代表 LINE 已接收訊息。狀態名稱必須與 `application/usecases/messaging-delivery.EventState` 保持一致。
 
 ### AccountLink Aggregate 狀態圖
 

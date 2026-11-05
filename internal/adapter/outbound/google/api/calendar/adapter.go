@@ -5,11 +5,14 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/963sup/linebot-platform/internal/application/usecases/workspace"
+	"github.com/963sup/linebot-platform/internal/adapter/outbound/google/api/codec"
+	workspace "github.com/963sup/linebot-platform/internal/application/usecases/workspace-automation"
 	googlecalendar "google.golang.org/api/calendar/v3"
 )
 
 type Adapter struct{ client *googlecalendar.Service }
+
+var _ workspace.CalendarGateway = (*Adapter)(nil)
 
 func New(client *googlecalendar.Service) (*Adapter, error) {
 	if client == nil {
@@ -18,12 +21,16 @@ func New(client *googlecalendar.Service) (*Adapter, error) {
 	return &Adapter{client: client}, nil
 }
 
-func (a *Adapter) ExecuteCalendar(ctx context.Context, req workspace.Command) (workspace.Result, error) {
+func (a *Adapter) ExecuteCalendar(ctx context.Context, command workspace.OperationCommand) (workspace.OperationResult, error) {
 	if ctx == nil {
-		return workspace.Result{}, errors.New("workspace context required")
+		return workspace.OperationResult{}, errors.New("workspace context required")
 	}
 	if err := ctx.Err(); err != nil {
-		return workspace.Result{}, err
+		return workspace.OperationResult{}, err
+	}
+	req, err := codec.Decode(command)
+	if err != nil {
+		return workspace.OperationResult{}, err
 	}
 	switch strings.SplitN(req.Operation, ".", 2)[0] {
 	case "acl":
@@ -43,6 +50,6 @@ func (a *Adapter) ExecuteCalendar(ctx context.Context, req workspace.Command) (w
 	case "settings":
 		return a.executeSettings(ctx, req)
 	default:
-		return workspace.Result{}, errors.New("unsupported calendar SDK operation")
+		return workspace.OperationResult{}, errors.New("unsupported calendar SDK operation")
 	}
 }

@@ -6,17 +6,17 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/963sup/linebot-platform/internal/application/usecases/workspace"
+	workspaceautomation "github.com/963sup/linebot-platform/internal/application/usecases/workspace-automation"
 )
 
 func TestWorkspacePoliciesMatchPinnedDiscovery(t *testing.T) {
-	all := workspace.Supported()
+	all := workspaceautomation.SupportedOperations()
 	if len(all) != 62 {
 		t.Fatalf("got %d static operation policies, want 62", len(all))
 	}
-	found := map[string]workspace.Policy{}
+	found := map[string]workspaceautomation.OperationPolicy{}
 	for _, p := range all {
-		found[p.API+"."+p.Operation] = p
+		found[string(p.API)+"."+string(p.Operation)] = p
 	}
 	for _, name := range []string{"calendar", "tasks", "forms"} {
 		data, err := os.ReadFile(filepath.Join("..", "..", "docs", "google", name+"-endpoints.json"))
@@ -29,7 +29,7 @@ func TestWorkspacePoliciesMatchPinnedDiscovery(t *testing.T) {
 		}
 		for _, m := range inv.Methods {
 			p, ok := found[name+"."+m.Operation]
-			if !ok || p.Mode != m.Mode {
+			if !ok || string(p.Mode) != m.Mode {
 				t.Fatalf("static policy mismatch %s %s", name, m.Operation)
 			}
 		}

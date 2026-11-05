@@ -4,11 +4,10 @@ import (
 	"context"
 	"errors"
 	"flag"
-	"fmt"
 	"io"
 	"time"
 
-	"github.com/963sup/linebot-platform/internal/application/usecases/engagement"
+	"github.com/963sup/linebot-platform/internal/application/usecases/audience"
 )
 
 func runAudiences(args []string, getenv func(string) string, output io.Writer) error {
@@ -27,10 +26,6 @@ func runAudiences(args []string, getenv func(string) string, output io.Writer) e
 	if getenv == nil || output == nil {
 		return errors.New("missing CLI configuration")
 	}
-	q := engagement.AudienceQuery{Kind: *kind, ID: *id, Page: *page, Size: *size}
-	if err := engagement.ValidateAudienceQuery(q); err != nil {
-		return err
-	}
 	if audienceRuntimeFactory == nil {
 		return errors.New("audience runtime is not configured")
 	}
@@ -41,10 +36,23 @@ func runAudiences(args []string, getenv func(string) string, output io.Writer) e
 	defer rt.Close()
 	ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
 	defer cancel()
-	result, err := rt.Inspect(ctx, q)
+	var result any
+	switch *kind {
+	case "group", "shared-group":
+		if *id <= 0 {
+			return errors.New("audience ID must be positive")
+		}
+		result, err = rt.Get(ctx, audience.ProviderAudienceID(*id), *kind == "shared-group")
+	case "list", "shared-list":
+		if *id != 0 || *page < 1 || *size < 1 || *size > audience.MaxPageSize {
+			return errors.New("audience page must be positive and size must be 1-100")
+		}
+		result, err = rt.List(ctx, audience.PageRequest{Number: *page, Size: *size}, *kind == "shared-list")
+	default:
+		return errors.New("unsupported audience query kind")
+	}
 	if err != nil {
 		return err
 	}
-	_, err = fmt.Fprintln(output, string(result))
-	return err
+	return writeJSON(output, result)
 }

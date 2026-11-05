@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	contactdirectory "github.com/963sup/linebot-platform/internal/application/usecases/contact-directory"
 	"github.com/963sup/linebot-platform/internal/infrastructure/resilience"
 )
 
@@ -24,11 +25,11 @@ func TestGetProfileUsesNativeLINEAPI(t *testing.T) {
 		_, _ = w.Write([]byte(`{"userId":"` + userID + `","displayName":"Example","pictureUrl":"https://example.invalid/photo"}`))
 	}))
 	defer server.Close()
-	profile, err := contractSender(t, server).GetProfile(context.Background(), userID)
+	profile, err := contractSender(t, server).GetProfile(context.Background(), contactdirectory.ProfileQuery{Recipient: contactdirectory.RecipientReference{ID: userID, Kind: contactdirectory.RecipientUser}})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if profile.ID != userID || profile.DisplayName != "Example" || profile.PictureURL != "https://example.invalid/photo" {
+	if profile.Recipient.ID != userID || profile.DisplayName != "Example" || profile.PictureURL != "https://example.invalid/photo" {
 		t.Fatalf("profile not mapped: %#v", profile)
 	}
 }
@@ -39,7 +40,7 @@ func TestGetProfileSanitizesErrors(t *testing.T) {
 	}))
 	defer server.Close()
 	err := func() error {
-		_, err := contractSender(t, server).GetProfile(context.Background(), "U123")
+		_, err := contractSender(t, server).GetProfile(context.Background(), contactdirectory.ProfileQuery{Recipient: contactdirectory.RecipientReference{ID: "U123", Kind: contactdirectory.RecipientUser}})
 		return err
 	}()
 	var external *resilience.ExternalError
@@ -58,7 +59,7 @@ func TestGetProfileRejectsCanceledContext(t *testing.T) {
 	defer server.Close()
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	_, err := contractSender(t, server).GetProfile(ctx, "U123")
+	_, err := contractSender(t, server).GetProfile(ctx, contactdirectory.ProfileQuery{Recipient: contactdirectory.RecipientReference{ID: "U123", Kind: contactdirectory.RecipientUser}})
 	if !errors.Is(err, context.Canceled) {
 		t.Fatalf("expected canceled context, got %v", err)
 	}

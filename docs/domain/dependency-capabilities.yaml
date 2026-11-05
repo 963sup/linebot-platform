@@ -1,0 +1,124 @@
+schema_version: 1
+source_go_mod: go.mod
+source_sdk_catalog: docs/sdk/catalog.toml
+modules:
+  - module: cloud.google.com/go/cloudtasks
+    version: v1.21.1
+    catalog_status: integrated
+    classification: generic-infrastructure
+    capabilities: [durable-background-work, oidc-worker, bounded-task-deduplication]
+    contexts: []
+    evidence: [internal/adapter/outbound/google/cloud/cloudtasks/queue.go]
+    assumption: Schedules delivery work but does not own delivery state or business idempotency.
+  - module: cloud.google.com/go/firestore
+    version: v1.29.2
+    catalog_status: integrated
+    classification: generic-infrastructure
+    capabilities: [transactions, durable-inbox-outbox, persistence]
+    contexts: []
+    evidence: [internal/adapter/outbound/google/cloud/firestore/event_store.go]
+    assumption: Persists context-owned data but is not a Domain owner.
+  - module: cloud.google.com/go/secretmanager
+    version: v1.23.1
+    catalog_status: client_ready
+    classification: generic-infrastructure
+    capabilities: [secret-access]
+    contexts: []
+    evidence: [internal/infrastructure/google/cloud/secretmanager]
+    assumption: Provides credential storage without owning authorization semantics.
+  - module: cloud.google.com/go/storage
+    version: v1.70.0
+    catalog_status: client_ready
+    classification: generic-infrastructure
+    capabilities: [object-upload, object-download]
+    contexts: []
+    evidence: [internal/infrastructure/google/cloud/storage]
+    assumption: Stores blobs referenced by context-owned metadata.
+  - module: github.com/BurntSushi/toml
+    version: v1.6.0
+    catalog_status: integrated
+    classification: tooling
+    capabilities: [toml-parse, configuration-validation]
+    contexts: []
+    evidence: [cmd/codexcheck]
+    assumption: Supports governance tooling and provides no business capability.
+  - module: github.com/google/uuid
+    version: v1.6.0
+    catalog_status: integrated
+    classification: generic-infrastructure
+    capabilities: [uuid-v4, retry-key-generation]
+    contexts: []
+    evidence: [internal/application]
+    assumption: Generates technical identifiers whose business meaning remains consumer-owned.
+  - module: github.com/line/line-bot-sdk-go/v8
+    version: v8.23.0
+    catalog_status: integrated
+    classification: domain-signal
+    capabilities: [webhook, messaging, audiences, presentation, promotion, membership, analytics]
+    contexts: [messaging-delivery, audience, experience-presentation, promotion, membership, contact-directory, insights-reporting]
+    evidence: [internal/adapter/outbound/line]
+    assumption: Provider operation groups suggest capabilities but never define bounded contexts or aggregates.
+  - module: github.com/modelcontextprotocol/go-sdk
+    version: v1.8.0
+    catalog_status: client_ready
+    classification: generic-infrastructure
+    capabilities: [tool-discovery, tool-invocation]
+    contexts: []
+    evidence: [internal/infrastructure/mcp]
+    assumption: MCP is an integration mechanism and not a business context.
+  - module: github.com/openai/openai-go/v3
+    version: v3.91.1
+    catalog_status: client_ready
+    classification: supporting-capability
+    capabilities: [ai-text-generation, responses-api]
+    contexts: [content-intelligence]
+    evidence: [internal/infrastructure/openai]
+    assumption: May implement Content Intelligence ports but does not prove product-owned generation policy.
+  - module: go.linecorp.com/garr
+    version: v0.1.1
+    catalog_status: declared
+    classification: generic-infrastructure
+    capabilities: [retry, circuit-breaker]
+    contexts: []
+    evidence: [internal/infrastructure/dependencies/modules.go]
+    assumption: Declared-only resilience capability must not be represented as integrated behavior.
+  - module: go.yaml.in/yaml/v3
+    version: v3.0.5
+    catalog_status: integrated
+    classification: tooling
+    capabilities: [strict-yaml-validation, governance-manifests]
+    contexts: []
+    evidence: [internal/governance/domainmodel]
+    assumption: Supports governance tooling and provides no business capability.
+  - module: golang.org/x/oauth2
+    version: v0.37.0
+    catalog_status: integrated
+    classification: supporting-capability
+    capabilities: [authorization-code-pkce, token-source]
+    contexts: [identity, workspace-automation]
+    evidence: [internal/infrastructure/google/api/oauth]
+    assumption: Implements authorization mechanisms while Identity owns eligibility language.
+  - module: google.golang.org/api
+    version: v0.310.0
+    catalog_status: client_ready
+    classification: supporting-capability
+    capabilities: [drive, sheets, calendar, tasks, forms]
+    contexts: [workspace-automation]
+    evidence: [internal/adapter/outbound/google/api]
+    assumption: Usually composes Workspace Automation actions but Google resource names remain behind an ACL.
+  - module: google.golang.org/genai
+    version: v1.77.0
+    catalog_status: client_ready
+    classification: supporting-capability
+    capabilities: [gemini, vertex-ai, ai-text-generation]
+    contexts: [content-intelligence]
+    evidence: [internal/infrastructure/google/genai]
+    assumption: Alternative implementation of Content Intelligence ports rather than a separate context.
+  - module: google.golang.org/grpc
+    version: v1.84.0
+    catalog_status: integrated
+    classification: generic-infrastructure
+    capabilities: [cloud-api-status, error-translation]
+    contexts: []
+    evidence: [internal/adapter/outbound/google/cloud]
+    assumption: Translates transport status and cannot define business failure semantics.

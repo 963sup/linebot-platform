@@ -8,7 +8,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/963sup/linebot-platform/internal/application/ports/outbound"
+	identity "github.com/963sup/linebot-platform/internal/application/usecases/identity"
 	infra "github.com/963sup/linebot-platform/internal/infrastructure/google/api/oauth"
 )
 
@@ -18,6 +18,8 @@ type Provider struct {
 	http           *http.Client
 	revokeEndpoint string
 }
+
+var _ identity.OAuthProvider = (*Provider)(nil)
 
 func NewProvider(flow *infra.Flow, httpClient *http.Client) (*Provider, error) {
 	if flow == nil || httpClient == nil {
@@ -30,13 +32,13 @@ func (p *Provider) AuthorizationURL(state, verifier, nonce string, scopes []stri
 	return p.flow.AuthorizationURL(state, verifier, nonce, scopes)
 }
 
-func (p *Provider) ExchangeAndVerify(ctx context.Context, code, verifier, nonce string) (outbound.GoogleIdentity, outbound.OAuthCredentials, error) {
+func (p *Provider) ExchangeAndVerify(ctx context.Context, code, verifier, nonce string) (identity.GoogleIdentity, identity.OAuthCredentials, error) {
 	result, err := p.flow.ExchangeAndVerify(ctx, code, verifier, nonce)
 	if err != nil {
-		return outbound.GoogleIdentity{}, outbound.OAuthCredentials{}, err
+		return identity.GoogleIdentity{}, identity.OAuthCredentials{}, err
 	}
-	return outbound.GoogleIdentity{Subject: result.User.Subject, VerifiedEmail: result.User.VerifiedEmail, GrantedScopes: result.GrantedScopes},
-		outbound.OAuthCredentials{AccessToken: result.Token.AccessToken,
+	return identity.GoogleIdentity{Subject: result.User.Subject, VerifiedEmail: result.User.VerifiedEmail, GrantedScopes: result.GrantedScopes},
+		identity.OAuthCredentials{AccessToken: result.Token.AccessToken,
 			RefreshToken: result.Token.RefreshToken, TokenType: result.Token.TokenType, Expiry: result.Token.Expiry}, nil
 }
 

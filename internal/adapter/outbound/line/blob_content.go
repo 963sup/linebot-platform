@@ -7,8 +7,7 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/963sup/linebot-platform/internal/application/ports/outbound"
-	"github.com/963sup/linebot-platform/internal/infrastructure/resilience"
+	mediatransfer "github.com/963sup/linebot-platform/internal/application/usecases/media-transfer"
 	"github.com/line/line-bot-sdk-go/v8/linebot/messaging_api"
 )
 
@@ -38,46 +37,43 @@ func (s *BlobSender) clientFor(ctx context.Context) (*messaging_api.MessagingApi
 	return copy.WithContext(ctx), nil
 }
 
-func readBlob(response *http.Response, err error) (outbound.BinaryContent, error) {
+func readBlob(response *http.Response, err error) (mediatransfer.BinaryContent, error) {
 	if err != nil {
-		return outbound.BinaryContent{}, resilience.Wrap("line", "blobRead", httpStatus(response), err)
+		return mediatransfer.BinaryContent{}, lineAPIError("blobRead", response, err)
 	}
 	defer response.Body.Close()
 	data, err := io.ReadAll(io.LimitReader(response.Body, maxLINEBlobBytes+1))
 	if err != nil {
-		return outbound.BinaryContent{}, err
+		return mediatransfer.BinaryContent{}, err
 	}
 	if len(data) > maxLINEBlobBytes {
-		return outbound.BinaryContent{}, errors.New("LINE blob exceeds 20 MiB limit")
+		return mediatransfer.BinaryContent{}, errors.New("LINE blob exceeds 20 MiB limit")
 	}
-	return outbound.BinaryContent{Data: data, ContentType: response.Header.Get("Content-Type")}, nil
+	return mediatransfer.BinaryContent{Data: data, ContentType: response.Header.Get("Content-Type")}, nil
 }
 
-func (s *BlobSender) MessageContent(ctx context.Context, id string) (outbound.BinaryContent, error) {
+func (s *BlobSender) FetchMessageContent(ctx context.Context, id string, variant mediatransfer.ContentVariant) (mediatransfer.BinaryContent, error) {
 	c, e := s.clientFor(ctx)
 	if e != nil {
-		return outbound.BinaryContent{}, e
+		return mediatransfer.BinaryContent{}, e
 	}
-	r, e := c.GetMessageContent(id)
+	var r *http.Response
+	if variant == mediatransfer.Preview {
+		r, e = c.GetMessageContentPreview(id)
+	} else {
+		r, e = c.GetMessageContent(id)
+	}
 	return readBlob(r, e)
 }
-func (s *BlobSender) MessageContentPreview(ctx context.Context, id string) (outbound.BinaryContent, error) {
+func (s *BlobSender) FetchPresentationImage(ctx context.Context, id string) (mediatransfer.BinaryContent, error) {
 	c, e := s.clientFor(ctx)
 	if e != nil {
-		return outbound.BinaryContent{}, e
-	}
-	r, e := c.GetMessageContentPreview(id)
-	return readBlob(r, e)
-}
-func (s *BlobSender) RichMenuImage(ctx context.Context, id string) (outbound.BinaryContent, error) {
-	c, e := s.clientFor(ctx)
-	if e != nil {
-		return outbound.BinaryContent{}, e
+		return mediatransfer.BinaryContent{}, e
 	}
 	r, e := c.GetRichMenuImage(id)
 	return readBlob(r, e)
 }
-func (s *BlobSender) SetRichMenuImage(ctx context.Context, id string, blob outbound.BinaryContent) error {
+func (s *BlobSender) StorePresentationImage(ctx context.Context, id string, blob mediatransfer.BinaryContent) error {
 	c, e := s.clientFor(ctx)
 	if e != nil {
 		return e
@@ -85,14 +81,26 @@ func (s *BlobSender) SetRichMenuImage(ctx context.Context, id string, blob outbo
 	r, _, e := c.SetRichMenuImageWithHttpInfo(id, blob.ContentType, bytes.NewReader(blob.Data))
 	return lineWriteError("setRichMenuImage", r, e)
 }
-func (s *BlobSender) MessageContentTranscoding(ctx context.Context, id string) (outbound.LINEResult, error) {
+func (s *BlobSender) MessageContentStatus(ctx context.Context, id string) (mediatransfer.PreparationStatus, error) {
 	c, e := s.clientFor(ctx)
 	if e != nil {
-		return outbound.LINEResult{}, e
+		return "", e
 	}
 	r, v, e := c.GetMessageContentTranscodingByMessageIdWithHttpInfo(id)
 	if e != nil {
-		return outbound.LINEResult{}, resilience.Wrap("line", "getMessageContentTranscoding", httpStatus(r), e)
+		return "", lineAPIError("getMessageContentTranscoding", r, e)
 	}
-	return typedReportResult("getMessageContentTranscoding", r, v, nil)
+	if v == nil {
+		return "", errors.New("LINE transcoding status is empty")
+	}
+	switch v.Status {
+	case "succeeded":
+		return mediatransfer.PreparationReady, nil
+	case "failed":
+		return mediatransfer.PreparationFailed, nil
+	default:
+		return mediatransfer.PreparationProcessing, nil
+	}
 }
+
+var _ mediatransfer.Gateway = (*BlobSender)(nil)

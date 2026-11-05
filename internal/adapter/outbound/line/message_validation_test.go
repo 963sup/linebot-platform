@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	requestvalidation "github.com/963sup/linebot-platform/internal/application/usecases/request-validation"
 )
 
 func TestLINEMessageValidationEndpoints(t *testing.T) {
@@ -20,13 +22,12 @@ func TestLINEMessageValidationEndpoints(t *testing.T) {
 	defer server.Close()
 	s := contractSender(t, server)
 	ctx := context.Background()
-	for _, call := range []func() error{
-		func() error { return s.ValidateReply(ctx, testText()) },
-		func() error { return s.ValidatePush(ctx, testText()) },
-		func() error { return s.ValidateMulticast(ctx, testText()) },
-		func() error { return s.ValidateNarrowcast(ctx, testText()) },
-		func() error { return s.ValidateBroadcast(ctx, testText()) },
-	} {
+	message := []requestvalidation.Message{{Kind: requestvalidation.Text, Text: "hello"}}
+	for _, delivery := range []requestvalidation.DeliveryKind{requestvalidation.Reply, requestvalidation.Push, requestvalidation.Multicast, requestvalidation.Narrowcast, requestvalidation.Broadcast} {
+		call := func() error {
+			_, err := s.Validate(ctx, requestvalidation.Request{Delivery: delivery, Messages: message})
+			return err
+		}
 		if err := call(); err != nil {
 			t.Fatal(err)
 		}

@@ -5,8 +5,8 @@
 ## Processes and mode
 
 - **Public webhook**: existing `cmd/webhook`, with raw LINE signature validation. `LINE_EVENT_MODE=sync` is local-development-only; Cloud Run fails closed unless `LINE_EVENT_MODE=durable`. The public durable webhook holds `LINE_CHANNEL_SECRET` but **must not be provided `LINE_CHANNEL_ACCESS_TOKEN`**. Enable durable only after Firestore, queue, worker authentication and dispatcher are validated.
-- **Private worker**: `cmd/worker`, built separately with `Dockerfile.worker` and optionally `cloudbuild.worker.yaml`. Both the public webhook and private worker need least-privilege GCP identities; do not share a broad service account.
-- **Scheduled reconciliation**: Cloud Scheduler invokes POST `/tasks/dispatch` using Google-signed OIDC. The worker independently checks the token Audience and the configured service account Email, in addition to Cloud Run IAM. This is best-effort pending-work recovery, **not** a guarantee to meet the 45-second LINE Reply window.
+- **Private worker**: `cmd/worker`, packaged with the shared `Dockerfile` by `cloudbuild.yaml`. Both the public webhook and private worker need least-privilege GCP identities; do not share a broad service account.
+- **Scheduled reconciliation**: Cloud Scheduler invokes POST `/tasks/v2/dispatch` using Google-signed OIDC. The worker independently checks the token Audience and the configured service account Email, in addition to Cloud Run IAM. This is best-effort pending-work recovery, **not** a guarantee to meet the 45-second LINE Reply window.
 
 ## Required configuration
 
@@ -20,7 +20,7 @@
 | `LINE_BOT_DESTINATION` | required | required | Bot destination ID for event isolation and event-key derivation |
 | `GCP_PROJECT_ID` | required | required | Dedicated staging project |
 | `TASK_QUEUE_NAME` | required | required | Exactly projects/PROJECT/locations/REGION/queues/NAME; PROJECT must equal GCP_PROJECT_ID, QUEUE ID must be 1–100 ASCII letters/digits/hyphens |
-| `TASK_WORKER_URL` | required | required | HTTPS worker URL ending in /tasks/line-reply |
+| `TASK_WORKER_URL` | required | required | HTTPS worker URL ending in /tasks/v2/line-reply |
 | `TASK_OIDC_AUDIENCE` | required | required | Origin of the worker URL (without task path) |
 | `TASK_INVOKER_EMAIL` | required | required | Google service account email authorized to call worker |
 | `LINE_API_TIMEOUT` | optional | optional | Defaults to 8s, accepted 1s–12s |
@@ -35,7 +35,8 @@ The checked and generated contract for the complete settings list is [Runtime Co
 - Queue creation identity needs only the necessary Cloud Tasks enqueue rights on the dedicated queue. Worker/reconciliation and webhook identities need restricted Firestore access, not organization-wide roles.
 - Firestore needs isolated test data, restricted security policy and TTL configuration for inbox/outbox as documented in `deploy/firestore/README.md`.
 - Cloud Tasks service account credentials and LINE credentials must be resolved from trusted runtime configuration/Secret Manager and never committed.
-- Cloud Scheduler must invoke `POST /tasks/dispatch` with a matching OIDC identity and Audience. Never expose that endpoint publicly or rely on `X-CloudTasks-*` headers alone for auth.
+- Cloud Scheduler must invoke `POST /tasks/v2/dispatch` with a matching OIDC identity and Audience. Never expose that endpoint publicly or rely on `X-CloudTasks-*` headers alone for auth.
+- `/tasks/line-reply` and `/tasks/dispatch` remain OIDC-protected, drain-only compatibility routes for work created before the V2 cutover. New configuration must not target them; remove them only after authorized queue and scheduler drain evidence exists.
 - Keep the worker URL and Audience bound to the same HTTPS origin. Do not enable `durable` until smoke tests confirm Firestore/Cloud Tasks IAM, OIDC, public LINE callback verification, token expiry, redelivery and unknown-state reconciliation.
 
 ## Cloud Tasks task-name reuse and bounded recovery

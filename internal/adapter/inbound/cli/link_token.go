@@ -6,6 +6,8 @@ import (
 	"errors"
 	"flag"
 	"time"
+
+	accountlinktoken "github.com/963sup/linebot-platform/internal/application/usecases/account-link-token"
 )
 
 // Link tokens are credentials. Never print them to terminal output.
@@ -32,10 +34,12 @@ func runLinkToken(args []string, getenv func(string) string) error {
 		defer r.Close()
 		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
 		defer cancel()
-		result, err := r.IssueLinkToken(ctx, *user)
+		result, err := r.Issue(ctx, accountlinktoken.Subject{ID: *user})
 		if err != nil {
 			return nil, err
 		}
-		return json.Marshal(result.Value)
+		return json.Marshal(struct {
+			LinkToken string `json:"linkToken"`
+		}{LinkToken: result.Value})
 	})
 }

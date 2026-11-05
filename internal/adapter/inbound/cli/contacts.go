@@ -9,8 +9,15 @@ import (
 	"io"
 	"time"
 
-	"github.com/963sup/linebot-platform/internal/application/usecases/contacts"
+	contactdirectory "github.com/963sup/linebot-platform/internal/application/usecases/contact-directory"
 )
+
+type contactDirectoryRuntime interface {
+	ListFollowers(context.Context, contactdirectory.PageRequest) (contactdirectory.RecipientPage, error)
+	GetSummary(context.Context, contactdirectory.RecipientReference) (contactdirectory.ConversationSummary, error)
+	ListMembers(context.Context, contactdirectory.RecipientReference, contactdirectory.PageRequest) (contactdirectory.RecipientPage, error)
+	GetMemberProfile(context.Context, contactdirectory.RecipientReference, contactdirectory.RecipientID) (contactdirectory.ProfileSnapshot, error)
+}
 
 func runContacts(args []string, getenv func(string) string, output io.Writer) error {
 	flags := flag.NewFlagSet("contacts", flag.ContinueOnError)
@@ -29,10 +36,6 @@ func runContacts(args []string, getenv func(string) string, output io.Writer) er
 	if getenv == nil || output == nil {
 		return errors.New("missing CLI configuration")
 	}
-	q := contacts.Inspection{Kind: *kind, ConversationID: *conversationID, UserID: *userID, Start: *start, Limit: *limit}
-	if err := contacts.ValidateInspection(q); err != nil {
-		return err
-	}
 	if contactsRuntimeFactory == nil {
 		return errors.New("contacts runtime is not configured")
 	}
@@ -41,13 +44,43 @@ func runContacts(args []string, getenv func(string) string, output io.Writer) er
 		return err
 	}
 	defer rt.Close()
+	reader, ok := any(rt).(contactDirectoryRuntime)
+	if !ok {
+		return errors.New("contacts runtime does not implement contact-directory")
+	}
 	ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
 	defer cancel()
-	result, err := rt.Inspect(ctx, q)
+	page := contactdirectory.PageRequest{Cursor: *start, Limit: *limit}
+	conversation := contactdirectory.RecipientReference{ID: *conversationID}
+	var result any
+	switch *kind {
+	case "followers":
+		result, err = reader.ListFollowers(ctx, page)
+	case "group-summary", "group-member-count":
+		conversation.Kind = contactdirectory.RecipientGroup
+		result, err = reader.GetSummary(ctx, conversation)
+	case "room-member-count":
+		conversation.Kind = contactdirectory.RecipientRoom
+		result, err = reader.GetSummary(ctx, conversation)
+	case "group-members":
+		conversation.Kind = contactdirectory.RecipientGroup
+		result, err = reader.ListMembers(ctx, conversation, page)
+	case "room-members":
+		conversation.Kind = contactdirectory.RecipientRoom
+		result, err = reader.ListMembers(ctx, conversation, page)
+	case "group-member-profile":
+		conversation.Kind = contactdirectory.RecipientGroup
+		result, err = reader.GetMemberProfile(ctx, conversation, contactdirectory.RecipientID(*userID))
+	case "room-member-profile":
+		conversation.Kind = contactdirectory.RecipientRoom
+		result, err = reader.GetMemberProfile(ctx, conversation, contactdirectory.RecipientID(*userID))
+	default:
+		return errors.New("unsupported contacts inspection kind")
+	}
 	if err != nil {
 		return err
 	}
-	payload, err := json.Marshal(result.Value)
+	payload, err := json.Marshal(result)
 	if err != nil {
 		return fmt.Errorf("encode contacts result: %w", err)
 	}

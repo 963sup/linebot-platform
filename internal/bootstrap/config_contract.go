@@ -50,7 +50,7 @@ var settingContract = []SettingSpec{
 	{Key: KeyBotDestination, Roles: "webhook-durable,worker", Secret: false, Default: "—", Required: "durable 必需", Description: "LINE Bot Info API 的 userId；不是 Console 的 Your user ID"},
 	{Key: KeyProjectID, Roles: "webhook-durable,worker", Secret: false, Default: "—", Required: "durable 必需", Description: "最小 IAM 的指定 Google Cloud Project"},
 	{Key: KeyQueueName, Roles: "webhook-durable,worker", Secret: false, Default: "—", Required: "durable 必需", Description: "六段 Queue 資源名稱；Project 必須等於 GCP_PROJECT_ID；Queue ID 僅限 1–100 字元英數或連字號"},
-	{Key: KeyWorkerURL, Roles: "webhook-durable,worker", Secret: false, Default: "—", Required: "durable 必需", Description: "HTTPS Worker /tasks/line-reply"},
+	{Key: KeyWorkerURL, Roles: "webhook-durable,worker", Secret: false, Default: "—", Required: "durable 必需", Description: "HTTPS Worker /tasks/v2/line-reply"},
 	{Key: KeyOIDCAudience, Roles: "webhook-durable,worker", Secret: false, Default: "—", Required: "durable 必需", Description: "必須符合 Worker HTTPS Origin"},
 	{Key: KeyInvokerEmail, Roles: "webhook-durable,worker", Secret: false, Default: "—", Required: "durable 必需", Description: "允許呼叫 Worker 的 Service Account Email"},
 	{Key: KeyCloudRunService, Roles: "webhook,worker", Secret: false, Default: "平台提供", Required: "Cloud Run 自動提供", Description: "防止在 Cloud Run 以 local profile 啟動"},

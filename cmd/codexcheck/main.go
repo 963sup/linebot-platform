@@ -12,10 +12,11 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/963sup/linebot-platform/internal/governance/domainmodel"
 	"github.com/BurntSushi/toml"
 )
 
-const maxAgentThreads = 4
+const maxAgentThreads = 9
 
 var roleNamePattern = regexp.MustCompile(`^[a-z][a-z0-9_]*$`)
 
@@ -299,6 +300,9 @@ func validate(root string) error {
 	if err := validateSDKRetention(root); err != nil {
 		return fmt.Errorf("SDK retention: %w", err)
 	}
+	if err := validateDomainModel(root); err != nil {
+		return fmt.Errorf("domain model: %w", err)
+	}
 	for _, name := range []string{"setup-codex-cloud.sh", "check-codex-plugins.sh", "setup-codex-plugins.sh", "cloud-bootstrap.sh", "cloud-verify.sh", "cloud-repair.sh"} {
 		cmd := exec.Command("bash", "-n", filepath.Join(root, "scripts", name))
 		if output, err := cmd.CombinedOutput(); err != nil {
@@ -306,6 +310,40 @@ func validate(root string) error {
 		}
 	}
 	return rejectPythonFiles(root)
+}
+
+func validateDomainModel(root string) error {
+	inventory, err := domainmodel.LoadEndpointInventory(filepath.Join(root, "docs", "line", "endpoint-inventory.yaml"))
+	if err != nil {
+		return err
+	}
+	model, err := domainmodel.LoadDomainModel(filepath.Join(root, "docs", "domain", "model.yaml"))
+	if err != nil {
+		return err
+	}
+	capabilities, err := domainmodel.LoadCapabilityMap(filepath.Join(root, "docs", "domain", "capability-map.yaml"))
+	if err != nil {
+		return err
+	}
+	dependencies, err := domainmodel.LoadDependencyCapabilities(filepath.Join(root, "docs", "domain", "dependency-capabilities.yaml"))
+	if err != nil {
+		return err
+	}
+	if err := domainmodel.ValidateRepository(root, inventory, model, capabilities, dependencies); err != nil {
+		return err
+	}
+	want, err := domainmodel.RenderContextMap(model, capabilities, dependencies)
+	if err != nil {
+		return err
+	}
+	actual, err := os.ReadFile(filepath.Join(root, "docs", "domain", "context-map.md"))
+	if err != nil {
+		return err
+	}
+	if string(actual) != string(want) {
+		return errors.New("docs/domain/context-map.md is stale; run go run ./cmd/domainmodel -mode=write")
+	}
+	return nil
 }
 
 func main() {
@@ -323,5 +361,5 @@ func main() {
 		os.Exit(1)
 	}
 	roles, _ := parseAgentRegistry(c.Agents)
-	fmt.Printf("Codex config OK: %d agents, %d MCP declarations; SDK catalog and retention verified. Runtime MCP/plugin availability is not verified.\n", len(roles), len(c.MCPServers))
+	fmt.Printf("Codex config OK: %d agents, %d MCP declarations; SDK catalog, retention, and domain governance verified. Runtime MCP/plugin availability is not verified.\n", len(roles), len(c.MCPServers))
 }

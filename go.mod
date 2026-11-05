@@ -13,6 +13,7 @@ require (
 	github.com/modelcontextprotocol/go-sdk v1.8.0
 	github.com/openai/openai-go/v3 v3.91.1
 	go.linecorp.com/garr v0.1.1
+	go.yaml.in/yaml/v3 v3.0.5
 	golang.org/x/oauth2 v0.37.0
 	google.golang.org/api v0.310.0
 	google.golang.org/genai v1.77.0

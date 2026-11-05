@@ -73,9 +73,9 @@ func WrapInboundHTTP(role string, logger *slog.Logger, next http.Handler) http.H
 			route = "health"
 		case "/webhook/line":
 			route = "line_webhook"
-		case "/tasks/line-reply":
+		case "/tasks/v2/line-reply", "/tasks/line-reply":
 			route = "line_reply_task"
-		case "/tasks/dispatch":
+		case "/tasks/v2/dispatch", "/tasks/dispatch":
 			route = "outbox_dispatch"
 		}
 		// An HTTP method is client-controlled. Bound the emitted value so

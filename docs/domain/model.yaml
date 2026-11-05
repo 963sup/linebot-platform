@@ -1,0 +1,266 @@
+schema_version: 2
+
+subdomains:
+  - {id: reliable-customer-communication, classification: core, decision_status: hypothesis, confidence: medium, purpose: "Make customer communication reliable despite duplicate input and uncertain provider outcomes.", evidence: [internal/application/usecases/messaging-delivery/service.go]}
+  - {id: account-identity-and-authorization, classification: supporting, decision_status: implemented, confidence: high, purpose: "Maintain verified account-link identity and authorization eligibility without owning credentials.", evidence: [internal/domain/identity/aggregates/account_link.go]}
+  - {id: customer-segmentation, classification: supporting, decision_status: hypothesis, confidence: medium, purpose: "Define recipients independently from provider audience resources.", evidence: [internal/application/usecases/campaign]}
+  - {id: customer-experience, classification: supporting, decision_status: hypothesis, confidence: low, purpose: "Coordinate presentation promotion and membership without merging their lifecycles.", evidence: [internal/application/usecases/experience-presentation, internal/application/usecases/promotion, internal/application/usecases/membership]}
+  - {id: business-automation, classification: supporting, decision_status: hypothesis, confidence: medium, purpose: "Execute user-authorized business outcomes against replaceable workspace providers.", evidence: [internal/application/usecases/workspace-automation]}
+  - {id: customer-knowledge, classification: supporting, decision_status: hypothesis, confidence: medium, purpose: "Provide recipient references and derived insight without owning provider profiles or delivery decisions.", evidence: [internal/application/usecases/contact-directory, internal/application/usecases/insights-reporting]}
+  - {id: content-intelligence-subdomain, classification: supporting, decision_status: hypothesis, confidence: low, purpose: "Produce reviewable content drafts through replaceable AI providers.", evidence: [internal/infrastructure/openai, internal/infrastructure/google/genai]}
+  - {id: platform-commodities, classification: generic, decision_status: validated, confidence: high, purpose: "Supply replaceable persistence scheduling secrets storage transport identifiers and governance tooling without creating business Contexts.", evidence: [docs/domain/dependency-capabilities.yaml]}
+
+contexts:
+  - id: identity
+    subdomain: account-identity-and-authorization
+    status: implemented
+    decision_status: implemented
+    confidence: high
+    model_kind: domain-model
+    classification: supporting
+    owner: linebot-platform
+    purpose: Own the verified relationship between one LINE user and one Google subject including authorization eligibility and unlink lifecycle.
+    non_responsibilities: [Authenticate inbound callers., Store OAuth credentials or provider persistence metadata., Call Google APIs.]
+    package: internal/domain/identity
+    language:
+      - {term: account-link, definition: "Relationship between one validated LINE user and one verified Google subject.", forbidden_aliases: [oauth-record, firestore-document], code_symbols: [internal/domain/identity/aggregates.AccountLink]}
+      - {term: google-account, definition: "Google identity represented by its verified stable subject claim.", forbidden_aliases: [google-email], code_symbols: [internal/domain/identity/value-objects.GoogleAccountID]}
+      - {term: connection, definition: "Authorization relationship with scopes and lifecycle status.", forbidden_aliases: [token, credential], code_symbols: [internal/domain/identity/entities.GoogleConnection]}
+      - {term: account-linked, definition: "Fact raised when a verified account relationship is created.", forbidden_aliases: [oauth-callback-completed], code_symbols: [internal/domain/identity/events.AccountLinked]}
+      - {term: account-unlinked, definition: "Fact raised only for the first successful disconnect.", forbidden_aliases: [token-deleted], code_symbols: [internal/domain/identity/events.AccountUnlinked]}
+    owns: [account-link, connection-status, granted-scope-set, account-link-domain-events]
+    aggregates:
+      - {name: AccountLink, root: account-link, consistency_boundary: "Link connection status scopes and new events change atomically.", owns: [connection-status, granted-scope-set, account-link-domain-events], repository: internal/domain/identity/repositories.ConnectionReader, confidence: high, evidence: [internal/domain/identity/aggregates/account_link.go, internal/domain/identity/repositories/connection_repository.go]}
+    data_ownership:
+      - {resource: account-link-state, authority: local-authoritative, owner: identity, write_policy: "Only AccountLink transitions may change link state.", evidence: [internal/domain/identity/aggregates/account_link.go]}
+      - {resource: oauth-credential-value, authority: provider-authoritative, owner: google-oauth, write_policy: "Identity stores no credential value.", evidence: [internal/infrastructure/google/api/oauth/flow.go]}
+    invariants:
+      - {id: IDN-001, statement: "A link requires valid LINE user Google subject and non-empty normalized scopes.", evidence: [internal/domain/identity/aggregates/account_link.go]}
+      - {id: IDN-002, statement: "Google account identity is the stable subject claim and never an email.", evidence: [internal/domain/identity/value-objects/google_account_id.go]}
+      - {id: IDN-003, statement: "Disconnect is idempotent and only its first transition raises AccountUnlinked.", evidence: [internal/domain/identity/aggregates/account_link.go]}
+    capabilities: [authorize-workspace-account, disconnect-account-link, evaluate-google-api-eligibility]
+    adrs: [docs/architecture/decisions/0001-strategic-domain-model-authority.md]
+    evidence: [internal/domain/identity/aggregates/account_link_test.go, internal/domain/identity/entities/google_connection_test.go]
+
+  - id: messaging-delivery
+    subdomain: reliable-customer-communication
+    status: candidate
+    decision_status: hypothesis
+    confidence: medium
+    model_kind: domain-model
+    classification: core
+    owner: linebot-platform
+    purpose: Decide and record one reliable delivery outcome for an accepted communication intent.
+    non_responsibilities: [Define provider wire formats., Own audience membership., Treat a missing provider response as a known failure.]
+    language:
+      - {term: delivery-intent, definition: "Request to deliver content to a resolved recipient.", forbidden_aliases: [line-request], code_symbols: []}
+      - {term: delivery, definition: "Consistency boundary for claim and terminal outcome.", forbidden_aliases: [cloud-task], code_symbols: [internal/domain/messaging-delivery/aggregates.Delivery]}
+      - {term: unknown-outcome, definition: "Send whose remote effect cannot be safely determined.", forbidden_aliases: [failed], code_symbols: [internal/domain/messaging-delivery/value-objects.StatusUnknown]}
+      - {term: idempotency-key, definition: "Stable identity preventing duplicate business delivery.", forbidden_aliases: [task-name], code_symbols: []}
+    owns: [delivery-intent, delivery-claim, delivery-outcome]
+    aggregates:
+      - {name: Delivery, root: delivery, consistency_boundary: "Claim is single-use and completion accepts one terminal outcome.", owns: [delivery-claim, delivery-outcome, idempotency-key], repository: DeliveryRepository, confidence: medium, evidence: [internal/domain/messaging-delivery/aggregates/delivery_test.go]}
+    data_ownership:
+      - {resource: delivery-state, authority: local-authoritative, owner: messaging-delivery, write_policy: "Only the delivery workflow may claim or complete it.", evidence: [internal/adapter/outbound/google/cloud/firestore/event_store.go]}
+      - {resource: provider-message-result, authority: provider-authoritative, owner: line-provider, write_policy: "Imported through the messaging ACL.", evidence: [internal/adapter/outbound/line]}
+    invariants:
+      - {id: MSG-001, statement: "A delivery can be claimed for network send only once within its active lease.", evidence: [internal/adapter/outbound/google/cloud/firestore/event_store.go]}
+      - {id: MSG-002, statement: "Transport ambiguity becomes unknown-outcome rather than known failure.", evidence: [internal/application/usecases/messaging-delivery/service.go]}
+    capabilities: [accept-delivery-intent, claim-delivery, complete-delivery, reconcile-pending-delivery]
+    open_questions: [Confirm delivery reliability as the primary product differentiator.]
+    evidence: [internal/application/usecases/messaging-delivery/service_test.go]
+
+  - id: audience
+    subdomain: customer-segmentation
+    status: candidate
+    decision_status: hypothesis
+    confidence: medium
+    model_kind: domain-model
+    classification: supporting
+    owner: unassigned
+    purpose: Own provider-independent recipient selection definitions and synchronization intent.
+    non_responsibilities: [Own provider audience membership., Deliver messages., Mirror LINE endpoint groups.]
+    language:
+      - {term: audience-definition, definition: "Stable criteria for selecting recipients.", forbidden_aliases: [line-audience], code_symbols: [internal/domain/audience/aggregates.AudienceDefinition]}
+      - {term: recipient-selection, definition: "Immutable result consumed by delivery.", forbidden_aliases: [user-id-list], code_symbols: []}
+      - {term: audience-sync, definition: "Process aligning a definition with provider representation.", forbidden_aliases: [upload-job], code_symbols: []}
+    owns: [audience-definition, audience-sync-intent]
+    aggregates:
+      - {name: AudienceDefinition, root: audience-definition, consistency_boundary: "Definition identity and selection criteria change together.", owns: [selection-criteria, audience-lifecycle], repository: AudienceRepository, confidence: medium, evidence: [internal/domain/audience/aggregates/audience_definition_test.go]}
+    data_ownership:
+      - {resource: audience-definition, authority: local-authoritative, owner: audience, write_policy: "Changes require an audience command.", evidence: [internal/application/usecases/audience/service.go]}
+      - {resource: provider-audience-membership, authority: provider-authoritative, owner: line-provider, write_policy: "Observed through an ACL.", evidence: [internal/adapter/outbound/line]}
+    invariants: [{id: AUD-001, statement: "A recipient selection is immutable once accepted by delivery.", evidence: [internal/domain/audience/aggregates/audience_definition_test.go]}]
+    capabilities: [define-audience, resolve-recipients, synchronize-audience]
+    open_questions: [Validate whether local audience definitions are persisted.]
+    evidence: [internal/domain/audience/aggregates/audience_definition_test.go, internal/application/usecases/audience/service_test.go]
+
+  - id: experience-presentation
+    subdomain: customer-experience
+    status: candidate
+    decision_status: hypothesis
+    confidence: low
+    model_kind: domain-model
+    classification: supporting
+    owner: unassigned
+    purpose: Own desired interactive presentation independently from deployed provider resources.
+    non_responsibilities: [Own promotions., Own delivery., Treat rich-menu SDK types as Domain entities.]
+    language:
+      - {term: interaction-surface, definition: "Versioned desired interactive presentation.", forbidden_aliases: [rich-menu], code_symbols: [internal/domain/experience-presentation/aggregates.InteractionSurface]}
+      - {term: surface-assignment, definition: "Intent to expose a surface to selected recipients.", forbidden_aliases: [link-rich-menu], code_symbols: []}
+      - {term: presentation-asset, definition: "Referenced media used by a surface.", forbidden_aliases: [storage-object], code_symbols: []}
+    owns: [interaction-surface, surface-assignment]
+    aggregates: [{name: InteractionSurface, root: interaction-surface, consistency_boundary: "A surface version and its regions publish together.", owns: [surface-version, interaction-regions, asset-references], repository: InteractionSurfaceRepository, confidence: medium, evidence: [internal/domain/experience-presentation/aggregates/interaction_surface_test.go]}]
+    data_ownership:
+      - {resource: desired-presentation, authority: local-authoritative, owner: experience-presentation, write_policy: "Published through an InteractionSurface transition.", evidence: [internal/application/usecases/experience-presentation/service.go]}
+      - {resource: deployed-provider-presentation, authority: provider-authoritative, owner: line-provider, write_policy: "Managed through an ACL.", evidence: [internal/adapter/outbound/line]}
+    invariants: [{id: EXP-001, statement: "A published surface references a complete immutable presentation version.", evidence: [internal/domain/experience-presentation/aggregates/interaction_surface_test.go]}]
+    capabilities: [define-interaction-surface, assign-surface, publish-presentation]
+    open_questions: [Validate which presentation state is locally persisted.]
+    evidence: [internal/domain/experience-presentation/aggregates/interaction_surface_test.go, internal/application/usecases/experience-presentation/service_test.go]
+
+  - id: promotion
+    subdomain: customer-experience
+    status: candidate
+    decision_status: hypothesis
+    confidence: low
+    model_kind: domain-model
+    classification: supporting
+    owner: unassigned
+    purpose: Own promotion lifecycle and eligibility when those decisions are product-owned.
+    non_responsibilities: [Deliver promotion messages., Own audience definitions., Mirror coupon endpoints.]
+    language:
+      - {term: promotion, definition: "Time-bounded offer with an explicit lifecycle.", forbidden_aliases: [coupon-api], code_symbols: [internal/domain/promotion/aggregates.Promotion]}
+      - {term: eligibility-decision, definition: "Decision whether a subject may receive an offer.", forbidden_aliases: [membership-response], code_symbols: []}
+      - {term: promotion-delivery-intent, definition: "Approved promotion content prepared for delivery.", forbidden_aliases: [push-request], code_symbols: []}
+    owns: [promotion-lifecycle, offer-rules]
+    aggregates: [{name: Promotion, root: promotion, consistency_boundary: "Offer rules and lifecycle transition atomically.", owns: [offer, eligibility-policy, lifecycle], repository: PromotionRepository, confidence: medium, evidence: [internal/domain/promotion/aggregates/promotion_test.go]}]
+    data_ownership:
+      - {resource: promotion-definition, authority: local-authoritative, owner: promotion, write_policy: "Only promotion commands mutate it.", evidence: [internal/application/usecases/promotion/service.go]}
+      - {resource: provider-coupon-state, authority: provider-authoritative, owner: line-provider, write_policy: "Imported through an ACL.", evidence: [internal/adapter/outbound/line]}
+    invariants: [{id: PRO-001, statement: "A closed promotion cannot issue a new delivery intent.", evidence: [internal/domain/promotion/aggregates/promotion_test.go]}]
+    capabilities: [define-promotion, evaluate-eligibility, close-promotion]
+    open_questions: [If no local lifecycle exists demote this to provider orchestration.]
+    evidence: [internal/domain/promotion/aggregates/promotion_test.go, internal/application/usecases/promotion/service_test.go]
+
+  - id: membership
+    subdomain: customer-experience
+    status: candidate
+    decision_status: hypothesis
+    confidence: low
+    model_kind: read-model
+    classification: supporting
+    owner: unassigned
+    purpose: Present membership and entitlement facts without claiming provider lifecycle ownership.
+    non_responsibilities: [Mutate provider membership., Own promotion lifecycle., Invent an aggregate without local commands.]
+    language:
+      - {term: membership-status, definition: "Observed membership state at a point in time.", forbidden_aliases: [membership-aggregate], code_symbols: []}
+      - {term: entitlement-view, definition: "Derived benefits visible to a consumer.", forbidden_aliases: [permission], code_symbols: []}
+    owns: [membership-projection]
+    data_ownership:
+      - {resource: membership-source-state, authority: provider-authoritative, owner: line-provider, write_policy: "Read-only through an ACL.", evidence: [internal/adapter/outbound/line]}
+      - {resource: membership-projection, authority: derived-projection, owner: membership, write_policy: "Rebuilt from provider facts.", evidence: [internal/application/usecases/membership/membership.go]}
+    invariants: [{id: MEM-001, statement: "A projection cannot grant an entitlement absent from source facts.", evidence: [internal/application/usecases/membership/membership_test.go]}]
+    capabilities: [inspect-membership, derive-entitlement-view]
+    open_questions: [Promote only after local enrollment or entitlement commands exist.]
+    evidence: [internal/application/usecases/membership/membership_test.go]
+
+  - id: workspace-automation
+    subdomain: business-automation
+    status: candidate
+    decision_status: hypothesis
+    confidence: medium
+    model_kind: domain-model
+    classification: supporting
+    owner: linebot-platform
+    purpose: Own user-approved automation requests and outcomes independently from Google vocabulary.
+    non_responsibilities: [Own account links or credentials., Own Google resources., Expose Google SDK types.]
+    language:
+      - {term: automation-request, definition: "User-authorized intent to produce a business outcome.", forbidden_aliases: [google-api-call], code_symbols: [internal/domain/workspace-automation/aggregates.AutomationRequest]}
+      - {term: workspace-action, definition: "Provider-independent action within an approved request.", forbidden_aliases: [calendar-method], code_symbols: []}
+      - {term: execution-outcome, definition: "Recorded result including unknown remote outcome.", forbidden_aliases: [http-response], code_symbols: []}
+    owns: [automation-request, approval, execution-outcome]
+    aggregates: [{name: AutomationRequest, root: automation-request, consistency_boundary: "Intent approval and admission state change atomically.", owns: [approval, requested-actions, admission-state], repository: AutomationRequestRepository, confidence: medium, evidence: [internal/domain/workspace-automation/aggregates/automation_request_test.go]}]
+    data_ownership:
+      - {resource: automation-audit, authority: local-authoritative, owner: workspace-automation, write_policy: "Append outcomes through the workflow.", evidence: [internal/application/usecases/workspace-automation/service.go]}
+      - {resource: workspace-resource, authority: provider-authoritative, owner: google-workspace, write_policy: "Mutated only by an authorized ACL call.", evidence: [internal/adapter/outbound/google/api]}
+    invariants: [{id: WSA-001, statement: "No action executes without an eligible account and required scope.", evidence: [internal/domain/workspace-automation/aggregates/automation_request_test.go]}]
+    capabilities: [authorize-automation, execute-workspace-action, record-execution-outcome]
+    open_questions: [Validate which multi-action outcomes require compensation.]
+    evidence: [internal/domain/workspace-automation/aggregates/automation_request_test.go, internal/application/usecases/workspace-automation/service_test.go]
+
+  - id: contact-directory
+    subdomain: customer-knowledge
+    status: candidate
+    decision_status: hypothesis
+    confidence: medium
+    model_kind: read-model
+    classification: supporting
+    owner: unassigned
+    purpose: Resolve stable recipient references and present provider profile snapshots.
+    non_responsibilities: [Own provider profiles., Decide audience membership., Deliver messages.]
+    language:
+      - {term: recipient-reference, definition: "Stable reference usable by delivery.", forbidden_aliases: [line-user-object], code_symbols: []}
+      - {term: profile-snapshot, definition: "Time-stamped observation of provider profile data.", forbidden_aliases: [customer-aggregate], code_symbols: []}
+    owns: [recipient-index, profile-projection]
+    data_ownership:
+      - {resource: provider-profile, authority: provider-authoritative, owner: line-provider, write_policy: "Read-only through an ACL.", evidence: [internal/adapter/outbound/line]}
+      - {resource: profile-projection, authority: derived-projection, owner: contact-directory, write_policy: "Rebuilt from observations.", evidence: [internal/application/usecases/contact-directory/contacts.go]}
+    invariants: [{id: CON-001, statement: "A snapshot records observation time and never overwrites provider authority.", evidence: [internal/application/usecases/contact-directory/contacts_test.go]}]
+    capabilities: [resolve-recipient, inspect-profile]
+    evidence: [internal/application/usecases/contact-directory/contacts_test.go]
+
+  - id: insights-reporting
+    subdomain: customer-knowledge
+    status: candidate
+    decision_status: hypothesis
+    confidence: medium
+    model_kind: read-model
+    classification: supporting
+    owner: unassigned
+    purpose: Build reporting projections from delivery facts and provider analytics.
+    non_responsibilities: [Change delivery outcomes., Own provider analytics., Enforce delivery invariants.]
+    language:
+      - {term: delivery-fact, definition: "Immutable fact emitted by Messaging Delivery.", forbidden_aliases: [firestore-row], code_symbols: []}
+      - {term: metric-snapshot, definition: "Derived metric for a defined reporting period.", forbidden_aliases: [api-response], code_symbols: []}
+    owns: [reporting-projection]
+    data_ownership:
+      - {resource: delivery-facts, authority: local-authoritative, owner: messaging-delivery, write_policy: "Consumed without mutation.", evidence: [internal/application/usecases/messaging-delivery]}
+      - {resource: reporting-projection, authority: derived-projection, owner: insights-reporting, write_policy: "Rebuilt from facts and analytics.", evidence: [internal/application/usecases/insights-reporting/insights.go]}
+    invariants: [{id: INS-001, statement: "A metric snapshot identifies its period and source facts.", evidence: [internal/application/usecases/insights-reporting/insights_test.go]}]
+    capabilities: [project-delivery-facts, query-metrics]
+    evidence: [internal/application/usecases/insights-reporting/insights_test.go]
+
+  - id: content-intelligence
+    subdomain: content-intelligence-subdomain
+    status: candidate
+    decision_status: hypothesis
+    confidence: low
+    model_kind: process-model
+    classification: supporting
+    owner: unassigned
+    purpose: Produce reviewable content drafts without binding consumers to an AI provider.
+    non_responsibilities: [Publish content directly., Own delivery., Treat model output as approved content.]
+    language:
+      - {term: generation-request, definition: "Provider-independent request constrained by consumer policy.", forbidden_aliases: [openai-request, gemini-request], code_symbols: []}
+      - {term: content-draft, definition: "Unapproved generated output returned to a consumer.", forbidden_aliases: [final-message], code_symbols: []}
+    owns: [generation-policy, generation-audit]
+    data_ownership:
+      - {resource: generation-policy, authority: local-authoritative, owner: content-intelligence, write_policy: "Changed only through policy configuration.", evidence: [internal/adapter/outbound/openai]}
+      - {resource: model-output, authority: provider-authoritative, owner: ai-provider, write_policy: "Imported as an unapproved draft.", evidence: [internal/infrastructure/openai, internal/infrastructure/google/genai]}
+    invariants: [{id: CNT-001, statement: "Generated output remains a draft until accepted by its consumer.", evidence: [internal/application/usecases/content-intelligence/content_test.go]}]
+    capabilities: [generate-content-draft, record-generation-outcome]
+    open_questions: [Validate whether product-owned prompt policy warrants a context.]
+    evidence: [internal/application/usecases/content-intelligence/content_test.go]
+
+relationships:
+  - {upstream: identity, downstream: workspace-automation, pattern: anti-corruption-layer, contract: AuthorizedWorkspaceAccount, interaction: synchronous, decision_status: hypothesis, confidence: high, consumer_owned_by: workspace-automation}
+  - {upstream: audience, downstream: messaging-delivery, pattern: published-language, contract: RecipientSelection, interaction: synchronous, decision_status: hypothesis, confidence: medium, consumer_owned_by: messaging-delivery}
+  - {upstream: contact-directory, downstream: messaging-delivery, pattern: published-language, contract: RecipientReference, interaction: synchronous, decision_status: hypothesis, confidence: medium, consumer_owned_by: messaging-delivery}
+  - {upstream: membership, downstream: promotion, pattern: published-language, contract: EligibilityDecision, interaction: synchronous, decision_status: hypothesis, confidence: low, consumer_owned_by: promotion}
+  - {upstream: promotion, downstream: messaging-delivery, pattern: published-language, contract: PromotionDeliveryIntent, interaction: asynchronous, decision_status: hypothesis, confidence: low, consumer_owned_by: messaging-delivery}
+  - {upstream: experience-presentation, downstream: messaging-delivery, pattern: published-language, contract: InteractionMessage, interaction: asynchronous, decision_status: hypothesis, confidence: low, consumer_owned_by: messaging-delivery}
+  - {upstream: content-intelligence, downstream: experience-presentation, pattern: customer-supplier, contract: ContentDraft, interaction: synchronous, decision_status: hypothesis, confidence: low, consumer_owned_by: experience-presentation}
+  - {upstream: content-intelligence, downstream: messaging-delivery, pattern: customer-supplier, contract: ContentDraft, interaction: synchronous, decision_status: hypothesis, confidence: low, consumer_owned_by: messaging-delivery}
+  - {upstream: workspace-automation, downstream: messaging-delivery, pattern: published-language, contract: NotificationIntent, interaction: asynchronous, decision_status: hypothesis, confidence: low, consumer_owned_by: messaging-delivery}
+  - {upstream: messaging-delivery, downstream: insights-reporting, pattern: published-language, contract: DeliveryFact, interaction: asynchronous, decision_status: hypothesis, confidence: medium, consumer_owned_by: insights-reporting}

@@ -2,29 +2,25 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 
 	"github.com/963sup/linebot-platform/internal/adapter/inbound/cli"
-	"github.com/963sup/linebot-platform/internal/application/usecases/workspace"
+	workspaceautomation "github.com/963sup/linebot-platform/internal/application/usecases/workspace-automation"
 	"github.com/963sup/linebot-platform/internal/bootstrap"
 	"golang.org/x/oauth2"
 )
 
-// workspaceExecutor adapts the use case's named JSON result to the CLI's byte
-// contract without re-encoding the payload or changing authorization behavior.
-type workspaceExecutor func(context.Context, string, workspace.Command, workspace.Approval) (workspace.Result, error)
+// workspaceExecutor keeps the consumer-owned Workspace contract visible at
+// the composition boundary while allowing focused tests without Google SDKs.
+type workspaceExecutor func(context.Context, workspaceautomation.API, workspaceautomation.OperationCommand, workspaceautomation.OperationApproval) (workspaceautomation.OperationResult, error)
 
 var _ cli.WorkspaceRuntime = workspaceExecutor(nil)
 
-func (execute workspaceExecutor) Execute(ctx context.Context, action string, request workspace.Command, approval workspace.Approval) ([]byte, error) {
-	result, err := execute(ctx, action, request, approval)
+func (execute workspaceExecutor) Execute(ctx context.Context, api workspaceautomation.API, request workspaceautomation.OperationCommand, approval workspaceautomation.OperationApproval) (workspaceautomation.OperationResult, error) {
+	result, err := execute(ctx, api, request, approval)
 	if err != nil {
-		return nil, err
+		return workspaceautomation.OperationResult{}, err
 	}
-	if result.Value == nil {
-		return nil, nil
-	}
-	return json.Marshal(result.Value)
+	return result, nil
 }
 
 func newWorkspaceRuntime(ctx context.Context, source oauth2.TokenSource) (cli.WorkspaceRuntime, error) {

@@ -6,7 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/963sup/linebot-platform/internal/application/ports/outbound"
+	mediatransfer "github.com/963sup/linebot-platform/internal/application/usecases/media-transfer"
 	"github.com/line/line-bot-sdk-go/v8/linebot/messaging_api"
 )
 
@@ -36,12 +36,12 @@ func TestBlobSenderUsesOfficialLINEBlobEndpoints(t *testing.T) {
 	}
 	ctx := context.Background()
 	for _, call := range []func() error{
-		func() error { _, e := s.MessageContent(ctx, "1"); return e },
-		func() error { _, e := s.MessageContentPreview(ctx, "1"); return e },
-		func() error { _, e := s.MessageContentTranscoding(ctx, "1"); return e },
-		func() error { _, e := s.RichMenuImage(ctx, "richmenu-1"); return e },
+		func() error { _, e := s.FetchMessageContent(ctx, "1", mediatransfer.Original); return e },
+		func() error { _, e := s.FetchMessageContent(ctx, "1", mediatransfer.Preview); return e },
+		func() error { _, e := s.MessageContentStatus(ctx, "1"); return e },
+		func() error { _, e := s.FetchPresentationImage(ctx, "richmenu-1"); return e },
 		func() error {
-			return s.SetRichMenuImage(ctx, "richmenu-1", outbound.BinaryContent{Data: []byte("png"), ContentType: "image/png"})
+			return s.StorePresentationImage(ctx, "richmenu-1", mediatransfer.BinaryContent{Data: []byte("png"), ContentType: "image/png"})
 		},
 	} {
 		if err := call(); err != nil {

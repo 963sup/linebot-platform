@@ -2,13 +2,13 @@ package cli
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"flag"
-	"fmt"
 	"io"
 	"time"
 
-	"github.com/963sup/linebot-platform/internal/application/usecases/engagement"
+	"github.com/963sup/linebot-platform/internal/application/usecases/promotion"
 )
 
 // runCoupons offers a separate command without breaking the legacy membership alias.
@@ -25,15 +25,12 @@ func runCoupons(args []string, getenv func(string) string, output io.Writer) err
 	if !*read || len(flags.Args()) != 0 {
 		return errors.New("coupons requires --read and no extra arguments")
 	}
-	return inspectCoupon(engagement.CouponQuery{Kind: *kind, CouponID: *id, Start: *start, Limit: *limit}, getenv, output)
+	return inspectCoupon(*kind, promotion.CouponID(*id), promotion.CouponPageRequest{Cursor: *start, Limit: *limit}, getenv, output)
 }
 
-func inspectCoupon(q engagement.CouponQuery, getenv func(string) string, output io.Writer) error {
+func inspectCoupon(kind string, id promotion.CouponID, page promotion.CouponPageRequest, getenv func(string) string, output io.Writer) error {
 	if getenv == nil || output == nil {
 		return errors.New("missing CLI configuration")
-	}
-	if err := engagement.ValidateCouponQuery(q); err != nil {
-		return err
 	}
 	if getenv(channelTokenEnv) == "" {
 		return errors.New("access token is required")
@@ -48,10 +45,22 @@ func inspectCoupon(q engagement.CouponQuery, getenv func(string) string, output 
 	defer rt.Close()
 	ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
 	defer cancel()
-	result, err := rt.Inspect(ctx, q)
+	var result any
+	switch kind {
+	case "coupons":
+		if id != "" {
+			return errors.New("coupon ID is not valid for coupon list")
+		}
+		result, err = rt.List(ctx, page)
+	case "coupon":
+		result, err = rt.Get(ctx, id)
+	default:
+		return errors.New("unsupported coupon query kind")
+	}
 	if err != nil {
 		return err
 	}
-	_, err = fmt.Fprintln(output, string(result))
-	return err
+	return writeJSON(output, result)
 }
+
+func writeJSON(output io.Writer, value any) error { return json.NewEncoder(output).Encode(value) }

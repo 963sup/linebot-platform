@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/963sup/linebot-platform/internal/application/usecases/workspace"
+	identity "github.com/963sup/linebot-platform/internal/application/usecases/identity"
 )
 
 type fakeLinks struct {
@@ -23,12 +23,12 @@ func (f *fakeLinks) Begin(_ context.Context, owner string, _ []string) (string, 
 	f.state = strings.Repeat("A", 43)
 	return "https://accounts.google.com/o/oauth2/auth?state=" + f.state, nil
 }
-func (f *fakeLinks) Complete(_ context.Context, state, code string) (workspace.LinkedAccount, error) {
+func (f *fakeLinks) Complete(_ context.Context, state, code string) (identity.LinkedAccount, error) {
 	f.calls++
 	if state != f.state || code != "code" {
-		return workspace.LinkedAccount{}, errors.New("bad state")
+		return identity.LinkedAccount{}, errors.New("bad state")
 	}
-	return workspace.LinkedAccount{OwnerID: f.owner, GoogleSubject: "google-sub"}, nil
+	return identity.LinkedAccount{OwnerID: f.owner, GoogleSubject: "google-sub"}, nil
 }
 func TestHTTPStartRequiresVerifiedLINEIdentity(t *testing.T) {
 	links := &fakeLinks{}

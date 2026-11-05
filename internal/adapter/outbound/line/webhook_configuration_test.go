@@ -23,11 +23,11 @@ func TestWebhookConfigurationUsesOfficialSDK(t *testing.T) {
 	}))
 	defer server.Close()
 	s := contractSender(t, server)
-	if err := s.SetWebhookEndpoint(context.Background(), "https://example.com/webhook"); err != nil {
+	if err := s.SetEndpoint(context.Background(), "https://example.com/webhook"); err != nil {
 		t.Fatal(err)
 	}
-	r, err := s.TestWebhookEndpoint(context.Background(), "https://example.com/webhook")
-	if err != nil || !r.Success || r.StatusCode != 200 {
+	r, err := s.TestEndpoint(context.Background(), "https://example.com/webhook")
+	if err != nil || !r.Reachable || r.StatusCode != 200 {
 		t.Fatalf("unexpected test result: %+v %v", r, err)
 	}
 	if len(paths) != 2 || paths[0] != "PUT /v2/bot/channel/webhook/endpoint" || paths[1] != "POST /v2/bot/channel/webhook/test" {

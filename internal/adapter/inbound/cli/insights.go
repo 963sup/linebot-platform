@@ -9,8 +9,18 @@ import (
 	"io"
 	"time"
 
-	"github.com/963sup/linebot-platform/internal/application/usecases/insights"
+	insightsreporting "github.com/963sup/linebot-platform/internal/application/usecases/insights-reporting"
 )
+
+type insightsReportingRuntime interface {
+	Demographics(context.Context) (insightsreporting.DemographicsReport, error)
+	Deliveries(context.Context, insightsreporting.DailyQuery) (insightsreporting.CountReport, error)
+	Followers(context.Context, insightsreporting.DailyQuery) (insightsreporting.CountReport, error)
+	MessageEvent(context.Context, insightsreporting.MessageEventQuery) (insightsreporting.MessageEventReport, error)
+	StatisticsPerUnit(context.Context, insightsreporting.UnitStatisticsQuery) (insightsreporting.StatisticsReport, error)
+	PresentationSummary(context.Context, insightsreporting.PresentationStatisticsQuery) (insightsreporting.StatisticsReport, error)
+	PresentationDaily(context.Context, insightsreporting.PresentationStatisticsQuery) (insightsreporting.StatisticsReport, error)
+}
 
 func runInsights(args []string, getenv func(string) string, output io.Writer) error {
 	flags := flag.NewFlagSet("insights", flag.ContinueOnError)
@@ -31,10 +41,6 @@ func runInsights(args []string, getenv func(string) string, output io.Writer) er
 	if getenv == nil || output == nil {
 		return errors.New("missing CLI configuration")
 	}
-	q := insights.Query{Kind: *kind, Date: *date, RequestID: *requestID, Unit: *unit, RichMenu: *menu, From: *from, To: *to}
-	if err := insights.ValidateQuery(q); err != nil {
-		return err
-	}
 	if insightsRuntimeFactory == nil {
 		return errors.New("insights runtime is not configured")
 	}
@@ -43,13 +49,52 @@ func runInsights(args []string, getenv func(string) string, output io.Writer) er
 		return err
 	}
 	defer rt.Close()
+	reports, ok := any(rt).(insightsReportingRuntime)
+	if !ok {
+		return errors.New("insights runtime does not implement insights-reporting")
+	}
 	ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
 	defer cancel()
-	result, err := rt.Inspect(ctx, q)
+	parseDay := func(value string) (time.Time, error) { return time.Parse("20060102", value) }
+	var result any
+	switch *kind {
+	case "demographics":
+		result, err = reports.Demographics(ctx)
+	case "deliveries", "followers":
+		day, parseErr := parseDay(*date)
+		if parseErr != nil {
+			return errors.New("insights date must be valid YYYYMMDD")
+		}
+		if *kind == "deliveries" {
+			result, err = reports.Deliveries(ctx, insightsreporting.DailyQuery{Day: day})
+		} else {
+			result, err = reports.Followers(ctx, insightsreporting.DailyQuery{Day: day})
+		}
+	case "message-event":
+		result, err = reports.MessageEvent(ctx, insightsreporting.MessageEventQuery{RequestID: *requestID})
+	case "statistics-per-unit", "menu-summary", "menu-daily":
+		fromDay, fromErr := parseDay(*from)
+		toDay, toErr := parseDay(*to)
+		if fromErr != nil || toErr != nil {
+			return errors.New("insights date range must be valid YYYYMMDD and ordered")
+		}
+		if *kind == "statistics-per-unit" {
+			result, err = reports.StatisticsPerUnit(ctx, insightsreporting.UnitStatisticsQuery{Unit: *unit, RangeQuery: insightsreporting.RangeQuery{From: fromDay, To: toDay}})
+		} else {
+			query := insightsreporting.PresentationStatisticsQuery{PresentationID: *menu, RangeQuery: insightsreporting.RangeQuery{From: fromDay, To: toDay}}
+			if *kind == "menu-summary" {
+				result, err = reports.PresentationSummary(ctx, query)
+			} else {
+				result, err = reports.PresentationDaily(ctx, query)
+			}
+		}
+	default:
+		return errors.New("unsupported insights inspection kind")
+	}
 	if err != nil {
 		return err
 	}
-	payload, err := json.Marshal(result.Value)
+	payload, err := json.Marshal(result)
 	if err != nil {
 		return fmt.Errorf("encode insights result: %w", err)
 	}

@@ -6,7 +6,7 @@
 
 - `internal/domain/<context>/`：只有已確認業務語言、不變量與 Aggregate owner 時建立；DDD 分類留在 Bounded Context 內。
 - `internal/application/usecases/<capability>/`：只有具體 command／query、consumer 與測試時建立。
-- `internal/application/ports/`：只保留由 Application consumer 擁有、確實需要替換的介面。
+- `internal/application/usecases/<capability>/`：outbound port 必須與唯一 consumer 同 package；禁止重新建立全域 ports bucket。
 - `internal/adapter/`：只有 protocol／provider mapping 或 I/O 行為已實作時建立。
 - `internal/infrastructure/`：只有共用 client factory、transport、認證、觀測或 lifecycle primitive 已實作時建立。
 

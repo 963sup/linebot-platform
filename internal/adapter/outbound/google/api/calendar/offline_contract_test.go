@@ -7,10 +7,20 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/963sup/linebot-platform/internal/application/usecases/workspace"
+	"github.com/963sup/linebot-platform/internal/adapter/outbound/google/api/codec"
+	workspace "github.com/963sup/linebot-platform/internal/application/usecases/workspace-automation"
 	googlecalendar "google.golang.org/api/calendar/v3"
 	"google.golang.org/api/option"
 )
+
+func testCommand(t *testing.T, request codec.Request) workspace.OperationCommand {
+	t.Helper()
+	command, err := codec.Command(request)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return command
+}
 
 func TestAllCalendarSDKOperationsUsePinnedRoutes(t *testing.T) {
 	var got string
@@ -81,9 +91,9 @@ func TestAllCalendarSDKOperationsUsePinnedRoutes(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.operation, func(t *testing.T) {
 			got = ""
-			req := workspace.Command{
+			req := testCommand(t, codec.Request{
 				Operation: tc.operation, Parameters: tc.params, Body: tc.body,
-			}
+			})
 			_, err := adapter.ExecuteCalendar(context.Background(), req)
 			if err != nil {
 				t.Fatalf("SDK request: %v", err)

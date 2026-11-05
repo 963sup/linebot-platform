@@ -5,7 +5,7 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/963sup/linebot-platform/internal/application/ports/outbound"
+	messagingdelivery "github.com/963sup/linebot-platform/internal/application/usecases/messaging-delivery"
 	"github.com/963sup/linebot-platform/internal/infrastructure/resilience"
 	"github.com/line/line-bot-sdk-go/v8/linebot/messaging_api"
 )
@@ -14,6 +14,8 @@ type Sender struct {
 	client *messaging_api.MessagingApiAPI
 }
 
+var _ messagingdelivery.DeliveryGateway = (*Sender)(nil)
+
 func NewSender(client *messaging_api.MessagingApiAPI) (*Sender, error) {
 	if client == nil {
 		return nil, errors.New("LINE Messaging API client is required")
@@ -21,16 +23,16 @@ func NewSender(client *messaging_api.MessagingApiAPI) (*Sender, error) {
 	return &Sender{client: client}, nil
 }
 
-func convert(messages []outbound.Message) ([]messaging_api.MessageInterface, error) {
+func convert(messages []messagingdelivery.Message) ([]messaging_api.MessageInterface, error) {
 	result := make([]messaging_api.MessageInterface, 0, len(messages))
 	for _, message := range messages {
 		if err := message.Validate(); err != nil {
 			return nil, err
 		}
 		switch message.Kind {
-		case outbound.KindText:
+		case messagingdelivery.KindText:
 			result = append(result, messaging_api.TextMessage{Text: message.Text})
-		case outbound.KindFlex:
+		case messagingdelivery.KindFlex:
 			result = append(result, &messaging_api.FlexMessage{
 				AltText: message.Flex.AltText,
 				Contents: messaging_api.FlexBubble{
@@ -71,7 +73,22 @@ func httpStatus(response *http.Response) int {
 	return response.StatusCode
 }
 
-func (s *Sender) Reply(ctx context.Context, replyToken string, messages []outbound.Message) error {
+// lineAPIError closes the response body left open by LINE SDK v8 on non-2xx
+// responses, then removes the provider response body from the returned error.
+// Keeping this at the adapter boundary prevents repeated provider failures from
+// leaking HTTP connections while preserving the status-based classification.
+func lineAPIError(operation string, response *http.Response, err error) error {
+	if err == nil {
+		return nil
+	}
+	status := httpStatus(response)
+	if response != nil && response.Body != nil {
+		_ = response.Body.Close()
+	}
+	return resilience.Wrap("line", operation, status, err)
+}
+
+func (s *Sender) Reply(ctx context.Context, replyToken string, messages []messagingdelivery.Message) error {
 	client, err := s.clientFor(ctx)
 	if err != nil {
 		return err
@@ -85,12 +102,12 @@ func (s *Sender) Reply(ctx context.Context, replyToken string, messages []outbou
 		Messages:   mapped,
 	})
 	if err != nil {
-		return resilience.Wrap("line", "reply", httpStatus(response), err)
+		return lineAPIError("reply", response, err)
 	}
 	return nil
 }
 
-func (s *Sender) Push(ctx context.Context, recipient string, messages []outbound.Message, retryKey string) error {
+func (s *Sender) Push(ctx context.Context, recipient string, messages []messagingdelivery.Message, retryKey string) error {
 	client, err := s.clientFor(ctx)
 	if err != nil {
 		return err
@@ -104,7 +121,7 @@ func (s *Sender) Push(ctx context.Context, recipient string, messages []outbound
 		Messages: mapped,
 	}, retryKey)
 	if err != nil {
-		return resilience.Wrap("line", "push", httpStatus(response), err)
+		return lineAPIError("push", response, err)
 	}
 	return nil
 }

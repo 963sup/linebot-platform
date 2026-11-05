@@ -13,9 +13,9 @@ The primary Codex session is the `orchestrator`. It may delegate to exactly thes
 | `environment` | Toolchain, MCP, approved Skills and Codex Cloud health |
 | `reviewer` | Independent Go, architecture, security, performance and test review |
 
-Roles are behavior guidance, not sandbox or IAM boundaries. The host controls actual permissions. The maximum delegated depth is one and the maximum concurrent child threads is four. Do not spawn an orchestrator child; the primary session coordinates work.
+Roles are behavior guidance, not sandbox or IAM boundaries. The host controls actual permissions. The maximum delegated depth is one and the maximum concurrent child threads is nine. Do not spawn an orchestrator child; the primary session coordinates work.
 
-Use one write owner per file. Do not delegate trivial localized changes. Every handoff reports Task, Owner, Inputs, Scope, Files, Contract Changes, Evidence, Tests Run, Findings, Risks and Next Action. Unverified states must be reported as `Not Verified`.
+Nine is a capacity limit, not a required fan-out. Use the smallest necessary role set; repeated role instances require disjoint scopes. Use one write owner per file, sequence shared contracts and files, keep reviewers independent and read-only, and close completed threads promptly. Keep the ninth slot available for review, replacement, or non-overlapping research when practical. Do not delegate trivial localized changes. Every handoff reports Task, Owner, Inputs, Scope, Files, Contract Changes, Evidence, Tests Run, Findings, Risks and Next Action. Unverified states must be reported as `Not Verified`.
 
 ## Routing
 

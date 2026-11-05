@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/963sup/linebot-platform/internal/application/usecases/workspace"
+	"github.com/963sup/linebot-platform/internal/adapter/outbound/google/api/codec"
 	"google.golang.org/api/option"
 	googletasks "google.golang.org/api/tasks/v1"
 )
@@ -39,17 +39,17 @@ func TestTasksMoveParentAndListOptions(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = a.ExecuteTasks(context.Background(), workspace.Command{
+	_, err = a.ExecuteTasks(context.Background(), testCommand(t, codec.Request{
 		Operation: "tasks.list", Parameters: map[string]any{"tasklist": json.RawMessage(`"list1"`)},
 		Options: map[string]any{"showAssigned": json.RawMessage(`true`), "maxResults": json.RawMessage(`5`)},
-	})
+	}))
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = a.ExecuteTasks(context.Background(), workspace.Command{
+	_, err = a.ExecuteTasks(context.Background(), testCommand(t, codec.Request{
 		Operation: "tasks.move", Parameters: map[string]any{"tasklist": json.RawMessage(`"list1"`), "task": json.RawMessage(`"task1"`)},
 		Options: map[string]any{"parent": json.RawMessage(`"parent1"`), "previous": json.RawMessage(`"sibling1"`)},
-	})
+	}))
 	if err != nil {
 		t.Fatal(err)
 	}

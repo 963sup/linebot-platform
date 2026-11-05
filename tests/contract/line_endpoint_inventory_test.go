@@ -1,164 +1,29 @@
 package contract
 
 import (
-	"bufio"
-	"os"
-	"regexp"
-	"strings"
+	"path/filepath"
 	"testing"
+
+	"github.com/963sup/linebot-platform/internal/governance/domainmodel"
 )
 
-// The pinned LINE OpenAPI snapshot must remain an explicit, unique inventory.
-// This detects accidental omissions and dishonest integration status changes;
-// it is not a live LINE endpoint or channel-permission test.
+// The pinned LINE OpenAPI snapshot remains an external-fact inventory. Domain
+// classification is validated separately through the capability map.
 func TestLINEEndpointInventory(t *testing.T) {
-	file, err := os.Open("../../docs/line/endpoint-inventory.yaml")
+	root := filepath.Join("..", "..")
+	inventory, err := domainmodel.LoadEndpointInventory(filepath.Join(root, "docs", "line", "endpoint-inventory.yaml"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer file.Close()
-
-	item := regexp.MustCompile(`^  - \{source: ([a-z-]+), group: ([a-z-]+), operation: ([A-Za-z0-9]+), method: (GET|POST|PUT|DELETE|PATCH), path: "([^"]+)", integration: (not_integrated|integrated_offline), test: (none|contract), access: (review|required_eligibility_review)\}$`)
-	implemented := map[string]bool{
-		"replyMessage":                     false,
-		"pushMessage":                      false,
-		"getProfile":                       false,
-		"getBotInfo":                       false,
-		"getWebhookEndpoint":               false,
-		"getMessageQuota":                  false,
-		"getMessageQuotaConsumption":       false,
-		"getAggregationUnitUsage":          false,
-		"getAggregationUnitNameList":       false,
-		"getNumberOfSentReplyMessages":     false,
-		"getNumberOfSentPushMessages":      false,
-		"getNumberOfSentMulticastMessages": false,
-		"getNumberOfSentBroadcastMessages": false,
-		"getNarrowcastProgress":            false,
-		"getRichMenuList":                  false,
-		"getRichMenu":                      false,
-		"getDefaultRichMenuId":             false,
-		"getRichMenuAliasList":             false,
-		"getRichMenuAlias":                 false,
-		"getRichMenuIdOfUser":              false,
-		"getRichMenuBatchProgress":         false,
-		"getFollowers":                     false,
-		"getGroupSummary":                  false,
-		"getGroupMemberCount":              false,
-		"getRoomMemberCount":               false,
-		"getGroupMembersIds":               false,
-		"getRoomMembersIds":                false,
-		"getGroupMemberProfile":            false,
-		"getRoomMemberProfile":             false,
-		"getFriendsDemographics":           false,
-		"getNumberOfMessageDeliveries":     false,
-		"getNumberOfFollowers":             false,
-		"getMessageEvent":                  false,
-		"getStatisticsPerUnit":             false,
-		"getRichMenuInsightSummary":        false,
-		"getRichMenuInsightDaily":          false,
-		"getMembershipList":                false,
-		"getMembershipSubscription":        false,
-		"getJoinedMembershipUsers":         false,
-		"listCoupon":                       false,
-		"getCouponDetail":                  false,
-		"getAudienceData":                  false,
-		"getSharedAudienceData":            false,
-		"getAudienceGroups":                false,
-		"getSharedAudienceGroups":          false,
-		"setDefaultRichMenu":               false,
-		"cancelDefaultRichMenu":            false,
-		"linkRichMenuIdToUser":             false,
-		"unlinkRichMenuIdFromUser":         false,
-		"deleteRichMenu":                   false,
-		"deleteRichMenuAlias":              false,
-		"broadcast":                        false,
-		"multicast":                        false,
-		"narrowcast":                       false,
-		"validateReply":                    false,
-		"validatePush":                     false,
-		"validateMulticast":                false,
-		"validateNarrowcast":               false,
-		"validateBroadcast":                false,
-		"setWebhookEndpoint":               false,
-		"testWebhookEndpoint":              false,
-		"createRichMenu":                   false,
-		"validateRichMenuObject":           false,
-		"createRichMenuAlias":              false,
-		"updateRichMenuAlias":              false,
-		"linkRichMenuIdToUsers":            false,
-		"unlinkRichMenuIdFromUsers":        false,
-		"richMenuBatch":                    false,
-		"validateRichMenuBatchRequest":     false,
+	if len(inventory.Endpoints) != domainmodel.ExpectedEndpointCount {
+		t.Fatalf("inventory count = %d, want %d", len(inventory.Endpoints), domainmodel.ExpectedEndpointCount)
 	}
-	implemented["getMessageContent"] = false
-	implemented["getMessageContentPreview"] = false
-	implemented["getMessageContentTranscodingByMessageId"] = false
-	implemented["leaveGroup"] = false
-	implemented["leaveRoom"] = false
-	implemented["getRichMenuImage"] = false
-	implemented["setRichMenuImage"] = false
-	implemented["issueLinkToken"] = false
-	implemented["markMessagesAsRead"] = false
-	implemented["pushMessagesByPhone"] = false
-	implemented["pushTemplatedMessagesByPhone"] = false
-	implemented["getPNPMessageStatistics"] = false
-	implemented["getPNPTemplatedMessageStatistics"] = false
-	implemented["createCoupon"] = false
-	implemented["closeCoupon"] = false
-	implemented["showLoadingAnimation"] = false
-	implemented["markMessagesAsReadByToken"] = false
-	implemented["createAudienceGroup"] = false
-	implemented["addAudienceToAudienceGroup"] = false
-	implemented["createAudienceForUploadingUserIds"] = false
-	implemented["addUserIdsToAudience"] = false
-	implemented["createClickBasedAudienceGroup"] = false
-	implemented["createImpBasedAudienceGroup"] = false
-	implemented["updateAudienceGroupDescription"] = false
-	implemented["deleteAudienceGroup"] = false
-	implemented["issueStatelessChannelToken"] = false
-	implemented["getsAllValidChannelAccessTokenKeyIds"] = false
-	implemented["issueChannelTokenByJWT"] = false
-	implemented["verifyChannelTokenByJWT"] = false
-	implemented["revokeChannelTokenByJWT"] = false
-	implemented["issueChannelToken"] = false
-	implemented["verifyChannelToken"] = false
-	implemented["revokeChannelToken"] = false
-	seen := make(map[string]bool)
-	count := 0
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		line := scanner.Text()
-		if !strings.HasPrefix(line, "  - ") {
-			continue
+	for _, endpoint := range inventory.Endpoints {
+		if endpoint.Integration == "integrated_offline" && endpoint.Test != "contract" {
+			t.Errorf("%s: offline integration lacks contract evidence", endpoint.Operation)
 		}
-		groups := item.FindStringSubmatch(line)
-		if groups == nil {
-			t.Fatalf("malformed endpoint entry: %s", line)
-		}
-		key := groups[4] + " " + groups[5]
-		if seen[key] {
-			t.Fatalf("duplicate endpoint: %s", key)
-		}
-		seen[key] = true
-		count++
-		if groups[6] == "integrated_offline" {
-			if _, ok := implemented[groups[3]]; !ok || groups[7] != "contract" {
-				t.Fatalf("unverified integrated endpoint: %s", groups[3])
-			}
-			implemented[groups[3]] = true
-		} else if groups[7] != "none" {
-			t.Fatalf("unintegrated endpoint claims tests: %s", groups[3])
-		}
-	}
-	if err := scanner.Err(); err != nil {
-		t.Fatal(err)
-	}
-	if count != 102 {
-		t.Fatalf("inventory count = %d, want pinned upstream baseline 102", count)
-	}
-	for op, ok := range implemented {
-		if !ok {
-			t.Fatalf("missing implemented endpoint: %s", op)
+		if endpoint.Integration == "not_integrated" && endpoint.Test != "none" {
+			t.Errorf("%s: unintegrated endpoint claims a test", endpoint.Operation)
 		}
 	}
 }

@@ -56,7 +56,7 @@ func TestDurableConfigRequiresAllCredentialsAndEndpoints(t *testing.T) {
 		"LINE_BOT_DESTINATION": "U0123456789abcdef0123456789abcdef",
 		"GCP_PROJECT_ID":       "test-project",
 		"TASK_QUEUE_NAME":      "projects/test-project/locations/asia-east1/queues/line-queue",
-		"TASK_WORKER_URL":      "https://worker.example.test/tasks/line-reply",
+		"TASK_WORKER_URL":      "https://worker.example.test/tasks/v2/line-reply",
 		"TASK_OIDC_AUDIENCE":   "https://worker.example.test",
 		"TASK_INVOKER_EMAIL":   "invoker@test-project.iam.gserviceaccount.com",
 	}
@@ -89,6 +89,16 @@ func TestDurableConfigRequiresAllCredentialsAndEndpoints(t *testing.T) {
 		delete(copy, missing)
 		if _, err := LoadConfig(env(copy)); err == nil {
 			t.Fatalf("durable config accepted missing %s", missing)
+		}
+	}
+	for _, destination := range []string{"typo", "u0123456789abcdef0123456789abcdef", "U0123456789ABCDEF0123456789ABCDEF", "U0123"} {
+		copy := make(map[string]string, len(fields))
+		for key, value := range fields {
+			copy[key] = value
+		}
+		copy[KeyBotDestination] = destination
+		if _, err := LoadConfig(env(copy)); err == nil {
+			t.Fatalf("durable config accepted malformed LINE destination %q", destination)
 		}
 	}
 	workerEnv := make(map[string]string, len(withToken))

@@ -7,7 +7,7 @@ import (
 
 	"golang.org/x/oauth2"
 
-	"github.com/963sup/linebot-platform/internal/application/ports/outbound"
+	identity "github.com/963sup/linebot-platform/internal/application/usecases/identity"
 )
 
 type oauthTokenFactory interface {
@@ -26,8 +26,8 @@ type PersistedTokenSource struct {
 
 // authorizationTokenStore is private to the refresh consumer, not a global four-method port.
 type authorizationTokenStore interface {
-	GetConnection(context.Context, string, string) (outbound.OAuthAuthorization, error)
-	UpdateCredentials(context.Context, outbound.OAuthAuthorization, int64) error
+	GetConnection(context.Context, string, string) (identity.OAuthAuthorization, error)
+	UpdateCredentials(context.Context, identity.OAuthAuthorization, int64) error
 }
 
 func NewPersistedTokenSource(ctx context.Context, flow oauthTokenFactory, store authorizationTokenStore, owner, subject string) (*PersistedTokenSource, error) {
@@ -72,7 +72,7 @@ func (p *PersistedTokenSource) Token() (*oauth2.Token, error) {
 		return updated, nil
 	}
 	next := current
-	next.Credentials = outbound.OAuthCredentials{
+	next.Credentials = identity.OAuthCredentials{
 		AccessToken:  updated.AccessToken,
 		RefreshToken: updated.RefreshToken,
 		TokenType:    updated.TokenType,

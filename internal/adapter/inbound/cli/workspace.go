@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/963sup/linebot-platform/internal/application/usecases/workspace"
+	workspaceautomation "github.com/963sup/linebot-platform/internal/application/usecases/workspace-automation"
 	"golang.org/x/oauth2"
 )
 
@@ -80,14 +80,33 @@ func runWorkspace(args []string, getenv func(string) string) error {
 	if strings.TrimSpace(wire.Operation) == "" {
 		return errors.New("workspace operation is required")
 	}
-	req := workspace.Command{
-		Operation:  wire.Operation,
-		Parameters: wire.Parameters,
-		Options:    wire.Options,
-		Body:       wire.Body,
+	parameters, err := workspaceParameters(wire.Parameters)
+	if err != nil {
+		return err
 	}
-	approval := workspace.Approval{Read: *read, Apply: *apply, Confirm: *confirm, ConfirmDangerous: *highRisk}
-	if err := workspace.Validate(*api, req, approval); err != nil {
+	options, err := workspaceOptions(wire.Options)
+	if err != nil {
+		return err
+	}
+	body, err := json.Marshal(wire.Body)
+	if err != nil {
+		return errors.New("invalid workspace request body")
+	}
+	if wire.Body == nil {
+		body = nil
+	}
+	req := workspaceautomation.OperationCommand{
+		Operation:  workspaceautomation.Operation(wire.Operation),
+		Parameters: parameters,
+		Options:    options,
+		Payload:    body,
+	}
+	approval := workspaceautomation.OperationApproval{
+		Read: *read, Apply: *apply,
+		Confirm:          workspaceautomation.Operation(*confirm),
+		ConfirmDangerous: workspaceautomation.Operation(*highRisk),
+	}
+	if err := workspaceautomation.ValidateOperation(workspaceautomation.API(*api), req, approval); err != nil {
 		return err
 	}
 	tokenBytes, err := workspacePrivateFile(*tokenFile, 16<<10)
@@ -109,13 +128,37 @@ func runWorkspace(args []string, getenv func(string) string) error {
 		if err != nil {
 			return nil, err
 		}
-		result, err := ops.Execute(ctx, *api, req, approval)
+		result, err := ops.Execute(ctx, workspaceautomation.API(*api), req, approval)
 		if err != nil {
 			return nil, err
 		}
-		if len(result) == 0 {
+		if len(result.Payload) == 0 {
 			return []byte("{}"), nil
 		}
-		return result, nil
+		return result.Payload, nil
 	})
+}
+
+func workspaceParameters(values map[string]any) ([]workspaceautomation.Parameter, error) {
+	result := make([]workspaceautomation.Parameter, 0, len(values))
+	for name, value := range values {
+		encoded, err := json.Marshal(value)
+		if err != nil {
+			return nil, errors.New("invalid workspace parameter")
+		}
+		result = append(result, workspaceautomation.Parameter{Name: name, Value: string(encoded)})
+	}
+	return result, nil
+}
+
+func workspaceOptions(values map[string]any) ([]workspaceautomation.Option, error) {
+	result := make([]workspaceautomation.Option, 0, len(values))
+	for name, value := range values {
+		encoded, err := json.Marshal(value)
+		if err != nil {
+			return nil, errors.New("invalid workspace option")
+		}
+		result = append(result, workspaceautomation.Option{Name: name, Values: []string{string(encoded)}})
+	}
+	return result, nil
 }

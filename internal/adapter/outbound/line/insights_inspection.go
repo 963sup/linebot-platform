@@ -2,9 +2,12 @@ package line
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"net/http"
+	"time"
 
-	"github.com/963sup/linebot-platform/internal/application/ports/outbound"
+	insightsreporting "github.com/963sup/linebot-platform/internal/application/usecases/insights-reporting"
 	"github.com/line/line-bot-sdk-go/v8/linebot/insight"
 )
 
@@ -31,59 +34,127 @@ func (s *InsightReader) clientFor(ctx context.Context) (*insight.InsightAPI, err
 	return call.WithContext(ctx), nil
 }
 
-func (s *InsightReader) FriendsDemographics(ctx context.Context) (outbound.LINEResult, error) {
+func (s *InsightReader) FriendsDemographics(ctx context.Context) (insightsreporting.DemographicsReport, error) {
 	client, err := s.clientFor(ctx)
 	if err != nil {
-		return outbound.LINEResult{}, err
+		return insightsreporting.DemographicsReport{}, err
 	}
 	response, result, err := client.GetFriendsDemographicsWithHttpInfo()
-	return typedReportResult("getFriendsDemographics", response, result, err)
+	if err != nil {
+		return insightsreporting.DemographicsReport{}, lineReadError("getFriendsDemographics", response, err)
+	}
+	if result == nil {
+		return insightsreporting.DemographicsReport{}, errors.New("empty LINE demographics report")
+	}
+	return demographicsReport(result), nil
 }
-func (s *InsightReader) MessageDeliveries(ctx context.Context, date string) (outbound.LINEResult, error) {
+func (s *InsightReader) MessageDeliveries(ctx context.Context, query insightsreporting.DailyQuery) (insightsreporting.CountReport, error) {
 	client, err := s.clientFor(ctx)
 	if err != nil {
-		return outbound.LINEResult{}, err
+		return insightsreporting.CountReport{}, err
 	}
-	response, result, err := client.GetNumberOfMessageDeliveriesWithHttpInfo(date)
-	return typedReportResult("getNumberOfMessageDeliveries", response, result, err)
+	response, result, err := client.GetNumberOfMessageDeliveriesWithHttpInfo(query.Day.Format("20060102"))
+	if err != nil {
+		return insightsreporting.CountReport{}, lineReadError("getNumberOfMessageDeliveries", response, err)
+	}
+	if result == nil {
+		return insightsreporting.CountReport{}, errors.New("empty LINE delivery report")
+	}
+	return countReport(result, query.Day), nil
 }
-func (s *InsightReader) FollowerMetrics(ctx context.Context, date string) (outbound.LINEResult, error) {
+func (s *InsightReader) FollowerMetrics(ctx context.Context, query insightsreporting.DailyQuery) (insightsreporting.CountReport, error) {
 	client, err := s.clientFor(ctx)
 	if err != nil {
-		return outbound.LINEResult{}, err
+		return insightsreporting.CountReport{}, err
 	}
-	response, result, err := client.GetNumberOfFollowersWithHttpInfo(date)
-	return typedReportResult("getNumberOfFollowers", response, result, err)
+	response, result, err := client.GetNumberOfFollowersWithHttpInfo(query.Day.Format("20060102"))
+	if err != nil {
+		return insightsreporting.CountReport{}, lineReadError("getNumberOfFollowers", response, err)
+	}
+	if result == nil {
+		return insightsreporting.CountReport{}, errors.New("empty LINE follower report")
+	}
+	object, _ := providerObject(result)
+	return insightsreporting.CountReport{Accepted: int64Value(object, "targetedReaches"), Delivered: int64Value(object, "followers"), Failed: int64Value(object, "blocks"), ObservedAt: query.Day}, nil
 }
-func (s *InsightReader) MessageEvent(ctx context.Context, requestID string) (outbound.LINEResult, error) {
+func (s *InsightReader) MessageEvent(ctx context.Context, query insightsreporting.MessageEventQuery) (insightsreporting.MessageEventReport, error) {
 	client, err := s.clientFor(ctx)
 	if err != nil {
-		return outbound.LINEResult{}, err
+		return insightsreporting.MessageEventReport{}, err
 	}
-	response, result, err := client.GetMessageEventWithHttpInfo(requestID)
-	return typedReportResult("getMessageEvent", response, result, err)
+	response, result, err := client.GetMessageEventWithHttpInfo(query.RequestID)
+	if err != nil {
+		return insightsreporting.MessageEventReport{}, lineReadError("getMessageEvent", response, err)
+	}
+	if result == nil {
+		return insightsreporting.MessageEventReport{}, errors.New("empty LINE message event report")
+	}
+	object, _ := providerObject(result)
+	return insightsreporting.MessageEventReport{RequestID: query.RequestID, Status: stringValue(object, "status"), Accepted: int64Value(object, "accepted"), Delivered: int64Value(object, "delivered"), ObservedAt: time.Now().UTC()}, nil
 }
-func (s *InsightReader) StatisticsPerUnit(ctx context.Context, unit, from, to string) (outbound.LINEResult, error) {
+func (s *InsightReader) StatisticsPerUnit(ctx context.Context, query insightsreporting.UnitStatisticsQuery) (insightsreporting.StatisticsReport, error) {
 	client, err := s.clientFor(ctx)
 	if err != nil {
-		return outbound.LINEResult{}, err
+		return insightsreporting.StatisticsReport{}, err
 	}
-	response, result, err := client.GetStatisticsPerUnitWithHttpInfo(unit, from, to)
-	return typedReportResult("getStatisticsPerUnit", response, result, err)
+	response, result, err := client.GetStatisticsPerUnitWithHttpInfo(query.Unit, query.From.Format("20060102"), query.To.Format("20060102"))
+	return statisticsResult("getStatisticsPerUnit", response, result, err, query.To)
 }
-func (s *InsightReader) RichMenuSummary(ctx context.Context, menuID, from, to string) (outbound.LINEResult, error) {
+func (s *InsightReader) PresentationSummary(ctx context.Context, query insightsreporting.PresentationStatisticsQuery) (insightsreporting.StatisticsReport, error) {
 	client, err := s.clientFor(ctx)
 	if err != nil {
-		return outbound.LINEResult{}, err
+		return insightsreporting.StatisticsReport{}, err
 	}
-	response, result, err := client.GetRichMenuInsightSummaryWithHttpInfo(menuID, from, to)
-	return typedReportResult("getRichMenuInsightSummary", response, result, err)
+	response, result, err := client.GetRichMenuInsightSummaryWithHttpInfo(query.PresentationID, query.From.Format("20060102"), query.To.Format("20060102"))
+	return statisticsResult("getRichMenuInsightSummary", response, result, err, query.To)
 }
-func (s *InsightReader) RichMenuDaily(ctx context.Context, menuID, from, to string) (outbound.LINEResult, error) {
+func (s *InsightReader) PresentationDaily(ctx context.Context, query insightsreporting.PresentationStatisticsQuery) (insightsreporting.StatisticsReport, error) {
 	client, err := s.clientFor(ctx)
 	if err != nil {
-		return outbound.LINEResult{}, err
+		return insightsreporting.StatisticsReport{}, err
 	}
-	response, result, err := client.GetRichMenuInsightDailyWithHttpInfo(menuID, from, to)
-	return typedReportResult("getRichMenuInsightDaily", response, result, err)
+	response, result, err := client.GetRichMenuInsightDailyWithHttpInfo(query.PresentationID, query.From.Format("20060102"), query.To.Format("20060102"))
+	return statisticsResult("getRichMenuInsightDaily", response, result, err, query.To)
 }
+
+func demographicsReport(value any) insightsreporting.DemographicsReport {
+	object, _ := providerObject(value)
+	return insightsreporting.DemographicsReport{ObservedAt: time.Now().UTC(), Dimensions: numericDimensions(object)}
+}
+
+func countReport(value any, at time.Time) insightsreporting.CountReport {
+	object, _ := providerObject(value)
+	var delivered int64
+	for _, key := range []string{"broadcast", "targeting", "autoResponse", "welcomeResponse", "chat", "apiBroadcast", "apiPush", "apiMulticast", "apiNarrowcast", "apiReply"} {
+		delivered += int64Value(object, key)
+	}
+	return insightsreporting.CountReport{Delivered: delivered, ObservedAt: at}
+}
+
+func statisticsResult(op string, response *http.Response, value any, err error, at time.Time) (insightsreporting.StatisticsReport, error) {
+	if err != nil {
+		return insightsreporting.StatisticsReport{}, lineReadError(op, response, err)
+	}
+	if value == nil {
+		return insightsreporting.StatisticsReport{}, errors.New("empty LINE statistics report")
+	}
+	object, _ := providerObject(value)
+	points := make([]insightsreporting.MetricPoint, 0)
+	for _, dimension := range numericDimensions(object) {
+		points = append(points, insightsreporting.MetricPoint{At: at, Name: dimension.Dimension, Value: float64(dimension.Count), Unit: "count"})
+	}
+	return insightsreporting.StatisticsReport{Points: points, ObservedAt: at}, nil
+}
+
+func numericDimensions(object map[string]any) []insightsreporting.DimensionValue {
+	result := make([]insightsreporting.DimensionValue, 0)
+	for key, raw := range object {
+		switch raw.(type) {
+		case json.Number, float64:
+			result = append(result, insightsreporting.DimensionValue{Dimension: key, Count: int64Value(object, key)})
+		}
+	}
+	return result
+}
+
+var _ insightsreporting.ReportReader = (*InsightReader)(nil)

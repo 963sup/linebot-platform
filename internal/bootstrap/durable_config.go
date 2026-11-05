@@ -3,12 +3,15 @@ package bootstrap
 import (
 	"errors"
 	"net/url"
+	"regexp"
 	"strconv"
 	"time"
 
 	queueinfra "github.com/963sup/linebot-platform/internal/infrastructure/google/cloud/cloudtasks"
 	"github.com/963sup/linebot-platform/internal/infrastructure/httpclient"
 )
+
+var lineDestinationPattern = regexp.MustCompile(`^U[0-9a-f]{32}$`)
 
 // DurableConfig is only used when LINE_EVENT_MODE=durable. Configuration is
 // explicit and independently validated before any GCP clients are created.
@@ -58,6 +61,9 @@ func loadDurable(getenv func(string) string) (DurableConfig, error) {
 		d.OIDCAudience == "" || d.InvokerEmail == "" {
 		return DurableConfig{}, errors.New("durable event mode requires GCP project, LINE bot destination, queue, worker URL and OIDC identity")
 	}
+	if !lineDestinationPattern.MatchString(d.BotDestination) {
+		return DurableConfig{}, errors.New("LINE_BOT_DESTINATION must be U followed by 32 lowercase hexadecimal characters")
+	}
 	// The preflight must reject the same malformed names as the Cloud Tasks
 	// adapter, before creating Firestore or Cloud Tasks SDK clients.
 	queueProject, ok := queueinfra.QueueProjectID(d.QueueName)
@@ -66,8 +72,8 @@ func loadDurable(getenv func(string) string) (DurableConfig, error) {
 	}
 	u, err := url.Parse(d.WorkerURL)
 	if err != nil || u.Scheme != "https" || u.Host == "" || u.User != nil ||
-		u.Path != "/tasks/line-reply" || u.RawQuery != "" || u.Fragment != "" {
-		return DurableConfig{}, errors.New("TASK_WORKER_URL must be an HTTPS /tasks/line-reply endpoint")
+		u.Path != "/tasks/v2/line-reply" || u.RawQuery != "" || u.Fragment != "" {
+		return DurableConfig{}, errors.New("TASK_WORKER_URL must be an HTTPS /tasks/v2/line-reply endpoint")
 	}
 	audience, err := url.Parse(d.OIDCAudience)
 	if err != nil || audience.Scheme != "https" || audience.Host != u.Host ||

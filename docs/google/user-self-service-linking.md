@@ -51,7 +51,7 @@ P3 **不是讓管理員代替使用者連結帳號**，而是以經同意的隔�
 
 ## PR #27 實作對照與未完成事項
 
-**已具備程式碼（不代表已在正式 LINE／Firestore 環境驗收）：** `internal/application/usecases/workspace/link.go`、`internal/adapter/inbound/http/google/oauth/handler.go`、`internal/adapter/outbound/google/cloud/firestore/workspace_oauth.go`、`internal/adapter/outbound/google/api/oauth/provider.go`、`internal/infrastructure/google/api/oauth/flow.go`、`internal/infrastructure/google/api/oauth/keyring.go` 及 `internal/bootstrap/workspace_links.go`。
+**已具備程式碼（不代表已在正式 LINE／Firestore 環境驗收）：** `internal/application/usecases/identity/link_service.go`、`internal/adapter/inbound/http/google/oauth/handler.go`、`internal/adapter/outbound/google/cloud/firestore/workspace_oauth.go`、`internal/adapter/outbound/google/api/oauth/provider.go`、`internal/infrastructure/google/api/oauth/flow.go`、`internal/infrastructure/google/api/oauth/keyring.go` 及 `internal/bootstrap/workspace_links.go`。
 
 **仍需實作／驗證：** 將現有可信 LINE Login／LIFF／Messaging Account Linking 識別映射至同一個使用者及 Channel；連結被轉傳時在瀏覽器重新確認 LINE 身分；安全掛載 OAuth Start／Callback；正式 Google 同意／撤銷、Firestore Emulator 多執行個體交易、Secret Manager 金鑰權限、使用者取消連結後同步任務終止，以及 Calendar／Tasks／Forms 的持久同步。
 

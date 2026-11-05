@@ -8,14 +8,15 @@ import (
 	firestore "cloud.google.com/go/firestore"
 	authadapter "github.com/963sup/linebot-platform/internal/adapter/outbound/google/api/oauth"
 	fsadapter "github.com/963sup/linebot-platform/internal/adapter/outbound/google/cloud/firestore"
-	"github.com/963sup/linebot-platform/internal/application/usecases/workspace"
+	"github.com/963sup/linebot-platform/internal/application/usecases/identity"
+	workspace "github.com/963sup/linebot-platform/internal/application/usecases/workspace-automation"
 	oauthinfra "github.com/963sup/linebot-platform/internal/infrastructure/google/api/oauth"
 )
 
 // WorkspaceLinkRuntime is deliberately NOT wired into public LINE webhook.
 // Identity verification and protected credentials must be provided by callers.
 type WorkspaceLinkRuntime struct {
-	Links *workspace.LinkService
+	Links *identity.LinkService
 	store *fsadapter.OAuthStore
 	flow  *oauthinfra.Flow
 }
@@ -40,7 +41,7 @@ func NewWorkspaceLinkRuntime(ctx context.Context, client *firestore.Client, keys
 	if err != nil {
 		return nil, err
 	}
-	service, err := workspace.NewLinkService(provider, store, store)
+	service, err := identity.NewLinkService(provider, store, store)
 	if err != nil {
 		return nil, err
 	}
@@ -56,7 +57,7 @@ func NewWorkspaceOperationsForAccount(ctx context.Context, rt *WorkspaceLinkRunt
 	if ctx == nil {
 		return nil, errors.New("Google workspace request context required")
 	}
-	id, err := workspace.AuthorizeLinkedGoogleAccount(ctx, rt.store, owner, subject, nil)
+	id, err := identity.AuthorizeLinkedGoogleAccount(ctx, rt.store, owner, subject, nil)
 	if err != nil {
 		return nil, errors.New("Google account not linked or disabled")
 	}

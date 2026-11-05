@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/963sup/linebot-platform/internal/application/ports/outbound"
+	messagingdelivery "github.com/963sup/linebot-platform/internal/application/usecases/messaging-delivery"
 )
 
 const stagingProjectEnv = "LINEBOT_STAGING_PROJECT"
@@ -34,7 +34,7 @@ func runEvents(args []string, getenv func(string) string) error {
 	if len(flags.Args()) != 0 || *inspect == *check {
 		return errors.New("choose exactly one of --inspect or --check; no extra arguments")
 	}
-	selected := outbound.EventState(*state)
+	selected := messagingdelivery.EventState(*state)
 	if !selected.Valid() || *limit < 0 || *limit > 100 || *pendingAge <= 0 || *expiredMax < -1 {
 		return errors.New("invalid outbox state or alert thresholds")
 	}
@@ -61,15 +61,15 @@ func runEvents(args []string, getenv func(string) string) error {
 		return err
 	}
 	type wireSample struct {
-		KeyHint   string              `json:"key_hint"`
-		State     outbound.EventState `json:"state"`
-		UpdatedAt time.Time           `json:"updated_at"`
+		KeyHint   string                       `json:"key_hint"`
+		State     messagingdelivery.EventState `json:"state"`
+		UpdatedAt time.Time                    `json:"updated_at"`
 	}
 	type wireReport struct {
-		GeneratedAt             time.Time                     `json:"generated_at"`
-		Counts                  map[outbound.EventState]int64 `json:"counts"`
-		OldestPendingAgeSeconds int64                         `json:"oldest_pending_age_seconds"`
-		Samples                 []wireSample                  `json:"samples,omitempty"`
+		GeneratedAt             time.Time                              `json:"generated_at"`
+		Counts                  map[messagingdelivery.EventState]int64 `json:"counts"`
+		OldestPendingAgeSeconds int64                                  `json:"oldest_pending_age_seconds"`
+		Samples                 []wireSample                           `json:"samples,omitempty"`
 	}
 	wire := wireReport{
 		GeneratedAt:             report.GeneratedAt,
@@ -85,9 +85,9 @@ func runEvents(args []string, getenv func(string) string) error {
 	if err := json.NewEncoder(os.Stdout).Encode(wire); err != nil {
 		return fmt.Errorf("write outbox status: %w", err)
 	}
-	if *check && (report.Counts[outbound.EventUnknown] > 0 ||
+	if *check && (report.Counts[messagingdelivery.EventUnknown] > 0 ||
 		report.OldestPendingAgeSeconds > int64(pendingAge.Seconds()) ||
-		(*expiredMax >= 0 && report.Counts[outbound.EventExpired] > *expiredMax)) {
+		(*expiredMax >= 0 && report.Counts[messagingdelivery.EventExpired] > *expiredMax)) {
 		return errors.New("outbox alert threshold exceeded: operator review required")
 	}
 	return nil

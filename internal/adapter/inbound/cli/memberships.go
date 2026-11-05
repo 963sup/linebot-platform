@@ -8,7 +8,8 @@ import (
 	"io"
 	"time"
 
-	"github.com/963sup/linebot-platform/internal/application/usecases/engagement"
+	"github.com/963sup/linebot-platform/internal/application/usecases/membership"
+	"github.com/963sup/linebot-platform/internal/application/usecases/promotion"
 )
 
 func runMemberships(args []string, getenv func(string) string, output io.Writer) error {
@@ -31,11 +32,7 @@ func runMemberships(args []string, getenv func(string) string, output io.Writer)
 	}
 	// Keep the original memberships --kind coupon(s) CLI syntax compatible.
 	if *kind == "coupons" || *kind == "coupon" {
-		return inspectCoupon(engagement.CouponQuery{Kind: *kind, CouponID: *couponID, Start: *start, Limit: *limit}, getenv, output)
-	}
-	q := engagement.MembershipQuery{Kind: *kind, UserID: *user, MembershipID: *membershipID, Start: *start, Limit: *limit}
-	if err := engagement.ValidateMembershipQuery(q); err != nil {
-		return err
+		return inspectCoupon(*kind, promotion.CouponID(*couponID), promotion.CouponPageRequest{Cursor: *start, Limit: *limit}, getenv, output)
 	}
 	if membershipsRuntimeFactory == nil {
 		return errors.New("memberships runtime is not configured")
@@ -47,10 +44,23 @@ func runMemberships(args []string, getenv func(string) string, output io.Writer)
 	defer rt.Close()
 	ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
 	defer cancel()
-	result, err := rt.Inspect(ctx, q)
+	page := membership.PageRequest{Token: *start, Limit: *limit}
+	var result any
+	switch *kind {
+	case "memberships":
+		result, err = rt.ListMemberships(ctx, page)
+	case "subscription":
+		result, err = rt.GetSubscription(ctx, membership.RecipientID(*user))
+	case "membership-users":
+		if *membershipID <= 0 || int64(*membershipID) > int64(2147483647) {
+			return errors.New("membership ID must be in range 1-2147483647")
+		}
+		result, err = rt.ListMembers(ctx, membership.MembershipID(fmt.Sprint(*membershipID)), page)
+	default:
+		return errors.New("unsupported membership query kind")
+	}
 	if err != nil {
 		return err
 	}
-	_, err = fmt.Fprintln(output, string(result))
-	return err
+	return writeJSON(output, result)
 }

@@ -1,14 +1,14 @@
 # Agents、MCP 與 Plugins：P0–P5 實施契約
 
-初始基線：`258cd82ff3b5bb915457964ee53380ddf56debf2`。先提交本計畫，再於獨立分支一次交付六階段；不合併 PR、不部署、不建立憑證或改 IAM。這是歷史執行契約；SDK 依賴現由 `go.mod`、Catalog 與 build-tag dependency manifest 保留，不再保護空 scaffold。
+初始基線：`258cd82ff3b5bb915457964ee53380ddf56debf2`。先提交本計畫，再於獨立分支一次交付六階段；不合併 PR、不部署、不建立憑證或改 IAM。這是歷史執行契約；其舊並行政策已由目前的九個 child threads 政策取代。SDK 依賴現由 `go.mod`、Catalog 與 build-tag dependency manifest 保留，不再保護空 scaffold。
 
 ## P0：設定與驗證
 
-修正最多五個並行 thread、角色 model 合法欄位、gopls 固定 HOME 路徑與 Google Developer Knowledge 的環境 key header。角色註冊改為資料驅動，嚴格檢查一對一、名稱、未知鍵、路徑及 secrets，不猜測／更改既有模型 ID。
+歷史階段曾修正當時的並行上限、角色 model 合法欄位、gopls 固定 HOME 路徑與 Google Developer Knowledge 的環境 key header。現行上限為九個 child threads，仍由資料驅動註冊與嚴格驗證保護一對一、名稱、未知鍵、路徑及 secrets。
 
 ## P1：行為保持重構
 
-新增 go_code_refactor，既有 27 角色保留。局部去重／控制流程簡化由新角色負責；跨 package 語意變更交 gopls_go_refactor，架構決策交 domain_architect／architecture_alignment_engineer，交付清理仍由既有角色負責。同一寫入路徑同時只有一個 owner。
+歷史階段曾在當時角色集合加入 go_code_refactor，並按專業角色分派局部重構、跨 package 語意變更、架構決策與交付清理。該角色集合已由現行 8 個角色取代；同一寫入路徑同時仍只能有一個 owner。
 
 ## P2：自主工具路由
 

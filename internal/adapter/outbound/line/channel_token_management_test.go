@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	credentiallifecycle "github.com/963sup/linebot-platform/internal/application/usecases/credential-lifecycle"
 	"github.com/line/line-bot-sdk-go/v8/linebot/channel_access_token"
 )
 
@@ -30,12 +31,26 @@ func TestChannelTokenAdapterUsesOfficialOAuthEndpoints(t *testing.T) {
 		want string
 		call func() error
 	}{
-		{"POST /oauth2/v3/token", func() error { _, e := s.IssueStateless(ctx, "client_credentials", "", "", "id", "secret"); return e }},
-		{"GET /oauth2/v2.1/tokens/kid", func() error { _, e := s.ValidKeyIDs(ctx, "jwt-bearer", "assertion"); return e }},
-		{"POST /oauth2/v2.1/token", func() error { _, e := s.IssueJWT(ctx, "client_credentials", "jwt-bearer", "assertion"); return e }},
+		{"POST /oauth2/v3/token", func() error {
+			_, e := s.IssueStatelessWithClient(ctx, "client_credentials", credentiallifecycle.ClientCredential{ClientID: "id", ClientSecret: "secret"})
+			return e
+		}},
+		{"GET /oauth2/v2.1/tokens/kid", func() error {
+			_, e := s.ValidKeyIDs(ctx, credentiallifecycle.AssertionCredential{Type: "jwt-bearer", Assertion: "assertion"})
+			return e
+		}},
+		{"POST /oauth2/v2.1/token", func() error {
+			_, e := s.IssueJWT(ctx, "client_credentials", credentiallifecycle.AssertionCredential{Type: "jwt-bearer", Assertion: "assertion"})
+			return e
+		}},
 		{"GET /oauth2/v2.1/verify", func() error { _, e := s.VerifyJWT(ctx, "token"); return e }},
-		{"POST /oauth2/v2.1/revoke", func() error { return s.RevokeJWT(ctx, "id", "secret", "token") }},
-		{"POST /v2/oauth/accessToken", func() error { _, e := s.IssueShortLived(ctx, "client_credentials", "id", "secret"); return e }},
+		{"POST /oauth2/v2.1/revoke", func() error {
+			return s.RevokeJWT(ctx, credentiallifecycle.ClientCredential{ClientID: "id", ClientSecret: "secret"}, "token")
+		}},
+		{"POST /v2/oauth/accessToken", func() error {
+			_, e := s.IssueShortLived(ctx, "client_credentials", credentiallifecycle.ClientCredential{ClientID: "id", ClientSecret: "secret"})
+			return e
+		}},
 		{"POST /v2/oauth/verify", func() error { _, e := s.VerifyShortLived(ctx, "token"); return e }},
 		{"POST /v2/oauth/revoke", func() error { return s.RevokeShortLived(ctx, "token") }},
 	}
@@ -64,12 +79,11 @@ func TestChannelTokenAdapterReturnsTransportNeutralResult(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	result, err := manager.IssueShortLived(context.Background(), "client_credentials", "id", "secret")
+	result, err := manager.IssueShortLived(context.Background(), "client_credentials", credentiallifecycle.ClientCredential{ClientID: "id", ClientSecret: "secret"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	value, ok := result.Value.(map[string]any)
-	if !ok || value["access_token"] != "secret" {
-		t.Fatalf("unexpected typed result: %#v", result.Value)
+	if result.AccessToken != "secret" {
+		t.Fatalf("unexpected typed result: %#v", result)
 	}
 }

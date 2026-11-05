@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/963sup/linebot-platform/internal/application/ports/outbound"
+	identity "github.com/963sup/linebot-platform/internal/application/usecases/identity"
 	"github.com/963sup/linebot-platform/internal/domain/identity/factories"
 	"golang.org/x/oauth2"
 )
@@ -25,27 +25,27 @@ func (f fakeTokenSourceFactory) TokenSource(context.Context, *oauth2.Token) (oau
 
 type memoryConnectionStore struct {
 	mu     sync.Mutex
-	value  outbound.OAuthAuthorization
+	value  identity.OAuthAuthorization
 	closed bool
 }
 
-func (s *memoryConnectionStore) SaveConnection(_ context.Context, v outbound.OAuthAuthorization) error {
+func (s *memoryConnectionStore) SaveConnection(_ context.Context, v identity.OAuthAuthorization) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.value = v
 	return nil
 }
 
-func (s *memoryConnectionStore) GetConnection(_ context.Context, owner, subject string) (outbound.OAuthAuthorization, error) {
+func (s *memoryConnectionStore) GetConnection(_ context.Context, owner, subject string) (identity.OAuthAuthorization, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if s.closed || !s.value.Link.IsActive() || s.value.Link.Owner().String() != owner || s.value.Link.GoogleAccount().String() != subject {
-		return outbound.OAuthAuthorization{}, errors.New("no connection")
+		return identity.OAuthAuthorization{}, errors.New("no connection")
 	}
 	return s.value, nil
 }
 
-func (s *memoryConnectionStore) UpdateCredentials(_ context.Context, v outbound.OAuthAuthorization, version int64) error {
+func (s *memoryConnectionStore) UpdateCredentials(_ context.Context, v identity.OAuthAuthorization, version int64) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if s.closed || version != s.value.Version {
@@ -71,9 +71,9 @@ func makeStoredAccount(t *testing.T) *memoryConnectionStore {
 	if err != nil {
 		t.Fatal(err)
 	}
-	return &memoryConnectionStore{value: outbound.OAuthAuthorization{
+	return &memoryConnectionStore{value: identity.OAuthAuthorization{
 		Link: link, Version: 7,
-		Credentials: outbound.OAuthCredentials{
+		Credentials: identity.OAuthCredentials{
 			AccessToken: "expired-access", RefreshToken: "long-lived-refresh",
 			TokenType: "Bearer", Expiry: time.Now().Add(-time.Hour),
 		},

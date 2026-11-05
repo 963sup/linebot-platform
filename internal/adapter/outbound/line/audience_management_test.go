@@ -6,7 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/963sup/linebot-platform/internal/application/ports/outbound"
+	"github.com/963sup/linebot-platform/internal/application/usecases/audience"
 	"github.com/line/line-bot-sdk-go/v8/linebot/manage_audience"
 )
 
@@ -34,19 +34,34 @@ func TestAudienceManagementUsesOfficialEndpoints(t *testing.T) {
 		t.Fatal(err)
 	}
 	ctx := context.Background()
-	j := outbound.LINERequest{Value: map[string]any{}}
 	tests := []struct {
 		want string
 		call func() error
 	}{
-		{"POST /v2/bot/audienceGroup/upload", func() error { _, e := m.CreateAudienceGroup(ctx, j); return e }},
-		{"PUT /v2/bot/audienceGroup/upload", func() error { return m.AddAudienceToGroup(ctx, j) }},
-		{"POST /v2/bot/audienceGroup/click", func() error { _, e := m.CreateClickAudience(ctx, j); return e }},
-		{"POST /v2/bot/audienceGroup/imp", func() error { _, e := m.CreateImpressionAudience(ctx, j); return e }},
-		{"PUT /v2/bot/audienceGroup/3/updateDescription", func() error { return m.UpdateAudienceDescription(ctx, 3, j) }},
-		{"DELETE /v2/bot/audienceGroup/3", func() error { return m.DeleteAudienceGroup(ctx, 3) }},
-		{"POST /v2/bot/audienceGroup/upload/byFile", func() error { _, e := m.CreateAudienceFromFile(ctx, []byte("U123"), "test", false, "upload"); return e }},
-		{"PUT /v2/bot/audienceGroup/upload/byFile", func() error { return m.AddAudienceFromFile(ctx, 3, []byte("U123"), "upload") }},
+		{"POST /v2/bot/audienceGroup/upload", func() error {
+			_, e := m.CreateGroup(ctx, audience.CreateGroupCommand{Description: "test", Recipients: []string{"U123"}})
+			return e
+		}},
+		{"PUT /v2/bot/audienceGroup/upload", func() error {
+			return m.AppendRecipients(ctx, audience.AppendRecipientsCommand{ID: 3, Recipients: []string{"U123"}})
+		}},
+		{"POST /v2/bot/audienceGroup/click", func() error {
+			_, e := m.CreateClickGroup(ctx, audience.CreateInteractionGroupCommand{Description: "test", SourceRequestID: "request"})
+			return e
+		}},
+		{"POST /v2/bot/audienceGroup/imp", func() error {
+			_, e := m.CreateImpressionGroup(ctx, audience.CreateInteractionGroupCommand{Description: "test", SourceRequestID: "request"})
+			return e
+		}},
+		{"PUT /v2/bot/audienceGroup/3/updateDescription", func() error { return m.UpdateDescription(ctx, 3, "test") }},
+		{"DELETE /v2/bot/audienceGroup/3", func() error { return m.DeleteGroup(ctx, 3) }},
+		{"POST /v2/bot/audienceGroup/upload/byFile", func() error {
+			_, e := m.CreateFromFile(ctx, audience.AudienceFile{Data: []byte("U123"), Description: "test", UploadDescription: "upload"})
+			return e
+		}},
+		{"PUT /v2/bot/audienceGroup/upload/byFile", func() error {
+			return m.AppendFromFile(ctx, 3, audience.AudienceFile{Data: []byte("U123"), UploadDescription: "upload"})
+		}},
 	}
 	for _, tt := range tests {
 		got = ""

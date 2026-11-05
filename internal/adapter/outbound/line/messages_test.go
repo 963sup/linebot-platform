@@ -3,14 +3,14 @@ package line
 import (
 	"testing"
 
-	"github.com/963sup/linebot-platform/internal/application/ports/outbound"
+	messagingdelivery "github.com/963sup/linebot-platform/internal/application/usecases/messaging-delivery"
 	"github.com/line/line-bot-sdk-go/v8/linebot/messaging_api"
 )
 
 func TestConvertMessages(t *testing.T) {
-	result, err := convert([]outbound.Message{
-		{Kind: outbound.KindText, Text: "hi"},
-		{Kind: outbound.KindFlex, Flex: outbound.FlexCard{AltText: "alt", Title: "Title", Body: "Body"}},
+	result, err := convert([]messagingdelivery.Message{
+		{Kind: messagingdelivery.KindText, Text: "hi"},
+		{Kind: messagingdelivery.KindFlex, Flex: messagingdelivery.FlexCard{AltText: "alt", Title: "Title", Body: "Body"}},
 	})
 	if err != nil {
 		t.Fatal(err)

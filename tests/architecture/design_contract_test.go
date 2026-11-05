@@ -16,8 +16,8 @@ func TestDesignContract(t *testing.T) {
 	design := string(content)
 
 	required := []string{
-		"internal/application/ports/inbound/",
-		"internal/application/ports/outbound/",
+		"internal/application/usecases/<capability>/",
+		"capability-local consumer-owned interfaces",
 		"tests/{architecture,contract,integration,performance,e2e}",
 		"sequenceDiagram",
 		"flowchart LR",
@@ -40,6 +40,8 @@ func TestDesignContract(t *testing.T) {
 	}
 
 	forbidden := []string{
+		"internal/application/ports/inbound/",
+		"internal/application/ports/outbound/",
 		"internal/ports/inbound",
 		"internal/ports/outbound",
 		"internal/adapters/",

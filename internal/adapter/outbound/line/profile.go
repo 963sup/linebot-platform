@@ -3,45 +3,39 @@ package line
 import (
 	"context"
 	"errors"
+	"time"
 
-	"github.com/963sup/linebot-platform/internal/application/ports/outbound"
-	"github.com/963sup/linebot-platform/internal/infrastructure/resilience"
+	contactdirectory "github.com/963sup/linebot-platform/internal/application/usecases/contact-directory"
 )
 
-// IssueLinkTokenResult adapts the legacy wire-oriented sender method to the
-// typed application boundary without exposing JSON to the use case.
-func (s *Sender) IssueLinkTokenResult(ctx context.Context, userID string) (outbound.LINEResult, error) {
-	payload, err := s.IssueLinkToken(ctx, userID)
-	if err != nil {
-		return outbound.LINEResult{}, err
-	}
-	value, err := decodeJSONValue(payload)
-	if err != nil {
-		return outbound.LINEResult{}, errors.New("invalid LINE link token response")
-	}
-	return outbound.LINEResult{Value: value}, nil
+func (s *Sender) ResolveRecipient(_ context.Context, query contactdirectory.ResolveRecipientQuery) (contactdirectory.RecipientReference, error) {
+	return contactdirectory.RecipientReference{ID: query.ID, Kind: query.Kind}, nil
 }
 
 // GetProfile implements the contacts ProfileReader port using the existing
 // typed SDK client. Sender.clientFor isolates SDK WithContext mutations.
-func (s *Sender) GetProfile(ctx context.Context, userID string) (outbound.UserProfile, error) {
-	if userID == "" {
-		return outbound.UserProfile{}, errors.New("LINE user ID is required")
+func (s *Sender) GetProfile(ctx context.Context, query contactdirectory.ProfileQuery) (contactdirectory.ProfileSnapshot, error) {
+	if query.Recipient.ID == "" || query.Recipient.Kind != contactdirectory.RecipientUser {
+		return contactdirectory.ProfileSnapshot{}, errors.New("LINE user ID is required")
 	}
 	client, err := s.clientFor(ctx)
 	if err != nil {
-		return outbound.UserProfile{}, err
+		return contactdirectory.ProfileSnapshot{}, err
 	}
-	response, profile, err := client.GetProfileWithHttpInfo(userID)
+	response, profile, err := client.GetProfileWithHttpInfo(query.Recipient.ID)
 	if err != nil {
-		return outbound.UserProfile{}, resilience.Wrap("line", "get_profile", httpStatus(response), err)
+		return contactdirectory.ProfileSnapshot{}, lineAPIError("get_profile", response, err)
 	}
 	if profile == nil {
-		return outbound.UserProfile{}, errors.New("LINE profile response is empty")
+		return contactdirectory.ProfileSnapshot{}, errors.New("LINE profile response is empty")
 	}
-	return outbound.UserProfile{
-		ID:          profile.UserId,
-		DisplayName: profile.DisplayName,
-		PictureURL:  profile.PictureUrl,
+	return contactdirectory.ProfileSnapshot{
+		Recipient:     contactdirectory.RecipientReference{ID: profile.UserId, Kind: contactdirectory.RecipientUser},
+		DisplayName:   profile.DisplayName,
+		PictureURL:    profile.PictureUrl,
+		StatusMessage: profile.StatusMessage,
+		ObservedAt:    time.Now(),
 	}, nil
 }
+
+var _ contactdirectory.Reader = (*Sender)(nil)

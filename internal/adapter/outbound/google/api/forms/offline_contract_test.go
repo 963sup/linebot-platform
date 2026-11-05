@@ -10,10 +10,19 @@ import (
 	"testing"
 
 	"github.com/963sup/linebot-platform/internal/adapter/outbound/google/api/codec"
-	"github.com/963sup/linebot-platform/internal/application/usecases/workspace"
+	workspace "github.com/963sup/linebot-platform/internal/application/usecases/workspace-automation"
 	googleforms "google.golang.org/api/forms/v1"
 	"google.golang.org/api/option"
 )
+
+func testCommand(t *testing.T, request codec.Request) workspace.OperationCommand {
+	t.Helper()
+	command, err := codec.Command(request)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return command
+}
 
 func TestFormsPinnedSDKRoutes(t *testing.T) {
 	var got string
@@ -58,7 +67,7 @@ func TestFormsPinnedSDKRoutes(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.operation, func(t *testing.T) {
 			got = ""
-			req := workspace.Command{Operation: tc.operation, Parameters: tc.parameters, Options: tc.options, Body: tc.body}
+			req := testCommand(t, codec.Request{Operation: tc.operation, Parameters: tc.parameters, Options: tc.options, Body: tc.body})
 			if _, err := adapter.ExecuteForms(context.Background(), req); err != nil {
 				t.Fatal(err)
 			}
@@ -67,15 +76,15 @@ func TestFormsPinnedSDKRoutes(t *testing.T) {
 			}
 		})
 	}
-	if _, err := adapter.ExecuteForms(context.Background(), workspace.Command{Operation: "forms.responses.get"}); err == nil {
+	if _, err := adapter.ExecuteForms(context.Background(), testCommand(t, codec.Request{Operation: "forms.responses.get"})); err == nil {
 		t.Fatal("missing required parameter accepted")
 	}
-	if _, err := adapter.ExecuteForms(context.Background(), workspace.Command{Operation: "forms.not-a-method"}); err == nil {
+	if _, err := adapter.ExecuteForms(context.Background(), testCommand(t, codec.Request{Operation: "forms.not-a-method"})); err == nil {
 		t.Fatal("unsupported endpoint accepted")
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	if _, err := adapter.ExecuteForms(ctx, workspace.Command{Operation: "forms.get"}); !errors.Is(err, context.Canceled) {
+	if _, err := adapter.ExecuteForms(ctx, testCommand(t, codec.Request{Operation: "forms.get"})); !errors.Is(err, context.Canceled) {
 		t.Fatalf("cancellation lost: %v", err)
 	}
 }
@@ -94,7 +103,7 @@ func TestFormsRemoteErrorHasNoResponseBody(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = a.ExecuteForms(context.Background(), workspace.Command{Operation: "forms.get", Parameters: map[string]any{"formId": json.RawMessage(`"form-1"`)}})
+	_, err = a.ExecuteForms(context.Background(), testCommand(t, codec.Request{Operation: "forms.get", Parameters: map[string]any{"formId": json.RawMessage(`"form-1"`)}}))
 	var remote *codec.RemoteError
 	if !errors.As(err, &remote) || remote.Status != 403 || remote.API != "forms" {
 		t.Fatalf("expected redacted Google 403, got %v", err)

@@ -8,7 +8,9 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
+	insightsreporting "github.com/963sup/linebot-platform/internal/application/usecases/insights-reporting"
 	"github.com/963sup/linebot-platform/internal/infrastructure/resilience"
 )
 
@@ -37,6 +39,7 @@ func TestChannelInspectorUsesRealSDKEndpoints(t *testing.T) {
 	defer server.Close()
 
 	sender := contractSender(t, server)
+	day := insightsreporting.DailyQuery{Day: time.Date(2026, 11, 1, 0, 0, 0, 0, time.UTC)}
 	checks := []struct {
 		name string
 		read func() error
@@ -47,10 +50,10 @@ func TestChannelInspectorUsesRealSDKEndpoints(t *testing.T) {
 		{"webhook", func() error { _, e := sender.WebhookEndpoint(context.Background()); return e }},
 		{"aggregation", func() error { _, e := sender.AggregationUnitUsage(context.Background()); return e }},
 		{"aggregation names", func() error { _, e := sender.AggregationUnitNames(context.Background(), "10", ""); return e }},
-		{"reply stats", func() error { _, e := sender.DeliveryReply(context.Background(), "20261101"); return e }},
-		{"push stats", func() error { _, e := sender.DeliveryPush(context.Background(), "20261101"); return e }},
-		{"multicast stats", func() error { _, e := sender.DeliveryMulticast(context.Background(), "20261101"); return e }},
-		{"broadcast stats", func() error { _, e := sender.DeliveryBroadcast(context.Background(), "20261101"); return e }},
+		{"reply stats", func() error { _, e := sender.DeliveryReply(context.Background(), day); return e }},
+		{"push stats", func() error { _, e := sender.DeliveryPush(context.Background(), day); return e }},
+		{"multicast stats", func() error { _, e := sender.DeliveryMulticast(context.Background(), day); return e }},
+		{"broadcast stats", func() error { _, e := sender.DeliveryBroadcast(context.Background(), day); return e }},
 		{"narrowcast progress", func() error {
 			_, e := sender.NarrowcastProgress(context.Background(), "123e4567-e89b-42d3-a456-426614174000")
 			return e

@@ -8,8 +8,7 @@ import (
 	"github.com/963sup/linebot-platform/internal/adapter/inbound/http/health"
 	linein "github.com/963sup/linebot-platform/internal/adapter/inbound/http/line"
 	lineout "github.com/963sup/linebot-platform/internal/adapter/outbound/line"
-	"github.com/963sup/linebot-platform/internal/application/usecases/conversation"
-	"github.com/963sup/linebot-platform/internal/application/usecases/messaging"
+	messagingdelivery "github.com/963sup/linebot-platform/internal/application/usecases/messaging-delivery"
 	"github.com/963sup/linebot-platform/internal/infrastructure/httpclient"
 	lineinfra "github.com/963sup/linebot-platform/internal/infrastructure/line"
 	"github.com/963sup/linebot-platform/internal/infrastructure/observability"
@@ -66,17 +65,12 @@ func NewWebhookRuntime(cfg Config, logger *slog.Logger) (*WebhookRuntime, error)
 		outboundHTTP.Close()
 		return nil, err
 	}
-	service, err := messaging.NewService(sender)
+	service, err := messagingdelivery.NewDeliveryService(sender)
 	if err != nil {
 		outboundHTTP.Close()
 		return nil, err
 	}
-	responder, err := conversation.NewResponder(service)
-	if err != nil {
-		outboundHTTP.Close()
-		return nil, err
-	}
-	mux.Handle("/webhook/line", linein.NewHandler(cfg.Secrets.ChannelSecret, responder, logger))
+	mux.Handle("/webhook/line", linein.NewHandler(cfg.Secrets.ChannelSecret, service, logger))
 	runtime.outbound = outboundHTTP
 	return runtime, nil
 }

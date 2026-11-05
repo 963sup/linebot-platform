@@ -2,38 +2,53 @@ package bootstrap
 
 import (
 	"github.com/963sup/linebot-platform/internal/adapter/outbound/line"
-	"github.com/963sup/linebot-platform/internal/application/usecases/channel"
-	"github.com/963sup/linebot-platform/internal/application/usecases/contacts"
-	"github.com/963sup/linebot-platform/internal/application/usecases/engagement"
-	"github.com/963sup/linebot-platform/internal/application/usecases/insights"
-	"github.com/963sup/linebot-platform/internal/application/usecases/messaging"
+	accountlinktoken "github.com/963sup/linebot-platform/internal/application/usecases/account-link-token"
+	"github.com/963sup/linebot-platform/internal/application/usecases/audience"
+	contactdirectory "github.com/963sup/linebot-platform/internal/application/usecases/contact-directory"
+	conversationoperations "github.com/963sup/linebot-platform/internal/application/usecases/conversation-operations"
+	experiencepresentation "github.com/963sup/linebot-platform/internal/application/usecases/experience-presentation"
+	insightsreporting "github.com/963sup/linebot-platform/internal/application/usecases/insights-reporting"
+	mediatransfer "github.com/963sup/linebot-platform/internal/application/usecases/media-transfer"
+	"github.com/963sup/linebot-platform/internal/application/usecases/membership"
+	messagingdelivery "github.com/963sup/linebot-platform/internal/application/usecases/messaging-delivery"
+	"github.com/963sup/linebot-platform/internal/application/usecases/promotion"
+	providerconfiguration "github.com/963sup/linebot-platform/internal/application/usecases/provider-configuration"
+	requestvalidation "github.com/963sup/linebot-platform/internal/application/usecases/request-validation"
 	"github.com/963sup/linebot-platform/internal/infrastructure/httpclient"
 	lineinfra "github.com/963sup/linebot-platform/internal/infrastructure/line"
 )
 
-// LINEOpsRuntime owns the HTTP transport used by explicit, local CLI actions.
-// It is never exposed on the unauthenticated webhook process.
+// LINEOpsRuntime is the composition root for operator-only LINE capabilities.
+// Every exported capability is an Application service backed by a LINE
+// adapter; provider clients and transports remain private to bootstrap.
+//
+// Capabilities whose LINE adapters have not yet implemented their new
+// consumer-owned contracts are deliberately absent. Bootstrap must not route
+// those operations through legacy global ports merely to preserve wiring.
 type LINEOpsRuntime struct {
-	Messaging       *messaging.Service
-	Validation      *messaging.ValidationService
-	Profiles        *contacts.Profiles
-	Channel         *channel.Inspector
-	WebhookAdmin    *channel.WebhookConfigurator
-	Menus           *engagement.RichMenuInspector
-	MenuManager     *engagement.MenuManager
-	Memberships     *engagement.MembershipInspector
-	Coupons         *engagement.CouponInspector
-	Contacts        *contacts.Inspector
-	Insights        *insights.Inspector
-	Audiences       *engagement.AudienceInspector
-	AudienceManager *engagement.AudienceOperations
-	BulkMessaging   *messaging.BulkSender
-	Content         *contacts.ContentInspector
-	RichMenuImages  *engagement.RichMenuImageManager
-	Actions         *messaging.ConversationActions
-	AccountLink     *contacts.AccountLinker
-	Eligibility     *engagement.EligibilityOperations
-	MenuImageReader *line.BlobSender
+	Messaging       *messagingdelivery.DeliveryService
+	BulkMessaging   *messagingdelivery.DeliveryService
+	PhoneDelivery   messagingdelivery.PhoneDeliveryGateway
+	PhoneReports    insightsreporting.PhoneDeliveryReader
+	Validation      *requestvalidation.Service
+	Profiles        *contactdirectory.Queries
+	Contacts        *contactdirectory.ConversationQueries
+	WebhookAdmin    *providerconfiguration.Service
+	Channel         providerconfiguration.ChannelReader
+	DeliveryReports insightsreporting.DeliveryReader
+	Audiences       *audience.ProviderQueries
+	AudienceManager *audience.ProviderOperations
+	Coupons         *promotion.CouponQueries
+	CouponCreator   promotion.ProviderCouponGateway
+	Memberships     *membership.Queries
+	Menus           *experiencepresentation.ProviderQueries
+	MenuCommands    experiencepresentation.ProviderCommandGateway
+	Insights        *insightsreporting.Reports
+	Content         *mediatransfer.Service
+	RichMenuImages  *mediatransfer.Service
+	MenuImageReader *mediatransfer.Service
+	Actions         *conversationoperations.Service
+	AccountLink     *accountlinktoken.Service
 	outbound        *httpclient.Managed
 }
 
@@ -46,6 +61,7 @@ func NewLINEOpsRuntime(token string) (*LINEOpsRuntime, error) {
 		transport.Close()
 		return nil, err
 	}
+
 	client, err := lineinfra.NewMessagingClientWithHTTPClient(token, transport.Client)
 	if err != nil {
 		return cleanup(err)
@@ -54,39 +70,43 @@ func NewLINEOpsRuntime(token string) (*LINEOpsRuntime, error) {
 	if err != nil {
 		return cleanup(err)
 	}
-	blobClient, err := lineinfra.NewMessagingBlobClientWithHTTPClient(token, transport.Client)
+	delivery, err := messagingdelivery.NewDeliveryService(sender)
 	if err != nil {
 		return cleanup(err)
 	}
-	blobSender, err := line.NewBlobSender(blobClient)
+	validation, err := requestvalidation.New(sender)
 	if err != nil {
 		return cleanup(err)
 	}
-	content, err := contacts.NewContentInspector(blobSender)
+	profiles, err := contactdirectory.NewQueries(sender)
 	if err != nil {
 		return cleanup(err)
 	}
-	richMenuImages, err := engagement.NewRichMenuImageManager(blobSender)
+	contacts, err := contactdirectory.NewConversationQueries(sender)
 	if err != nil {
 		return cleanup(err)
 	}
-	messages, err := messaging.NewService(sender)
+	webhookAdmin, err := providerconfiguration.New(sender)
 	if err != nil {
 		return cleanup(err)
 	}
-	profiles, err := contacts.NewProfiles(sender)
+	actions, err := conversationoperations.New(sender)
 	if err != nil {
 		return cleanup(err)
 	}
-	inspector, err := channel.NewInspector(sender)
+	accountLink, err := accountlinktoken.New(sender)
 	if err != nil {
 		return cleanup(err)
 	}
-	menus, err := engagement.NewRichMenuInspector(sender)
+	coupons, err := promotion.NewCouponQueries(sender)
 	if err != nil {
 		return cleanup(err)
 	}
-	contactsInspector, err := contacts.NewInspector(sender)
+	memberships, err := membership.NewQueries(sender)
+	if err != nil {
+		return cleanup(err)
+	}
+	menus, err := experiencepresentation.NewProviderQueries(sender)
 	if err != nil {
 		return cleanup(err)
 	}
@@ -98,18 +118,24 @@ func NewLINEOpsRuntime(token string) (*LINEOpsRuntime, error) {
 	if err != nil {
 		return cleanup(err)
 	}
-	inspectorInsights, err := insights.NewInspector(insightReader)
+	reports, err := insightsreporting.NewReports(insightReader)
 	if err != nil {
 		return cleanup(err)
 	}
-	membership, err := engagement.NewMembershipInspector(sender)
+
+	blobClient, err := lineinfra.NewMessagingBlobClientWithHTTPClient(token, transport.Client)
 	if err != nil {
 		return cleanup(err)
 	}
-	coupon, err := engagement.NewCouponInspector(sender)
+	blobSender, err := line.NewBlobSender(blobClient)
 	if err != nil {
 		return cleanup(err)
 	}
+	media, err := mediatransfer.New(blobSender)
+	if err != nil {
+		return cleanup(err)
+	}
+
 	audienceClient, err := lineinfra.NewAudienceClientWithHTTPClient(token, transport.Client)
 	if err != nil {
 		return cleanup(err)
@@ -118,7 +144,7 @@ func NewLINEOpsRuntime(token string) (*LINEOpsRuntime, error) {
 	if err != nil {
 		return cleanup(err)
 	}
-	inspectorAudiences, err := engagement.NewAudienceInspector(audienceReader)
+	audiences, err := audience.NewProviderQueries(audienceReader)
 	if err != nil {
 		return cleanup(err)
 	}
@@ -126,43 +152,25 @@ func NewLINEOpsRuntime(token string) (*LINEOpsRuntime, error) {
 	if err != nil {
 		return cleanup(err)
 	}
-	audienceManagerAdapter, err := line.NewAudienceManager(audienceClient, audienceBlobClient)
+	audienceAdapter, err := line.NewAudienceManager(audienceClient, audienceBlobClient)
 	if err != nil {
 		return cleanup(err)
 	}
-	audienceManager, err := engagement.NewAudienceOperations(audienceManagerAdapter)
+	audienceManager, err := audience.NewProviderOperations(audienceAdapter)
 	if err != nil {
 		return cleanup(err)
 	}
-	menuManager, err := engagement.NewMenuManager(sender)
-	if err != nil {
-		return cleanup(err)
-	}
-	bulkMessenger, err := messaging.NewBulkSender(sender)
-	if err != nil {
-		return cleanup(err)
-	}
-	validator, err := messaging.NewValidationService(sender)
-	if err != nil {
-		return cleanup(err)
-	}
-	webhookAdmin, err := channel.NewWebhookConfigurator(sender)
-	if err != nil {
-		return cleanup(err)
-	}
-	actions, err := messaging.NewConversationActions(sender)
-	if err != nil {
-		return cleanup(err)
-	}
-	accountLink, err := contacts.NewAccountLinker(sender)
-	if err != nil {
-		return cleanup(err)
-	}
-	eligibility, err := engagement.NewEligibilityOperations(sender)
-	if err != nil {
-		return cleanup(err)
-	}
-	return &LINEOpsRuntime{Actions: actions, AccountLink: accountLink, Eligibility: eligibility, MenuImageReader: blobSender, Messaging: messages, Validation: validator, Profiles: profiles, Channel: inspector, WebhookAdmin: webhookAdmin, Menus: menus, MenuManager: menuManager, RichMenuImages: richMenuImages, Memberships: membership, Coupons: coupon, Contacts: contactsInspector, Content: content, Insights: inspectorInsights, Audiences: inspectorAudiences, AudienceManager: audienceManager, BulkMessaging: bulkMessenger, outbound: transport}, nil
+
+	return &LINEOpsRuntime{
+		Messaging: delivery, BulkMessaging: delivery, PhoneDelivery: sender, PhoneReports: sender, Validation: validation,
+		Profiles: profiles, Contacts: contacts, WebhookAdmin: webhookAdmin,
+		Channel: sender, DeliveryReports: sender,
+		Audiences: audiences, AudienceManager: audienceManager,
+		Coupons: coupons, CouponCreator: sender,
+		Memberships: memberships, Menus: menus, MenuCommands: sender, Insights: reports,
+		Content: media, RichMenuImages: media, MenuImageReader: media,
+		Actions: actions, AccountLink: accountLink, outbound: transport,
+	}, nil
 }
 
 // Close satisfies the CLI runtime contract. Releasing idle HTTP connections

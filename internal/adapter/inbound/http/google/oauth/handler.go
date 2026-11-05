@@ -10,7 +10,7 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/963sup/linebot-platform/internal/application/usecases/workspace"
+	identity "github.com/963sup/linebot-platform/internal/application/usecases/identity"
 )
 
 const oauthCSRFCookie = "__Host-google_oauth_state"
@@ -22,7 +22,7 @@ type TrustedLINEIdentity func(*http.Request) (string, error)
 
 type LinkActions interface {
 	Begin(context.Context, string, []string) (string, error)
-	Complete(context.Context, string, string) (workspace.LinkedAccount, error)
+	Complete(context.Context, string, string) (identity.LinkedAccount, error)
 }
 
 type Handler struct {

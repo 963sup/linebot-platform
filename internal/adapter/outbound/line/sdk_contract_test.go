@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/963sup/linebot-platform/internal/application/ports/outbound"
+	messagingdelivery "github.com/963sup/linebot-platform/internal/application/usecases/messaging-delivery"
 	"github.com/963sup/linebot-platform/internal/infrastructure/resilience"
 	"github.com/line/line-bot-sdk-go/v8/linebot/messaging_api"
 )
@@ -31,8 +31,8 @@ func contractSender(t *testing.T, server *httptest.Server) *Sender {
 	return sender
 }
 
-func testText() []outbound.Message {
-	return []outbound.Message{{Kind: outbound.KindText, Text: "hello"}}
+func testText() []messagingdelivery.Message {
+	return []messagingdelivery.Message{{Kind: messagingdelivery.KindText, Text: "hello"}}
 }
 
 func TestReplyAndPushUseNativeLINEAPI(t *testing.T) {
@@ -94,6 +94,25 @@ func TestLINEAPIErrorIsSanitized(t *testing.T) {
 type interceptTransport func(*http.Request) (*http.Response, error)
 
 func (f interceptTransport) RoundTrip(r *http.Request) (*http.Response, error) { return f(r) }
+
+type closeTrackingBody struct{ closed bool }
+
+func (b *closeTrackingBody) Read([]byte) (int, error) { return 0, http.ErrBodyReadAfterClose }
+func (b *closeTrackingBody) Close() error {
+	b.closed = true
+	return nil
+}
+
+func TestLINEAPIErrorClosesSDKErrorResponse(t *testing.T) {
+	body := &closeTrackingBody{}
+	err := lineAPIError("reply", &http.Response{StatusCode: http.StatusBadGateway, Body: body}, errors.New("provider detail"))
+	if err == nil || !body.closed {
+		t.Fatal("LINE error response body must be closed")
+	}
+	if strings.Contains(err.Error(), "provider detail") {
+		t.Fatal("provider error detail must be sanitized")
+	}
+}
 
 func TestLINEContextCancellation(t *testing.T) {
 	started := make(chan struct{})

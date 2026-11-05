@@ -6,7 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/963sup/linebot-platform/internal/application/ports/outbound"
+	experiencepresentation "github.com/963sup/linebot-platform/internal/application/usecases/experience-presentation"
 )
 
 func TestRichMenuMutationsUseOfficialEndpoints(t *testing.T) {
@@ -24,28 +24,28 @@ func TestRichMenuMutationsUseOfficialEndpoints(t *testing.T) {
 	ctx := context.Background()
 	for _, call := range []func() error{
 		func() error {
-			return s.CreateRichMenu(ctx, outbound.LINERequest{Value: map[string]any{"areas": []any{}}})
+			return s.CreateRichMenu(ctx, experiencepresentation.ProviderDocument{Value: map[string]any{"areas": []any{}}})
 		},
 		func() error {
-			return s.ValidateRichMenu(ctx, outbound.LINERequest{Value: map[string]any{"areas": []any{}}})
+			return s.ValidateRichMenu(ctx, experiencepresentation.ProviderDocument{Value: map[string]any{"areas": []any{}}})
 		},
 		func() error {
-			return s.CreateRichMenuAlias(ctx, outbound.LINERequest{Value: map[string]any{"richMenuAliasId": "main", "richMenuId": "richmenu-1"}})
+			return s.CreateRichMenuAlias(ctx, experiencepresentation.ProviderDocument{Value: map[string]any{"richMenuAliasId": "main", "richMenuId": "richmenu-1"}})
 		},
 		func() error {
-			return s.UpdateRichMenuAlias(ctx, "main", outbound.LINERequest{Value: map[string]any{"richMenuId": "richmenu-2"}})
+			return s.UpdateRichMenuAlias(ctx, "main", experiencepresentation.ProviderDocument{Value: map[string]any{"richMenuId": "richmenu-2"}})
 		},
 		func() error {
-			return s.BulkLinkRichMenu(ctx, outbound.LINERequest{Value: map[string]any{"richMenuId": "richmenu-1", "userIds": []any{"U1"}}})
+			return s.BulkLinkRichMenu(ctx, experiencepresentation.ProviderDocument{Value: map[string]any{"richMenuId": "richmenu-1", "userIds": []any{"U1"}}})
 		},
 		func() error {
-			return s.BulkUnlinkRichMenu(ctx, outbound.LINERequest{Value: map[string]any{"userIds": []any{"U1"}}})
+			return s.BulkUnlinkRichMenu(ctx, experiencepresentation.ProviderDocument{Value: map[string]any{"userIds": []any{"U1"}}})
 		},
 		func() error {
-			return s.RichMenuBatch(ctx, outbound.LINERequest{Value: map[string]any{"operations": []any{}}})
+			return s.RichMenuBatch(ctx, experiencepresentation.ProviderDocument{Value: map[string]any{"operations": []any{}}})
 		},
 		func() error {
-			return s.ValidateRichMenuBatch(ctx, outbound.LINERequest{Value: map[string]any{"operations": []any{}}})
+			return s.ValidateRichMenuBatch(ctx, experiencepresentation.ProviderDocument{Value: map[string]any{"operations": []any{}}})
 		},
 		func() error { return s.SetDefaultRichMenu(ctx, "richmenu-1") },
 		func() error { return s.CancelDefaultRichMenu(ctx) },

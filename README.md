@@ -82,7 +82,7 @@ Broadcast／Multicast 需已授權的測試 Channel，透過 `go run ./cmd/ops c
 
 Rich Menu 變更指令需同時提供 `--apply --confirm ACTION`，例如僅在獲授權的隔離測試帳號中執行 `go run ./cmd/ops manage-menu --action set-default --menu-id richmenu-xxx --apply --confirm set-default`。程式碼可用不代表可擅自修改真實帳號；模糊或結果未知的發送不自動重試。
 
-Rich Menu 唯讀查詢可執行 `go run ./cmd/ops menus --kind list --read`，其它 `--kind` 使用 `internal/application/usecases/engagement/inspect.go` 的 allowlist。查詢單一選單需搭配 `--id`，所有操作都不會在公開 Webhook 執行。
+Rich Menu 唯讀查詢可執行 `go run ./cmd/ops menus --kind list --read`，其它 `--kind` 由 `internal/application/usecases/experience-presentation` 的 consumer-owned contract 限制。查詢單一選單需搭配 `--id`，所有操作都不會在公開 Webhook 執行。
 
 LINE Channel 唯讀查詢需由操作人員明確指定：
 ```sh
@@ -90,7 +90,7 @@ go run ./cmd/ops inspect --kind bot-info --read
 go run ./cmd/ops inspect --kind message-quota --read
 go run ./cmd/ops inspect --kind delivery-push --date 20261101 --read
 ```
-其他支援的 kind 參閱 `internal/application/usecases/channel/inspect.go`；沒有登入保護的公開查詢 HTTP 路由。這些命令需要具授權的測試 Channel Token，未經帳號授權不可呼叫正式服務。
+其他支援的 kind 參閱 `internal/adapter/inbound/cli/inspect.go` 與 `internal/application/usecases/provider-configuration`；沒有登入保護的公開查詢 HTTP 路由。這些命令需要具授權的測試 Channel Token，未經帳號授權不可呼叫正式服務。
 
 Profile 查詢只供具授權的操作人員手動執行，不會由公開 Webhook 自動讀取使用者資料。先在安全環境提供 `LINE_CHANNEL_ACCESS_TOKEN`，再明確指定使用者及 `--lookup`：
 ```sh
@@ -137,8 +137,8 @@ Google Tasks、Calendar 的授權詳見 [Workspace OAuth 與 API](docs/sdk/works
 
 - 預設 `LINE_EVENT_MODE=sync` 保留原開發模式。**只有**設定 `LINE_EVENT_MODE=durable` 並具備完整 GCP／LINE／OIDC 設定，才建立 Firestore 與 Cloud Tasks Client。
 - Webhook 驗章及 bot destination，Firestore Transaction 同時建立 Inbox/Outbox 並以 SHA-256 Event Key 去重；Cloud Tasks 以事件 Key＋10 秒時窗產生可恢復的 Task ID，透過 Google OIDC 將不敏感 Key 交給私有 Worker；真正的發送去重由 Firestore Claim 負責。
-- `cmd/worker` 的 `/tasks/line-reply`、`/tasks/dispatch` 必須通過 OIDC 驗證。Worker 執行單次 Claim（`pending -> sending -> sent/expired/unknown`），避免模糊發送結果後盲目重試。
-- `Dockerfile.worker` 與 `cloudbuild.worker.yaml` 僅是建置範本，不自動部署。仍需隔離 Staging 的 Firestore TTL、Cloud Scheduler、IAM、Cloud Tasks、私有 Cloud Run 實際驗證。
+- `cmd/worker` 的 `/tasks/v2/line-reply`、`/tasks/v2/dispatch` 必須通過 OIDC 驗證。Worker 執行單次 Claim（`pending -> sending -> sent/expired/unknown`），避免模糊發送結果後盲目重試。
+- 單一 `Dockerfile` 與 `cloudbuild.yaml` 同時產出 public webhook、private worker 映像，但不自動部署。仍需隔離 Staging 的 Firestore TTL、Cloud Scheduler、IAM、Cloud Tasks、私有 Cloud Run 實際驗證。
 - [事件狀態機](docs/architecture/event-processing.md)／[Staging 操作要求](docs/operations/durable-worker.md) 說明可靠性和安全限制。
 
 ## Codex Cloud 開發環境
@@ -150,7 +150,7 @@ Google Tasks、Calendar 的授權詳見 [Workspace OAuth 與 API](docs/sdk/works
 
 ## Cloud Build／Cloud Run
 
-根目錄提供 `cloudbuild.yaml`、`cloudbuild.worker.yaml` 與 `cloudbuild.deploy.yaml`，分別建置 public webhook、private worker，並將不可變映像部署到既有 Cloud Run 服務。部署設定固定指向 `bubbly-area-513305-s0` 的 `line-bot-public` 與 `line-bot-private`；所有建立映像均以 sha256 digest 固定。`.gcloudignore` 排除本機／敏感上傳內容，`.gitattributes` 固定文字換行規則。操作前先閱讀 [部署配置與限制](docs/operations/deployment.md)。
+根目錄提供 `cloudbuild.yaml` 與 `cloudbuild.deploy.yaml`：前者驗證一次並建置 public webhook、private worker，後者以不可變映像部署既有 Cloud Run 服務。部署設定固定指向 `bubbly-area-513305-s0` 的 `line-bot-public` 與 `line-bot-private`；所有建立映像均以 sha256 digest 固定。`.gcloudignore` 排除本機／敏感上傳內容，`.gitattributes` 固定文字換行規則。操作前先閱讀 [部署配置與限制](docs/operations/deployment.md)。
 
 `skills-lock.json` 自 [line-bot-go](https://github.com/963sup/line-bot-go/blob/main/skills-lock.json) 精選 13 個與 Go／Cloud Run／安全／CI 有關的技能；**尚未安裝外部 skills**，詳見 [Codex Skills](docs/ai/skills.md)。
 

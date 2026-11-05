@@ -9,8 +9,13 @@ import (
 	"io"
 	"time"
 
-	"github.com/963sup/linebot-platform/internal/application/usecases/contacts"
+	mediatransfer "github.com/963sup/linebot-platform/internal/application/usecases/media-transfer"
 )
+
+type mediaTransferRuntime interface {
+	MessageContent(context.Context, string, mediatransfer.ContentVariant) (mediatransfer.BinaryContent, error)
+	MessageContentStatus(context.Context, string) (mediatransfer.PreparationStatus, error)
+}
 
 func runContent(args []string, getenv func(string) string, output io.Writer) error {
 	f := flag.NewFlagSet("content", flag.ContinueOnError)
@@ -35,18 +40,32 @@ func runContent(args []string, getenv func(string) string, output io.Writer) err
 		return err
 	}
 	defer r.Close()
+	media, ok := any(r).(mediaTransferRuntime)
+	if !ok {
+		return errors.New("content runtime does not implement media-transfer")
+	}
 	ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
 	defer cancel()
-	b, j, err := r.Inspect(ctx, contacts.ContentQuery{Kind: *kind, MessageID: *id})
-	if err != nil {
-		return err
-	}
 	if *kind == "transcoding" {
-		payload, encodeErr := json.Marshal(j.Value)
+		status, inspectErr := media.MessageContentStatus(ctx, *id)
+		if inspectErr != nil {
+			return inspectErr
+		}
+		payload, encodeErr := json.Marshal(status)
 		if encodeErr != nil {
 			return fmt.Errorf("encode transcoding result: %w", encodeErr)
 		}
 		_, err = fmt.Fprintln(output, string(payload))
+		return err
+	}
+	variant := mediatransfer.Original
+	if *kind == "preview" {
+		variant = mediatransfer.Preview
+	} else if *kind != "content" {
+		return errors.New("unsupported message content kind")
+	}
+	b, err := media.MessageContent(ctx, *id, variant)
+	if err != nil {
 		return err
 	}
 	return writePrivateFile(*out, b.Data)

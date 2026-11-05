@@ -15,7 +15,7 @@ import (
 
 	sdk "cloud.google.com/go/firestore"
 	fsadapter "github.com/963sup/linebot-platform/internal/adapter/outbound/google/cloud/firestore"
-	"github.com/963sup/linebot-platform/internal/application/ports/outbound"
+	"github.com/963sup/linebot-platform/internal/application/usecases/identity"
 	"github.com/963sup/linebot-platform/internal/domain/identity/factories"
 	oauth "github.com/963sup/linebot-platform/internal/infrastructure/google/api/oauth"
 )
@@ -40,7 +40,7 @@ func TestOAuthSessionsAndConnectionsWithFirestoreEmulator(t *testing.T) {
 		t.Fatal(err)
 	}
 	state := base64.RawURLEncoding.EncodeToString(bytes.Repeat([]byte{0xB7}, 32))
-	session := outbound.OAuthSession{
+	session := identity.OAuthSession{
 		OwnerID: "verified-user", Verifier: strings.Repeat("A", 43),
 		Nonce: strings.Repeat("B", 43), Scopes: []string{"openid"},
 		ExpiresAt: time.Now().Add(10 * time.Minute),
@@ -75,9 +75,9 @@ func TestOAuthSessionsAndConnectionsWithFirestoreEmulator(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	account := outbound.OAuthAuthorization{
+	account := identity.OAuthAuthorization{
 		Link: link,
-		Credentials: outbound.OAuthCredentials{
+		Credentials: identity.OAuthCredentials{
 			AccessToken: "sensitive-access-token", RefreshToken: "sensitive-refresh-token",
 			TokenType: "Bearer", Expiry: time.Now().Add(time.Hour),
 		},

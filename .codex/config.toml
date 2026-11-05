@@ -7,7 +7,7 @@ multi_agent = true
 
 [agents]
 enabled = true
-max_concurrent_threads_per_session = 4
+max_concurrent_threads_per_session = 9
 max_depth = 1
 
 [agents.architect]

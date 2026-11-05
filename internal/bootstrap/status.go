@@ -6,13 +6,13 @@ import (
 	"strings"
 
 	storeout "github.com/963sup/linebot-platform/internal/adapter/outbound/google/cloud/firestore"
-	"github.com/963sup/linebot-platform/internal/application/ports/outbound"
+	messagingdelivery "github.com/963sup/linebot-platform/internal/application/usecases/messaging-delivery"
 	storeinfra "github.com/963sup/linebot-platform/internal/infrastructure/google/cloud/firestore"
 )
 
 // StatusRuntime is isolated from the LINE sender and owns only Firestore.
 type StatusRuntime struct {
-	Reader outbound.EventStatusReader
+	Reader messagingdelivery.EventStatusReader
 	close  func() error
 }
 

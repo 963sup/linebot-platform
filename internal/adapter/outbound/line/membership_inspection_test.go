@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/963sup/linebot-platform/internal/application/usecases/membership"
 )
 
 func TestMembershipReadOnlySDKEndpoints(t *testing.T) {
@@ -22,9 +24,12 @@ func TestMembershipReadOnlySDKEndpoints(t *testing.T) {
 		name string
 		fn   func() error
 	}{
-		{"list", func() error { _, e := s.MembershipList(ctx); return e }},
-		{"subscription", func() error { _, e := s.MembershipSubscription(ctx, "U123"); return e }},
-		{"users", func() error { _, e := s.MembershipUsers(ctx, 123, "", 10); return e }},
+		{"list", func() error { _, e := s.ListMemberships(ctx, membership.PageRequest{}); return e }},
+		{"subscription", func() error { _, e := s.GetSubscription(ctx, membership.RecipientID("U123")); return e }},
+		{"users", func() error {
+			_, e := s.ListMembershipMembers(ctx, membership.MembershipID("123"), membership.PageRequest{Limit: 10})
+			return e
+		}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			if err := tc.fn(); err != nil {

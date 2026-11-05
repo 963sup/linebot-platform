@@ -28,7 +28,7 @@ func runMenuImage(args []string, getenv func(string) string) error {
 	defer r.Close()
 	ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
 	defer cancel()
-	data, err := r.RichMenuImage(ctx, *id)
+	data, err := r.PresentationImage(ctx, *id)
 	if err != nil {
 		return err
 	}

@@ -8,38 +8,38 @@ import (
 
 	sdk "cloud.google.com/go/firestore"
 	"cloud.google.com/go/firestore/apiv1/firestorepb"
-	"github.com/963sup/linebot-platform/internal/application/ports/outbound"
+	messagingdelivery "github.com/963sup/linebot-platform/internal/application/usecases/messaging-delivery"
 	"google.golang.org/api/iterator"
 )
 
-var _ outbound.EventStatusReader = (*Store)(nil)
+var _ messagingdelivery.EventStatusReader = (*Store)(nil)
 
 // Inspect queries server-side counts and bounded metadata samples only.
 // It never returns reply tokens, user IDs or message payloads.
-func (s *Store) Inspect(ctx context.Context, state outbound.EventState, limit int, now time.Time) (outbound.EventStatusReport, error) {
+func (s *Store) Inspect(ctx context.Context, state messagingdelivery.EventState, limit int, now time.Time) (messagingdelivery.EventStatusReport, error) {
 	if ctx == nil {
-		return outbound.EventStatusReport{}, errors.New("context is required")
+		return messagingdelivery.EventStatusReport{}, errors.New("context is required")
 	}
 	if err := ctx.Err(); err != nil {
-		return outbound.EventStatusReport{}, err
+		return messagingdelivery.EventStatusReport{}, err
 	}
 	if !state.Valid() || limit < 0 || limit > 100 {
-		return outbound.EventStatusReport{}, errors.New("invalid outbox status query")
+		return messagingdelivery.EventStatusReport{}, errors.New("invalid outbox status query")
 	}
 	now = now.UTC()
 	coll := s.client.Collection(outboxCollection)
-	report := outbound.EventStatusReport{
+	report := messagingdelivery.EventStatusReport{
 		GeneratedAt: now,
-		Counts:      make(map[outbound.EventState]int64),
+		Counts:      make(map[messagingdelivery.EventState]int64),
 	}
-	for _, current := range []outbound.EventState{
-		outbound.EventPending, outbound.EventSending, outbound.EventSent,
-		outbound.EventExpired, outbound.EventUnknown,
+	for _, current := range []messagingdelivery.EventState{
+		messagingdelivery.EventPending, messagingdelivery.EventSending, messagingdelivery.EventSent,
+		messagingdelivery.EventExpired, messagingdelivery.EventUnknown,
 	} {
 		q := coll.Where("state", "==", string(current))
 		result, err := q.NewAggregationQuery().WithCount("total").Get(ctx)
 		if err != nil {
-			return outbound.EventStatusReport{}, fmt.Errorf("count outbox state %s: %w", current, err)
+			return messagingdelivery.EventStatusReport{}, fmt.Errorf("count outbox state %s: %w", current, err)
 		}
 		switch value := result["total"].(type) {
 		case int64:
@@ -47,7 +47,7 @@ func (s *Store) Inspect(ctx context.Context, state outbound.EventState, limit in
 		case *firestorepb.Value: // Emulator returns a protobuf value.
 			report.Counts[current] = value.GetIntegerValue()
 		default:
-			return outbound.EventStatusReport{}, fmt.Errorf("unexpected Firestore count result for %s", current)
+			return messagingdelivery.EventStatusReport{}, fmt.Errorf("unexpected Firestore count result for %s", current)
 		}
 	}
 
@@ -56,12 +56,12 @@ func (s *Store) Inspect(ctx context.Context, state outbound.EventState, limit in
 	defer oldest.Stop()
 	doc, err := oldest.Next()
 	if err != nil && err != iterator.Done {
-		return outbound.EventStatusReport{}, err
+		return messagingdelivery.EventStatusReport{}, err
 	}
 	if err == nil {
 		var saved storedJob
 		if err := doc.DataTo(&saved); err != nil {
-			return outbound.EventStatusReport{}, err
+			return messagingdelivery.EventStatusReport{}, err
 		}
 		if !saved.CreatedAt.IsZero() && now.After(saved.CreatedAt) {
 			report.OldestPendingAgeSeconds = int64(now.Sub(saved.CreatedAt).Seconds())
@@ -80,16 +80,16 @@ func (s *Store) Inspect(ctx context.Context, state outbound.EventState, limit in
 			break
 		}
 		if err != nil {
-			return outbound.EventStatusReport{}, err
+			return messagingdelivery.EventStatusReport{}, err
 		}
 		if !validKey(doc.Ref.ID) {
 			continue
 		}
 		var saved storedJob
 		if err := doc.DataTo(&saved); err != nil {
-			return outbound.EventStatusReport{}, err
+			return messagingdelivery.EventStatusReport{}, err
 		}
-		report.Samples = append(report.Samples, outbound.EventStatusSample{
+		report.Samples = append(report.Samples, messagingdelivery.EventStatusSample{
 			KeyHint:   doc.Ref.ID[:12],
 			State:     state,
 			UpdatedAt: saved.UpdatedAt,

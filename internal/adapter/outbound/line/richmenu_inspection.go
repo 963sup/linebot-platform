@@ -2,68 +2,132 @@ package line
 
 import (
 	"context"
-	"github.com/963sup/linebot-platform/internal/application/ports/outbound"
+	"errors"
+	"fmt"
+
+	experiencepresentation "github.com/963sup/linebot-platform/internal/application/usecases/experience-presentation"
+	"github.com/line/line-bot-sdk-go/v8/linebot/messaging_api"
 )
 
-func (s *Sender) RichMenuList(ctx context.Context) (outbound.LINEResult, error) {
+func (s *Sender) ListSurfaces(ctx context.Context) ([]experiencepresentation.ProviderSurface, error) {
 	client, err := s.clientFor(ctx)
 	if err != nil {
-		return outbound.LINEResult{}, err
+		return nil, err
 	}
 	response, result, err := client.GetRichMenuListWithHttpInfo()
-	return typedReportResult("getRichMenuList", response, result, err)
-}
-
-func (s *Sender) RichMenu(ctx context.Context, id string) (outbound.LINEResult, error) {
-	client, err := s.clientFor(ctx)
 	if err != nil {
-		return outbound.LINEResult{}, err
+		return nil, lineReadError("getRichMenuList", response, err)
 	}
-	response, result, err := client.GetRichMenuWithHttpInfo(id)
-	return typedReportResult("getRichMenu", response, result, err)
+	if result == nil {
+		return nil, errors.New("empty LINE rich menu list")
+	}
+	out := make([]experiencepresentation.ProviderSurface, 0, len(result.Richmenus))
+	for _, item := range result.Richmenus {
+		out = append(out, surfaceView(item.RichMenuId, item.Name, item.Size, item.Selected))
+	}
+	return out, nil
 }
 
-func (s *Sender) DefaultRichMenu(ctx context.Context) (outbound.LINEResult, error) {
+func (s *Sender) GetSurface(ctx context.Context, id experiencepresentation.ProviderSurfaceID) (experiencepresentation.ProviderSurface, error) {
 	client, err := s.clientFor(ctx)
 	if err != nil {
-		return outbound.LINEResult{}, err
+		return experiencepresentation.ProviderSurface{}, err
+	}
+	response, result, err := client.GetRichMenuWithHttpInfo(string(id))
+	if err != nil {
+		return experiencepresentation.ProviderSurface{}, lineReadError("getRichMenu", response, err)
+	}
+	if result == nil {
+		return experiencepresentation.ProviderSurface{}, errors.New("empty LINE rich menu")
+	}
+	return surfaceView(result.RichMenuId, result.Name, result.Size, result.Selected), nil
+}
+
+func (s *Sender) GetDefaultSurface(ctx context.Context) (experiencepresentation.ProviderSurface, error) {
+	client, err := s.clientFor(ctx)
+	if err != nil {
+		return experiencepresentation.ProviderSurface{}, err
 	}
 	response, result, err := client.GetDefaultRichMenuIdWithHttpInfo()
-	return typedReportResult("getDefaultRichMenuId", response, result, err)
+	if err != nil {
+		return experiencepresentation.ProviderSurface{}, lineReadError("getDefaultRichMenuId", response, err)
+	}
+	if result == nil {
+		return experiencepresentation.ProviderSurface{}, errors.New("empty LINE default rich menu")
+	}
+	return experiencepresentation.ProviderSurface{ID: experiencepresentation.ProviderSurfaceID(result.RichMenuId), Selected: true}, nil
 }
 
-func (s *Sender) RichMenuAliasList(ctx context.Context) (outbound.LINEResult, error) {
+func (s *Sender) ListAliases(ctx context.Context) ([]experiencepresentation.ProviderAlias, error) {
 	client, err := s.clientFor(ctx)
 	if err != nil {
-		return outbound.LINEResult{}, err
+		return nil, err
 	}
 	response, result, err := client.GetRichMenuAliasListWithHttpInfo()
-	return typedReportResult("getRichMenuAliasList", response, result, err)
-}
-
-func (s *Sender) RichMenuAlias(ctx context.Context, id string) (outbound.LINEResult, error) {
-	client, err := s.clientFor(ctx)
 	if err != nil {
-		return outbound.LINEResult{}, err
+		return nil, lineReadError("getRichMenuAliasList", response, err)
 	}
-	response, result, err := client.GetRichMenuAliasWithHttpInfo(id)
-	return typedReportResult("getRichMenuAlias", response, result, err)
-}
-
-func (s *Sender) UserRichMenu(ctx context.Context, userID string) (outbound.LINEResult, error) {
-	client, err := s.clientFor(ctx)
-	if err != nil {
-		return outbound.LINEResult{}, err
+	if result == nil {
+		return nil, errors.New("empty LINE rich menu alias list")
 	}
-	response, result, err := client.GetRichMenuIdOfUserWithHttpInfo(userID)
-	return typedReportResult("getRichMenuIdOfUser", response, result, err)
+	out := make([]experiencepresentation.ProviderAlias, 0, len(result.Aliases))
+	for _, item := range result.Aliases {
+		out = append(out, experiencepresentation.ProviderAlias{ID: experiencepresentation.AliasID(item.RichMenuAliasId), SurfaceID: experiencepresentation.ProviderSurfaceID(item.RichMenuId)})
+	}
+	return out, nil
 }
 
-func (s *Sender) RichMenuBatchProgress(ctx context.Context, id string) (outbound.LINEResult, error) {
+func (s *Sender) GetAlias(ctx context.Context, id experiencepresentation.AliasID) (experiencepresentation.ProviderAlias, error) {
 	client, err := s.clientFor(ctx)
 	if err != nil {
-		return outbound.LINEResult{}, err
+		return experiencepresentation.ProviderAlias{}, err
+	}
+	response, result, err := client.GetRichMenuAliasWithHttpInfo(string(id))
+	if err != nil {
+		return experiencepresentation.ProviderAlias{}, lineReadError("getRichMenuAlias", response, err)
+	}
+	if result == nil {
+		return experiencepresentation.ProviderAlias{}, errors.New("empty LINE rich menu alias")
+	}
+	return experiencepresentation.ProviderAlias{ID: experiencepresentation.AliasID(result.RichMenuAliasId), SurfaceID: experiencepresentation.ProviderSurfaceID(result.RichMenuId)}, nil
+}
+
+func (s *Sender) GetRecipientSurface(ctx context.Context, userID experiencepresentation.RecipientID) (experiencepresentation.ProviderSurface, error) {
+	client, err := s.clientFor(ctx)
+	if err != nil {
+		return experiencepresentation.ProviderSurface{}, err
+	}
+	response, result, err := client.GetRichMenuIdOfUserWithHttpInfo(string(userID))
+	if err != nil {
+		return experiencepresentation.ProviderSurface{}, lineReadError("getRichMenuIdOfUser", response, err)
+	}
+	if result == nil {
+		return experiencepresentation.ProviderSurface{}, errors.New("empty LINE recipient rich menu")
+	}
+	return experiencepresentation.ProviderSurface{ID: experiencepresentation.ProviderSurfaceID(result.RichMenuId)}, nil
+}
+
+func (s *Sender) GetBatchProgress(ctx context.Context, id string) (experiencepresentation.BatchProgress, error) {
+	client, err := s.clientFor(ctx)
+	if err != nil {
+		return experiencepresentation.BatchProgress{}, err
 	}
 	response, result, err := client.GetRichMenuBatchProgressWithHttpInfo(id)
-	return typedReportResult("getRichMenuBatchProgress", response, result, err)
+	if err != nil {
+		return experiencepresentation.BatchProgress{}, lineReadError("getRichMenuBatchProgress", response, err)
+	}
+	if result == nil {
+		return experiencepresentation.BatchProgress{}, errors.New("empty LINE rich menu batch progress")
+	}
+	return experiencepresentation.BatchProgress{RequestID: id, Status: string(result.Phase)}, nil
 }
+
+func surfaceView(id, name string, size *messaging_api.RichMenuSize, selected bool) experiencepresentation.ProviderSurface {
+	value := ""
+	if size != nil {
+		value = fmt.Sprintf("%dx%d", size.Width, size.Height)
+	}
+	return experiencepresentation.ProviderSurface{ID: experiencepresentation.ProviderSurfaceID(id), Name: name, Size: value, Selected: selected}
+}
+
+var _ experiencepresentation.ProviderReader = (*Sender)(nil)

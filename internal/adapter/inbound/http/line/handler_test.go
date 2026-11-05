@@ -10,36 +10,38 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/963sup/linebot-platform/internal/application/ports/outbound"
-	"github.com/963sup/linebot-platform/internal/application/usecases/conversation"
-	"github.com/963sup/linebot-platform/internal/application/usecases/messaging"
+	messagingdelivery "github.com/963sup/linebot-platform/internal/application/usecases/messaging-delivery"
 )
 
 type fakeMessaging struct {
-	replies []outbound.Message
+	replies []messagingdelivery.Message
 }
 
-func (f *fakeMessaging) Reply(_ context.Context, _ string, messages []outbound.Message) error {
+func (f *fakeMessaging) Reply(_ context.Context, _ string, messages []messagingdelivery.Message) error {
 	f.replies = append(f.replies, messages...)
 	return nil
 }
 
-func (f *fakeMessaging) Push(_ context.Context, _ string, _ []outbound.Message, _ string) error {
+func (f *fakeMessaging) Push(_ context.Context, _ string, _ []messagingdelivery.Message, _ string) error {
+	return nil
+}
+
+func (f *fakeMessaging) Broadcast(_ context.Context, _ []messagingdelivery.Message, _ string) error {
+	return nil
+}
+
+func (f *fakeMessaging) Multicast(_ context.Context, _ []string, _ []messagingdelivery.Message, _ string) error {
 	return nil
 }
 
 func handler(t *testing.T, secret string) (*Handler, *fakeMessaging) {
 	t.Helper()
 	mock := &fakeMessaging{}
-	svc, err := messaging.NewService(mock)
+	svc, err := messagingdelivery.NewDeliveryService(mock)
 	if err != nil {
 		t.Fatal(err)
 	}
-	resp, err := conversation.NewResponder(svc)
-	if err != nil {
-		t.Fatal(err)
-	}
-	return NewHandler(secret, resp, nil), mock
+	return NewHandler(secret, svc, nil), mock
 }
 
 func signedRequest(secret, body string) *http.Request {
@@ -85,7 +87,7 @@ func TestSignedTextAndFlex(t *testing.T) {
 	if len(mock.replies) != 2 {
 		t.Fatalf("expected 2 replies, got %d", len(mock.replies))
 	}
-	if mock.replies[0].Kind != outbound.KindFlex || mock.replies[1].Kind != outbound.KindText {
+	if mock.replies[0].Kind != messagingdelivery.KindFlex || mock.replies[1].Kind != messagingdelivery.KindText {
 		t.Fatalf("incorrect message types %#v", mock.replies)
 	}
 }

@@ -46,6 +46,21 @@ func TestGuidanceTracksRegisteredCapabilities(t *testing.T) {
 			t.Errorf("%s references deleted architecture target", path)
 		}
 	}
+	for _, path := range []string{"AGENTS.md", "docs/agent-workflows/routing-policy.md", "docs/ai/agents.md"} {
+		guidance := read(path)
+		if !strings.Contains(guidance, "nine") || !strings.Contains(guidance, "depth is one") {
+			t.Errorf("%s must state the nine-thread and depth-one limits", path)
+		}
+	}
+	acceptance := read("docs/ai/agents-mcp-plugins-acceptance.md")
+	for _, want := range []string{"8 個角色", "7 宣告、5 啟用、2 個服務維持停用", "1／4／8／9", "0／10"} {
+		if !strings.Contains(acceptance, want) {
+			t.Errorf("acceptance guidance missing current baseline %q", want)
+		}
+	}
+	if !strings.Contains(read("docs/ai/agents-mcp-plugins-plan.md"), "已由目前的九個 child threads 政策取代") {
+		t.Error("historical plan must identify its concurrency policy as superseded")
+	}
 	profiles := []string{"architecture", "api-contract", "security", "performance", "testing", "release", "incident"}
 	for _, profile := range profiles {
 		path := filepath.Join(root, "docs", "agent-workflows", "reviewer-profiles", profile+".md")

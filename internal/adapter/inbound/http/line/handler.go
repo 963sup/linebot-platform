@@ -5,7 +5,7 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/963sup/linebot-platform/internal/application/usecases/conversation"
+	messagingdelivery "github.com/963sup/linebot-platform/internal/application/usecases/messaging-delivery"
 	"github.com/line/line-bot-sdk-go/v8/linebot/webhook"
 )
 
@@ -14,13 +14,13 @@ const maxBodyBytes = 1024 * 1024
 // Handler parses and verifies LINE webhook requests before invoking application logic.
 // This synchronous MVP has no durable deduplication; do not deploy as a production bot.
 type Handler struct {
-	secret    string
-	responder *conversation.Responder
-	logger    *slog.Logger
+	secret   string
+	delivery *messagingdelivery.DeliveryService
+	logger   *slog.Logger
 }
 
-func NewHandler(secret string, responder *conversation.Responder, logger *slog.Logger) *Handler {
-	return &Handler{secret: secret, responder: responder, logger: logger}
+func NewHandler(secret string, delivery *messagingdelivery.DeliveryService, logger *slog.Logger) *Handler {
+	return &Handler{secret: secret, delivery: delivery, logger: logger}
 }
 
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -29,7 +29,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
-	if h.secret == "" || h.responder == nil {
+	if h.secret == "" || h.delivery == nil {
 		http.Error(w, "LINE integration is not configured", http.StatusServiceUnavailable)
 		return
 	}
@@ -47,6 +47,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
+	failed := false
 	for _, event := range parsed.Events {
 		e, ok := event.(webhook.MessageEvent)
 		if !ok || e.ReplyToken == "" {
@@ -56,14 +57,17 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		if !ok {
 			continue
 		}
-		if err := h.responder.RespondToText(r.Context(), e.ReplyToken, message.Text); err != nil {
+		if err := h.delivery.Reply(r.Context(), e.ReplyToken, []messagingdelivery.Message{messagingdelivery.ResponseForText(message.Text)}); err != nil {
 			// Do not log request bodies, reply tokens, user IDs or SDK error messages.
 			if h.logger != nil {
 				h.logger.Error("LINE reply failed", "operation", "reply")
 			}
-			http.Error(w, "LINE processing failed", http.StatusBadGateway)
-			return
+			failed = true
 		}
+	}
+	if failed {
+		http.Error(w, "LINE processing failed", http.StatusBadGateway)
+		return
 	}
 	w.WriteHeader(http.StatusOK)
 }

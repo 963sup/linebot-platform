@@ -4,11 +4,11 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/963sup/linebot-platform/internal/application/ports/outbound"
+	messagingdelivery "github.com/963sup/linebot-platform/internal/application/usecases/messaging-delivery"
 	"github.com/line/line-bot-sdk-go/v8/linebot/messaging_api"
 )
 
-func (s *Sender) Broadcast(ctx context.Context, messages []outbound.Message, retryKey string) error {
+func (s *Sender) Broadcast(ctx context.Context, messages []messagingdelivery.Message, retryKey string) error {
 	client, err := s.clientFor(ctx)
 	if err != nil {
 		return err
@@ -21,7 +21,7 @@ func (s *Sender) Broadcast(ctx context.Context, messages []outbound.Message, ret
 	return lineWriteError("broadcast", response, err)
 }
 
-func (s *Sender) Multicast(ctx context.Context, recipients []string, messages []outbound.Message, retryKey string) error {
+func (s *Sender) Multicast(ctx context.Context, recipients []string, messages []messagingdelivery.Message, retryKey string) error {
 	client, err := s.clientFor(ctx)
 	if err != nil {
 		return err
@@ -34,13 +34,13 @@ func (s *Sender) Multicast(ctx context.Context, recipients []string, messages []
 	return lineWriteError("multicast", response, err)
 }
 
-func (s *Sender) Narrowcast(ctx context.Context, payload outbound.LINERequest, retryKey string) error {
+func (s *Sender) SendNarrowcast(ctx context.Context, payload messagingdelivery.NarrowcastRequest, retryKey string) error {
 	client, err := s.clientFor(ctx)
 	if err != nil {
 		return err
 	}
 	var request messaging_api.NarrowcastRequest
-	encoded, err := json.Marshal(payload.Value)
+	encoded, err := json.Marshal(payload.Payload)
 	if err != nil {
 		return err
 	}

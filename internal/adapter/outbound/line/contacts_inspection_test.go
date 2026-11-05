@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	contactdirectory "github.com/963sup/linebot-platform/internal/application/usecases/contact-directory"
 )
 
 func TestContactsReadOnlySDKEndpoints(t *testing.T) {
@@ -22,14 +24,31 @@ func TestContactsReadOnlySDKEndpoints(t *testing.T) {
 		name string
 		fn   func() error
 	}{
-		{"followers", func() error { _, e := s.FollowerIDs(ctx, "", 10); return e }},
-		{"group", func() error { _, e := s.GroupSummary(ctx, "C123"); return e }},
-		{"groupcount", func() error { _, e := s.GroupMemberCount(ctx, "C123"); return e }},
-		{"roomcount", func() error { _, e := s.RoomMemberCount(ctx, "R123"); return e }},
-		{"groupids", func() error { _, e := s.GroupMemberIDs(ctx, "C123", ""); return e }},
-		{"roomids", func() error { _, e := s.RoomMemberIDs(ctx, "R123", ""); return e }},
-		{"groupmember", func() error { _, e := s.GroupMemberProfile(ctx, "C123", "U123"); return e }},
-		{"roommember", func() error { _, e := s.RoomMemberProfile(ctx, "R123", "U123"); return e }},
+		{"followers", func() error { _, e := s.ListFollowers(ctx, contactdirectory.PageRequest{Limit: 10}); return e }},
+		{"group", func() error {
+			_, e := s.GetConversationSummary(ctx, contactdirectory.RecipientReference{ID: "C123", Kind: contactdirectory.RecipientGroup})
+			return e
+		}},
+		{"room", func() error {
+			_, e := s.GetConversationSummary(ctx, contactdirectory.RecipientReference{ID: "R123", Kind: contactdirectory.RecipientRoom})
+			return e
+		}},
+		{"groupids", func() error {
+			_, e := s.ListMembers(ctx, contactdirectory.RecipientReference{ID: "C123", Kind: contactdirectory.RecipientGroup}, contactdirectory.PageRequest{})
+			return e
+		}},
+		{"roomids", func() error {
+			_, e := s.ListMembers(ctx, contactdirectory.RecipientReference{ID: "R123", Kind: contactdirectory.RecipientRoom}, contactdirectory.PageRequest{})
+			return e
+		}},
+		{"groupmember", func() error {
+			_, e := s.GetMemberProfile(ctx, contactdirectory.RecipientReference{ID: "C123", Kind: contactdirectory.RecipientGroup}, "U123")
+			return e
+		}},
+		{"roommember", func() error {
+			_, e := s.GetMemberProfile(ctx, contactdirectory.RecipientReference{ID: "R123", Kind: contactdirectory.RecipientRoom}, "U123")
+			return e
+		}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			if err := tc.fn(); err != nil {

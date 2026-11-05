@@ -44,8 +44,9 @@ func TestIdentityContract(t *testing.T) {
 		}
 	}
 
-	// The former application-level parallel business model must stay removed.
-	port := filepath.Join("..", "..", "internal", "application", "ports", "outbound", "google_oauth.go")
+	// Identity owns its consumer contracts locally; the former global port must
+	// not be required by this architecture contract.
+	port := filepath.Join("..", "..", "internal", "application", "usecases", "identity", "contracts.go")
 	content, err := os.ReadFile(port)
 	if err != nil {
 		t.Fatal(err)
@@ -86,7 +87,7 @@ func TestBootstrapDoesNotOwnIdentityBusinessPolicy(t *testing.T) {
 			t.Errorf("Bootstrap reintroduced a Domain authorization decision: %s", forbidden)
 		}
 	}
-	if !strings.Contains(string(content), "workspace.AuthorizeLinkedGoogleAccount") {
+	if !strings.Contains(string(content), "identity.AuthorizeLinkedGoogleAccount") {
 		t.Fatal("Bootstrap no longer delegates identity authorization to Application")
 	}
 }
