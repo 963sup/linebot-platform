@@ -55,11 +55,12 @@ contexts:
     language:
       - {term: delivery-intent, definition: "Request to deliver content to a resolved recipient.", forbidden_aliases: [line-request], code_symbols: []}
       - {term: delivery, definition: "Consistency boundary for claim and terminal outcome.", forbidden_aliases: [cloud-task], code_symbols: [internal/domain/messaging-delivery/aggregates.Delivery]}
+      - {term: delivery-event, definition: "Modeled fact raised by an in-memory Delivery transition; the current workflow does not persist, acknowledge, or publish it.", forbidden_aliases: [integration-event, cloud-task], code_symbols: [internal/domain/messaging-delivery/events.DeliveryEvent]}
       - {term: unknown-outcome, definition: "Send whose remote effect cannot be safely determined.", forbidden_aliases: [failed], code_symbols: [internal/domain/messaging-delivery/value-objects.StatusUnknown]}
       - {term: idempotency-key, definition: "Stable identity preventing duplicate business delivery.", forbidden_aliases: [task-name], code_symbols: []}
-    owns: [delivery-intent, delivery-claim, delivery-outcome]
+    owns: [delivery-intent, delivery-claim, delivery-outcome, delivery-domain-events]
     aggregates:
-      - {name: Delivery, root: delivery, consistency_boundary: "Claim is single-use and completion accepts one terminal outcome.", owns: [delivery-claim, delivery-outcome, idempotency-key], repository: DeliveryRepository, confidence: medium, evidence: [internal/domain/messaging-delivery/aggregates/delivery_test.go]}
+      - {name: Delivery, root: delivery, consistency_boundary: "Claim is single-use and completion accepts one terminal outcome.", owns: [delivery-claim, delivery-outcome, idempotency-key, delivery-domain-events], confidence: medium, evidence: [internal/domain/messaging-delivery/aggregates/delivery.go, internal/domain/messaging-delivery/aggregates/delivery_test.go]}
     data_ownership:
       - {resource: delivery-state, authority: local-authoritative, owner: messaging-delivery, write_policy: "Only the delivery workflow may claim or complete it.", evidence: [internal/adapter/outbound/google/cloud/firestore/event_store.go]}
       - {resource: provider-message-result, authority: provider-authoritative, owner: line-provider, write_policy: "Imported through the messaging ACL.", evidence: [internal/adapter/outbound/line]}
@@ -68,7 +69,7 @@ contexts:
       - {id: MSG-002, statement: "Transport ambiguity becomes unknown-outcome rather than known failure.", evidence: [internal/application/usecases/messaging-delivery/service.go]}
     capabilities: [accept-delivery-intent, claim-delivery, complete-delivery, reconcile-pending-delivery]
     open_questions: [Confirm delivery reliability as the primary product differentiator.]
-    evidence: [internal/application/usecases/messaging-delivery/service_test.go]
+    evidence: [internal/application/usecases/messaging-delivery/ports.go, internal/application/usecases/messaging-delivery/service.go, internal/application/usecases/messaging-delivery/service_test.go, internal/domain/messaging-delivery/events/events.go]
 
   - id: audience
     subdomain: customer-segmentation

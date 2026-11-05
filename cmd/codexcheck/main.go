@@ -18,6 +18,8 @@ import (
 
 const maxAgentThreads = 9
 
+var approvedAgentRoles = []string{"application", "architect", "domain", "environment", "integration", "platform", "researcher", "reviewer"}
+
 var roleNamePattern = regexp.MustCompile(`^[a-z][a-z0-9_]*$`)
 
 type config struct {
@@ -142,8 +144,16 @@ func validateConfig(path string) error {
 	if !c.Features.MultiAgent || c.ProjectDocMaxBytes < 32768 {
 		return errors.New("multi-agent and adequate project guidance capacity are required")
 	}
-	if _, err := parseAgentRegistry(c.Agents); err != nil {
+	roles, err := parseAgentRegistry(c.Agents)
+	if err != nil {
 		return err
+	}
+	actualRoles := make([]string, 0, len(roles))
+	for name := range roles {
+		actualRoles = append(actualRoles, name)
+	}
+	if !sameStrings(actualRoles, approvedAgentRoles) {
+		return fmt.Errorf("agent registry must contain exactly the approved delegated roles: %v", approvedAgentRoles)
 	}
 	expected := []string{"gopls", "repomix", "terraform", "line", "openapi_line", "firestore_toolbox"}
 	for name := range remoteEndpoints {
@@ -218,14 +228,14 @@ func validateConfig(path string) error {
 	terra := c.MCPServers["terraform"]
 	terraTools := []string{"search_provider_docs", "get_provider_details", "get_latest_provider_version", "get_provider_capabilities", "search_modules", "get_module_details", "get_latest_module_version", "search_policies", "get_policy_details"}
 	if !terra.Enabled || terra.Command != "docker" || terra.URL != "" || terra.DefaultToolsApprovalMode != "prompt" ||
-		!slices.Equal(terra.Args, []string{"run", "-i", "--rm", "hashicorp/terraform-mcp-server:1.4.1", "stdio", "--toolsets=registry"}) ||
+		!slices.Equal(terra.Args, []string{"run", "-i", "--rm", "hashicorp/terraform-mcp-server@sha256:11dd418bba6003dd5777e9d0979b68de59929a155b355f338f407947e00e9d80", "stdio", "--toolsets=registry"}) ||
 		!sameStrings(terra.EnabledTools, terraTools) || len(terra.EnvVars) != 0 {
 		return errors.New("Terraform MCP must use the pinned official image with public Registry tools only")
 	}
 	line := c.MCPServers["line"]
 	lineTools := []string{"get_profile", "get_message_quota", "get_rich_menu_list", "get_follower_ids", "get_group_summary"}
 	if !line.Enabled || line.Command != "npx" || line.URL != "" || line.DefaultToolsApprovalMode != "prompt" ||
-		!slices.Equal(line.Args, []string{"-y", "@line/line-bot-mcp-server"}) ||
+		!slices.Equal(line.Args, []string{"-y", "@line/line-bot-mcp-server@0.5.0"}) ||
 		!sameStrings(line.EnvVars, []string{"CHANNEL_ACCESS_TOKEN"}) ||
 		!sameStrings(line.EnabledTools, lineTools) {
 		return errors.New("LINE MCP must use the approved read-only tool set")

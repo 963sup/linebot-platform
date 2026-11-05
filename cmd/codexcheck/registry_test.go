@@ -134,6 +134,8 @@ func TestRejectConfigDrift(t *testing.T) {
 		{"threads", "max_concurrent_threads_per_session = 9", "max_concurrent_threads_per_session = 10"},
 		{"knowledge-secret", `env_http_headers = { "X-Goog-Api-Key" = "DEVELOPERKNOWLEDGE_API_KEY" }`, `http_headers = { "X-Goog-Api-Key" = "do-not-store-keys" }`},
 		{"repomix-version", "repomix@1.18.1", "repomix@latest"},
+		{"line-version", "@line/line-bot-mcp-server@0.5.0", "@line/line-bot-mcp-server@latest"},
+		{"terraform-digest", "hashicorp/terraform-mcp-server@sha256:11dd418bba6003dd5777e9d0979b68de59929a155b355f338f407947e00e9d80", "hashicorp/terraform-mcp-server:1.4.1"},
 		{"repomix-sandbox", "--mcp --sandbox /workspace/linebot-platform", "--mcp"},
 		{"gopls-home-cache", "XDG_CACHE_HOME=/workspace/.cache", "XDG_CACHE_HOME=/home/agent/.cache"},
 		{"unknown", "project_doc_max_bytes = 65536", "project_doc_max_bytes = 65536\nunknown_key = true"},
@@ -150,5 +152,17 @@ func TestRejectConfigDrift(t *testing.T) {
 				t.Fatal("invalid configuration accepted")
 			}
 		})
+	}
+}
+
+func TestValidateConfigRejectsDelegatedOrchestrator(t *testing.T) {
+	data := mustRead(filepath.Join("..", "..", ".codex", "config.toml"))
+	addition := "\n[agents.orchestrator]\ndescription = \"must remain primary\"\nconfig_file = \"agents/orchestrator.toml\"\n"
+	path := filepath.Join(t.TempDir(), "config.toml")
+	if err := os.WriteFile(path, append(data, []byte(addition)...), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := validateConfig(path); err == nil || !strings.Contains(err.Error(), "exactly the approved") {
+		t.Fatalf("delegated orchestrator error = %v", err)
 	}
 }

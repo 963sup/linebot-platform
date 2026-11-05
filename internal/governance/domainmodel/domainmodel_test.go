@@ -199,6 +199,49 @@ func TestModelKindRules(t *testing.T) {
 	}
 }
 
+func TestAggregateRepositoryRules(t *testing.T) {
+	root := repositoryRoot(t)
+	_, model, _, _ := loadActual(t, root)
+
+	var candidate Aggregate
+	for _, context := range model.Contexts {
+		if context.ID == "messaging-delivery" {
+			candidate = context.Aggregates[0]
+			break
+		}
+	}
+	if candidate.Name == "" {
+		t.Fatal("messaging-delivery aggregate fixture is missing")
+	}
+
+	tests := []struct {
+		name       string
+		status     string
+		repository string
+		want       string
+	}{
+		{name: "candidate may omit repository", status: "candidate"},
+		{name: "implemented requires repository", status: "implemented", want: "repository is required"},
+		{name: "implemented accepts aggregate repository", status: "implemented", repository: "internal/domain/messaging-delivery/repositories.DeliveryRepository"},
+		{name: "implemented accepts event sourced aggregate repository", status: "implemented", repository: "internal/domain/orders/repositories.OrderEventStore"},
+		{name: "event store is a workflow alias", status: "candidate", repository: "internal/application/usecases/messaging-delivery.EventStore", want: "not a workflow store"},
+		{name: "workflow store is not an aggregate repository", status: "implemented", repository: "DeliveryWorkflowStore", want: "not a workflow store"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			value := candidate
+			value.Repository = tt.repository
+			err := validateAggregates("domain_model.contexts[fixture]", tt.status, []Aggregate{value})
+			if tt.want == "" && err != nil {
+				t.Fatalf("validateAggregates() error = %v", err)
+			}
+			if tt.want != "" && (err == nil || !strings.Contains(err.Error(), tt.want)) {
+				t.Fatalf("validateAggregates() error = %v, want containing %q", err, tt.want)
+			}
+		})
+	}
+}
+
 func TestRequireExistingPathRejectsSymlinkEscape(t *testing.T) {
 	root := t.TempDir()
 	outside := t.TempDir()

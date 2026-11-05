@@ -48,3 +48,70 @@ jobs:
             go.sum
           if-no-files-found: warn
           retention-days: 7
+
+  firestore-emulator:
+    name: Firestore emulator integration
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: '1.27.3'
+          cache: true
+          cache-dependency-path: go.sum
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3
+        with:
+          version: '592.0.0'
+          install_components: cloud-firestore-emulator
+      - name: Download pinned Go dependencies
+        run: go mod download
+      - name: Start isolated Firestore emulator
+        shell: bash
+        run: |
+          mkdir -p "$RUNNER_TEMP/firestore-emulator"
+          gcloud emulators firestore start \
+            --host-port=127.0.0.1:8085 \
+            --quiet \
+            >"$RUNNER_TEMP/firestore-emulator/emulator.log" 2>&1 &
+          emulator_pid=$!
+          printf '%s\n' "$emulator_pid" >"$RUNNER_TEMP/firestore-emulator/pid"
+          for attempt in $(seq 1 60); do
+            if bash -c '</dev/tcp/127.0.0.1/8085' 2>/dev/null; then
+              exit 0
+            fi
+            if ! kill -0 "$emulator_pid" 2>/dev/null; then
+              cat "$RUNNER_TEMP/firestore-emulator/emulator.log"
+              exit 1
+            fi
+            sleep 1
+          done
+          cat "$RUNNER_TEMP/firestore-emulator/emulator.log"
+          exit 1
+      - name: Run Firestore integration tests
+        env:
+          FIRESTORE_EMULATOR_HOST: 127.0.0.1:8085
+        run: make integration-test
+      - name: Stop Firestore emulator
+        if: always()
+        shell: bash
+        run: |
+          pid_file="$RUNNER_TEMP/firestore-emulator/pid"
+          if [ -f "$pid_file" ]; then
+            emulator_pid=$(sed -n '1p' "$pid_file")
+            kill "$emulator_pid" 2>/dev/null || true
+          fi
+      - name: Preserve emulator log on failure
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: firestore-emulator-log
+          path: ${{ runner.temp }}/firestore-emulator/emulator.log
+          if-no-files-found: warn
+          retention-days: 7

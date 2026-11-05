@@ -1,6 +1,21 @@
-# DESIGN.md — Go DDD + Hexagonal Architecture 設計契約
+# Go DDD + Hexagonal Architecture Blueprint
 
-本文件是本專案唯一的架構規範，包含目錄樹、分層責任、依賴、效能、命名與驗收規則。避免以另一份文件重複維護相同契約。
+本文件是本專案唯一的架構與依賴規範，包含目錄樹、分層責任、依賴、效能、命名與驗收規則。避免以另一份文件重複維護相同契約。文字規則與 architecture tests 具規範性；下方視覺藍圖只作概念導覽。
+
+## 視覺藍圖（Illustrative / non-normative）
+
+![Go DDD 與 Hexagonal Architecture 概念藍圖](../assets/architecture/go-ddd-hexagonal-architecture-blueprint.png)
+
+Repository asset: PNG 1536×1024, SHA-256 `ef0d102f2ca863586c27251e5f4848da66426669384dd2a323daa1db4de26d5e`.
+
+此圖是目標能力的概念藍圖，不是 repository 狀態或目錄生成器：
+
+- 圖中的 context-first 目錄只是示例；本 repository 維持 layer-first modular monolith，不搬成 `internal/context` 或 `internal/platform`。
+- Aggregate、Factory、Repository、Policy、Specification 等只在存在真實行為、production consumer 與測試時建立，不預建空 package。
+- 圖中的 Production-Ready 不能宣稱 production-ready 狀態，只是目標。正確狀態是「Production baseline implemented; Staging/Production not verified.」
+- `identity` 以外的 candidate／hypothesis contexts 不因圖片而 promoted。
+- Firestore、Cloud Tasks、Google Calendar、LINE 等圖示只表示 adapter boundary，不代表已部署、授權或通過 Staging 驗收。
+- 若圖片與本文件、domain manifests 或 architecture tests 不一致，以可執行的文字契約與 tests 為準。
 
 本設計以 `go.mod` 宣告的 Go 1.27.3 為基準，優先追求簡潔、明確、低 allocation 與可觀測性。Firestore、Cloud Tasks、Storage、Secret Manager、Google APIs/GenAI、LINE、OpenAI、MCP、HTTP、gRPC 與 OpenTelemetry 都是外部技術，必須隔離在 adapter/infrastructure。
 
@@ -193,6 +208,20 @@ flowchart LR
 - 跨 bounded context 必須經由明確的 port、DTO 或 domain event，不共享可變 domain model。
 - 禁止循環 import；任何例外必須先重新設計邊界。
 
+### Interface implementation
+
+Go interface satisfaction 是隱式的，不是 runtime call，也不是反向 import：
+
+```mermaid
+flowchart LR
+    APP[Application Use Case] --> PORT[Consumer-owned Port interface]
+    ADAPTER[Concrete Outbound Adapter] -. implements .-> PORT
+    BOOT[Composition Root] --> APP
+    BOOT --> ADAPTER
+```
+
+Interface 定義在 consumer 一側，Adapter 可用 `var _ Port = (*Adapter)(nil)` 做 compile-time assertion。Constructor 通常回傳 concrete type；只有真實變化、effect isolation 或測試替身邊界才建立 interface。
+
 ## 3. DDD 與高內聚
 
 1. 以 bounded context 分隔語言、aggregate 與業務規則；`shared/` 只放真正穩定的 immutable primitives。
@@ -205,6 +234,17 @@ flowchart LR
 8. `value-objects/` 的 import path 保留連字號，Go package 名稱固定為 `valueobjects`；不得另建 `valueobjects/` 或 `value_objects/` 平行目錄。
 9. 同一業務規則只能有一個 owner，不得同時由 Aggregate、Policy、Application 與 Bootstrap 各自判斷。
 10. 跨 bounded context 必須使用明確 Port、DTO 或 Domain Event，不直接共享或修改另一 context 的 Aggregate／Entity。
+
+### Domain Event 與 Integration Event
+
+Domain Event 是 Bounded Context 內已發生的業務事實；Integration Event 是跨 Context 或外部系統使用的版本化契約，兩者不可直接視為同一 payload。
+
+- Aggregate rehydration 不產生新事件。
+- 外部發布只能在 aggregate 與 outbox 的 transaction commit 成功後發生。
+- 跨 Context event 必須有穩定 event ID、type、schema version、occurred-at 與 idempotency key。
+- Firestore transaction 只能保證本地 state/outbox 原子性；Cloud Tasks、LINE 或其他 provider 不具端到端 exactly-once 保證。
+- Identity 已有版本化 Integration Event 與 transactional outbox evidence，但未指定 sink 時保持不發布。
+- 其他 candidate contexts 的事件若沒有 persistence/publication evidence，只能標為 modeled-only，不得宣稱已發布。
 
 ### DDD Tactical Building Blocks
 
@@ -408,6 +448,27 @@ stateDiagram-v2
 
 若 gopls MCP 可用，可用於 definition、references、implementations 與 diagnostics；不可用時明確標示 `gopls MCP unavailable`，改用 Go CLI 工具，不得聲稱已使用 gopls。
 
+### Production baseline 與外部驗證
+
+`production baseline` 表示儲存庫具備可測試的安全與可靠性機制，不等同於完成 Staging／Production 驗收。
+
+| Repository baseline | External verification |
+| --- | --- |
+| Explicit config validation | Authorized GCP project and IAM |
+| LINE webhook signature verification | Real LINE test Channel and redelivery |
+| Context propagation and bounded timeout | Cloud Run network and deadline behavior |
+| Firestore Inbox/Outbox code and emulator gate | Firestore TTL, indexes and staging transactions |
+| Cloud Tasks OIDC verification code | Deployed queue, service account, audience and private ingress |
+| Idempotency, lease and unknown-outcome states | Scheduler, alerting and manual recovery exercise |
+| Structured, redacted telemetry | Monitoring/SLO and incident drill |
+| Unit, contract, architecture and race tests | Load, rollback, backup/restore and disaster recovery evidence |
+
+在右欄全部具備可追溯證據前，正確狀態是：
+
+> Production baseline implemented; Staging/Production not verified.
+
+不得以編譯成功、CI 綠燈、client factory 存在或 MCP／SDK 已設定，替代外部認證、授權、部署及運行驗收。
+
 ## 10. 架構變更流程
 
 任何新增 Bounded Context、跨層 dependency、共享 Port、外部 SDK 或 persistence schema 的變更，依序執行：
@@ -423,13 +484,13 @@ stateDiagram-v2
 → reviewer(architecture,testing,security)
 ```
 
-架構決策若改變本文件的穩定規則，先新增 ADR，說明 context、decision、alternatives、consequences 與 rollback，再更新本文件。只有歷史背景放 ADR；目前有效規則只保留在 `DESIGN.md`。
+架構決策若改變本文件的穩定規則，先新增 ADR，說明 context、decision、alternatives、consequences 與 rollback，再更新本文件。只有歷史背景放 ADR；目前有效規則只保留在本藍圖。
 
 Definition of Done：沒有未知 import drift、沒有重複 business owner、沒有 SDK 型別穿透、沒有未關閉 resource、沒有未說明的外部 contract 變更；所有實際執行命令與未驗證環境均明確記錄。
 
 ## 11. 文件與工具設定
 
-`AGENTS.md` 負責工作流程與角色路由；`.codex/config.toml` 只負責 MCP 連線設定，不是架構規範。任何文件更新不等於程式已重構、測試已通過或服務已部署；交付時必須分別回報文件變更、實際程式驗證與未驗證項目。
+`AGENTS.md` 負責工作流程與角色路由；`.codex/config.toml` 負責 runtime registration、limits 與 MCP connection，不是架構規範。任何文件更新不等於程式已重構、測試已通過或服務已部署；交付時必須分別回報文件變更、實際程式驗證與未驗證項目。
 
 Mermaid 圖表是可讀視圖，文字規則與 architecture tests 才是可執行契約。狀態圖中的名稱必須對應程式常數；資料流程中的安全、重試、transaction 與 authorization 邊界必須有測試或明確標記 `Not Verified`。
 

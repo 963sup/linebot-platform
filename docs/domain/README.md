@@ -6,7 +6,7 @@ This directory records the repository's strategic Domain-Driven Design model. It
 
 When two sources disagree, use this order:
 
-1. `DESIGN.md` defines architecture and dependency rules.
+1. `docs/architecture/blueprint.md` defines architecture and dependency rules.
 2. `docs/domain/model.yaml` defines subdomains, bounded contexts, language, ownership, invariants, and relationships.
 3. `docs/domain/dependency-capabilities.yaml` records how direct `go.mod` modules normally compose capabilities and which Context hypotheses they support.
 4. `docs/domain/capability-map.yaml` maps application capabilities to external operations; it does not define domain boundaries.

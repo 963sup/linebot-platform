@@ -15,6 +15,7 @@ import (
 	"cloud.google.com/go/cloudtasks/apiv2/cloudtaskspb"
 	ingestion "github.com/963sup/linebot-platform/internal/application/usecases/messaging-delivery"
 	queueinfra "github.com/963sup/linebot-platform/internal/infrastructure/google/cloud/cloudtasks"
+	"go.opentelemetry.io/otel/propagation"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -27,12 +28,13 @@ type createTask func(context.Context, *cloudtaskspb.CreateTaskRequest) (*cloudta
 const taskDedupeWindow = 10 * time.Second
 
 type Queue struct {
-	name     string
-	worker   string
-	audience string
-	email    string
-	create   createTask
-	now      func() time.Time
+	name       string
+	worker     string
+	audience   string
+	email      string
+	create     createTask
+	now        func() time.Time
+	propagator propagation.TextMapPropagator
 }
 
 // NewQueue configures a native Cloud Tasks client. Only a previously
@@ -63,7 +65,7 @@ func NewQueue(client *sdk.Client, queueName, workerURL, audience, invokerEmail s
 		create: func(ctx context.Context, req *cloudtaskspb.CreateTaskRequest) (*cloudtaskspb.Task, error) {
 			return client.CreateTask(ctx, req)
 		},
-		now: time.Now,
+		now: time.Now, propagator: propagation.TraceContext{},
 	}, nil
 }
 
@@ -106,9 +108,28 @@ func (q *Queue) Enqueue(ctx context.Context, key ingestion.EventKey) error {
 			},
 		}},
 	}
+	propagator := q.propagator
+	if propagator == nil {
+		propagator = propagation.TraceContext{}
+	}
+	propagator.Inject(ctx, taskHeaderCarrier(task.GetHttpRequest().Headers))
 	_, err = q.create(ctx, &cloudtaskspb.CreateTaskRequest{Parent: q.name, Task: task})
 	if status.Code(err) == codes.AlreadyExists {
 		return nil // duplicate within the same scheduling window
 	}
 	return err // ambiguous RPC results are retried via durable outbox
+}
+
+// taskHeaderCarrier deliberately exposes only Cloud Tasks' string header map;
+// baggage is not configured, so no application or user data is propagated.
+type taskHeaderCarrier map[string]string
+
+func (c taskHeaderCarrier) Get(key string) string { return c[key] }
+func (c taskHeaderCarrier) Set(key, value string) { c[key] = value }
+func (c taskHeaderCarrier) Keys() []string {
+	keys := make([]string, 0, len(c))
+	for key := range c {
+		keys = append(keys, key)
+	}
+	return keys
 }

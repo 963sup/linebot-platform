@@ -3,6 +3,7 @@ package bootstrap
 import (
 	"strings"
 	"testing"
+	"time"
 )
 
 func durableSettings() map[string]string {
@@ -21,7 +22,9 @@ func durableSettings() map[string]string {
 func TestEnvironmentProfilesAndRoleSecretIsolation(t *testing.T) {
 	local, err := LoadConfig(env(nil))
 	if err != nil || local.Environment != EnvLocal || local.EventMode != "sync" ||
-		local.Log.Level != "info" || local.Log.Format != "text" {
+		local.Log.Level != "info" || local.Log.Format != "text" ||
+		local.Telemetry.Mode != "off" || local.Telemetry.TraceSampleRatio != 0.05 ||
+		local.Telemetry.MetricInterval != time.Minute {
 		t.Fatalf("invalid safe local defaults: config=%#v err=%v", local, err)
 	}
 	cloud := durableSettings()
@@ -54,6 +57,9 @@ func TestEnvironmentFailsClosedWithoutSecretDisclosure(t *testing.T) {
 		{"production sync rejected", map[string]string{KeyAppEnv: "production"}, false},
 		{"cloud metadata with local profile", map[string]string{KeyCloudRunService: "service"}, false},
 		{"bad logging level", map[string]string{KeyLogLevel: "trace"}, false},
+		{"bad telemetry mode", map[string]string{KeyTelemetryMode: "remote"}, false},
+		{"bad trace ratio", map[string]string{KeyTraceSampleRatio: "1.1"}, false},
+		{"bad metric interval", map[string]string{KeyMetricInterval: "5s"}, false},
 		{"staging text logs rejected", map[string]string{KeyAppEnv: "staging", KeyLogFormat: "text"}, false},
 		{"worker missing token", durableSettings(), true},
 		{"durable webhook send token", func() map[string]string {

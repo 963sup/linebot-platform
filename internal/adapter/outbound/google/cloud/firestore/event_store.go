@@ -43,6 +43,8 @@ type storedJob struct {
 
 type Store struct{ client *sdk.Client }
 
+var _ messagingdelivery.DeliveryWorkflowStore = (*Store)(nil)
+
 func NewStore(client *sdk.Client) (*Store, error) {
 	if client == nil {
 		return nil, errors.New("Firestore client is required")
@@ -56,7 +58,7 @@ func (s *Store) outbox(key string) *sdk.DocumentRef {
 
 // Record creates both Firestore documents atomically; only the first receipt
 // gets to set a reply token. Never store the original user message or user ID.
-func (s *Store) Record(ctx context.Context, job messagingdelivery.EventJob) (bool, error) {
+func (s *Store) Record(ctx context.Context, job messagingdelivery.DeliveryWorkItem) (bool, error) {
 	if !validKey(job.Key) || job.ReplyToken == "" || job.ReplyUntil.IsZero() {
 		return false, errors.New("invalid event job")
 	}
@@ -135,15 +137,15 @@ func (s *Store) Record(ctx context.Context, job messagingdelivery.EventJob) (boo
 
 // Claim commits "sending" before any network send. The lease is for
 // observability/recovery, not permission to send a second time.
-func (s *Store) Claim(ctx context.Context, key, leaseID string, now time.Time) (messagingdelivery.EventJob, bool, error) {
+func (s *Store) Claim(ctx context.Context, key, leaseID string, now time.Time) (messagingdelivery.DeliveryWorkItem, bool, error) {
 	if !validKey(key) || leaseID == "" {
-		return messagingdelivery.EventJob{}, false, errors.New("invalid claim")
+		return messagingdelivery.DeliveryWorkItem{}, false, errors.New("invalid claim")
 	}
-	var job messagingdelivery.EventJob
+	var job messagingdelivery.DeliveryWorkItem
 	var claimed bool
 	err := s.client.RunTransaction(ctx, func(ctx context.Context, tx *sdk.Transaction) error {
 		claimed = false
-		job = messagingdelivery.EventJob{}
+		job = messagingdelivery.DeliveryWorkItem{}
 		ref := s.outbox(key)
 		snapshot, err := tx.Get(ref)
 		if status.Code(err) == codes.NotFound {
@@ -186,7 +188,7 @@ func (s *Store) Claim(ctx context.Context, key, leaseID string, now time.Time) (
 			}); err != nil {
 				return err
 			}
-			job = messagingdelivery.EventJob{
+			job = messagingdelivery.DeliveryWorkItem{
 				Key: key, ReplyToken: saved.ReplyToken, Message: saved.Message,
 				ReplyUntil: saved.ReplyUntil, CreatedAt: saved.CreatedAt,
 			}

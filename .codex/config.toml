@@ -91,7 +91,7 @@ tool_timeout_sec = 45
 # HashiCorp's official server is restricted to public Registry documentation.
 [mcp_servers.terraform]
 command = "docker"
-args = ["run", "-i", "--rm", "hashicorp/terraform-mcp-server:1.4.1", "stdio", "--toolsets=registry"]
+args = ["run", "-i", "--rm", "hashicorp/terraform-mcp-server@sha256:11dd418bba6003dd5777e9d0979b68de59929a155b355f338f407947e00e9d80", "stdio", "--toolsets=registry"]
 enabled_tools = ["search_provider_docs", "get_provider_details", "get_latest_provider_version", "get_provider_capabilities", "search_modules", "get_module_details", "get_latest_module_version", "search_policies", "get_policy_details"]
 default_tools_approval_mode = "prompt"
 enabled = true
@@ -105,7 +105,7 @@ tool_timeout_sec = 60
 # Keep openapi_line separately for read-only API schema discovery.
 [mcp_servers.line]
 command = "npx"
-args = ["-y", "@line/line-bot-mcp-server"]
+args = ["-y", "@line/line-bot-mcp-server@0.5.0"]
 env_vars = ["CHANNEL_ACCESS_TOKEN"]
 enabled_tools = ["get_profile", "get_message_quota", "get_rich_menu_list", "get_follower_ids", "get_group_summary"]
 default_tools_approval_mode = "prompt"

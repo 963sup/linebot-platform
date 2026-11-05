@@ -15,7 +15,7 @@ Identity is currently the only context with production evidence for an aggregate
 
 The repository uses the following authority order:
 
-1. `DESIGN.md` for architecture and dependency rules.
+1. `docs/architecture/blueprint.md` for architecture and dependency rules.
 2. `docs/domain/model.yaml` for the strategic Domain model.
 3. `docs/domain/capability-map.yaml` for capability-to-operation mapping.
 4. External endpoint inventories and the SDK catalog for provider facts.

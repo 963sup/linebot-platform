@@ -2,6 +2,7 @@ package bootstrap
 
 import (
 	"errors"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -38,6 +39,15 @@ type LogConfig struct {
 	Format string
 }
 
+// TelemetryConfig selects the optional local OTLP export path. Infrastructure
+// fixes the endpoint so configuration cannot redirect telemetry or attach
+// exporter credentials.
+type TelemetryConfig struct {
+	Mode             string
+	TraceSampleRatio float64
+	MetricInterval   time.Duration
+}
+
 // Config holds ordinary settings and explicitly isolated credentials.
 // Existing callers must use the typed loader for role-specific validation.
 type Config struct {
@@ -48,6 +58,7 @@ type Config struct {
 	LINEAPITimeout time.Duration
 	Durable        DurableConfig
 	Log            LogConfig
+	Telemetry      TelemetryConfig
 	Secrets        SecretConfig `json:"-"`
 }
 
@@ -94,9 +105,13 @@ func loadRuntimeConfig(role RuntimeRole, getenv func(string) string) (Config, er
 	if err != nil {
 		return Config{}, err
 	}
+	telemetry, err := loadTelemetryConfig(getenv)
+	if err != nil {
+		return Config{}, err
+	}
 	cfg := Config{
 		Role: role, Environment: environment, Port: port,
-		LINEAPITimeout: timeout, Log: logging,
+		LINEAPITimeout: timeout, Log: logging, Telemetry: telemetry,
 		Secrets: SecretConfig{
 			ChannelSecret: readSetting(getenv, KeyChannelSecret),
 			ChannelToken:  readSetting(getenv, KeyChannelToken),
@@ -148,6 +163,33 @@ func loadRuntimeConfig(role RuntimeRole, getenv func(string) string) (Config, er
 		return Config{}, errors.New("sync mode requires both LINE credentials or neither")
 	}
 	return cfg, nil
+}
+
+func loadTelemetryConfig(getenv func(string) string) (TelemetryConfig, error) {
+	mode := strings.ToLower(readSetting(getenv, KeyTelemetryMode))
+	if mode == "" {
+		mode = "off"
+	}
+	if mode != "off" && mode != "gcp-otlp" {
+		return TelemetryConfig{}, errors.New("TELEMETRY_MODE must be off or gcp-otlp")
+	}
+	ratio := 0.05
+	if value := readSetting(getenv, KeyTraceSampleRatio); value != "" {
+		parsed, err := strconv.ParseFloat(value, 64)
+		if err != nil || parsed < 0 || parsed > 1 {
+			return TelemetryConfig{}, errors.New("OTEL_TRACE_SAMPLE_RATIO must be a number from 0 to 1")
+		}
+		ratio = parsed
+	}
+	interval := time.Minute
+	if value := readSetting(getenv, KeyMetricInterval); value != "" {
+		parsed, err := time.ParseDuration(value)
+		if err != nil || parsed < 10*time.Second || parsed > 5*time.Minute {
+			return TelemetryConfig{}, errors.New("OTEL_METRIC_INTERVAL must be a duration from 10s to 5m")
+		}
+		interval = parsed
+	}
+	return TelemetryConfig{Mode: mode, TraceSampleRatio: ratio, MetricInterval: interval}, nil
 }
 
 func loadLoggingConfig(getenv func(string) string, environment Environment) (LogConfig, error) {

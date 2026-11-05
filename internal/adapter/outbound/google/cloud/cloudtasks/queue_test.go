@@ -11,6 +11,8 @@ import (
 	"cloud.google.com/go/cloudtasks/apiv2/cloudtaskspb"
 	ingestion "github.com/963sup/linebot-platform/internal/application/usecases/messaging-delivery"
 	queueinfra "github.com/963sup/linebot-platform/internal/infrastructure/google/cloud/cloudtasks"
+	"go.opentelemetry.io/otel/propagation"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -103,5 +105,34 @@ func TestEnqueueRejectsZeroEventKey(t *testing.T) {
 	}}
 	if err := q.Enqueue(context.Background(), ingestion.EventKey{}); err == nil {
 		t.Fatal("zero EventKey must be rejected")
+	}
+}
+
+func TestEnqueuePropagatesOnlyTraceContext(t *testing.T) {
+	key, err := ingestion.ParseEventKey(testKey)
+	if err != nil {
+		t.Fatal(err)
+	}
+	tp := sdktrace.NewTracerProvider(sdktrace.WithSampler(sdktrace.AlwaysSample()))
+	t.Cleanup(func() { _ = tp.Shutdown(context.Background()) })
+	ctx, span := tp.Tracer("test").Start(context.Background(), "enqueue")
+	defer span.End()
+	q := &Queue{
+		name: testQueue, worker: "https://worker.example.test/tasks/v2/line-reply",
+		audience: "https://worker.example.test", email: "tasks-invoker@example.iam.gserviceaccount.com",
+		propagator: propagation.TraceContext{},
+		create: func(_ context.Context, req *cloudtaskspb.CreateTaskRequest) (*cloudtaskspb.Task, error) {
+			headers := req.Task.GetHttpRequest().Headers
+			if headers["traceparent"] == "" {
+				t.Fatal("missing W3C traceparent")
+			}
+			if len(headers) != 2 || headers["Content-Type"] != "application/json" {
+				t.Fatalf("unexpected propagated headers: %v", headers)
+			}
+			return &cloudtaskspb.Task{}, nil
+		},
+	}
+	if err := q.Enqueue(ctx, key); err != nil {
+		t.Fatal(err)
 	}
 }

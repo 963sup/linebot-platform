@@ -129,6 +129,7 @@ flowchart LR
 | membership | entitlement-view | Derived benefits visible to a consumer. |
 | membership | membership-status | Observed membership state at a point in time. |
 | messaging-delivery | delivery | Consistency boundary for claim and terminal outcome. |
+| messaging-delivery | delivery-event | Modeled fact raised by an in-memory Delivery transition; the current workflow does not persist, acknowledge, or publish it. |
 | messaging-delivery | delivery-intent | Request to deliver content to a resolved recipient. |
 | messaging-delivery | idempotency-key | Stable identity preventing duplicate business delivery. |
 | messaging-delivery | unknown-outcome | Send whose remote effect cannot be safely determined. |
@@ -260,6 +261,14 @@ flowchart LR
 | github.com/modelcontextprotocol/go-sdk | v1.8.0 | client_ready | generic-infrastructure | tool-discovery, tool-invocation | Not Verified |
 | github.com/openai/openai-go/v3 | v3.91.1 | client_ready | supporting-capability | ai-text-generation, responses-api | content-intelligence |
 | go.linecorp.com/garr | v0.1.1 | declared | generic-infrastructure | retry, circuit-breaker | Not Verified |
+| go.opentelemetry.io/contrib/detectors/gcp | v1.45.0 | integrated | generic-infrastructure | gcp-resource-detection | Not Verified |
+| go.opentelemetry.io/otel | v1.47.0 | integrated | generic-infrastructure | trace-context, telemetry-api | Not Verified |
+| go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc | v1.47.0 | integrated | generic-infrastructure | otlp-metric-export | Not Verified |
+| go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc | v1.47.0 | integrated | generic-infrastructure | otlp-trace-export | Not Verified |
+| go.opentelemetry.io/otel/metric | v1.47.0 | integrated | generic-infrastructure | metric-instrumentation | Not Verified |
+| go.opentelemetry.io/otel/sdk | v1.47.0 | integrated | generic-infrastructure | trace-provider, sampling | Not Verified |
+| go.opentelemetry.io/otel/sdk/metric | v1.47.0 | integrated | generic-infrastructure | meter-provider, periodic-metric-reader | Not Verified |
+| go.opentelemetry.io/otel/trace | v1.47.0 | integrated | generic-infrastructure | span-instrumentation | Not Verified |
 | go.yaml.in/yaml/v3 | v3.0.5 | integrated | tooling | strict-yaml-validation, governance-manifests | Not Verified |
 | golang.org/x/oauth2 | v0.37.0 | integrated | supporting-capability | authorization-code-pkce, token-source | identity, workspace-automation |
 | google.golang.org/api | v0.310.0 | client_ready | supporting-capability | drive, sheets, calendar, tasks, forms | workspace-automation |

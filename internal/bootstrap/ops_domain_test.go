@@ -3,15 +3,6 @@ package bootstrap
 import (
 	"context"
 	"testing"
-
-	"github.com/963sup/linebot-platform/internal/adapter/inbound/cli"
-)
-
-var (
-	_ cli.AudienceDefinitionsRuntime = (*OperatorDomainRuntime)(nil)
-	_ cli.InteractionSurfacesRuntime = (*OperatorDomainRuntime)(nil)
-	_ cli.PromotionsRuntime          = (*OperatorDomainRuntime)(nil)
-	_ cli.AutomationRequestsRuntime  = (*OperatorDomainRuntime)(nil)
 )
 
 func TestOperatorDomainRuntimeRejectsInvalidConfigurationBeforeClientCreation(t *testing.T) {
@@ -25,8 +16,8 @@ func TestOperatorDomainRuntimeRejectsInvalidConfigurationBeforeClientCreation(t 
 		{"blank project", context.Background(), "  "},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			if runtime, err := NewOperatorDomainRuntime(test.ctx, test.project); err == nil || runtime != nil {
-				t.Fatalf("NewOperatorDomainRuntime() = (%v, %v), want nil, error", runtime, err)
+			if runtime, err := newOperatorDomainRuntime(test.ctx, test.project); err == nil || runtime != nil {
+				t.Fatalf("newOperatorDomainRuntime() = (%v, %v), want nil, error", runtime, err)
 			}
 		})
 	}

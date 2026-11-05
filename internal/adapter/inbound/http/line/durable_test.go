@@ -14,18 +14,18 @@ import (
 )
 
 type persisted struct {
-	seen map[string]messagingdelivery.EventJob
+	seen map[string]messagingdelivery.DeliveryWorkItem
 }
 
-func (f *persisted) Record(_ context.Context, job messagingdelivery.EventJob) (bool, error) {
+func (f *persisted) Record(_ context.Context, job messagingdelivery.DeliveryWorkItem) (bool, error) {
 	if _, ok := f.seen[job.Key]; ok {
 		return false, nil
 	}
 	f.seen[job.Key] = job
 	return true, nil
 }
-func (f *persisted) Claim(context.Context, string, string, time.Time) (messagingdelivery.EventJob, bool, error) {
-	return messagingdelivery.EventJob{}, false, nil
+func (f *persisted) Claim(context.Context, string, string, time.Time) (messagingdelivery.DeliveryWorkItem, bool, error) {
+	return messagingdelivery.DeliveryWorkItem{}, false, nil
 }
 func (f *persisted) Complete(context.Context, string, string, messagingdelivery.DeliveryState) error {
 	return nil
@@ -48,7 +48,7 @@ func (q *workQueue) Enqueue(_ context.Context, key messagingdelivery.EventKey) e
 func TestDurableWebhookSignatureDestinationDedupAndEnqueueFailure(t *testing.T) {
 	secret := "test-secret"
 	destination := "Uxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-	store := &persisted{seen: map[string]messagingdelivery.EventJob{}}
+	store := &persisted{seen: map[string]messagingdelivery.DeliveryWorkItem{}}
 	queue := &workQueue{}
 	ingestor, _ := messagingdelivery.NewIngestor(store, queue)
 	h := NewDurableHandler(secret, destination, ingestor, nil)
@@ -84,7 +84,7 @@ func TestDurableWebhookSignatureDestinationDedupAndEnqueueFailure(t *testing.T) 
 func TestDurableWebhookIgnoresStandbyAndRejectsMissingDeliveryContext(t *testing.T) {
 	secret := "test-secret"
 	destination := "Uxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-	store := &persisted{seen: map[string]messagingdelivery.EventJob{}}
+	store := &persisted{seen: map[string]messagingdelivery.DeliveryWorkItem{}}
 	queue := &workQueue{}
 	ingestor, _ := messagingdelivery.NewIngestor(store, queue)
 	handler := NewDurableHandler(secret, destination, ingestor, nil)

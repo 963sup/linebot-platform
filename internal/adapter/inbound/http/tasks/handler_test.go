@@ -21,17 +21,26 @@ func (v fakeVerifier) Verify(_ context.Context, token string) error {
 	return errors.New("invalid token")
 }
 
+type countingTraceStarter struct{ starts int }
+
+func (s *countingTraceStarter) StartTrustedTaskSpan(ctx context.Context, _ http.Header, _ string) (context.Context, func()) {
+	s.starts++
+	return ctx, func() {}
+}
+
 type fakeStore struct{}
 
 type inFlightTaskStore struct{ fakeStore }
 
-func (inFlightTaskStore) Claim(context.Context, string, string, time.Time) (messagingdelivery.EventJob, bool, error) {
-	return messagingdelivery.EventJob{}, false, messagingdelivery.ErrDeliveryInFlight
+func (inFlightTaskStore) Claim(context.Context, string, string, time.Time) (messagingdelivery.DeliveryWorkItem, bool, error) {
+	return messagingdelivery.DeliveryWorkItem{}, false, messagingdelivery.ErrDeliveryInFlight
 }
 
-func (fakeStore) Record(context.Context, messagingdelivery.EventJob) (bool, error) { return true, nil }
-func (fakeStore) Claim(context.Context, string, string, time.Time) (messagingdelivery.EventJob, bool, error) {
-	return messagingdelivery.EventJob{}, false, nil
+func (fakeStore) Record(context.Context, messagingdelivery.DeliveryWorkItem) (bool, error) {
+	return true, nil
+}
+func (fakeStore) Claim(context.Context, string, string, time.Time) (messagingdelivery.DeliveryWorkItem, bool, error) {
+	return messagingdelivery.DeliveryWorkItem{}, false, nil
 }
 func (fakeStore) Complete(context.Context, string, string, messagingdelivery.DeliveryState) error {
 	return nil
@@ -82,6 +91,31 @@ func TestWorkerRequiresVerifiedOIDC(t *testing.T) {
 		if w.Code != tc.want {
 			t.Fatalf("%s status %d, want %d", tc.path, w.Code, tc.want)
 		}
+	}
+}
+
+func TestTraceContextIsExtractedOnlyAfterOIDCVerification(t *testing.T) {
+	counter := &countingTraceStarter{}
+	handler := &Handler{verifier: fakeVerifier{good: true}, tracing: counter}
+	request := func(token string) *http.Request {
+		r := httptest.NewRequest(http.MethodPost, "/tasks/v2/line-reply", nil)
+		r.Header.Set("traceparent", "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01")
+		r.Header.Set("Authorization", "Bearer "+token)
+		return r
+	}
+	if _, _, ok := handler.authorized(httptest.NewRecorder(), request("bad"), "line_reply_task"); ok {
+		t.Fatal("invalid OIDC identity was authorized")
+	}
+	if counter.starts != 0 {
+		t.Fatal("unverified request controlled trace parentage")
+	}
+	if _, end, ok := handler.authorized(httptest.NewRecorder(), request("fake-verified-token"), "line_reply_task"); !ok {
+		t.Fatal("valid OIDC identity was rejected")
+	} else {
+		end()
+	}
+	if counter.starts != 1 {
+		t.Fatalf("verified request trace start count = %d, want 1", counter.starts)
 	}
 }
 

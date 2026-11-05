@@ -19,18 +19,39 @@ type Verifier interface {
 	Verify(context.Context, string) error
 }
 
+// TrustedTraceStarter starts task-server telemetry only after the caller's
+// Google-signed identity has been verified. Implementations must treat name as
+// a bounded operation identifier, never as user input.
+type TrustedTraceStarter interface {
+	StartTrustedTaskSpan(context.Context, http.Header, string) (context.Context, func())
+}
+
+type noOpTraceStarter struct{}
+
+func (noOpTraceStarter) StartTrustedTaskSpan(ctx context.Context, _ http.Header, _ string) (context.Context, func()) {
+	return ctx, func() {}
+}
+
 type Handler struct {
 	processor  *ingestion.Processor
 	dispatcher *ingestion.Dispatcher
 	verifier   Verifier
 	logger     *slog.Logger
+	tracing    TrustedTraceStarter
 }
 
 func NewHandler(processor *ingestion.Processor, dispatcher *ingestion.Dispatcher, verifier Verifier, logger *slog.Logger) (http.Handler, error) {
-	if processor == nil || dispatcher == nil || verifier == nil {
-		return nil, errors.New("worker processor, dispatcher and OIDC verifier are required")
+	return NewHandlerWithTelemetry(processor, dispatcher, verifier, noOpTraceStarter{}, logger)
+}
+
+func NewHandlerWithTelemetry(processor *ingestion.Processor, dispatcher *ingestion.Dispatcher, verifier Verifier, tracing TrustedTraceStarter, logger *slog.Logger) (http.Handler, error) {
+	if processor == nil || dispatcher == nil || verifier == nil || tracing == nil {
+		return nil, errors.New("worker processor, dispatcher, OIDC verifier and trusted telemetry are required")
 	}
-	h := &Handler{processor: processor, dispatcher: dispatcher, verifier: verifier, logger: logger}
+	h := &Handler{
+		processor: processor, dispatcher: dispatcher, verifier: verifier, logger: logger,
+		tracing: tracing,
+	}
 	mux := http.NewServeMux()
 	mux.HandleFunc("POST /tasks/v2/line-reply", h.handleReply)
 	mux.HandleFunc("POST /tasks/v2/dispatch", h.handleDispatch)
@@ -41,23 +62,29 @@ func NewHandler(processor *ingestion.Processor, dispatcher *ingestion.Dispatcher
 	return mux, nil
 }
 
-func (h *Handler) authorized(w http.ResponseWriter, r *http.Request) bool {
+func (h *Handler) authorized(w http.ResponseWriter, r *http.Request, operation string) (context.Context, func(), bool) {
 	parts := strings.Fields(r.Header.Get("Authorization"))
 	if len(parts) != 2 || !strings.EqualFold(parts[0], "Bearer") || parts[1] == "" {
 		http.Error(w, "unauthorized", http.StatusUnauthorized)
-		return false
+		return nil, nil, false
 	}
 	if err := h.verifier.Verify(r.Context(), parts[1]); err != nil {
 		http.Error(w, "unauthorized", http.StatusUnauthorized)
-		return false
+		return nil, nil, false
 	}
-	return true
+	// Trace context is accepted only after the Google-signed OIDC identity is
+	// verified. Invalid callers cannot choose parentage in trusted traces.
+	ctx, end := h.tracing.StartTrustedTaskSpan(r.Context(), r.Header, operation)
+	return ctx, end, true
 }
 
 func (h *Handler) handleReply(w http.ResponseWriter, r *http.Request) {
-	if !h.authorized(w, r) {
+	ctx, end, ok := h.authorized(w, r, "line_reply_task")
+	if !ok {
 		return
 	}
+	defer end()
+	r = r.WithContext(ctx)
 	mediaType, _, err := mime.ParseMediaType(r.Header.Get("Content-Type"))
 	if err != nil || mediaType != "application/json" {
 		http.Error(w, "application/json required", http.StatusUnsupportedMediaType)
@@ -166,9 +193,12 @@ func decodeDeliveryTask(reader io.Reader) (string, error) {
 }
 
 func (h *Handler) handleDispatch(w http.ResponseWriter, r *http.Request) {
-	if !h.authorized(w, r) {
+	ctx, end, ok := h.authorized(w, r, "outbox_dispatch")
+	if !ok {
 		return
 	}
+	defer end()
+	r = r.WithContext(ctx)
 	if err := h.dispatcher.Dispatch(r.Context()); err != nil {
 		if h.logger != nil {
 			h.logger.Error("outbox dispatch failed", "operation", "dispatch")

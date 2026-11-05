@@ -9,24 +9,32 @@ import (
 )
 
 type fakeStore struct {
-	recorded map[string]EventJob
+	recorded map[string]DeliveryWorkItem
 	state    map[string]string
 	lease    map[string]string
 	finished DeliveryState
 	pending  []string
 }
 
+var (
+	_ EventRecorder         = (*fakeStore)(nil)
+	_ DeliveryClaimer       = (*fakeStore)(nil)
+	_ DeliveryRecovery      = (*fakeStore)(nil)
+	_ DeliveryWorkflowStore = (*fakeStore)(nil)
+	_ EventStore            = (*fakeStore)(nil) // Deprecated alias remains source compatible.
+)
+
 type inFlightStore struct{ *fakeStore }
 
-func (f inFlightStore) Claim(context.Context, string, string, time.Time) (EventJob, bool, error) {
-	return EventJob{}, false, ErrDeliveryInFlight
+func (f inFlightStore) Claim(context.Context, string, string, time.Time) (DeliveryWorkItem, bool, error) {
+	return DeliveryWorkItem{}, false, ErrDeliveryInFlight
 }
 
 func newFakeStore() *fakeStore {
-	return &fakeStore{recorded: map[string]EventJob{}, state: map[string]string{}, lease: map[string]string{}}
+	return &fakeStore{recorded: map[string]DeliveryWorkItem{}, state: map[string]string{}, lease: map[string]string{}}
 }
 
-func (f *fakeStore) Record(_ context.Context, job EventJob) (bool, error) {
+func (f *fakeStore) Record(_ context.Context, job DeliveryWorkItem) (bool, error) {
 	if previous, exists := f.recorded[job.Key]; exists {
 		if (f.state[job.Key] == "pending" || f.state[job.Key] == "expired") && job.ReplyUntil.After(previous.ReplyUntil) {
 			previous.ReplyUntil = job.ReplyUntil
@@ -40,17 +48,17 @@ func (f *fakeStore) Record(_ context.Context, job EventJob) (bool, error) {
 	f.state[job.Key] = "pending"
 	return true, nil
 }
-func (f *fakeStore) Claim(_ context.Context, key, lease string, now time.Time) (EventJob, bool, error) {
+func (f *fakeStore) Claim(_ context.Context, key, lease string, now time.Time) (DeliveryWorkItem, bool, error) {
 	job, ok := f.recorded[key]
 	if !ok {
-		return EventJob{}, false, errors.New("missing job")
+		return DeliveryWorkItem{}, false, errors.New("missing job")
 	}
 	if f.state[key] != "pending" {
-		return EventJob{}, false, nil
+		return DeliveryWorkItem{}, false, nil
 	}
 	if !now.Before(job.ReplyUntil) {
 		f.state[key] = "expired"
-		return EventJob{}, false, nil
+		return DeliveryWorkItem{}, false, nil
 	}
 	f.state[key] = "sending"
 	f.lease[key] = lease

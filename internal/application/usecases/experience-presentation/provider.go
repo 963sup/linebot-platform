@@ -144,21 +144,43 @@ type SurfaceImage struct {
 // is owned here, not by a shared ports package; SDK decoding stays in adapters.
 type ProviderDocument struct{ Value any }
 
-type ProviderCommandGateway interface {
+type RichMenuDefinitionCommands interface {
 	CreateRichMenu(context.Context, ProviderDocument) error
 	ValidateRichMenu(context.Context, ProviderDocument) error
+	DeleteRichMenu(context.Context, string) error
+}
+
+type RichMenuAliasCommands interface {
 	CreateRichMenuAlias(context.Context, ProviderDocument) error
 	UpdateRichMenuAlias(context.Context, string, ProviderDocument) error
+	DeleteRichMenuAlias(context.Context, string) error
+}
+
+type RecipientRichMenuCommands interface {
 	BulkLinkRichMenu(context.Context, ProviderDocument) error
 	BulkUnlinkRichMenu(context.Context, ProviderDocument) error
-	RichMenuBatch(context.Context, ProviderDocument) error
-	ValidateRichMenuBatch(context.Context, ProviderDocument) error
-	SetDefaultRichMenu(context.Context, string) error
-	CancelDefaultRichMenu(context.Context) error
 	LinkRichMenuToUser(context.Context, string, string) error
 	UnlinkRichMenuFromUser(context.Context, string) error
-	DeleteRichMenu(context.Context, string) error
-	DeleteRichMenuAlias(context.Context, string) error
+}
+
+type RichMenuBatchCommands interface {
+	RichMenuBatch(context.Context, ProviderDocument) error
+	ValidateRichMenuBatch(context.Context, ProviderDocument) error
+}
+
+type DefaultRichMenuCommands interface {
+	SetDefaultRichMenu(context.Context, string) error
+	CancelDefaultRichMenu(context.Context) error
+}
+
+// ProviderCommandGateway is the compatibility composition of the narrow
+// command capabilities. Consumers should accept the smallest leaf interface.
+type ProviderCommandGateway interface {
+	RichMenuDefinitionCommands
+	RichMenuAliasCommands
+	RecipientRichMenuCommands
+	RichMenuBatchCommands
+	DefaultRichMenuCommands
 }
 
 type ProviderManager interface {

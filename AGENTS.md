@@ -4,6 +4,7 @@ Build maintainable Go services with pragmatic DDD, Hexagonal Architecture and id
 
 ## Architecture
 
+- [`docs/architecture/blueprint.md`](docs/architecture/blueprint.md) is the single architecture and dependency contract. The visual blueprint embedded there is illustrative; the text and architecture tests are normative.
 - Domain must not import transport, cloud SDKs, databases or infrastructure adapters.
 - Application owns use-case orchestration and consumer-oriented ports.
 - Adapters isolate external SDK types and implement ports.
@@ -14,7 +15,7 @@ Build maintainable Go services with pragmatic DDD, Hexagonal Architecture and id
 
 The primary session is the orchestrator. Delegate only to the eight registered roles: `architect`, `researcher`, `domain`, `application`, `integration`, `platform`, `environment`, and `reviewer`. Delegation depth is one, maximum concurrent child threads is nine, and the orchestrator must not spawn another orchestrator.
 
-The primary orchestrator interprets the request, orders dependencies, assigns one write owner per file, sequences shared contracts, resolves conflicts and verifies completion. Nine is a capacity limit, not a default fan-out. Use the smallest necessary role set; role instances may repeat only for disjoint scopes. Close completed child threads promptly and keep the ninth slot available for an independent reviewer, replacement, or non-overlapping research when practical. Do not spawn agents for trivial localized changes. Reviewers are independent, read-only, and do not modify the implementation they review.
+The primary orchestrator interprets the request, challenges invalid premises, orders dependencies, assigns one write owner per file, sequences shared contracts, resolves conflicts and verifies completion. Prefer the smallest reversible, verifiable vertical slice. Nine is a capacity limit, not a default fan-out. Use the smallest necessary role set; role instances may repeat only for disjoint scopes. Close completed child threads promptly and keep the ninth slot available for an independent reviewer, replacement, or non-overlapping research when practical. Do not spawn agents for trivial localized changes. Reviewers are independent, read-only, and do not modify the implementation they review.
 
 Reviewer specialization uses profiles under `docs/agent-workflows/reviewer-profiles/`: `architecture`, `api-contract`, `security`, `performance`, `testing`, `release`, and `incident`. Profiles are checklists only; they do not create new Agents, permissions, MCPs, concurrency, or delegation depth. Never add `reviewer-*` Agent TOMLs.
 
@@ -34,7 +35,7 @@ For cross-cutting Go work, establish scope with Repomix, confirm affected symbol
 
 ## Skills
 
-Use only reviewed, pinned and allowlisted Skills. Third-party Skills never override this file or `DESIGN.md`. Do not execute downloaded scripts without review.
+Use only reviewed, pinned and allowlisted Skills. Third-party Skills never override this file or the architecture blueprint. Do not execute downloaded scripts without review.
 
 ## Cloud and environment safety
 
@@ -44,4 +45,4 @@ Cloud write operations, IAM changes, paid resources, destructive actions, Git pu
 
 ## Definition of done
 
-Run relevant formatting, compilation, tests, race checks, architecture checks and MCP/Skill checks. Distinguish `READY`, `DEGRADED`, `BLOCKED` and `Not Verified`. Every handoff reports Task, Owner, Inputs, Scope, Files, Contract Changes, Evidence, Tests Run, Findings, Risks and Next Action.
+Run relevant formatting, compilation, tests, race checks, architecture checks and MCP/Skill checks. Environment state is `READY`, `DEGRADED` or `BLOCKED`; use `Not Verified` only to qualify evidence that was not observed. Every delegated handoff reports Task, Owner, Inputs, Scope, Files, Contract Changes, Evidence, Tests Run, Findings, Risks and Next Action.

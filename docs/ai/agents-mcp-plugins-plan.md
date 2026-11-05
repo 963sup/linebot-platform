@@ -20,7 +20,7 @@
 
 ## P4：治理與 Cloud Setup
 
-同步根 AGENTS、角色矩陣、MCP／Plugins、Cloud 文件、核准安裝選項與驗收表。執行期間 main 的 `6a261ae2adb1a2c0fa5263e1d986a081dec3fdb3` 將 DESIGN.md 整合為唯一架構標靶並刪除第二份目錄文件；本分支已保留此變更，不重建已刪檔案，也不藉文件更新搬移產品程式。
+同步根 AGENTS、角色矩陣、MCP／Plugins、Cloud 文件、核准安裝選項與驗收表。架構規則已收斂到 `docs/architecture/blueprint.md`；本文件不重建平行規範，也不藉文件更新搬移產品程式。
 
 ## P5：驗收與交付
 

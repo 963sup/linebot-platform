@@ -50,16 +50,16 @@ func newWorkspaceRuntime(ctx context.Context, source oauth2.TokenSource) (cli.Wo
 func BuildOpsCLI() cli.Dependencies {
 	return cli.Dependencies{
 		AudienceDefinitions: func(ctx context.Context, project string) (cli.AudienceDefinitionsRuntime, error) {
-			return NewOperatorDomainRuntime(ctx, project)
+			return newOperatorDomainRuntime(ctx, project)
 		},
 		InteractionSurfaces: func(ctx context.Context, project string) (cli.InteractionSurfacesRuntime, error) {
-			return NewOperatorDomainRuntime(ctx, project)
+			return newOperatorDomainRuntime(ctx, project)
 		},
 		Promotions: func(ctx context.Context, project string) (cli.PromotionsRuntime, error) {
-			return NewOperatorDomainRuntime(ctx, project)
+			return newOperatorDomainRuntime(ctx, project)
 		},
 		AutomationRequests: func(ctx context.Context, project string) (cli.AutomationRequestsRuntime, error) {
-			return NewOperatorDomainRuntime(ctx, project)
+			return newOperatorDomainRuntime(ctx, project)
 		},
 		PushRuntime: func(token string) (cli.PushRuntime, error) {
 			runtime, err := NewLINEOpsRuntime(token)

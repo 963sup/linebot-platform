@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	"github.com/963sup/linebot-platform/internal/adapter/inbound/http/health"
 	linein "github.com/963sup/linebot-platform/internal/adapter/inbound/http/line"
@@ -33,9 +34,18 @@ func NewWebhookRuntime(cfg Config, logger *slog.Logger) (*WebhookRuntime, error)
 	if cfg.EventMode == "durable" && cfg.Secrets.ChannelToken != "" {
 		return nil, errors.New("durable webhook cannot contain LINE send token")
 	}
+	startup, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	telemetry, err := newTelemetryRuntime(startup, cfg, logger, "linebot-webhook")
+	cancel()
+	if err != nil {
+		return nil, err
+	}
 	mux := http.NewServeMux()
 	mux.HandleFunc("/healthz", health.Handler)
-	runtime := &WebhookRuntime{Handler: observability.WrapInboundHTTP("webhook", logger, mux)}
+	runtime := &WebhookRuntime{
+		Handler: telemetry.WrapInboundHTTP("webhook", mux),
+		closers: []runtimeCloser{{name: "telemetry", close: telemetryCloser(telemetry)}},
+	}
 	mux.Handle("/readyz", health.ReadyHandler(func(context.Context) error {
 		if !runtime.ready.Load() {
 			return errors.New("webhook runtime is not ready")
@@ -61,32 +71,44 @@ func NewWebhookRuntime(cfg Config, logger *slog.Logger) (*WebhookRuntime, error)
 	if timeout == 0 {
 		timeout = httpclient.DefaultTimeout
 	}
-	outboundHTTP, err := httpclient.New(httpclient.Config{Timeout: timeout},
-		observability.WrapHTTP("line", logger))
+	outboundHTTP, err := httpclient.New(httpclient.Config{Timeout: timeout}, telemetry.WrapHTTP("line"))
 	if err != nil {
-		return nil, err
+		return nil, errors.Join(err, runtime.Close())
 	}
+	runtime.outbound = outboundHTTP
 	// The factory accepts a managed native HTTP client; its SDK client does not
 	// own the transport. The composition root closes it after HTTP shutdown.
 	client, err := lineinfra.NewMessagingClientWithHTTPClient(cfg.Secrets.ChannelToken, outboundHTTP.Client)
 	if err != nil {
-		outboundHTTP.Close()
-		return nil, err
+		return nil, errors.Join(err, runtime.Close())
 	}
 	sender, err := lineout.NewSender(client)
 	if err != nil {
-		outboundHTTP.Close()
-		return nil, err
+		return nil, errors.Join(err, runtime.Close())
 	}
 	service, err := messagingdelivery.NewDeliveryService(sender)
 	if err != nil {
-		outboundHTTP.Close()
-		return nil, err
+		return nil, errors.Join(err, runtime.Close())
 	}
 	mux.Handle("/webhook/line", linein.NewHandler(cfg.Secrets.ChannelSecret, service, logger))
-	runtime.outbound = outboundHTTP
 	runtime.ready.Store(true)
 	return runtime, nil
+}
+
+func newTelemetryRuntime(ctx context.Context, cfg Config, logger *slog.Logger, serviceName string) (*observability.Runtime, error) {
+	return observability.NewRuntime(ctx, observability.Config{
+		Mode: cfg.Telemetry.Mode, ServiceName: serviceName,
+		Environment: string(cfg.Environment), TraceSampleRatio: cfg.Telemetry.TraceSampleRatio,
+		MetricInterval: cfg.Telemetry.MetricInterval,
+	}, logger)
+}
+
+func telemetryCloser(runtime *observability.Runtime) func() error {
+	return func() error {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		return runtime.Shutdown(ctx)
+	}
 }
 
 // Close releases idle SDK HTTP connections after the inbound server has

@@ -20,7 +20,6 @@ import (
 	"github.com/963sup/linebot-platform/internal/infrastructure/google/cloud/tasksauth"
 	"github.com/963sup/linebot-platform/internal/infrastructure/httpclient"
 	lineinfra "github.com/963sup/linebot-platform/internal/infrastructure/line"
-	"github.com/963sup/linebot-platform/internal/infrastructure/observability"
 )
 
 // WorkerRuntime owns all three native outbound SDK resources used by the
@@ -65,11 +64,17 @@ func NewWorkerRuntime(ctx context.Context, cfg WorkerConfig, logger *slog.Logger
 	if err != nil {
 		return nil, err
 	}
-	db, err := storeinfra.NewClient(ctx, cfg.Durable.ProjectID)
+	telemetry, err := newTelemetryRuntime(ctx, cfg, logger, "linebot-worker")
 	if err != nil {
 		return nil, err
 	}
+	db, err := storeinfra.NewClient(ctx, cfg.Durable.ProjectID)
+	if err != nil {
+		_ = telemetryCloser(telemetry)()
+		return nil, err
+	}
 	rt := &WorkerRuntime{closers: []runtimeCloser{
+		{name: "telemetry", close: telemetryCloser(telemetry)},
 		{name: "Firestore client", close: db.Close},
 	}}
 	cleanup := func(err error) (*WorkerRuntime, error) {
@@ -89,8 +94,7 @@ func NewWorkerRuntime(ctx context.Context, cfg WorkerConfig, logger *slog.Logger
 	if err != nil {
 		return cleanup(err)
 	}
-	out, err := httpclient.New(httpclient.Config{Timeout: cfg.LINEAPITimeout},
-		observability.WrapHTTP("line", logger))
+	out, err := httpclient.New(httpclient.Config{Timeout: cfg.LINEAPITimeout}, telemetry.WrapHTTP("line"))
 	if err != nil {
 		return cleanup(err)
 	}
@@ -111,7 +115,7 @@ func NewWorkerRuntime(ctx context.Context, cfg WorkerConfig, logger *slog.Logger
 	if err != nil {
 		return cleanup(err)
 	}
-	workHandler, err := taskin.NewHandler(processor, dispatcher, verifier, logger)
+	workHandler, err := taskin.NewHandlerWithTelemetry(processor, dispatcher, verifier, telemetry, logger)
 	if err != nil {
 		return cleanup(err)
 	}
@@ -124,7 +128,7 @@ func NewWorkerRuntime(ctx context.Context, cfg WorkerConfig, logger *slog.Logger
 		return nil
 	}))
 	mux.Handle("/tasks/", workHandler)
-	rt.Handler = observability.WrapInboundHTTP("worker", logger, mux)
+	rt.Handler = telemetry.WrapInboundHTTP("worker", mux)
 	rt.ready.Store(true)
 	return rt, nil
 }

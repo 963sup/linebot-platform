@@ -23,7 +23,8 @@ func emulatorStore(t *testing.T) (*sdk.Client, *fsadapter.Store) {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	client, err := sdk.NewClient(ctx, "linebot-emulator-ci")
+	projectID := fmt.Sprintf("linebot-ci-%x", time.Now().UnixNano())
+	client, err := sdk.NewClient(ctx, projectID)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -35,8 +36,8 @@ func emulatorStore(t *testing.T) (*sdk.Client, *fsadapter.Store) {
 	return client, store
 }
 
-func eventJob(id int, received time.Time) messagingdelivery.EventJob {
-	return messagingdelivery.EventJob{
+func eventJob(id int, received time.Time) messagingdelivery.DeliveryWorkItem {
+	return messagingdelivery.DeliveryWorkItem{
 		Key:        fmt.Sprintf("%064x", id),
 		ReplyToken: "emulator-token",
 		Message:    messagingdelivery.Message{Kind: messagingdelivery.KindText, Text: "fixed reply"},
@@ -95,7 +96,7 @@ func TestFirestoreTransactionAndConcurrentClaim(t *testing.T) {
 	if err := store.Complete(ctx, job.Key, winningLease, messagingdelivery.DeliverySent); err != nil {
 		t.Fatal(err)
 	}
-	_, err = store.Record(ctx, messagingdelivery.EventJob{
+	_, err = store.Record(ctx, messagingdelivery.DeliveryWorkItem{
 		Key: job.Key, ReplyToken: job.ReplyToken, Message: job.Message,
 		OccurredAt: now, CreatedAt: now.Add(20 * time.Second),
 		ReplyUntil: now.Add(time.Minute),

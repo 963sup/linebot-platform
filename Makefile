@@ -1,4 +1,4 @@
-.PHONY: bootstrap check config-check config-docs domain-check domain-docs dev fmt-check vet test integration-compile build run-webhook run-worker run-ops
+.PHONY: bootstrap check config-check config-docs domain-check domain-docs dev fmt-check vet test integration-compile integration-test build run-webhook run-worker run-ops
 
 bootstrap:
 	go mod tidy
@@ -34,6 +34,13 @@ test:
 # Compile build-tagged Firestore integration tests without requiring an emulator.
 integration-compile:
 	go test -tags=integration -run '^_compile_only_' ./tests/integration
+
+# Runs the real Firestore integration suite. The caller must provide a local
+# emulator through FIRESTORE_EMULATOR_HOST; unlike integration-compile this
+# target must execute test bodies and fails when the emulator is unavailable.
+integration-test:
+	@test -n "$$FIRESTORE_EMULATOR_HOST" || (printf '%s\n' 'FIRESTORE_EMULATOR_HOST is required' >&2; exit 1)
+	go test -tags=integration -race -count=1 ./tests/integration
 
 build:
 	go build ./...

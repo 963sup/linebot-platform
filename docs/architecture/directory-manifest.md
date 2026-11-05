@@ -1,6 +1,6 @@
 # 目錄配置清單
 
-本文件說明目錄治理方式，不保存空目錄快照。實際目錄與 Go package 以受測 commit 的 Git tree、`go list ./...` 與 `DESIGN.md` 為準；目錄存在不代表功能已部署或外部服務已授權。
+本文件說明目錄治理方式，不保存空目錄快照。實際目錄與 Go package 以受測 commit 的 Git tree、`go list ./...` 與 [架構藍圖](blueprint.md) 為準；目錄存在不代表功能已部署或外部服務已授權。
 
 ## 建立條件
 

@@ -154,3 +154,83 @@ imports = ["github.com/modelcontextprotocol/go-sdk/mcp"]
 capabilities = ["mcp-client", "mcp-tool-discovery", "mcp-tool-invocation"]
 factory = "internal/infrastructure/mcp"
 reference = "https://github.com/modelcontextprotocol/go-sdk"
+
+[[modules]]
+module = "go.opentelemetry.io/contrib/detectors/gcp"
+provider = "opentelemetry"
+kind = "utility"
+status = "integrated"
+imports = ["go.opentelemetry.io/contrib/detectors/gcp"]
+capabilities = ["gcp-resource-detection"]
+factory = "internal/infrastructure/observability"
+reference = "https://github.com/open-telemetry/opentelemetry-go-contrib"
+
+[[modules]]
+module = "go.opentelemetry.io/otel"
+provider = "opentelemetry"
+kind = "utility"
+status = "integrated"
+imports = ["go.opentelemetry.io/otel/attribute", "go.opentelemetry.io/otel/codes", "go.opentelemetry.io/otel/propagation"]
+capabilities = ["trace-context", "telemetry-api"]
+factory = "internal/infrastructure/observability"
+reference = "https://github.com/open-telemetry/opentelemetry-go"
+
+[[modules]]
+module = "go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
+provider = "opentelemetry"
+kind = "utility"
+status = "integrated"
+imports = ["go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"]
+capabilities = ["otlp-metric-export"]
+factory = "internal/infrastructure/observability"
+reference = "https://github.com/open-telemetry/opentelemetry-go"
+
+[[modules]]
+module = "go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
+provider = "opentelemetry"
+kind = "utility"
+status = "integrated"
+imports = ["go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"]
+capabilities = ["otlp-trace-export"]
+factory = "internal/infrastructure/observability"
+reference = "https://github.com/open-telemetry/opentelemetry-go"
+
+[[modules]]
+module = "go.opentelemetry.io/otel/metric"
+provider = "opentelemetry"
+kind = "utility"
+status = "integrated"
+imports = ["go.opentelemetry.io/otel/metric"]
+capabilities = ["metric-instrumentation"]
+factory = "internal/infrastructure/observability"
+reference = "https://github.com/open-telemetry/opentelemetry-go"
+
+[[modules]]
+module = "go.opentelemetry.io/otel/sdk"
+provider = "opentelemetry"
+kind = "utility"
+status = "integrated"
+imports = ["go.opentelemetry.io/otel/sdk/resource", "go.opentelemetry.io/otel/sdk/trace"]
+capabilities = ["trace-provider", "sampling"]
+factory = "internal/infrastructure/observability"
+reference = "https://github.com/open-telemetry/opentelemetry-go"
+
+[[modules]]
+module = "go.opentelemetry.io/otel/sdk/metric"
+provider = "opentelemetry"
+kind = "utility"
+status = "integrated"
+imports = ["go.opentelemetry.io/otel/sdk/metric"]
+capabilities = ["meter-provider", "periodic-metric-reader"]
+factory = "internal/infrastructure/observability"
+reference = "https://github.com/open-telemetry/opentelemetry-go"
+
+[[modules]]
+module = "go.opentelemetry.io/otel/trace"
+provider = "opentelemetry"
+kind = "utility"
+status = "integrated"
+imports = ["go.opentelemetry.io/otel/trace"]
+capabilities = ["span-instrumentation"]
+factory = "internal/infrastructure/observability"
+reference = "https://github.com/open-telemetry/opentelemetry-go"

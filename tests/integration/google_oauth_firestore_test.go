@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/base64"
+	"fmt"
 	"os"
 	"strings"
 	"sync"
@@ -22,11 +23,12 @@ import (
 
 func TestOAuthSessionsAndConnectionsWithFirestoreEmulator(t *testing.T) {
 	if os.Getenv("FIRESTORE_EMULATOR_HOST") == "" {
-		t.Skip("Firestore emulator not configured")
+		t.Fatal("FIRESTORE_EMULATOR_HOST is required for integration tests")
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
-	client, err := sdk.NewClient(ctx, "linebot-oauth-emulator-ci")
+	projectID := fmt.Sprintf("linebot-ci-%x", time.Now().UnixNano())
+	client, err := sdk.NewClient(ctx, projectID)
 	if err != nil {
 		t.Fatal(err)
 	}

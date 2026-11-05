@@ -55,12 +55,12 @@ type EventQueue interface {
 }
 
 type Ingestor struct {
-	store EventStore
+	store EventRecorder
 	queue EventQueue
 	now   func() time.Time
 }
 
-func NewIngestor(store EventStore, queue EventQueue) (*Ingestor, error) {
+func NewIngestor(store EventRecorder, queue EventQueue) (*Ingestor, error) {
 	if store == nil || queue == nil {
 		return nil, errors.New("event store and queue are required")
 	}
@@ -103,7 +103,7 @@ func (s *Ingestor) Ingest(ctx context.Context, channel, eventID, replyToken stri
 	if eventLimit := occurredAt.Add(maxEventAge); replyUntil.After(eventLimit) {
 		replyUntil = eventLimit
 	}
-	if _, err := s.store.Record(ctx, EventJob{
+	if _, err := s.store.Record(ctx, DeliveryWorkItem{
 		Key: key.String(), ReplyToken: replyToken, Message: message,
 		CreatedAt: now, OccurredAt: occurredAt, ReplyUntil: replyUntil,
 	}); err != nil {
@@ -113,14 +113,14 @@ func (s *Ingestor) Ingest(ctx context.Context, channel, eventID, replyToken stri
 }
 
 type Processor struct {
-	store  EventStore
+	store  DeliveryClaimer
 	sender interface {
 		Reply(context.Context, string, []Message) error
 	}
 	now func() time.Time
 }
 
-func NewProcessor(store EventStore, sender interface {
+func NewProcessor(store DeliveryClaimer, sender interface {
 	Reply(context.Context, string, []Message) error
 }) (*Processor, error) {
 	if store == nil || sender == nil {
@@ -163,12 +163,12 @@ func (p *Processor) Process(ctx context.Context, key EventKey) error {
 }
 
 type Dispatcher struct {
-	store EventStore
+	store DeliveryRecovery
 	queue EventQueue
 	now   func() time.Time
 }
 
-func NewDispatcher(store EventStore, queue EventQueue) (*Dispatcher, error) {
+func NewDispatcher(store DeliveryRecovery, queue EventQueue) (*Dispatcher, error) {
 	if store == nil || queue == nil {
 		return nil, errors.New("event store and queue are required")
 	}

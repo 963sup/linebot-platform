@@ -6,7 +6,7 @@
 
 | 項目 | 通過條件 |
 | --- | --- |
-| 註冊 | 固定 8 個角色與 config 一對一；無重複／未知鍵／越界路徑 |
+| 註冊 | 固定 8 個 specialist roles 與 config 一對一；無 orchestrator child、reviewer-*、重複／未知鍵／越界路徑 |
 | 並行上限 | Validator 接受 1／4／8／9，拒絕 0／10；深度只接受 1；此單元測試不是 Host 排程證明 |
 | MCP | 保留 11 宣告、10 啟用、1 個服務維持停用；無明文 secrets |
 | 安裝來源 | 僅核准來源、精確 commit、實際 FETCH_HEAD 一致 |
@@ -16,6 +16,8 @@
 | SDK | go.mod／go.sum、Catalog 與 build-tag dependency manifest 一致；不要求空 scaffold |
 
 ## 必須在實際 Host 執行
+
+每一項結果分別記錄 `configured`、`started`、`authenticated`、`authorized`、`verified`；前一層成功不得推論後一層成功。
 
 | 能力 | 最小驗收 | 未具備環境時 |
 | --- | --- | --- |
