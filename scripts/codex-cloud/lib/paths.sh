@@ -9,5 +9,4 @@ export GOCACHE="${GOCACHE:-/workspace/.gocache}"
 export GOPATH="${GOPATH:-/workspace/.gopath}"
 export GOFLAGS="${GOFLAGS:--mod=readonly}"
 export GOMAXPROCS="${GOMAXPROCS:-5}"
-mkdir -p "$CODEX_CLOUD_BIN" "$GOCACHE" "$GOPATH"
 hash -r

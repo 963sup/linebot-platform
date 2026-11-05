@@ -8,6 +8,7 @@ source "$script_dir/lib/skills.sh"
 source "$script_dir/lib/mcp.sh"
 repo_root="$(codex_cloud_repo_root)"
 cd "$repo_root"
+bash "$script_dir/preflight.sh"
 
 status=READY
 failures=()

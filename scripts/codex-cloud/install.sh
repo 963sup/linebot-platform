@@ -9,6 +9,8 @@ source "$script_dir/lib/paths.sh"
 source "$script_dir/lib/skills.sh"
 repo_root="$(codex_cloud_repo_root)"
 cd "$repo_root"
+bash "$script_dir/preflight.sh"
+mkdir -p "$CODEX_CLOUD_BIN" "$GOCACHE" "$GOPATH"
 codex_cloud_require go
 
 for setting in CODEX_CLOUD_INSTALL_SKILLS CODEX_CLOUD_REGISTER_GOOGLE_MARKETPLACE CODEX_CLOUD_WARM_TESTS; do

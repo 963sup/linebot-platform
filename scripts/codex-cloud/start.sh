@@ -6,6 +6,7 @@ script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 source "$script_dir/lib/common.sh"
 source "$script_dir/lib/paths.sh"
 repo_root="$(codex_cloud_repo_root)"
+bash "$script_dir/preflight.sh"
 cd "$repo_root"
 codex_cloud_require git
 git fetch --prune origin main

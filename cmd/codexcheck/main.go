@@ -334,6 +334,7 @@ func validate(root string) error {
 	for _, name := range []string{
 		"scripts/check.sh",
 		"scripts/codex-cloud/install.sh",
+		"scripts/codex-cloud/preflight.sh",
 		"scripts/codex-cloud/start.sh",
 		"scripts/codex-cloud/verify.sh",
 		"scripts/codex-cloud/repair.sh",
