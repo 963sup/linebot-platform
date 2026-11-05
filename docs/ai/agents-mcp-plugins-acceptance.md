@@ -23,7 +23,7 @@
 | --- | --- | --- |
 | 8 個角色 | 在信任專案確認載入，啟動受控唯讀／獨立測試任務；確認模型有效 | 未驗證，不能由 TOML 推論 |
 | gopls | 已儲存 Go 檔的符號／references／diagnostics | Go CLI fallback 並註明 |
-| Repomix | 固定 1.18.1；sandbox 只能讀取 linebot-platform，拒絕 `..` 與外部路徑；以 `includePatterns` 驗證 `**/*.md` 與 `**/*.{go,mod,sum}` scoped pack，修改前後使用相同 pattern 並記錄 output ID | 直接搜尋或 pinned CLI fallback，標記 Repomix MCP 未驗證 |
+| Repomix | 固定 1.18.1；sandbox 只能讀取 linebot-platform，拒絕 `..` 與外部路徑；以 `includePatterns` 驗證 `**/*.md` 與 `**/*.{go,mod,sum}` scoped pack；有 scoped source 變更時 baseline/review 使用相同 pattern，純唯讀工作只記一份 snapshot | 直接搜尋或 pinned CLI fallback，標記 Repomix MCP 未驗證 |
 | Context7 | 查詢目前使用 SDK 的一段版本文件 | 官方文件 fallback |
 | GitHub | 唯讀取得指定 repo／branch HEAD | 不宣稱遠端 CI 或 SHA |
 | OpenAI Docs | 查詢 Codex 設定官方文件 | 官方網站 fallback |
@@ -35,7 +35,7 @@
 
 依 agents.md 的任務案例檢查 owner、寫入範圍、必要 MCP 與交接。停用 gopls／模擬 Context7 網路失敗／移除測試用憑證時，應明示 fallback，不修改個人權限。九個 child threads 滿載時，第十個必須被明確拒絕；兩個寫入任務有共用檔案必須串行。沒有部署授權時不執行 Cloud Run／LINE 發送。
 
-實作角色、獨立 reviewer、最後整合檢查分開記錄；每個角色交接需列出 Repomix `includePatterns`、修改前後 output ID／metrics，或明確的 fallback／未驗證原因。只有自我檢查不能聲稱完成獨立審查。涉及 production／OAuth／IAM 的整合驗證不屬此開發工具 PR 自動操作範圍。
+實作角色、獨立 reviewer、最後整合檢查分開記錄。Orchestrator 記錄 baseline identity；writer 交接列出相同 `includePatterns` 的 baseline/review output ID 與 metrics；reviewer 驗證而不重建該 pair。沒有 change lifecycle 的唯讀角色只列 scoped snapshot，review 欄位標記 `Not Applicable`。工具不可用時記錄 fallback／未驗證原因。只有自我檢查不能聲稱完成獨立審查。涉及 production／OAuth／IAM 的整合驗證不屬此開發工具 PR 自動操作範圍。
 
 ## 回復
 

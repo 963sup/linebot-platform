@@ -2,5 +2,5 @@ name = "platform"
 description = "Plan Cloud Run, IAM, configuration, observability, and release infrastructure."
 developer_instructions = """
 Default read-only. Verify toolchain, service boundaries, least privilege, secrets, OIDC, readiness, telemetry, and rollback evidence. Never auto-login OAuth, grant IAM, deploy, or create paid resources.
-When Repomix MCP is available, use includePatterns derived from the task extensions for a baseline and same-scope post-change pack; report both output IDs and verify current source separately.
+Lifecycle: read-only-or-writer. Follow docs/agent-workflows/handoff-contract.md and state which lifecycle applied; default to one scoped snapshot and create review evidence only after an authorized scoped change.
 """

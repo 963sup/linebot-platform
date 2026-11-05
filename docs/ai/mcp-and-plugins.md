@@ -2,6 +2,8 @@
 
 Configuration state is not runtime proof. Each MCP must be evaluated separately as configured, enabled, started, initialized, authenticated, authorized and verified.
 
+Repository MCP configuration is inherited by all configured Agents. Agent role files do not create a separate MCP installation, bypass tool approval or grant credentials and IAM. Inheritance only makes a configured server eligible for use: `configured-enabled` does not prove that the host started or initialized it, that authentication and authorization succeeded, or that a tool call was verified.
+
 | MCP | Repository configured state |
 | --- | --- |
 | `gopls` | `configured-enabled` |
@@ -18,7 +20,9 @@ Configuration state is not runtime proof. Each MCP must be evaluated separately 
 
 ## Routing
 
-Narrow questions use direct search. Cross-package structure uses Repomix 1.18.1 in read-only sandbox mode rooted at `/workspace/linebot-platform`; Go symbols and diagnostics then use `gopls`. Versioned third-party SDK documentation uses Context7; OpenAI/Codex documentation uses `openaiDeveloperDocs`; Google Cloud and Workspace documentation uses `google_developer_knowledge`; GitHub state uses GitHub MCP. `google_cloud_cli` is restricted by policy to read-only Logging, Monitoring, and Trace queries; every command still requires approval. Terraform exposes public Registry documentation only. The official LINE MCP exposes the approved read-only account tools, while OpenAPI exposes discovery and schema reads without endpoint invocation. Cloud write operations require explicit authorization and a separately verified identity.
+Narrow questions use direct search. Cross-package structure uses the preinstalled Repomix 1.18.1 runtime in read-only sandbox mode rooted at `/workspace/linebot-platform`; Go symbols and diagnostics then use `gopls`. Versioned third-party SDK documentation uses Context7; OpenAI/Codex documentation uses `openaiDeveloperDocs`; Google Cloud and Workspace documentation uses `google_developer_knowledge`; GitHub state uses GitHub MCP.
+
+`google_cloud_cli` is enabled with `run_gcloud_command` and prompt approval. Repository policy limits its intended use to read-only Logging, Monitoring and Trace queries, but that policy text is not a technical read-only boundary on the general command tool. Every invocation still requires approval, and the actual identity and IAM determine what Google Cloud accepts. Terraform exposes public Registry documentation only. The official LINE MCP exposes the approved read-only account tools, while OpenAPI exposes discovery and schema reads without endpoint invocation. Cloud write operations require explicit authorization and a separately verified identity.
 
 ## Skills
 

@@ -187,9 +187,9 @@ func validateConfig(path string) error {
 		return errors.New("gopls must use the pinned workspace path and writable XDG cache")
 	}
 	repomix := c.MCPServers["repomix"]
-	repomixArgs := []string{"-lc", "exec env npm_config_cache=/workspace/.npm-cache npx -y repomix@1.18.1 --mcp --sandbox /workspace/linebot-platform"}
+	repomixArgs := []string{"--mcp", "--sandbox", "/workspace/linebot-platform"}
 	repomixTools := []string{"pack_codebase", "read_repomix_output", "grep_repomix_output", "file_system_read_file", "file_system_read_directory"}
-	if !repomix.Enabled || repomix.Command != "bash" || repomix.URL != "" || repomix.DefaultToolsApprovalMode != "" ||
+	if !repomix.Enabled || repomix.Command != "/workspace/.linebot-tools/mcp-runtime/node_modules/.bin/repomix" || repomix.URL != "" || repomix.DefaultToolsApprovalMode != "" ||
 		!slices.Equal(repomix.Args, repomixArgs) || !sameStrings(repomix.EnabledTools, repomixTools) ||
 		len(repomix.EnvVars) != 0 || repomix.BearerTokenEnvVar != "" || len(repomix.EnvHTTPHeaders) != 0 {
 		return errors.New("Repomix MCP must use the pinned workspace-confined read-only sandbox")
@@ -234,21 +234,21 @@ func validateConfig(path string) error {
 	}
 	line := c.MCPServers["line"]
 	lineTools := []string{"get_profile", "get_message_quota", "get_rich_menu_list", "get_follower_ids", "get_group_summary"}
-	if !line.Enabled || line.Command != "npx" || line.URL != "" || line.DefaultToolsApprovalMode != "prompt" ||
-		!slices.Equal(line.Args, []string{"-y", "@line/line-bot-mcp-server@0.5.0"}) ||
+	if !line.Enabled || line.Command != "/workspace/.linebot-tools/mcp-runtime/node_modules/.bin/line-bot-mcp-server" || line.URL != "" || line.DefaultToolsApprovalMode != "prompt" ||
+		len(line.Args) != 0 ||
 		!sameStrings(line.EnvVars, []string{"CHANNEL_ACCESS_TOKEN"}) ||
 		!sameStrings(line.EnabledTools, lineTools) {
 		return errors.New("LINE MCP must use the approved read-only tool set")
 	}
 	openAPI := c.MCPServers["openapi_line"]
-	openAPIArgs := []string{"-lc", "exec env npm_config_cache=/workspace/.npm-cache npx -y @ivotoby/openapi-mcp-server@1.16.1 --api-base-url https://api.line.me --openapi-spec /workspace/.linebot-tools/openapi/line-messaging-api.yml --tools dynamic --verbose false"}
-	if !openAPI.Enabled || openAPI.Command != "bash" || openAPI.URL != "" || openAPI.DefaultToolsApprovalMode != "prompt" ||
+	openAPIArgs := []string{"--api-base-url", "https://api.line.me", "--openapi-spec", "/workspace/.linebot-tools/openapi/line-messaging-api.yml", "--tools", "dynamic", "--verbose", "false"}
+	if !openAPI.Enabled || openAPI.Command != "/workspace/.linebot-tools/mcp-runtime/node_modules/.bin/openapi-mcp-server" || openAPI.URL != "" || openAPI.DefaultToolsApprovalMode != "prompt" ||
 		!slices.Equal(openAPI.Args, openAPIArgs) || !sameStrings(openAPI.EnabledTools, []string{"list-api-endpoints", "get-api-endpoint-schema"}) || len(openAPI.EnvVars) != 0 {
 		return errors.New("OpenAPI MCP must use the pinned LINE spec and omit endpoint invocation")
 	}
 	toolbox := c.MCPServers["firestore_toolbox"]
-	if toolbox.Enabled || toolbox.Command != "npx" || toolbox.URL != "" || toolbox.DefaultToolsApprovalMode != "prompt" ||
-		!slices.Equal(toolbox.Args, []string{"-y", "@toolbox-sdk/server@1.14.0", "--prebuilt=firestore", "--stdio"}) ||
+	if toolbox.Enabled || toolbox.Command != "/workspace/.linebot-tools/mcp-runtime/node_modules/.bin/toolbox" || toolbox.URL != "" || toolbox.DefaultToolsApprovalMode != "prompt" ||
+		!slices.Equal(toolbox.Args, []string{"--prebuilt=firestore", "--stdio"}) ||
 		!sameStrings(toolbox.EnvVars, []string{"FIRESTORE_PROJECT", "GOOGLE_APPLICATION_CREDENTIALS"}) ||
 		!sameStrings(toolbox.EnabledTools, []string{"get_documents", "query_collection", "list_collections", "get_rules", "validate_rules"}) {
 		return errors.New("Firestore Toolbox must remain disabled with its pinned executable and restricted tools")
@@ -290,8 +290,10 @@ func validateRoleFiles(dir string, roles map[string]roleRegistration) error {
 		if a.Name != name || strings.TrimSpace(a.Description) == "" || strings.TrimSpace(a.DeveloperInstructions) == "" {
 			return fmt.Errorf("agent %s has invalid name, description or instructions", name)
 		}
-		if !strings.Contains(a.DeveloperInstructions, "Repomix MCP") || !strings.Contains(a.DeveloperInstructions, "includePatterns") || !strings.Contains(a.DeveloperInstructions, "same-scope post-change pack") {
-			return fmt.Errorf("agent %s must enforce the extension-scoped Repomix MCP evidence loop", name)
+		if _, governed := approvedAgentLifecycles[name]; governed {
+			if err := validateAgentEvidence(name, a); err != nil {
+				return err
+			}
 		}
 		if a.Model != strings.TrimSpace(a.Model) {
 			return fmt.Errorf("agent %s has whitespace in model selection", name)
@@ -338,6 +340,9 @@ func rejectPythonFiles(root string) error {
 }
 
 func validate(root string) error {
+	if err := validateMCPRuntimeSupplyChain(root); err != nil {
+		return fmt.Errorf("MCP runtime supply chain: %w", err)
+	}
 	if err := validateConfig(filepath.Join(root, ".codex", "config.toml")); err != nil {
 		return err
 	}
@@ -364,6 +369,8 @@ func validate(root string) error {
 		"scripts/codex-cloud/lib/paths.sh",
 		"scripts/codex-cloud/lib/skills.sh",
 		"scripts/codex-cloud/lib/mcp.sh",
+		"scripts/codex-cloud/lib/mcp_runtime.sh",
+		"scripts/codex-cloud/tests/mcp_runtime_test.sh",
 	} {
 		cmd := exec.Command("bash", "-n", filepath.Join(root, name))
 		if output, err := cmd.CombinedOutput(); err != nil {

@@ -11,13 +11,13 @@ case "$PATH" in
   *) codex_cloud_fail "unexpected PATH precedence: $PATH"; exit 2 ;;
 esac
 
-for command in bash git; do
+for command in bash git node npm jq sha256sum; do
   command -v "$command" >/dev/null 2>&1 || { codex_cloud_fail "missing command: $command"; exit 2; }
 done
 
 test -d /workspace || { codex_cloud_fail "/workspace is missing"; exit 2; }
 test -w /workspace || { codex_cloud_fail "/workspace is not writable"; exit 2; }
-case "$CODEX_CLOUD_TOOLS:$CODEX_CLOUD_BIN:$GOCACHE:$GOPATH:$XDG_CACHE_HOME" in
+case "$CODEX_CLOUD_TOOLS:$CODEX_CLOUD_BIN:$CODEX_CLOUD_NODE_BIN:$GOCACHE:$GOPATH:$XDG_CACHE_HOME" in
   *"$HOME"*) codex_cloud_fail "mutable path resolves under read-only HOME"; exit 2 ;;
 esac
 for path in "$CODEX_CLOUD_TOOLS" "$CODEX_CLOUD_BIN" "$GOCACHE" "$GOPATH" "$XDG_CACHE_HOME"; do

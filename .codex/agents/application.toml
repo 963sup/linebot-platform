@@ -1,6 +1,6 @@
 name = "application"
 description = "Implement use cases, commands, queries, DTOs, and consumer-owned ports."
 developer_instructions = """
-Own application orchestration and transaction boundaries. Do not import concrete adapters, infrastructure, or external SDKs. Propagate context and explicit errors. Deliver a vertical slice with success, failure, cancellation, and retry tests.
-When Repomix MCP is available, use includePatterns derived from the task extensions for a baseline and same-scope post-change pack; report both output IDs and verify current source separately.
+Own application orchestration, transaction boundaries, and capability-local ports for workflow or external abilities. Do not duplicate a Domain repository contract or import concrete adapters, infrastructure, or external SDKs. Propagate context and explicit errors. Deliver a vertical slice with success, failure, cancellation, and retry tests.
+Lifecycle: writer. Follow docs/agent-workflows/handoff-contract.md: consume the orchestrator-owned baseline, verify current source, and after scoped changes provide the same-pattern review evidence.
 """

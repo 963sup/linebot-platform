@@ -22,7 +22,7 @@ description: Select the task-relevant MCP and inspect or install the project's a
 
 ## Repomix scoped-pack 閉環
 
-開始前先從任務推導副檔名，使用 comma-separated fast-glob `includePatterns` 建立 baseline：Markdown 為 `**/*.md`，Go 為 `**/*.{go,mod,sum}`，Shell 為 `**/*.sh`；跨格式契約必須顯式合併所需 patterns，不得為省事直接全庫打包。實作或唯讀審查後，以完全相同的 patterns 再次 `pack_codebase`，再用 `grep_repomix_output`／`read_repomix_output` 驗證目標語意。交接記錄 patterns、前後 output ID、file/token metrics 與差異結論。Repomix 是時間點快照；符號、引用與最終內容仍以 current source、gopls及測試為準。
+開始前先從任務推導副檔名，使用 comma-separated fast-glob `includePatterns` 建立 baseline：Markdown 為 `**/*.md`，Go 為 `**/*.{go,mod,sum}`，Shell 為 `**/*.sh`；跨格式契約必須顯式合併所需 patterns，不得為省事直接全庫打包。Orchestrator 擁有 baseline identity；writer 使用該 baseline，修改 scoped source 後才以完全相同的 patterns 建立 review pack；reviewer 驗證這一組 artifacts 而不取代它們。沒有 change lifecycle 的唯讀工作只需一份 scoped snapshot，review output 與 pattern comparison 記為 `Not Applicable`，不得為填欄位製造 no-op pair。再用 `grep_repomix_output`／`read_repomix_output` 驗證目標語意，並記錄 patterns、適用的 output ID、file/token metrics 與差異結論。Repomix 是時間點快照；符號、引用與最終內容仍以 current source、gopls 及測試為準。
 
 ## 缺少技能時自主處理
 

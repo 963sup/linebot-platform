@@ -6,6 +6,7 @@ source "$script_dir/lib/common.sh"
 source "$script_dir/lib/paths.sh"
 source "$script_dir/lib/skills.sh"
 source "$script_dir/lib/mcp.sh"
+source "$script_dir/lib/mcp_runtime.sh"
 repo_root="$(codex_cloud_repo_root)"
 cd "$repo_root"
 bash "$script_dir/preflight.sh"
@@ -16,6 +17,7 @@ warn() { failures+=("$*"); [[ "$status" == READY ]] && status=DEGRADED; }
 block() { failures+=("$*"); status=BLOCKED; }
 for command in go gofmt git codex; do command -v "$command" >/dev/null 2>&1 || block "missing $command"; done
 command -v gopls >/dev/null 2>&1 || warn "missing gopls"
+codex_cloud_mcp_runtime_check "$repo_root" || block "pinned MCP runtime receipt, lock or versions are not verified"
 command -v go >/dev/null 2>&1 && printf 'go=%s\n' "$(go version)"
 command -v gopls >/dev/null 2>&1 && printf 'gopls=%s\n' "$(gopls version | head -n 1)"
 if command -v go >/dev/null 2>&1; then

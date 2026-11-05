@@ -23,7 +23,7 @@ Reviewer specialization uses profiles under `docs/agent-workflows/reviewer-profi
 
 - Use `rg` and direct file reads for narrow, localized questions.
 - Use sandboxed Repomix for cross-package structure and repository-wide context; never treat packed output as current symbol truth.
-- Scope Repomix MCP packs to the task before requesting the full repository. Use `pack_codebase.includePatterns` with comma-separated fast-glob patterns derived from the affected extensions (for example `**/*.md` for Markdown or `**/*.{go,mod,sum}` for Go), plus any explicitly coupled files. Record the patterns and output ID. Repack with the same patterns after implementation, then use `grep_repomix_output` or `read_repomix_output` to check the changed contract. If the MCP is unavailable, use direct search or a pinned CLI fallback and mark Repomix MCP `Not Verified`.
+- Scope Repomix MCP packs to the task before requesting the full repository. Use `pack_codebase.includePatterns` with comma-separated fast-glob patterns derived from the affected extensions (for example `**/*.md` for Markdown or `**/*.{go,mod,sum}` for Go), plus any explicitly coupled files. The orchestrator records and owns the normalized patterns, baseline output ID and snapshot identity. A writer consumes that baseline and, after changing files in scope, creates or requests a review pack with exactly the same patterns. A reviewer validates the pair rather than replacing it. A read-only role uses the shared baseline, or one scoped snapshot when no change lifecycle exists, and does not manufacture a no-op before/after pair. If the MCP is unavailable, use direct search or a pinned CLI fallback and mark Repomix MCP `Not Verified`.
 - Normalize patterns as repository-relative POSIX globs and fail closed on empty matches, absolute paths, `..`, negation, symlink escape or an unexpected file extension. If the task scope expands, create a new scoped baseline before further edits. Treat packed output as a temporary artifact: do not commit it, and record the repository HEAD plus dirty-state or scoped content fingerprint so stale snapshots are detectable.
 - Use gopls for Go definitions, references, implementations and diagnostics.
 - Use Context7 for version-specific third-party SDK documentation.
@@ -33,7 +33,7 @@ Reviewer specialization uses profiles under `docs/agent-workflows/reviewer-profi
 - MCP configuration is not proof of startup, authentication, authorization or availability.
 - Report commands actually executed; never invent tests, permissions, deployment status or citations.
 
-For cross-cutting work, establish a task-scoped Repomix baseline, confirm current symbols and text with direct reads or gopls, route implementation to the smallest role set, run repository checks, then repack the same scope for independent review. A full-repository pack is reserved for genuine repository-wide analysis.
+For work that needs cross-file or cross-package relationship evidence, establish a task-scoped Repomix baseline, confirm current symbols and text with direct reads or gopls, route implementation to the smallest role set, run repository checks, then repack the same scope for independent review when scoped source changed. If scope expands, the orchestrator establishes a new baseline before further edits. A full-repository pack is reserved for genuine repository-wide analysis.
 
 ## Skills
 

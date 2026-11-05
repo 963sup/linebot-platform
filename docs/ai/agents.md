@@ -40,7 +40,14 @@ The primary orchestrator interprets requests, orders dependencies, assigns one w
 - Use GitHub MCP for repository, branch, PR and CI evidence.
 - MCP declarations do not prove startup, authentication, authorization or tool availability.
 
-Every delegated role uses the same closed loop when Repomix MCP is available: task-scoped baseline pack → current-source or gopls confirmation → implementation/read-only review → repository checks → post-change pack with the same normalized `includePatterns` → `grep_repomix_output` or `read_repomix_output` verification. The orchestrator owns the immutable artifact identity and shares it with children; a new pack supersedes rather than overwrites prior evidence. Handoffs record patterns, output IDs, metrics, HEAD, dirty-state or scoped fingerprint, artifact hash and stale status. If Repomix or gopls is unavailable, use direct search or pinned CLI/Go fallbacks and report that tool as `Not Verified`; a packed snapshot never overrides current source or gopls. Full-repository packs are reserved for genuinely cross-extension repository audits.
+Repomix evidence follows the task lifecycle rather than forcing every role to create its own pair:
+
+- The orchestrator creates and owns the immutable task-scoped baseline identity and normalized `includePatterns`, then shares them with delegated roles.
+- A writer confirms current source, changes only its assigned scope, runs repository checks, and creates or requests a post-change review pack with exactly the baseline patterns. Scope expansion requires a new orchestrator-owned baseline before further edits.
+- A reviewer does not replace either artifact. It checks ordering, identity, pattern equality, freshness and the changed contract, then confirms every finding against current source or gopls.
+- A read-only role consumes the shared baseline. If its task has no change lifecycle, one scoped snapshot is sufficient; it must not create a no-op before/after pair merely to fill handoff fields. A role that can be read-only or a writer declares which lifecycle applied.
+
+Handoffs record the applicable status, patterns, output IDs, metrics, HEAD, dirty-state or scoped fingerprint, artifact hash and stale status. If Repomix or gopls is unavailable, use direct search or pinned CLI/Go fallbacks and report that tool as `Not Verified`; a packed snapshot never overrides current source or gopls. Full-repository packs are reserved for genuinely cross-extension repository audits.
 
 ## Environment policy
 

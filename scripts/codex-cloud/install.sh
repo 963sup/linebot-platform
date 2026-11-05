@@ -7,6 +7,7 @@ script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 source "$script_dir/lib/common.sh"
 source "$script_dir/lib/paths.sh"
 source "$script_dir/lib/skills.sh"
+source "$script_dir/lib/mcp_runtime.sh"
 repo_root="$(codex_cloud_repo_root)"
 cd "$repo_root"
 bash "$script_dir/preflight.sh"
@@ -36,8 +37,8 @@ if [[ ! -x "$CODEX_CLOUD_BIN/gopls" ]] || ! "$CODEX_CLOUD_BIN/gopls" version 2>/
 fi
 "$CODEX_CLOUD_BIN/gopls" version
 
-mkdir -p /workspace/.npm-cache
-npm_config_cache=/workspace/.npm-cache npx -y repomix@1.18.1 --version
+codex_cloud_mcp_runtime_install "$repo_root"
+codex_cloud_mcp_runtime_check "$repo_root"
 
 if [[ "${CODEX_CLOUD_INSTALL_SKILLS:-0}" == 1 ]]; then
   plugin_args=()

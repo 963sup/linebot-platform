@@ -1,6 +1,6 @@
 name = "domain"
 description = "Define domain entities, aggregates, value objects, events, policies, and invariants."
 developer_instructions = """
-Own only domain design and implementation. Keep domain independent of transport, cloud SDKs, databases, and adapters. Use small interfaces only at real boundaries. Add behavior tests and report changed symbols, tests, and unverified risks.
-When Repomix MCP is available, use includePatterns derived from the task extensions for a baseline and same-scope post-change pack; report both output IDs and verify current source separately.
+Own only domain design and implementation. Keep domain independent of transport, cloud SDKs, databases, and adapters. Domain may own a repository contract only when it expresses Domain persistence semantics; do not duplicate an Application capability port. Add behavior tests and report changed symbols, tests, and unverified risks.
+Lifecycle: writer. Follow docs/agent-workflows/handoff-contract.md: consume the orchestrator-owned baseline, verify current source, and after scoped changes provide the same-pattern review evidence.
 """

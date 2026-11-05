@@ -67,13 +67,13 @@ func TestGuidanceTracksRegisteredCapabilities(t *testing.T) {
 		}
 	}
 	handoff := read("docs/agent-workflows/handoff-contract.md")
-	for _, want := range []string{"Include Patterns", "Initial Output ID", "Review Output ID", "Pattern Match", "Scoped Fingerprint", "Stale"} {
+	for _, want := range []string{"Repomix Lifecycle", "Include Patterns", "Baseline Output ID", "Review Output ID or Not Applicable", "Pattern Match or Not Applicable", "Scoped Fingerprint", "Stale"} {
 		if !strings.Contains(handoff, want) {
 			t.Errorf("handoff contract missing Repomix evidence field %q", want)
 		}
 	}
 	architectureProfile := read("docs/agent-workflows/reviewer-profiles/architecture.md")
-	for _, want := range []string{"same normalized extension-scoped `includePatterns`", "new baseline", "current source or gopls"} {
+	for _, want := range []string{"same normalized extension-scoped `includePatterns`", "new baseline", "current source or gopls", "without replacing", "Not Applicable"} {
 		if !strings.Contains(architectureProfile, want) {
 			t.Errorf("architecture reviewer profile missing Repomix check %q", want)
 		}

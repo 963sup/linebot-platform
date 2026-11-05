@@ -133,10 +133,10 @@ func TestRejectConfigDrift(t *testing.T) {
 	for _, tc := range []struct{ name, from, to string }{
 		{"threads", "max_concurrent_threads_per_session = 9", "max_concurrent_threads_per_session = 10"},
 		{"knowledge-secret", `env_http_headers = { "X-Goog-Api-Key" = "DEVELOPERKNOWLEDGE_API_KEY" }`, `http_headers = { "X-Goog-Api-Key" = "do-not-store-keys" }`},
-		{"repomix-version", "repomix@1.18.1", "repomix@latest"},
-		{"line-version", "@line/line-bot-mcp-server@0.5.0", "@line/line-bot-mcp-server@latest"},
+		{"repomix-runtime", "/workspace/.linebot-tools/mcp-runtime/node_modules/.bin/repomix", "npx"},
+		{"line-runtime", "/workspace/.linebot-tools/mcp-runtime/node_modules/.bin/line-bot-mcp-server", "npx"},
 		{"terraform-digest", "hashicorp/terraform-mcp-server@sha256:11dd418bba6003dd5777e9d0979b68de59929a155b355f338f407947e00e9d80", "hashicorp/terraform-mcp-server:1.4.1"},
-		{"repomix-sandbox", "--mcp --sandbox /workspace/linebot-platform", "--mcp"},
+		{"repomix-sandbox", `args = ["--mcp", "--sandbox", "/workspace/linebot-platform"]`, `args = ["--mcp"]`},
 		{"gopls-home-cache", "XDG_CACHE_HOME=/workspace/.cache", "XDG_CACHE_HOME=/home/agent/.cache"},
 		{"unknown", "project_doc_max_bytes = 65536", "project_doc_max_bytes = 65536\nunknown_key = true"},
 	} {

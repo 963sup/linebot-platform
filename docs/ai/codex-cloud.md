@@ -10,7 +10,7 @@
 bash scripts/codex-cloud/install.sh
 ```
 
-腳本依 go.mod 的 Go 1.27.3 要求，下載／驗證已鎖定 module、執行 codexcheck、安裝既定 gopls v0.24.0 至 `/workspace/.linebot-tools/bin`，並預熱 Repomix 1.18.1 至 `/workspace/.npm-cache`。Task phase 的 `/home/agent` 可能唯讀，因此可變工具與 Go、gopls、XDG cache 只寫入 `/workspace`；`$HOME/.agents/skills` 僅供探索驗證。所有階段共同載入 `scripts/codex-cloud/lib/paths.sh`，不依賴 install phase 的 export 延續。不以 go mod tidy 修改依賴、不部署、不執行 OAuth／gcloud、不建立 key、不修改個人模型／approval。
+腳本依 go.mod 的 Go 1.27.3 要求，下載／驗證已鎖定 module、執行 codexcheck、安裝既定 gopls v0.24.0 至 `/workspace/.linebot-tools/bin`，並依 `tools/mcp-runtime/package-lock.json` 以 `npm ci` 安裝固定的本地 MCP runtime 至 `/workspace/.linebot-tools/mcp-runtime`。安裝後會驗證 lock hash、receipt、package versions 與四個 binary；這不等於 MCP 已初始化或工具呼叫成功。Task phase 的 `/home/agent` 可能唯讀，因此可變工具與 Go、gopls、XDG cache 只寫入 `/workspace`；`$HOME/.agents/skills` 僅供探索驗證。所有階段共同載入 `scripts/codex-cloud/lib/paths.sh`，不依賴 install phase 的 export 延續。不以 go mod tidy 修改依賴、不部署、不執行 OAuth／gcloud、不建立 key、不修改個人模型／approval。
 
 每個入口在任何寫入前執行 `preflight.sh`：確認 PATH 前綴、必要系統命令、`/workspace` 可寫，以及所有可變工具與 cache 路徑都位於 `/workspace`。preflight 本身不建立目錄、不安裝工具、不修改 repository。
 
@@ -39,14 +39,15 @@ bash scripts/codex-cloud/start.sh
 | 能力 | Host 前置條件 |
 | --- | --- |
 | gopls | `/workspace/.linebot-tools/bin/gopls`；POSIX／WSL／Cloud Bash |
-| Repomix | Node.js 22+、npm cache；固定 1.18.1 sandbox，只讀取 linebot-platform |
+| 本地 npm MCP runtime | Node.js 22+、npm、jq、sha256sum；依 lock 預安裝到 `/workspace/.linebot-tools/mcp-runtime` |
+| Repomix | 預安裝固定 1.18.1 sandbox，只讀取 linebot-platform |
 | Context7 | mcp.context7.com 網路；匿名額度可能受限 |
 | OpenAI Docs | developers.openai.com 網路；不需要 OpenAI API key |
 | GitHub | 安全提供 GITHUB_MCP_TOKEN，限制 repository／操作權限 |
 | Google Developer Knowledge | 安全提供 DEVELOPERKNOWLEDGE_API_KEY；映射 header，不放 repo／URL |
-| 其餘服務 MCP | 預設停用；隔離環境、最小權限與明確任務授權 |
+| 其餘服務 MCP | 依 repository config 啟用或停用；仍需隔離環境、最小權限與明確任務授權 |
 
-不要新增 production LINE token、服務帳號 JSON 或廣權限 PAT 只為驗收工具。角色文字「唯讀」不是 IAM 或 token 的技術隔離。
+所有已設定 Agent 繼承 repository MCP 設定，但這不代表 Host 已啟動／初始化伺服器，也不代表已認證、已授權或已實測。`google_cloud_cli` 啟用 `run_gcloud_command` 並對每次呼叫要求 prompt approval；repository 將用途限於唯讀 Observability 查詢，但這是 policy-only 規範，不是通用 gcloud command 工具的技術唯讀保證。實際可執行範圍仍受 approval、身分與 IAM 控制。不要新增 production LINE token、服務帳號 JSON 或廣權限 PAT 只為驗收工具。角色文字「唯讀」不是 IAM 或 token 的技術隔離。
 
 ## 驗證
 
@@ -59,7 +60,8 @@ bash scripts/codex-cloud/verify.sh
 go mod verify
 make check
 "/workspace/.linebot-tools/bin/gopls" version
-npm_config_cache=/workspace/.npm-cache npx -y repomix@1.18.1 --version
+jq . /workspace/.linebot-tools/mcp-runtime/receipt.json
+/workspace/.linebot-tools/mcp-runtime/node_modules/.bin/repomix --version
 # 只有 Host 確實提供 Codex CLI 才執行：
 codex --version
 codex mcp list
