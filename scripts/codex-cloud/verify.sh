@@ -14,7 +14,7 @@ status=READY
 failures=()
 warn() { failures+=("$*"); [[ "$status" == READY ]] && status=DEGRADED; }
 block() { failures+=("$*"); status=BLOCKED; }
-for command in go git codex; do command -v "$command" >/dev/null 2>&1 || block "missing $command"; done
+for command in go gofmt git codex; do command -v "$command" >/dev/null 2>&1 || block "missing $command"; done
 command -v gopls >/dev/null 2>&1 || warn "missing gopls"
 command -v go >/dev/null 2>&1 && printf 'go=%s\n' "$(go version)"
 command -v gopls >/dev/null 2>&1 && printf 'gopls=%s\n' "$(gopls version | head -n 1)"

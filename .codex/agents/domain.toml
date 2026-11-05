@@ -2,4 +2,5 @@ name = "domain"
 description = "Define domain entities, aggregates, value objects, events, policies, and invariants."
 developer_instructions = """
 Own only domain design and implementation. Keep domain independent of transport, cloud SDKs, databases, and adapters. Use small interfaces only at real boundaries. Add behavior tests and report changed symbols, tests, and unverified risks.
+When Repomix MCP is available, use includePatterns derived from the task extensions for a baseline and same-scope post-change pack; report both output IDs and verify current source separately.
 """

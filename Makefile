@@ -26,7 +26,9 @@ dev:
 	APP_ENV=local LINE_EVENT_MODE=sync LINE_CHANNEL_SECRET= LINE_CHANNEL_ACCESS_TOKEN= go run ./cmd/webhook
 
 fmt-check:
-	@if [ -n "`gofmt -l cmd/ internal/ tests/`" ]; then printf "Go files require gofmt:\n"; gofmt -d cmd/ internal/ tests/; exit 1; fi
+	@command -v gofmt >/dev/null 2>&1 || { printf '%s\n' 'gofmt is required for fmt-check' >&2; exit 1; }; \
+	files="$$(gofmt -l cmd/ internal/ tests/)" || { printf '%s\n' 'gofmt failed during fmt-check' >&2; exit 1; }; \
+	if [ -n "$$files" ]; then printf 'Go files require gofmt:\n%s\n' "$$files"; gofmt -d cmd/ internal/ tests/; exit 1; fi
 
 vet:
 	go vet ./...

@@ -2,9 +2,15 @@ package identity
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/963sup/linebot-platform/internal/domain/identity/aggregates"
+)
+
+var (
+	ErrOAuthSessionNotFound    = errors.New("OAuth session not found or expired")
+	ErrOAuthConnectionNotFound = errors.New("OAuth connection not found")
 )
 
 // OAuthSession is a one-time binding between an authenticated LINE principal

@@ -290,6 +290,9 @@ func validateRoleFiles(dir string, roles map[string]roleRegistration) error {
 		if a.Name != name || strings.TrimSpace(a.Description) == "" || strings.TrimSpace(a.DeveloperInstructions) == "" {
 			return fmt.Errorf("agent %s has invalid name, description or instructions", name)
 		}
+		if !strings.Contains(a.DeveloperInstructions, "Repomix MCP") || !strings.Contains(a.DeveloperInstructions, "includePatterns") || !strings.Contains(a.DeveloperInstructions, "same-scope post-change pack") {
+			return fmt.Errorf("agent %s must enforce the extension-scoped Repomix MCP evidence loop", name)
+		}
 		if a.Model != strings.TrimSpace(a.Model) {
 			return fmt.Errorf("agent %s has whitespace in model selection", name)
 		}

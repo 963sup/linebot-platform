@@ -101,3 +101,95 @@ func TestMarkdownArchitectureContractsStayAligned(t *testing.T) {
 		}
 	}
 }
+
+func TestArchitectureSectionsPreserveOwnershipAndDirectionSemantics(t *testing.T) {
+	tests := []struct {
+		path      string
+		heading   string
+		required  []string
+		forbidden []string
+	}{
+		{
+			path:      "../../docs/architecture/blueprint.md",
+			heading:   "### Ports",
+			required:  []string{"Application 的 inbound use-case API 與 outbound capability port", "Domain repository contract", "兩者不得重複同一 contract"},
+			forbidden: []string{"Application owns all outbound ports", "Domain must not own repository contracts"},
+		},
+		{
+			path:      "../../docs/architecture/blueprint.md",
+			heading:   "### Adapters",
+			required:  []string{"Application capability", "Domain 擁有的 repository contract"},
+			forbidden: []string{"Outbound adapters 實作 ports"},
+		},
+		{
+			path:      "../../docs/architecture/blueprint.md",
+			heading:   "## 2. 唯一依賴方向",
+			required:  []string{"composition dependency", "Runtime 呼叫", "source dependency", "Application capability port 或 Domain repository contract"},
+			forbidden: []string{"Runtime dependency direction"},
+		},
+		{
+			path:      "../../docs/architecture/sdk-integration.md",
+			heading:   "## Composition、runtime call 與 source dependency",
+			required:  []string{"Composition ownership", "Runtime call", "Compile-time source dependency", "Application capability", "Domain repository contract"},
+			forbidden: []string{"## Runtime dependency direction"},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.path+"/"+test.heading, func(t *testing.T) {
+			data, err := os.ReadFile(test.path)
+			if err != nil {
+				t.Fatal(err)
+			}
+			section, ok := markdownSection(string(data), test.heading)
+			if !ok {
+				t.Fatalf("missing Markdown section %q", test.heading)
+			}
+			for _, marker := range test.required {
+				if !strings.Contains(section, marker) {
+					t.Errorf("section %q missing %q", test.heading, marker)
+				}
+			}
+			for _, marker := range test.forbidden {
+				if strings.Contains(section, marker) {
+					t.Errorf("section %q contains obsolete wording %q", test.heading, marker)
+				}
+			}
+		})
+	}
+}
+
+func TestMarkdownSectionStopsAtPeerHeading(t *testing.T) {
+	text := "## Target\nrequired\n### Child\nkept\n## Peer\nforbidden\n"
+	section, ok := markdownSection(text, "## Target")
+	if !ok || !strings.Contains(section, "kept") || strings.Contains(section, "forbidden") {
+		t.Fatalf("unexpected section extraction: %q", section)
+	}
+}
+
+func markdownSection(document, heading string) (string, bool) {
+	lines := strings.Split(document, "\n")
+	level := len(heading) - len(strings.TrimLeft(heading, "#"))
+	start := -1
+	for index, line := range lines {
+		if strings.TrimSpace(line) == heading {
+			start = index
+			break
+		}
+	}
+	if start < 0 {
+		return "", false
+	}
+	end := len(lines)
+	for index := start + 1; index < len(lines); index++ {
+		line := strings.TrimSpace(lines[index])
+		if !strings.HasPrefix(line, "#") {
+			continue
+		}
+		nextLevel := len(line) - len(strings.TrimLeft(line, "#"))
+		if nextLevel <= level && len(line) > nextLevel && line[nextLevel] == ' ' {
+			end = index
+			break
+		}
+	}
+	return strings.Join(lines[start:end], "\n"), true
+}

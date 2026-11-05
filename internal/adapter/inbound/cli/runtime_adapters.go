@@ -16,7 +16,6 @@ import (
 	messagingdelivery "github.com/963sup/linebot-platform/internal/application/usecases/messaging-delivery"
 	"github.com/963sup/linebot-platform/internal/application/usecases/promotion"
 	providerconfiguration "github.com/963sup/linebot-platform/internal/application/usecases/provider-configuration"
-	requestvalidation "github.com/963sup/linebot-platform/internal/application/usecases/request-validation"
 	workspaceautomation "github.com/963sup/linebot-platform/internal/application/usecases/workspace-automation"
 )
 
@@ -28,7 +27,7 @@ type RuntimeAdapters struct {
 	BulkMessaging   *messagingdelivery.DeliveryService
 	PhoneDelivery   messagingdelivery.PhoneDeliveryGateway
 	PhoneReports    insightsreporting.PhoneDeliveryReader
-	Validation      *requestvalidation.Service
+	Validation      *messagingdelivery.ValidationService
 	Profiles        *contactdirectory.Queries
 	Contacts        *contactdirectory.ConversationQueries
 	WebhookAdmin    *providerconfiguration.Service
@@ -142,10 +141,10 @@ func (r profileRuntime) GetProfile(ctx context.Context, query contactdirectory.P
 
 type validationRuntime struct {
 	runtimeCloser
-	service *requestvalidation.Service
+	service *messagingdelivery.ValidationService
 }
 
-func (r validationRuntime) Validate(ctx context.Context, request requestvalidation.Request) (requestvalidation.Report, error) {
+func (r validationRuntime) Validate(ctx context.Context, request messagingdelivery.ValidationRequest) (messagingdelivery.ValidationReport, error) {
 	return r.service.Validate(ctx, request)
 }
 

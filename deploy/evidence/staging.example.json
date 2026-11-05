@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "environment": "staging",
+  "observed_at_utc": "REPLACE_WITH_UTC_TIMESTAMP",
+  "expires_at_utc": "REPLACE_WITH_APPROVAL_EXPIRY_UTC_TIMESTAMP",
+  "reviewer": "REPLACE_WITH_APPROVER_ID",
+  "approved_for_production": false,
+  "image_digests": {
+    "public": "asia-east1-docker.pkg.dev/REPLACE_PROJECT/line-bot/line-bot-public@sha256:REPLACE_DIGEST",
+    "private": "asia-east1-docker.pkg.dev/REPLACE_PROJECT/line-bot/line-bot-private@sha256:REPLACE_DIGEST"
+  },
+  "passed_gates": []
+}

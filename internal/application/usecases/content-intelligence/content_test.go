@@ -58,15 +58,18 @@ func TestProcessGeneratesAndAuditsDraft(t *testing.T) {
 
 func TestProcessAuditsGenerationFailure(t *testing.T) {
 	now := time.Now().UTC()
-	generateErr := errors.New("generation failed")
-	auditErr := errors.New("audit failed")
+	generateErr := errors.New("provider secret: generation failed")
+	auditErr := errors.New("storage secret: audit failed")
 	audit := &fakeAudit{err: auditErr}
 	process, _ := NewProcess(&fakeGenerator{err: generateErr}, audit, fixedClock{now: now})
 	_, err := process.GenerateDraft(context.Background(), validRequest())
-	if !errors.Is(err, generateErr) || !errors.Is(err, auditErr) {
+	if !errors.Is(err, ErrGenerationFailed) || !errors.Is(err, ErrGenerationAuditFailed) || !errors.Is(err, generateErr) || !errors.Is(err, auditErr) {
 		t.Fatalf("GenerateDraft error = %v", err)
 	}
-	if audit.entry.Outcome != AuditFailed || audit.entry.Failure != generateErr.Error() || audit.entry.RecordedAt != now {
+	if strings.Contains(err.Error(), "provider secret") || strings.Contains(err.Error(), "storage secret") {
+		t.Fatalf("GenerateDraft exposed raw failure: %v", err)
+	}
+	if audit.entry.Outcome != AuditFailed || audit.entry.Failure != AuditFailureGeneration || audit.entry.RecordedAt != now {
 		t.Fatalf("failure audit = %+v", audit.entry)
 	}
 }
@@ -75,11 +78,32 @@ func TestProcessRejectsInvalidDraftAndAuditsIt(t *testing.T) {
 	now := time.Now().UTC()
 	audit := &fakeAudit{}
 	process, _ := NewProcess(&fakeGenerator{draft: ContentDraft{RequestID: "wrong"}}, audit, fixedClock{now: now})
-	if _, err := process.GenerateDraft(context.Background(), validRequest()); err == nil {
+	if _, err := process.GenerateDraft(context.Background(), validRequest()); !errors.Is(err, ErrGenerationFailed) || !errors.Is(err, errInvalidDraft) {
 		t.Fatal("invalid draft accepted")
 	}
-	if audit.entry.Outcome != AuditFailed || audit.entry.Failure == "" {
+	if audit.entry.Outcome != AuditFailed || audit.entry.Failure != AuditFailureInvalidDraft {
 		t.Fatalf("invalid draft audit = %+v", audit.entry)
+	}
+}
+
+func TestProcessReturnsSafeAuditFailure(t *testing.T) {
+	now := time.Now().UTC()
+	auditErr := errors.New("database endpoint and credentials")
+	audit := &fakeAudit{err: auditErr}
+	process, _ := NewProcess(&fakeGenerator{draft: ContentDraft{
+		RequestID: "request-1",
+		Content:   "Hello",
+		Provider:  "provider",
+		Model:     "model",
+		CreatedAt: now,
+	}}, audit, fixedClock{now: now})
+
+	_, err := process.GenerateDraft(context.Background(), validRequest())
+	if !errors.Is(err, ErrGenerationAuditFailed) || !errors.Is(err, auditErr) {
+		t.Fatalf("GenerateDraft error = %v", err)
+	}
+	if strings.Contains(err.Error(), auditErr.Error()) {
+		t.Fatalf("GenerateDraft exposed raw audit failure: %v", err)
 	}
 }
 

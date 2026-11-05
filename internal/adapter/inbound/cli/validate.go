@@ -6,7 +6,7 @@ import (
 	"flag"
 	"time"
 
-	requestvalidation "github.com/963sup/linebot-platform/internal/application/usecases/request-validation"
+	messagingdelivery "github.com/963sup/linebot-platform/internal/application/usecases/messaging-delivery"
 )
 
 func runValidate(parent context.Context, args []string, getenv func(string) string, dependencies ...Dependencies) error {
@@ -37,9 +37,9 @@ func runValidate(parent context.Context, args []string, getenv func(string) stri
 	defer rt.Close()
 	ctx, cancel := context.WithTimeout(parent, 12*time.Second)
 	defer cancel()
-	_, err = rt.Validate(ctx, requestvalidation.Request{
-		Delivery: requestvalidation.DeliveryKind(*kind),
-		Messages: []requestvalidation.Message{{Kind: requestvalidation.Text, Text: *text}},
+	_, err = rt.Validate(ctx, messagingdelivery.ValidationRequest{
+		Delivery: messagingdelivery.DeliveryKind(*kind),
+		Messages: []messagingdelivery.Message{{Kind: messagingdelivery.KindText, Text: *text}},
 	})
 	return err
 }

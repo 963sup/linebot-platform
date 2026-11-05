@@ -11,6 +11,8 @@ Packages, ports, DTOs, aggregates, repositories, directory structure, or cross-c
 - Adapters isolate external protocols and SDK types.
 - Aggregates preserve invariants and cross-context communication uses explicit contracts.
 - No duplicate entry point or abstraction without a consumer.
+- For cross-file changes, verify the initial and review Repomix MCP packs use exactly the same normalized extension-scoped `includePatterns`, and that the review pack was created after implementation. Scope expansion requires a new baseline before further edits.
+- Reject empty matches, silent full-repository widening, stale HEAD/scoped fingerprints, or a narrower review pattern that can hide new dependencies. Confirm every cited finding against current source or gopls.
 
 ## Commands
 

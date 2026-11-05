@@ -393,12 +393,12 @@ func (s *OAuthStore) ConsumeSession(ctx context.Context, state string) (identity
 			return err
 		}
 		if !s.now().Before(saved.ExpiresAt) {
-			return errors.New("expired OAuth state")
+			return identity.ErrOAuthSessionNotFound
 		}
 		return tx.Delete(ref)
 	})
 	if err != nil {
-		return identity.OAuthSession{}, errors.New("OAuth session expired, consumed or unavailable")
+		return identity.OAuthSession{}, oauthSessionReadError(ctx, err)
 	}
 	plain, err := s.keys.Open("state:"+id, saved.KeyID, saved.Ciphertext)
 	if err != nil {
@@ -588,7 +588,7 @@ func (s *OAuthStore) GetConnection(ctx context.Context, owner, subject string) (
 	}
 	snap, err := ref.Get(ctx)
 	if err != nil {
-		return identity.OAuthAuthorization{}, errors.New("Google connection unavailable")
+		return identity.OAuthAuthorization{}, oauthConnectionReadError(ctx, err)
 	}
 	var saved storedConnection
 	if err := snap.DataTo(&saved); err != nil {
@@ -602,6 +602,26 @@ func (s *OAuthStore) GetConnection(ctx context.Context, owner, subject string) (
 		return identity.OAuthAuthorization{}, errors.New("Google connection identity mismatch")
 	}
 	return conn, nil
+}
+
+func oauthSessionReadError(ctx context.Context, err error) error {
+	if ctxErr := ctx.Err(); ctxErr != nil {
+		return ctxErr
+	}
+	if errors.Is(err, identity.ErrOAuthSessionNotFound) || status.Code(err) == codes.NotFound {
+		return identity.ErrOAuthSessionNotFound
+	}
+	return errors.New("OAuth session unavailable")
+}
+
+func oauthConnectionReadError(ctx context.Context, err error) error {
+	if ctxErr := ctx.Err(); ctxErr != nil {
+		return ctxErr
+	}
+	if status.Code(err) == codes.NotFound {
+		return identity.ErrOAuthConnectionNotFound
+	}
+	return errors.New("Google connection unavailable")
 }
 
 func (s *OAuthStore) UpdateCredentials(ctx context.Context, conn identity.OAuthAuthorization, expectedVersion int64) error {

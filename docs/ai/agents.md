@@ -31,6 +31,8 @@ The primary orchestrator interprets requests, orders dependencies, assigns one w
 ## Evidence policy
 
 - Use direct search for local questions and sandboxed Repomix only when cross-package structure or repository-wide context is needed.
+- For extension-focused work, call Repomix MCP `pack_codebase` with comma-separated fast-glob `includePatterns`: Markdown uses `**/*.md`, Go uses `**/*.{go,mod,sum}`, shell uses `**/*.sh`, and mixed contracts add each required pattern explicitly. Do not pack unrelated extensions by default.
+- Patterns must be repository-relative POSIX globs. Empty matches, absolute paths, `..`, leading negation, symlink escape or files outside the declared extension set are `BLOCKED`; never silently widen to a full-repository pack. When scope expands, establish a new baseline before additional edits.
 - Use `gopls` for Go symbols, references and diagnostics.
 - Use Context7 for version-specific third-party SDK documentation.
 - Use `openaiDeveloperDocs` only for OpenAI/Codex/MCP/Plugin documentation.
@@ -38,7 +40,7 @@ The primary orchestrator interprets requests, orders dependencies, assigns one w
 - Use GitHub MCP for repository, branch, PR and CI evidence.
 - MCP declarations do not prove startup, authentication, authorization or tool availability.
 
-Cross-cutting Go work uses this evidence loop when the tools are available and verified: Repomix scope map, gopls semantic confirmation, smallest-role implementation, repository checks, then independent review. If Repomix or gopls is unavailable, use direct search or Go CLI fallbacks and report that tool as `Not Verified`; Repomix output is a context snapshot and never overrides current source or gopls.
+Every delegated role uses the same closed loop when Repomix MCP is available: task-scoped baseline pack → current-source or gopls confirmation → implementation/read-only review → repository checks → post-change pack with the same normalized `includePatterns` → `grep_repomix_output` or `read_repomix_output` verification. The orchestrator owns the immutable artifact identity and shares it with children; a new pack supersedes rather than overwrites prior evidence. Handoffs record patterns, output IDs, metrics, HEAD, dirty-state or scoped fingerprint, artifact hash and stale status. If Repomix or gopls is unavailable, use direct search or pinned CLI/Go fallbacks and report that tool as `Not Verified`; a packed snapshot never overrides current source or gopls. Full-repository packs are reserved for genuinely cross-extension repository audits.
 
 ## Environment policy
 

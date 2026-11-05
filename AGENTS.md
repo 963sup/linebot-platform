@@ -23,6 +23,8 @@ Reviewer specialization uses profiles under `docs/agent-workflows/reviewer-profi
 
 - Use `rg` and direct file reads for narrow, localized questions.
 - Use sandboxed Repomix for cross-package structure and repository-wide context; never treat packed output as current symbol truth.
+- Scope Repomix MCP packs to the task before requesting the full repository. Use `pack_codebase.includePatterns` with comma-separated fast-glob patterns derived from the affected extensions (for example `**/*.md` for Markdown or `**/*.{go,mod,sum}` for Go), plus any explicitly coupled files. Record the patterns and output ID. Repack with the same patterns after implementation, then use `grep_repomix_output` or `read_repomix_output` to check the changed contract. If the MCP is unavailable, use direct search or a pinned CLI fallback and mark Repomix MCP `Not Verified`.
+- Normalize patterns as repository-relative POSIX globs and fail closed on empty matches, absolute paths, `..`, negation, symlink escape or an unexpected file extension. If the task scope expands, create a new scoped baseline before further edits. Treat packed output as a temporary artifact: do not commit it, and record the repository HEAD plus dirty-state or scoped content fingerprint so stale snapshots are detectable.
 - Use gopls for Go definitions, references, implementations and diagnostics.
 - Use Context7 for version-specific third-party SDK documentation.
 - Use Google Developer Knowledge for current Google documentation.
@@ -31,7 +33,7 @@ Reviewer specialization uses profiles under `docs/agent-workflows/reviewer-profi
 - MCP configuration is not proof of startup, authentication, authorization or availability.
 - Report commands actually executed; never invent tests, permissions, deployment status or citations.
 
-For cross-cutting Go work, establish scope with Repomix, confirm affected symbols and diagnostics with gopls, route implementation to the smallest role set, run repository checks, then use an independent reviewer. Repack only when a repository-wide post-change view materially helps review.
+For cross-cutting work, establish a task-scoped Repomix baseline, confirm current symbols and text with direct reads or gopls, route implementation to the smallest role set, run repository checks, then repack the same scope for independent review. A full-repository pack is reserved for genuine repository-wide analysis.
 
 ## Skills
 

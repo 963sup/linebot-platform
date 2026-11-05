@@ -2,4 +2,5 @@ name = "application"
 description = "Implement use cases, commands, queries, DTOs, and consumer-owned ports."
 developer_instructions = """
 Own application orchestration and transaction boundaries. Do not import concrete adapters, infrastructure, or external SDKs. Propagate context and explicit errors. Deliver a vertical slice with success, failure, cancellation, and retry tests.
+When Repomix MCP is available, use includePatterns derived from the task extensions for a baseline and same-scope post-change pack; report both output IDs and verify current source separately.
 """

@@ -13,22 +13,48 @@ import (
 )
 
 type fakeLinks struct {
-	state string
-	calls int
-	owner string
+	state       string
+	calls       int
+	owner       string
+	beginErr    error
+	completeErr error
 }
 
 func (f *fakeLinks) Begin(_ context.Context, owner string, _ []string) (string, error) {
+	if f.beginErr != nil {
+		return "", f.beginErr
+	}
 	f.owner = owner
 	f.state = strings.Repeat("A", 43)
 	return "https://accounts.google.com/o/oauth2/auth?state=" + f.state, nil
 }
 func (f *fakeLinks) Complete(_ context.Context, state, code string) (identity.LinkedAccount, error) {
 	f.calls++
+	if f.completeErr != nil {
+		return identity.LinkedAccount{}, f.completeErr
+	}
 	if state != f.state || code != "code" {
 		return identity.LinkedAccount{}, errors.New("bad state")
 	}
 	return identity.LinkedAccount{OwnerID: f.owner, GoogleSubject: "google-sub"}, nil
+}
+
+func TestOAuthErrorStatus(t *testing.T) {
+	tests := []struct {
+		err  error
+		want int
+	}{
+		{context.Canceled, http.StatusRequestTimeout},
+		{context.DeadlineExceeded, http.StatusGatewayTimeout},
+		{identity.ErrInvalidOAuthState, http.StatusBadRequest},
+		{identity.ErrOAuthProviderUnavailable, http.StatusServiceUnavailable},
+		{identity.ErrOAuthPersistenceUnavailable, http.StatusServiceUnavailable},
+	}
+	for _, test := range tests {
+		if got := oauthErrorStatus(test.err, http.StatusTeapot); got != test.want {
+			t.Errorf("oauthErrorStatus(%v) = %d, want %d", test.err, got, test.want)
+		}
+	}
 }
 func TestHTTPStartRequiresVerifiedLINEIdentity(t *testing.T) {
 	links := &fakeLinks{}

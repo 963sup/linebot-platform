@@ -9,6 +9,28 @@ import (
 
 const MaxInputBytes = 1 << 20
 
+const (
+	AuditFailureGeneration   = "generation_failed"
+	AuditFailureInvalidDraft = "invalid_draft"
+)
+
+var (
+	ErrGenerationFailed      = errors.New("content generation failed")
+	ErrGenerationAuditFailed = errors.New("content generation audit failed")
+	errInvalidDraft          = errors.New("content generator returned an invalid draft")
+)
+
+// safeProcessError preserves a cause for internal classification while keeping
+// provider and storage details out of boundary-facing error strings.
+type safeProcessError struct {
+	message error
+	cause   error
+}
+
+func (e *safeProcessError) Error() string { return e.message.Error() }
+
+func (e *safeProcessError) Unwrap() []error { return []error{e.message, e.cause} }
+
 type GenerationPolicy struct {
 	Purpose        string
 	MaxOutputBytes int
@@ -90,13 +112,26 @@ func (p *Process) GenerateDraft(ctx context.Context, request GenerationRequest) 
 		}
 	}
 	if generateErr != nil {
-		entry.Failure = generateErr.Error()
+		entry.Failure = auditFailure(generateErr)
 	}
 	auditErr := p.audit.RecordGeneration(ctx, entry)
-	if generateErr != nil || auditErr != nil {
-		return ContentDraft{}, errors.Join(generateErr, auditErr)
+	if generateErr != nil {
+		generateErr = &safeProcessError{message: ErrGenerationFailed, cause: generateErr}
+	}
+	if auditErr != nil {
+		auditErr = &safeProcessError{message: ErrGenerationAuditFailed, cause: auditErr}
+	}
+	if processErr := errors.Join(generateErr, auditErr); processErr != nil {
+		return ContentDraft{}, processErr
 	}
 	return draft, nil
+}
+
+func auditFailure(err error) string {
+	if errors.Is(err, errInvalidDraft) {
+		return AuditFailureInvalidDraft
+	}
+	return AuditFailureGeneration
 }
 
 func validateContext(ctx context.Context) error {
@@ -121,7 +156,7 @@ func validateRequest(request GenerationRequest) error {
 
 func validateDraft(requestID string, draft ContentDraft) error {
 	if draft.RequestID != requestID || !validText(draft.Provider) || !validText(draft.Model) || draft.Content == "" || draft.CreatedAt.IsZero() {
-		return errors.New("content generator returned an invalid draft")
+		return errInvalidDraft
 	}
 	return nil
 }

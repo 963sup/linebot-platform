@@ -16,6 +16,21 @@ import (
 
 const oauthSessionTTL = 10 * time.Minute
 
+var (
+	ErrInvalidOAuthRequest         = errors.New("invalid OAuth request")
+	ErrInvalidOAuthState           = errors.New("invalid or expired OAuth state")
+	ErrOAuthProviderUnavailable    = errors.New("OAuth provider unavailable")
+	ErrOAuthPersistenceUnavailable = errors.New("OAuth persistence unavailable")
+	ErrOAuthRevocationUnknown      = errors.New("OAuth revocation outcome unknown")
+)
+
+func contextOr(ctx context.Context, fallback error) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	return fallback
+}
+
 type LinkService struct {
 	provider    OAuthProvider
 	sessions    OAuthSessionRepository
@@ -47,15 +62,15 @@ func secureNonce() (string, error) {
 // Begin accepts only an identity already authenticated by an inbound boundary.
 func (s *LinkService) Begin(ctx context.Context, verifiedOwner string, scopes []string) (string, error) {
 	if ctx == nil {
-		return "", errors.New("verified owner and Google scopes required")
+		return "", ErrInvalidOAuthRequest
 	}
 	owner, err := valueobjects.NewLineUserID(verifiedOwner)
 	if err != nil {
-		return "", errors.New("verified owner and Google scopes required")
+		return "", ErrInvalidOAuthRequest
 	}
 	requestedScopes, err := valueobjects.NewOAuthScopes(scopes)
 	if err != nil {
-		return "", errors.New("verified owner and Google scopes required")
+		return "", ErrInvalidOAuthRequest
 	}
 	if err := ctx.Err(); err != nil {
 		return "", err
@@ -74,14 +89,14 @@ func (s *LinkService) Begin(ctx context.Context, verifiedOwner string, scopes []
 	}
 	url, err := s.provider.AuthorizationURL(state, verifier, nonce, requestedScopes.Values())
 	if err != nil {
-		return "", err
+		return "", ErrOAuthProviderUnavailable
 	}
 	session := OAuthSession{
 		OwnerID: owner.String(), Verifier: verifier, Nonce: nonce,
 		Scopes: requestedScopes.Values(), ExpiresAt: s.now().UTC().Add(oauthSessionTTL),
 	}
 	if err := s.sessions.CreateSession(ctx, state, session); err != nil {
-		return "", errors.New("unable to persist OAuth authorization state")
+		return "", contextOr(ctx, ErrOAuthPersistenceUnavailable)
 	}
 	return url, nil
 }
@@ -89,21 +104,27 @@ func (s *LinkService) Begin(ctx context.Context, verifiedOwner string, scopes []
 // Complete consumes state before token exchange, making callback replay fail closed.
 func (s *LinkService) Complete(ctx context.Context, state, code string) (LinkedAccount, error) {
 	if ctx == nil || len(state) != 43 || strings.TrimSpace(code) == "" {
-		return LinkedAccount{}, errors.New("invalid OAuth callback")
+		return LinkedAccount{}, ErrInvalidOAuthRequest
 	}
 	if err := ctx.Err(); err != nil {
 		return LinkedAccount{}, err
 	}
 	session, err := s.sessions.ConsumeSession(ctx, state)
 	if err != nil {
-		return LinkedAccount{}, errors.New("invalid or expired OAuth state")
+		if ctxErr := ctx.Err(); ctxErr != nil {
+			return LinkedAccount{}, ctxErr
+		}
+		if errors.Is(err, ErrOAuthSessionNotFound) {
+			return LinkedAccount{}, ErrInvalidOAuthState
+		}
+		return LinkedAccount{}, ErrOAuthPersistenceUnavailable
 	}
 	if session.OwnerID == "" || session.Nonce == "" || !s.now().Before(session.ExpiresAt) {
-		return LinkedAccount{}, errors.New("OAuth state expired")
+		return LinkedAccount{}, ErrInvalidOAuthState
 	}
 	googleIdentity, credentials, err := s.provider.ExchangeAndVerify(ctx, code, session.Verifier, session.Nonce)
 	if err != nil {
-		return LinkedAccount{}, errors.New("Google OAuth exchange failed")
+		return LinkedAccount{}, contextOr(ctx, ErrOAuthProviderUnavailable)
 	}
 	if googleIdentity.Subject == "" || credentials.AccessToken == "" {
 		return LinkedAccount{}, errors.New("Google identity or credentials missing")
@@ -117,7 +138,7 @@ func (s *LinkService) Complete(ctx context.Context, state, code string) (LinkedA
 		return LinkedAccount{}, errors.New("invalid verified account link")
 	}
 	if err := s.connections.SaveConnection(ctx, OAuthAuthorization{Link: accountLink, Credentials: credentials}); err != nil {
-		return LinkedAccount{}, errors.New("unable to persist Google connection")
+		return LinkedAccount{}, contextOr(ctx, ErrOAuthPersistenceUnavailable)
 	}
 	accountLink.AcknowledgeEvents()
 	return LinkedAccount{
@@ -128,14 +149,20 @@ func (s *LinkService) Complete(ctx context.Context, state, code string) (LinkedA
 // Disconnect disables local authorization before best-effort remote revocation.
 func (s *LinkService) Disconnect(ctx context.Context, verifiedOwner, googleSubject string) error {
 	if ctx == nil || verifiedOwner == "" || googleSubject == "" {
-		return errors.New("verified owner and Google subject are required")
+		return ErrInvalidOAuthRequest
 	}
 	if err := ctx.Err(); err != nil {
 		return err
 	}
 	authorization, err := s.connections.GetConnection(ctx, verifiedOwner, googleSubject)
 	if err != nil {
-		return errors.New("Google connection unavailable")
+		if ctxErr := ctx.Err(); ctxErr != nil {
+			return ctxErr
+		}
+		if errors.Is(err, ErrOAuthConnectionNotFound) {
+			return ErrInvalidOAuthState
+		}
+		return ErrOAuthPersistenceUnavailable
 	}
 	owner, err := valueobjects.NewLineUserID(verifiedOwner)
 	if err != nil {
@@ -149,7 +176,7 @@ func (s *LinkService) Disconnect(ctx context.Context, verifiedOwner, googleSubje
 		return err
 	}
 	if err := s.connections.DeactivateConnection(ctx, authorization); err != nil {
-		return errors.New("unable to deactivate Google connection")
+		return contextOr(ctx, ErrOAuthPersistenceUnavailable)
 	}
 	authorization.Link.AcknowledgeEvents()
 	token := authorization.Credentials.RefreshToken
@@ -160,7 +187,7 @@ func (s *LinkService) Disconnect(ctx context.Context, verifiedOwner, googleSubje
 		return nil
 	}
 	if err := s.provider.Revoke(ctx, token); err != nil {
-		return errors.New("Google connection disabled locally; remote revocation remains unconfirmed")
+		return contextOr(ctx, ErrOAuthRevocationUnknown)
 	}
 	return nil
 }

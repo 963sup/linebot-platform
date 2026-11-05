@@ -55,6 +55,11 @@ Rollback run/revision and data compatibility evidence:
 Observed at (UTC) and run URL:
 Unverified cases / blockers:
 Approved for production? (default: NO):
+Evidence schema version: 1
+Public / private immutable image digests:
+Reviewer identity and approval record:
+Promotion approval expires at (UTC):
+Evidence object URI and SHA-256:
 ```
 
 **完成判準**：每個 Gate 有真實可定位的 Staging 證據、所有安全測試通過、已審核與簽署，才能變更本頁狀態。此文件不提供 Terraform apply／CreateTask／LINE Send 的自行授權。

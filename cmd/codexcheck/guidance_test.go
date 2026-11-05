@@ -58,6 +58,26 @@ func TestGuidanceTracksRegisteredCapabilities(t *testing.T) {
 			t.Errorf("acceptance guidance missing current baseline %q", want)
 		}
 	}
+	for _, path := range []string{"AGENTS.md", "docs/ai/agents.md", ".agents/skills/agent-tool-preflight/SKILL.md"} {
+		guidance := read(path)
+		for _, want := range []string{"includePatterns", "**/*.md", "**/*.{go,mod,sum}", "Not Verified"} {
+			if !strings.Contains(guidance, want) {
+				t.Errorf("%s missing extension-scoped Repomix guidance %q", path, want)
+			}
+		}
+	}
+	handoff := read("docs/agent-workflows/handoff-contract.md")
+	for _, want := range []string{"Include Patterns", "Initial Output ID", "Review Output ID", "Pattern Match", "Scoped Fingerprint", "Stale"} {
+		if !strings.Contains(handoff, want) {
+			t.Errorf("handoff contract missing Repomix evidence field %q", want)
+		}
+	}
+	architectureProfile := read("docs/agent-workflows/reviewer-profiles/architecture.md")
+	for _, want := range []string{"same normalized extension-scoped `includePatterns`", "new baseline", "current source or gopls"} {
+		if !strings.Contains(architectureProfile, want) {
+			t.Errorf("architecture reviewer profile missing Repomix check %q", want)
+		}
+	}
 	if !strings.Contains(read("docs/ai/agents-mcp-plugins-plan.md"), "已由目前的九個 child threads 政策取代") {
 		t.Error("historical plan must identify its concurrency policy as superseded")
 	}

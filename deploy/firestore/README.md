@@ -37,7 +37,7 @@ for oldest Pending age, and `(state,updated_at)` for bounded samples.
 **never** loads any LINE user text or token. This is a snapshot from several
 queries, not a globally consistent read transaction.
 
-Deploying these indexes or the two `expires_at` TTL policies is a separate
+Deploying these indexes or the three `expires_at` TTL policies is a separate
 reviewed staging operation. The emulator can accept queries without enforcing
 cloud index availability; **CI passing cannot establish production index or
 TTL readiness**. TTL deletion is asynchronous and must not replace a domain

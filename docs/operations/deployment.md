@@ -18,7 +18,7 @@
 
 Cloud Build 預期使用 `line-bot-build@bubbly-area-513305-s0.iam.gserviceaccount.com`。部署前必須驗證它只具備限定於建置來源 bucket 的讀取權、`line-bot` Artifact Registry repository 的寫入權，以及 Cloud Build、Cloud Logging、Cloud Run 與 runtime service account 代管所需的最小權限。
 
-Cloud Run 預期使用 `line-bot-runtime@bubbly-area-513305-s0.iam.gserviceaccount.com`。部署前必須驗證它只能讀寫指定 Firestore database、將事件寫入 Cloud Tasks，並以 `line-bot-scheduler@bubbly-area-513305-s0.iam.gserviceaccount.com` 建立 OIDC Task。另須驗證 Cloud Tasks service agent 能為此 invoker service account 建立 OIDC token，且 private worker 只授予該 invoker `roles/run.invoker`。這些 IAM 敘述是目標狀態，不是目前環境已驗證的事實。
+Cloud Run 預期分別使用 `line-bot-public@bubbly-area-513305-s0.iam.gserviceaccount.com` 與 `line-bot-worker@bubbly-area-513305-s0.iam.gserviceaccount.com`；不得共用廣權限 runtime 身分。Public 只能讀取 Channel Secret、寫入必要 Firestore 文件並向指定 Queue enqueue；Worker 只能讀取 Channel Access Token、執行必要 Firestore 狀態轉移與 reconcile enqueue。Cloud Tasks／Scheduler 使用 `line-bot-invoker@bubbly-area-513305-s0.iam.gserviceaccount.com` 呼叫 Worker。部署前還須驗證 Cloud Tasks service agent 能為 invoker 建立 OIDC token，且 private worker 只授予該 invoker `roles/run.invoker`。這些 IAM 敘述是目標狀態，不是目前環境已驗證的事實。
 
 ## Runtime 設定與 Secret 分離
 
@@ -70,13 +70,17 @@ gcloud builds submit . \
 
 ## 部署目標服務
 
-`cloudbuild.deploy.yaml` 可建立或更新兩個 Cloud Run service，因此只能在明確授權的目標環境執行。它預設拒絕執行，並在部署前確認 project、Queue、Secrets 和兩個不可變映像均存在；這組 preflight 結果 does not imply production readiness，也不驗證 IAM、LINE、Firestore 或 Cloud Tasks 的 live 行為。
+`cloudbuild.deploy.yaml` 可建立或更新兩個 Cloud Run service，因此只能在明確授權的目標環境執行。它預設拒絕部署與流量 promotion。唯讀 preflight 會核對 project、Queue、Firestore database、四個分離身分、Secrets、不可變映像，以及經 SHA-256 固定且明確核准 production promotion 的 Staging evidence；這些檢查仍不取代 live IAM、LINE、Firestore 或 Cloud Tasks 驗收。
+
+部署 build 只建立帶 `candidate` tag 的 no-traffic revisions，並輸出本次 `latestCreatedRevisionName`；它不做 smoke test，也不切換流量。Private Worker 顯式使用 internal ingress、IAM authentication、16 concurrency 與獨立 Worker 身分。`TASK_WORKER_URL` 與 OIDC audience 來自必填 `_TASK_WORKER_ORIGIN`，preflight 必須確認它等於該 Worker service 的權威 Cloud Run URL。
+
+候選 revision 必須由獨立、已授權的 Staging／Production smoke 流程驗證。之後才可使用 `deploy/scripts/promote.sh`；每次呼叫只處理**單一 service**，並要求未過期的核准 evidence 精確綁定 project、region、service、candidate/base revision 與單一 `10`、`50` 或 `100` 百分比。腳本不讀取 `latestReady`、不自動等待觀測時間，也不連續跨 service 或多個階段；操作人員須在每次呼叫後檢查告警、Queue、Unknown/Pending 與 rollback 條件，再為下一個 service／階段建立新的 evidence。Public Webhook、Worker、Task Invoker 與 Deployer 的最小權限骨架位於 `deploy/terraform/`；Terraform 不由 CI apply，實際 IAM、Secret-level denial、Monitoring notification 與 state policy 都需環境擁有者另行審核。
 
 ```bash
 gcloud builds submit . \
   --project=bubbly-area-513305-s0 \
   --config=cloudbuild.deploy.yaml \
-  --substitutions="_APPROVE_DEPLOYMENT=true,_LINE_BOT_DESTINATION=YOUR_LINE_BOT_DESTINATION,_PUBLIC_IMAGE_URI=asia-east1-docker.pkg.dev/bubbly-area-513305-s0/line-bot/line-bot-public@sha256:PUBLIC_DIGEST,_PRIVATE_IMAGE_URI=asia-east1-docker.pkg.dev/bubbly-area-513305-s0/line-bot/line-bot-private@sha256:PRIVATE_DIGEST"
+  --substitutions="_APPROVE_DEPLOYMENT=true,_STAGING_EVIDENCE_URI=gs://APPROVED_BUCKET/evidence.json,_STAGING_EVIDENCE_SHA256=EVIDENCE_SHA256,_TASK_WORKER_ORIGIN=https://AUTHORIZED_WORKER_ORIGIN,_LINE_BOT_DESTINATION=YOUR_LINE_BOT_DESTINATION,_PUBLIC_IMAGE_URI=asia-east1-docker.pkg.dev/bubbly-area-513305-s0/line-bot/line-bot-public@sha256:PUBLIC_DIGEST,_PRIVATE_IMAGE_URI=asia-east1-docker.pkg.dev/bubbly-area-513305-s0/line-bot/line-bot-private@sha256:PRIVATE_DIGEST"
 ```
 
 完成後應檢查兩個 revision 的 Ready condition、public webhook 的 LINE 簽章拒絕行為，以及 private worker 對匿名請求與錯誤 OIDC audience 的拒絕行為。

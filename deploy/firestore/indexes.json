@@ -101,6 +101,18 @@
   ],
   "fieldOverrides": [
     {
+      "collectionGroup": "line_inbox_v1",
+      "fieldPath": "expires_at",
+      "ttl": true,
+      "indexes": []
+    },
+    {
+      "collectionGroup": "line_outbox_v1",
+      "fieldPath": "expires_at",
+      "ttl": true,
+      "indexes": []
+    },
+    {
       "collectionGroup": "identity_outbox_v1",
       "fieldPath": "expires_at",
       "ttl": true,

@@ -6,7 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	requestvalidation "github.com/963sup/linebot-platform/internal/application/usecases/request-validation"
+	messagingdelivery "github.com/963sup/linebot-platform/internal/application/usecases/messaging-delivery"
 )
 
 func TestLINEMessageValidationEndpoints(t *testing.T) {
@@ -22,10 +22,10 @@ func TestLINEMessageValidationEndpoints(t *testing.T) {
 	defer server.Close()
 	s := contractSender(t, server)
 	ctx := context.Background()
-	message := []requestvalidation.Message{{Kind: requestvalidation.Text, Text: "hello"}}
-	for _, delivery := range []requestvalidation.DeliveryKind{requestvalidation.Reply, requestvalidation.Push, requestvalidation.Multicast, requestvalidation.Narrowcast, requestvalidation.Broadcast} {
+	message := []messagingdelivery.Message{{Kind: messagingdelivery.KindText, Text: "hello"}}
+	for _, delivery := range []messagingdelivery.DeliveryKind{messagingdelivery.DeliveryReply, messagingdelivery.DeliveryPush, messagingdelivery.DeliveryMulticast, messagingdelivery.DeliveryNarrowcast, messagingdelivery.DeliveryBroadcast} {
 		call := func() error {
-			_, err := s.Validate(ctx, requestvalidation.Request{Delivery: delivery, Messages: message})
+			_, err := s.Validate(ctx, messagingdelivery.ValidationRequest{Delivery: delivery, Messages: message})
 			return err
 		}
 		if err := call(); err != nil {

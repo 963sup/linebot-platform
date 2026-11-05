@@ -49,8 +49,8 @@
 
 ## 近期實作順序與不可退化條件
 
-1. **命名與架構 Gate（PR #28 已合併）**：所有 Bounded Context 的 Value Objects 目錄使用 `value-objects/`，Go package 為 `valueobjects`；架構測試禁止同義異名目錄。Identity 已建立八類具體元件並逐步接入 OAuth／Firestore；後續變更仍需按最新 commit 驗證。
-2. **DDD 不退化（Identity 本批完成，其他 Context 後續）**：Identity 的 Aggregate、Entity、VO、Policy、Specification、Factory、Repository Reader、Domain Events 已實作與測試；仍待移除 OAuth 技術 DTO 的重疊欄位並設計持久事件 Outbox。Conversation/Message 在確定真實不變量後才建立 Domain Model，不把 LINE SDK DTO 當成領域模型。
+1. **命名與架構 Gate（PR #28 已合併）**：所有已登記的 tactical Domain model directory 都使用 `value-objects/`，Go package 為 `valueobjects`；架構測試禁止同義異名目錄。Identity 已建立八類具體元件並逐步接入 OAuth／Firestore；後續變更仍需按最新 commit 驗證。
+2. **DDD 不退化**：Identity 是唯一 strategically implemented Bounded Context；其 Aggregate、Entity、VO、Policy、Specification、Factory、Repository Reader、Domain Events 與測試已存在。`identity_outbox_v1` 的原子持久化、reserve／resolve 與 `IdentityEventDispatcher` 已達 `implemented_offline`，但 production publisher adapter、bootstrap sink 與 Staging／Production publication 仍未實作或驗證。Audience、Experience Presentation、Promotion、Workspace Automation 與 Messaging Delivery 只是 ADR 0003 授權的 `candidate/hypothesis` tactical models；程式碼、測試與 Adapter 不構成 strategic promotion。Conversation／Message 仍須先確認真實不變量，不把 LINE SDK DTO 當成領域模型。
 3. **Hexagonal Architecture 不退化（同一功能 PR 的 Gate）**：擴充 AST import boundary 檢查，驗證 Domain 不依賴外層、Application 不 import Adapter/Infrastructure/SDK；新增 usecase 只能透過 Port 呼叫外部效果，Bootstrap 負責 DI。
 4. **GPT／Codex 零先驗不退化（獨立可重現驗收）**：全新、無過往聊天上下文的 Codex session 從 `AGENTS.md` → `README.md` → `docs/architecture/overview.md` → `docs/sdk/catalog.toml`，只讀必要 skill 與 SDK symbol，完成 sandbox-only 微小 Domain 修改；能定位正確的 `value-objects/`，並以 `go.mod`、Catalog、build-tag manifest 保留核准依賴而不建立空 scaffold。將指令、測試結果、失敗與修正紀錄於 PR。
 5. **Production Safety 不退化（Staging 前 Gate）**：以模擬事件驗證簽章、Inbox/Outbox 原子性、重送／亂序、unsend/edit tombstone、Reply token 過期、unknown 發送與 Cloud Tasks OIDC 拒絕未授權請求；建立受控 Staging IAM、Firestore TTL、Scheduler 與 rollback 方案，部署必須經明確批准。不可用 CI 綠燈代表真正 Cloud Run／LINE Production 安全。
@@ -59,17 +59,19 @@
 
 ### Tactical model baseline
 
-- [x] `implemented_offline`：Audience、Experience Presentation、Promotion、Workspace Automation 與 Messaging Delivery 具備 provider-independent Aggregate、Value Object、Domain Event、Repository contract 與行為測試。
+- [x] `implemented_offline`：Audience、Experience Presentation、Promotion 與 Workspace Automation 具備 provider-independent Aggregate、Value Object、modeled Domain facts、Domain-owned Repository contract 與行為測試。
+- [x] `implemented_offline`：Messaging Delivery 具備 provider-independent Aggregate、Value Object、modeled Domain facts 與行為測試；完整 transaction persistence boundary 是 Application-owned `DeliveryWorkflowStore`，刻意不建立重複的 Domain Repository contract。
 - [x] `implemented_offline`：Membership、Contact Directory、Insights Reporting 與 Content Intelligence 明確建模為 Application-owned read/process model，未虛構 Aggregate。
-- [x] `implemented_offline`：架構測試禁止 Domain Context 互相匯入，Application 禁止 provider SDK type，並要求已建立的 Domain Context 同時存在行為與測試。
+- [x] `implemented_offline`：架構測試禁止 Domain model directory 互相匯入，Application 禁止 provider SDK type，並要求 manifest 登記的 tactical Domain model directory 同時存在行為與測試。
 - [ ] `business_validated`：上述 Context（Identity 除外）仍是 `candidate/hypothesis`；需經業務訪談確認語言、owner、邊界與 Core／Supporting 分類後才能提升狀態。
-- [ ] `production_integrated`：候選 Context 的 provider adapter、persistence adapter、composition wiring 與資料遷移尚未全部完成，不以 tactical code 宣稱可部署。
+- [ ] `production_integrated`：ADR 0003 tactical models 的 provider／persistence Adapter 與 composition code 已存在，但資料遷移、provider behavior、授權環境與 Staging rollout 尚未完整驗證；不以 tactical code 或離線測試宣稱可部署。
 
 ## Outbox 可靠性與營運驗收
 
 - [x] `implemented_offline`：經簽章 LINE redelivery、原始 Event Timestamp、只恢復從未發送的工作、bounded Reconcile 與必要離線契約測試已存在於 `main`。
+- [x] `implemented_offline`：Identity Aggregate state 與版本化 Integration Event outbox records 可在同一 Firestore transaction 提交，並具 reserve／lease／resolve dispatcher 邊界；尚無 production publisher sink，因此不得宣稱事件已發布。
 - [ ] `staging_verified`：線上索引、TTL、Backfill、Cloud Tasks OIDC、Scheduler 與故障恢復仍需經授權環境驗證。
-- [ ] 只讀 Outbox 運維 CLI、Staging 驗收契約及告警策略：由下一個單獨 Draft PR 規劃；任何 Cloud Run Job、Monitoring、Scheduler 與 LINE 真實帳號驗收仍待明確核准。
+- [x] `implemented_offline`：只讀 Outbox 運維 CLI、Staging 驗收契約及告警策略文件已存在；Cloud Run Job、Monitoring、Scheduler、publisher sink 與真實 LINE／Identity event publication 仍待明確授權及驗證。
 - [ ] Production readiness：完成 `docs/operations/staging-acceptance.md` 每一項 Gate 的真實證據，並取得 deployment/rollout 授權。
 
 ## 設定契約整合

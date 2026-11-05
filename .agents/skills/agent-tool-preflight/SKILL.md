@@ -16,8 +16,13 @@ description: Select the task-relevant MCP and inspect or install the project's a
 | GitHub repo、PR、CI | `github` | 授權 Git CLI；遠端狀態不可由本機推論 |
 | Codex、Agents、Plugins | `openaiDeveloperDocs` | OpenAI 官方網站／原始碼；Context7 補充 |
 | Google API／Cloud 文件 | `google_developer_knowledge` | Google 官方文件；Context7 補充，再查本地 Go symbols |
+| 同副檔名跨檔案工作 | Repomix MCP `pack_codebase` + `includePatterns` | 直接搜尋或 pinned Repomix CLI，並標記 Repomix MCP `Not Verified` |
 
 只查本次任務需要的工具。以實際工具清單和最小唯讀呼叫確認，不因 enabled=true 宣稱連線成功。純文件排版不要求 gopls。對應服務 MCP 的真實資料操作仍需明確環境授權。
+
+## Repomix scoped-pack 閉環
+
+開始前先從任務推導副檔名，使用 comma-separated fast-glob `includePatterns` 建立 baseline：Markdown 為 `**/*.md`，Go 為 `**/*.{go,mod,sum}`，Shell 為 `**/*.sh`；跨格式契約必須顯式合併所需 patterns，不得為省事直接全庫打包。實作或唯讀審查後，以完全相同的 patterns 再次 `pack_codebase`，再用 `grep_repomix_output`／`read_repomix_output` 驗證目標語意。交接記錄 patterns、前後 output ID、file/token metrics 與差異結論。Repomix 是時間點快照；符號、引用與最終內容仍以 current source、gopls及測試為準。
 
 ## 缺少技能時自主處理
 

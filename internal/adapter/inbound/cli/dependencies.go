@@ -16,7 +16,6 @@ import (
 	messagingdelivery "github.com/963sup/linebot-platform/internal/application/usecases/messaging-delivery"
 	"github.com/963sup/linebot-platform/internal/application/usecases/promotion"
 	providerconfiguration "github.com/963sup/linebot-platform/internal/application/usecases/provider-configuration"
-	requestvalidation "github.com/963sup/linebot-platform/internal/application/usecases/request-validation"
 	workspaceautomation "github.com/963sup/linebot-platform/internal/application/usecases/workspace-automation"
 	"golang.org/x/oauth2"
 )
@@ -39,7 +38,7 @@ type ProfileRuntime interface {
 }
 
 type ValidationRuntime interface {
-	Validate(context.Context, requestvalidation.Request) (requestvalidation.Report, error)
+	Validate(context.Context, messagingdelivery.ValidationRequest) (messagingdelivery.ValidationReport, error)
 	Close() error
 }
 

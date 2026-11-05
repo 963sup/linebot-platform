@@ -70,7 +70,7 @@ func TestRegistryMatchesFilesAndRejectsSymlinks(t *testing.T) {
 	if err := validateRoleFiles(dir, reg); err == nil {
 		t.Fatal("missing role accepted")
 	}
-	body := "name = \"example\"\ndescription = \"test\"\ndeveloper_instructions = \"test\"\n"
+	body := "name = \"example\"\ndescription = \"test\"\ndeveloper_instructions = \"Use Repomix MCP includePatterns with a baseline and same-scope post-change pack.\"\n"
 	path := filepath.Join(dir, "example.toml")
 	if err := os.WriteFile(path, []byte(body), 0600); err != nil {
 		t.Fatal(err)

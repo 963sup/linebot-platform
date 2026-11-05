@@ -58,7 +58,7 @@ func (h *Handler) Start(w http.ResponseWriter, r *http.Request) {
 	}
 	redirect, err := h.links.Begin(r.Context(), owner, h.scopes)
 	if err != nil {
-		http.Error(w, "unable to start Google authorization", http.StatusServiceUnavailable)
+		http.Error(w, "unable to start Google authorization", oauthErrorStatus(err, http.StatusServiceUnavailable))
 		return
 	}
 	u, err := url.Parse(redirect)
@@ -111,10 +111,25 @@ func (h *Handler) Callback(w http.ResponseWriter, r *http.Request) {
 	}
 	_, err = h.links.Complete(r.Context(), state, code)
 	if err != nil {
-		http.Error(w, "Google account connection could not be completed", http.StatusBadRequest)
+		http.Error(w, "Google account connection could not be completed", oauthErrorStatus(err, http.StatusBadRequest))
 		return
 	}
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write([]byte("Google account linked."))
+}
+
+func oauthErrorStatus(err error, fallback int) int {
+	switch {
+	case errors.Is(err, context.DeadlineExceeded):
+		return http.StatusGatewayTimeout
+	case errors.Is(err, context.Canceled):
+		return http.StatusRequestTimeout
+	case errors.Is(err, identity.ErrOAuthProviderUnavailable), errors.Is(err, identity.ErrOAuthPersistenceUnavailable):
+		return http.StatusServiceUnavailable
+	case errors.Is(err, identity.ErrInvalidOAuthRequest), errors.Is(err, identity.ErrInvalidOAuthState):
+		return http.StatusBadRequest
+	default:
+		return fallback
+	}
 }

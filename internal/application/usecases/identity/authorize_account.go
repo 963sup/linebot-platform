@@ -9,6 +9,8 @@ import (
 	valueobjects "github.com/963sup/linebot-platform/internal/domain/identity/value-objects"
 )
 
+var ErrAccountNotAuthorized = errors.New("Google account not linked or authorized")
+
 // AuthorizeLinkedGoogleAccount verifies ownership, lifecycle and scopes before
 // an adapter constructs a user-scoped Google client.
 func AuthorizeLinkedGoogleAccount(
@@ -36,9 +38,15 @@ func AuthorizeLinkedGoogleAccount(
 		return valueobjects.ConnectionID{}, err
 	}
 	link, err := reader.FindConnection(ctx, id)
-	if err != nil || link.Owner() != owner || link.GoogleAccount() != subject ||
+	if err != nil {
+		if ctxErr := ctx.Err(); ctxErr != nil {
+			return valueobjects.ConnectionID{}, ctxErr
+		}
+		return valueobjects.ConnectionID{}, ErrAccountNotAuthorized
+	}
+	if link.Owner() != owner || link.GoogleAccount() != subject ||
 		!specifications.CanUseGoogleAPI(link, requiredScopes) {
-		return valueobjects.ConnectionID{}, errors.New("Google account not linked or authorized")
+		return valueobjects.ConnectionID{}, ErrAccountNotAuthorized
 	}
 	return id, nil
 }

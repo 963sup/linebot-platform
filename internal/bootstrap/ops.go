@@ -13,7 +13,6 @@ import (
 	messagingdelivery "github.com/963sup/linebot-platform/internal/application/usecases/messaging-delivery"
 	"github.com/963sup/linebot-platform/internal/application/usecases/promotion"
 	providerconfiguration "github.com/963sup/linebot-platform/internal/application/usecases/provider-configuration"
-	requestvalidation "github.com/963sup/linebot-platform/internal/application/usecases/request-validation"
 	"github.com/963sup/linebot-platform/internal/infrastructure/httpclient"
 	lineinfra "github.com/963sup/linebot-platform/internal/infrastructure/line"
 )
@@ -30,7 +29,7 @@ type LINEOpsRuntime struct {
 	BulkMessaging   *messagingdelivery.DeliveryService
 	PhoneDelivery   messagingdelivery.PhoneDeliveryGateway
 	PhoneReports    insightsreporting.PhoneDeliveryReader
-	Validation      *requestvalidation.Service
+	Validation      *messagingdelivery.ValidationService
 	Profiles        *contactdirectory.Queries
 	Contacts        *contactdirectory.ConversationQueries
 	WebhookAdmin    *providerconfiguration.Service
@@ -74,7 +73,7 @@ func NewLINEOpsRuntime(token string) (*LINEOpsRuntime, error) {
 	if err != nil {
 		return cleanup(err)
 	}
-	validation, err := requestvalidation.New(sender)
+	validation, err := messagingdelivery.NewValidationService(sender)
 	if err != nil {
 		return cleanup(err)
 	}

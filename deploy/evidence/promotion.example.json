@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "project_id": "REPLACE_PROJECT_ID",
+  "region": "asia-east1",
+  "service": "REPLACE_SINGLE_SERVICE_NAME",
+  "candidate_revision": "REPLACE_CANDIDATE_REVISION",
+  "base_revision": "REPLACE_BASE_REVISION",
+  "approved_percent": 0,
+  "observed_at_utc": "REPLACE_WITH_UTC_TIMESTAMP",
+  "expires_at_utc": "REPLACE_WITH_APPROVAL_EXPIRY_UTC_TIMESTAMP",
+  "reviewer": "REPLACE_WITH_APPROVER_ID",
+  "approved": false,
+  "smoke_passed": false,
+  "sanitized_smoke_evidence": "REPLACE_WITH_APPROVED_EVIDENCE_REFERENCE"
+}

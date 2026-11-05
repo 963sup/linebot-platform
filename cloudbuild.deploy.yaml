@@ -11,9 +11,15 @@ substitutions:
   _PRIVATE_IMAGE_URI: ''
   _QUEUE_ID: 'line-bot-events'
   _LINE_BOT_DESTINATION: ''
-  _TASK_INVOKER_EMAIL: 'line-bot-scheduler@bubbly-area-513305-s0.iam.gserviceaccount.com'
+  _TASK_INVOKER_EMAIL: 'line-bot-invoker@bubbly-area-513305-s0.iam.gserviceaccount.com'
+  _TASK_WORKER_ORIGIN: ''
+  _DEPLOYER_SERVICE_ACCOUNT: 'line-bot-deployer@bubbly-area-513305-s0.iam.gserviceaccount.com'
+  _PUBLIC_SERVICE_ACCOUNT: 'line-bot-public@bubbly-area-513305-s0.iam.gserviceaccount.com'
+  _WORKER_SERVICE_ACCOUNT: 'line-bot-worker@bubbly-area-513305-s0.iam.gserviceaccount.com'
+  _STAGING_EVIDENCE_URI: ''
+  _STAGING_EVIDENCE_SHA256: ''
 
-serviceAccount: 'projects/bubbly-area-513305-s0/serviceAccounts/line-bot-build@bubbly-area-513305-s0.iam.gserviceaccount.com'
+serviceAccount: 'projects/bubbly-area-513305-s0/serviceAccounts/${_DEPLOYER_SERVICE_ACCOUNT}'
 
 steps:
   - id: 'preflight-production'
@@ -34,16 +40,14 @@ steps:
           echo 'Specify _LINE_BOT_DESTINATION as a LINE user ID.' >&2
           exit 2
         fi
-        for image in '${_PUBLIC_IMAGE_URI}' '${_PRIVATE_IMAGE_URI}'; do
-          case "$$image" in
-            '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPOSITORY}/'*'@sha256:'*) ;;
-            *) echo 'Specify a target-repository image pinned by @sha256:.' >&2; exit 2 ;;
-          esac
-          gcloud artifacts docker images describe "$$image" --project='$PROJECT_ID' --quiet >/dev/null
-        done
-        for secret in line-bot-channel-secret line-bot-channel-access-token; do
-          gcloud secrets describe "$$secret" --project='$PROJECT_ID' --quiet >/dev/null
-        done
+        case '${_STAGING_EVIDENCE_URI}' in gs://*) ;; *) echo 'Specify an immutable gs:// staging evidence object.' >&2; exit 2;; esac
+        gcloud storage cp '${_STAGING_EVIDENCE_URI}' /workspace/staging-evidence.json >/dev/null
+        PROJECT_ID='$PROJECT_ID' REGION='${_REGION}' QUEUE_ID='${_QUEUE_ID}' \
+          PUBLIC_IMAGE_URI='${_PUBLIC_IMAGE_URI}' PRIVATE_IMAGE_URI='${_PRIVATE_IMAGE_URI}' \
+          PUBLIC_SERVICE_ACCOUNT='${_PUBLIC_SERVICE_ACCOUNT}' WORKER_SERVICE_ACCOUNT='${_WORKER_SERVICE_ACCOUNT}' \
+          INVOKER_SERVICE_ACCOUNT='${_TASK_INVOKER_EMAIL}' WORKER_SERVICE='${_PRIVATE_SERVICE}' \
+          TASK_WORKER_ORIGIN='${_TASK_WORKER_ORIGIN}' STAGING_EVIDENCE_FILE=/workspace/staging-evidence.json \
+          STAGING_EVIDENCE_SHA256='${_STAGING_EVIDENCE_SHA256}' bash deploy/scripts/preflight.sh
 
   - id: 'deploy-public-webhook'
     name: 'gcr.io/google.com/cloudsdktool/google-cloud-cli@sha256:18d8c484aaef27d7ef7b54dfb018f73712503d254a16f0a76b2626b4f6003af2'
@@ -56,13 +60,16 @@ steps:
       - '--image=${_PUBLIC_IMAGE_URI}'
       - '--region=${_REGION}'
       - '--project=$PROJECT_ID'
-      - '--service-account=line-bot-runtime@bubbly-area-513305-s0.iam.gserviceaccount.com'
+      - '--service-account=${_PUBLIC_SERVICE_ACCOUNT}'
       - '--no-invoker-iam-check'
-      - '--update-env-vars=APP_ENV=production,LINE_EVENT_MODE=durable,LINE_API_TIMEOUT=8s,LOG_LEVEL=info,LOG_FORMAT=json,LINE_BOT_DESTINATION=${_LINE_BOT_DESTINATION},GCP_PROJECT_ID=$PROJECT_ID,TASK_QUEUE_NAME=projects/$PROJECT_ID/locations/${_REGION}/queues/${_QUEUE_ID},TASK_WORKER_URL=https://line-bot-private-185354881750.asia-east1.run.app/tasks/v2/line-reply,TASK_OIDC_AUDIENCE=https://line-bot-private-185354881750.asia-east1.run.app,TASK_INVOKER_EMAIL=${_TASK_INVOKER_EMAIL}'
+      - '--no-traffic'
+      - '--tag=candidate'
+      - '--update-env-vars=APP_ENV=production,LINE_EVENT_MODE=durable,LINE_API_TIMEOUT=8s,LOG_LEVEL=info,LOG_FORMAT=json,LINE_BOT_DESTINATION=${_LINE_BOT_DESTINATION},GCP_PROJECT_ID=$PROJECT_ID,TASK_QUEUE_NAME=projects/$PROJECT_ID/locations/${_REGION}/queues/${_QUEUE_ID},TASK_WORKER_URL=${_TASK_WORKER_ORIGIN}/tasks/v2/line-reply,TASK_OIDC_AUDIENCE=${_TASK_WORKER_ORIGIN},TASK_INVOKER_EMAIL=${_TASK_INVOKER_EMAIL}'
       - '--update-secrets=LINE_CHANNEL_SECRET=line-bot-channel-secret:latest'
       - '--remove-env-vars=GOOGLE_CLOUD_PROJECT,FIRESTORE_DATABASE,OPENAI_MODEL,AUTO_TASKS,AUTO_CALENDAR,CALENDAR_SERVICE_ACCOUNT'
       - '--remove-secrets=LINE_CHANNEL_ACCESS_TOKEN,OPENAI_API_KEY'
       - '--quiet'
+      - '--format=value(status.latestCreatedRevisionName)'
 
   - id: 'deploy-private-worker'
     name: 'gcr.io/google.com/cloudsdktool/google-cloud-cli@sha256:18d8c484aaef27d7ef7b54dfb018f73712503d254a16f0a76b2626b4f6003af2'
@@ -75,14 +82,18 @@ steps:
       - '--image=${_PRIVATE_IMAGE_URI}'
       - '--region=${_REGION}'
       - '--project=$PROJECT_ID'
-      - '--service-account=line-bot-runtime@bubbly-area-513305-s0.iam.gserviceaccount.com'
+      - '--service-account=${_WORKER_SERVICE_ACCOUNT}'
       - '--no-allow-unauthenticated'
+      - '--ingress=internal'
       - '--concurrency=16'
-      - '--update-env-vars=APP_ENV=production,LINE_EVENT_MODE=durable,LINE_API_TIMEOUT=8s,LOG_LEVEL=info,LOG_FORMAT=json,LINE_BOT_DESTINATION=${_LINE_BOT_DESTINATION},GCP_PROJECT_ID=$PROJECT_ID,TASK_QUEUE_NAME=projects/$PROJECT_ID/locations/${_REGION}/queues/${_QUEUE_ID},TASK_WORKER_URL=https://line-bot-private-185354881750.asia-east1.run.app/tasks/v2/line-reply,TASK_OIDC_AUDIENCE=https://line-bot-private-185354881750.asia-east1.run.app,TASK_INVOKER_EMAIL=${_TASK_INVOKER_EMAIL}'
+      - '--no-traffic'
+      - '--tag=candidate'
+      - '--update-env-vars=APP_ENV=production,LINE_EVENT_MODE=durable,LINE_API_TIMEOUT=8s,LOG_LEVEL=info,LOG_FORMAT=json,LINE_BOT_DESTINATION=${_LINE_BOT_DESTINATION},GCP_PROJECT_ID=$PROJECT_ID,TASK_QUEUE_NAME=projects/$PROJECT_ID/locations/${_REGION}/queues/${_QUEUE_ID},TASK_WORKER_URL=${_TASK_WORKER_ORIGIN}/tasks/v2/line-reply,TASK_OIDC_AUDIENCE=${_TASK_WORKER_ORIGIN},TASK_INVOKER_EMAIL=${_TASK_INVOKER_EMAIL}'
       - '--update-secrets=LINE_CHANNEL_ACCESS_TOKEN=line-bot-channel-access-token:latest'
       - '--remove-env-vars=WORKER_MODE,GOOGLE_CLOUD_PROJECT,FIRESTORE_DATABASE,AUTO_TASKS,AUTO_CALENDAR,CALENDAR_SERVICE_ACCOUNT'
       - '--remove-secrets=LINE_CHANNEL_SECRET,OPENAI_API_KEY'
       - '--quiet'
+      - '--format=value(status.latestCreatedRevisionName)'
 
 options:
   logging: CLOUD_LOGGING_ONLY
