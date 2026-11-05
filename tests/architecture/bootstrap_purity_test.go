@@ -17,6 +17,27 @@ func TestBootstrapDoesNotOwnInboundPresentationMapping(t *testing.T) {
 
 	walkProductionGoFiles(t, "../../internal/bootstrap", func(path string, file *ast.File) {
 		for _, declaration := range file.Decls {
+			if gen, ok := declaration.(*ast.GenDecl); ok && gen.Tok == token.TYPE {
+				for _, spec := range gen.Specs {
+					typeSpec, ok := spec.(*ast.TypeSpec)
+					if !ok {
+						continue
+					}
+					structure, ok := typeSpec.Type.(*ast.StructType)
+					if !ok {
+						continue
+					}
+					for _, field := range structure.Fields.List {
+						if len(field.Names) != 0 {
+							continue
+						}
+						embedded := embeddedFieldName(field.Type)
+						if !bootstrapAnonymousEmbeddingAllowed(embedded) {
+							t.Errorf("%s: bootstrap composition type %s anonymously embeds %s; use a named field so promoted methods cannot implement inbound contracts", path, typeSpec.Name.Name, embedded)
+						}
+					}
+				}
+			}
 			fn, ok := declaration.(*ast.FuncDecl)
 			if !ok || fn.Recv == nil || len(fn.Recv.List) != 1 {
 				continue
@@ -61,6 +82,19 @@ func TestBootstrapRuntimeContractDetectionIsNameIndependent(t *testing.T) {
 	contract := cliRuntimeContracts(t)["WorkspaceRuntime"]
 	if !implementsSemanticMethods(map[string]bool{"Execute": true}, contract) {
 		t.Fatal("a bootstrap type named arbitrarily must still be detected when it implements WorkspaceRuntime")
+	}
+}
+
+func TestBootstrapAnonymousEmbeddingAllowsOnlyLifecycle(t *testing.T) {
+	for _, embedded := range []string{"cli.WorkspaceRuntime", "workspaceautomation.ProviderGateway", "*LINEOpsRuntime"} {
+		if bootstrapAnonymousEmbeddingAllowed(embedded) {
+			t.Errorf("non-lifecycle embedding %s must not be allowed in bootstrap", embedded)
+		}
+	}
+	for _, embedded := range []string{"sync.Once", "runtimeCloser"} {
+		if !bootstrapAnonymousEmbeddingAllowed(embedded) {
+			t.Errorf("lifecycle embedding %s should remain allowed", embedded)
+		}
 	}
 }
 
@@ -156,6 +190,27 @@ func receiverName(expr ast.Expr) string {
 	default:
 		return ""
 	}
+}
+
+func embeddedFieldName(expr ast.Expr) string {
+	switch value := expr.(type) {
+	case *ast.Ident:
+		return value.Name
+	case *ast.SelectorExpr:
+		owner, ok := value.X.(*ast.Ident)
+		if !ok {
+			return "<complex embedded field>"
+		}
+		return owner.Name + "." + value.Sel.Name
+	case *ast.StarExpr:
+		return "*" + embeddedFieldName(value.X)
+	default:
+		return "<complex embedded field>"
+	}
+}
+
+func bootstrapAnonymousEmbeddingAllowed(name string) bool {
+	return name == "sync.Once" || name == "runtimeCloser"
 }
 
 func implementsSemanticMethods(got, required map[string]bool) bool {

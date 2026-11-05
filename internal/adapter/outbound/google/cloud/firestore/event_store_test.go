@@ -2,12 +2,16 @@ package firestore
 
 import (
 	"context"
+	"errors"
 	"math"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 
 	sdk "cloud.google.com/go/firestore"
+	messagingdelivery "github.com/963sup/linebot-platform/internal/application/usecases/messaging-delivery"
+	"github.com/963sup/linebot-platform/internal/domain/messaging-delivery/aggregates"
 	valueobjects "github.com/963sup/linebot-platform/internal/domain/messaging-delivery/value-objects"
 	"google.golang.org/api/option"
 	"google.golang.org/grpc"
@@ -44,6 +48,37 @@ func TestCompleteRejectsMissingCompletionTime(t *testing.T) {
 	key := "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 	if err := store.Complete(context.Background(), key, "lease", valueobjects.StatusSent, time.Time{}); err == nil {
 		t.Fatal("Complete accepted a missing completion time")
+	}
+}
+
+func TestMessagingStoreErrorClassificationIsSafe(t *testing.T) {
+	t.Parallel()
+	provider := status.Error(codes.Unavailable, "sensitive project and endpoint")
+	err := classifyMessagingStoreError("claim", provider)
+	if !errors.Is(err, ErrRepositoryUnavailable) || strings.Contains(err.Error(), "sensitive") {
+		t.Fatalf("unsafe provider classification: %v", err)
+	}
+	if err := classifyMessagingStoreError("claim", messagingdelivery.ErrDeliveryInFlight); !errors.Is(err, messagingdelivery.ErrDeliveryInFlight) {
+		t.Fatalf("in-flight sentinel lost: %v", err)
+	}
+	for _, sentinel := range []error{aggregates.ErrNotClaimable, aggregates.ErrClaimMismatch, aggregates.ErrTerminal} {
+		if err := classifyMessagingStoreError("complete", sentinel); !errors.Is(err, sentinel) {
+			t.Fatalf("domain sentinel %v lost: %v", sentinel, err)
+		}
+	}
+	if err := classifyMessagingStoreError("claim", status.Error(codes.DeadlineExceeded, "sensitive")); !errors.Is(err, context.DeadlineExceeded) {
+		t.Fatalf("deadline sentinel lost: %v", err)
+	}
+}
+
+func TestMessagingStoreValidationIsNotClassifiedAsCorruption(t *testing.T) {
+	t.Parallel()
+	store := &Store{}
+	if _, err := store.Recover(context.Background(), time.Time{}, 0); err == nil || errors.Is(err, ErrRepositoryCorrupt) || errors.Is(err, ErrRepositoryUnavailable) {
+		t.Fatalf("Recover validation misclassified: %v", err)
+	}
+	if _, err := store.Inspect(context.Background(), messagingdelivery.EventState("invalid"), -1, time.Now()); err == nil || errors.Is(err, ErrRepositoryCorrupt) || errors.Is(err, ErrRepositoryUnavailable) {
+		t.Fatalf("Inspect validation misclassified: %v", err)
 	}
 }
 

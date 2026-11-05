@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='UTF-8'?>
-<svg xmlns="http://www.w3.org/2000/svg" xmlns:ev="http://www.w3.org/2001/xml-events" xmlns:xlink="http://www.w3.org/1999/xlink" xml:lang="zh-Hant" aria-label="Go DDD 與 Hexagonal Architecture 非規範性參考圖" role="img" baseProfile="full" height="2560" version="1.1" viewBox="0 0 3600 2560" width="3600">
-  <title>Go DDD 與 Hexagonal Architecture 非規範性參考圖</title>
-  <desc>本 repository 的 layer-first 架構、依賴方向與實作檢查清單。實際規範以文字契約、manifests 與 architecture tests 為準。</desc>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:ev="http://www.w3.org/2001/xml-events" xmlns:xlink="http://www.w3.org/1999/xlink" xml:lang="zh-Hant" aria-labelledby="architecture-codex-title architecture-codex-desc" role="img" baseProfile="full" height="2560" version="1.1" viewBox="0 0 3600 2560" width="3600">
+  <title id="architecture-codex-title">Go DDD 與 Hexagonal Architecture 非規範性參考圖</title>
+  <desc id="architecture-codex-desc">本 repository 的 layer-first 架構、依賴方向與實作檢查清單。實際規範以文字契約、manifests 與 architecture tests 為準。</desc>
   <defs>
     <marker id="arr" markerHeight="10" markerWidth="12" orient="auto" refX="10" refY="5">
       <path d="M0 0 L10 5 L0 10 Z" fill="#1760A8"/>
@@ -65,7 +65,7 @@
   <rect fill="#F8FBFF" height="236" rx="20" ry="20" stroke="#B6C8D8" stroke-width="2" width="1047" x="66" y="1240"/>
   <text fill="#132638" font-family="Noto Sans CJK TC, Noto Sans, sans-serif" font-size="29" font-weight="700" text-anchor="start" x="90" y="1283">Application contracts / Outbound Ports</text>
   <text fill="#132638" font-family="Noto Sans CJK TC, Noto Sans, sans-serif" font-size="23" font-weight="400" text-anchor="start" x="90" y="1322">依使用方需求定義小介面；避免全域 ports package</text>
-  <text fill="#132638" font-family="Noto Sans CJK TC, Noto Sans, sans-serif" font-size="23" font-weight="400" text-anchor="start" x="90" y="1362">Repository、TaskQueue、CalendarGateway、MessageSender</text>
+  <text fill="#132638" font-family="Noto Sans CJK TC, Noto Sans, sans-serif" font-size="23" font-weight="400" text-anchor="start" x="90" y="1362">Application capability ports；Domain repository 由 Domain 擁有</text>
   <text fill="#132638" font-family="Noto Sans CJK TC, Noto Sans, sans-serif" font-size="23" font-weight="400" text-anchor="start" x="90" y="1402">Use Case 接收 Context；錯誤向外回傳；只協調不複製領域規則</text>
   <rect fill="#E6F7ED" height="236" rx="20" ry="20" stroke="#B6C8D8" stroke-width="2" width="1087" x="1160" y="1240"/>
   <text fill="#157454" font-family="Noto Sans CJK TC, Noto Sans, sans-serif" font-size="29" font-weight="700" text-anchor="start" x="1185" y="1283">Domain ownership / Tactical DDD</text>
@@ -112,7 +112,7 @@
   <text fill="#132638" font-family="Noto Sans CJK TC, Noto Sans, sans-serif" font-size="23" font-weight="400" text-anchor="start" x="2537" y="1482">同 Context 內聚；跨 Context 不直改表</text>
   <rect fill="#F4F9FD" height="66" rx="10" ry="10" stroke="#E2EAF2" stroke-width="1" width="1192" x="2340" y="1517"/>
   <text fill="#1760A8" font-family="Noto Sans CJK TC, Noto Sans, sans-serif" font-size="24" font-weight="700" text-anchor="start" x="2360" y="1559">可靠性</text>
-  <text fill="#132638" font-family="Noto Sans CJK TC, Noto Sans, sans-serif" font-size="23" font-weight="400" text-anchor="start" x="2537" y="1559">Webhook 驗簽、冪等、重試、逾時</text>
+  <text fill="#132638" font-family="Noto Sans CJK TC, Noto Sans, sans-serif" font-size="23" font-weight="400" text-anchor="start" x="2537" y="1559">Webhook 驗簽、冪等、classified-safe retry、逾時</text>
   <rect fill="#F4F9FD" height="66" rx="10" ry="10" stroke="#E2EAF2" stroke-width="1" width="1192" x="2340" y="1594"/>
   <text fill="#1760A8" font-family="Noto Sans CJK TC, Noto Sans, sans-serif" font-size="24" font-weight="700" text-anchor="start" x="2360" y="1636">一致性</text>
   <text fill="#132638" font-family="Noto Sans CJK TC, Noto Sans, sans-serif" font-size="23" font-weight="400" text-anchor="start" x="2537" y="1636">一個 Aggregate 為一致性邊界；跨邊界最終一致</text>
@@ -142,7 +142,7 @@
   <text fill="#132638" font-family="Noto Sans CJK TC, Noto Sans, sans-serif" font-size="22" font-weight="400" text-anchor="start" x="1825" y="2034">02  規則寫在 Domain；工作流程在 Application；I/O 在 Adapter</text>
   <text fill="#132638" font-family="Noto Sans CJK TC, Noto Sans, sans-serif" font-size="22" font-weight="400" text-anchor="start" x="1825" y="2080">03  Dependency Rule 用 import graph / architecture test 驗證</text>
   <text fill="#132638" font-family="Noto Sans CJK TC, Noto Sans, sans-serif" font-size="22" font-weight="400" text-anchor="start" x="1825" y="2126">04  Interface 由消費方定義；需要時才建立；回傳 concrete type</text>
-  <text fill="#132638" font-family="Noto Sans CJK TC, Noto Sans, sans-serif" font-size="22" font-weight="400" text-anchor="start" x="1825" y="2172">05  context.Context 首參數；error 明確處理；有界 timeout / retry</text>
+  <text fill="#132638" font-family="Noto Sans CJK TC, Noto Sans, sans-serif" font-size="22" font-weight="400" text-anchor="start" x="1825" y="2172">05  Safe retry only；ambiguous side effect → unknown / manual reconciliation</text>
   <text fill="#132638" font-family="Noto Sans CJK TC, Noto Sans, sans-serif" font-size="22" font-weight="400" text-anchor="start" x="1825" y="2218">06  Webhook 驗簽 + 去重；外部副作用需要 idempotency key</text>
   <text fill="#132638" font-family="Noto Sans CJK TC, Noto Sans, sans-serif" font-size="22" font-weight="400" text-anchor="start" x="1825" y="2264">07  Firestore transaction / outbox-like strategy 按一致性要求設計</text>
   <text fill="#132638" font-family="Noto Sans CJK TC, Noto Sans, sans-serif" font-size="22" font-weight="400" text-anchor="start" x="1825" y="2310">08  go test ./...、go vet ./...、race / integration tests（依環境）</text>

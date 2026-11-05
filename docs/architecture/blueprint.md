@@ -14,13 +14,13 @@ PNG 是高階 DDD／Hexagonal Architecture 概覽的渲染版本；其中右下�
 
 補充的非規範性詳細圖：[Codex Architecture](../assets/architecture/go-ddd-hexagonal-architecture-codex.svg) · [Engineering Blueprint](../assets/architecture/go-ddd-hexagonal-architecture-engineering.svg)。三份 SVG 都採用本 repository 的 layer-first 結構，並可獨立辨識為非規範性圖解。
 
-Overview PNG 是 SVG 的 2400px 寬渲染投影；可重現的輸出命令與資產維護規則見 [architecture assets README](../assets/architecture/README.md)。完整性雜湊由 architecture test 鎖定。
+Overview PNG 是 SVG 在本 repository 維護環境中的 2400px 寬渲染投影；本機重建命令、Inkscape 與字型前提見 [architecture assets README](../assets/architecture/README.md)。不同渲染環境不保證 byte-for-byte 相同，提交資產的完整性雜湊由 architecture test 鎖定。
 
 此圖是目標能力的概念藍圖，不是 repository 狀態或目錄生成器：
 
 - 圖中的 repository 結構必須維持 layer-first modular monolith，不得改成 `internal/context` 或 `internal/platform`。
 - Aggregate、Factory、Repository、Policy、Specification 等只在存在真實行為、production consumer 與測試時建立，不預建空 package。
-- 圖中的 Production-Ready 不能宣稱 production-ready 狀態，只是目標。正確狀態是「Production baseline implemented; Staging/Production not verified.」
+- 圖中的 Quality Targets 是待驗證的品質目標，不能宣稱本 repository 已通過正式環境驗收。正確狀態是「Production baseline implemented; Staging/Production not verified.」
 - `identity` 以外的 candidate／hypothesis contexts 不因圖片而 promoted。
 - Firestore、Cloud Tasks、Google Calendar、LINE 等圖示只表示 adapter boundary，不代表已部署、授權或通過 Staging 驗收。
 - 若圖片與本文件、domain manifests 或 architecture tests 不一致，以可執行的文字契約與 tests 為準。
@@ -110,7 +110,7 @@ Application 不得 import Firestore、gRPC、Google、LINE、OpenAI、MCP 或其
 
 ### Ports
 
-Inbound 呼叫契約與 outbound capability 介面都由使用它的 `internal/application/usecases/<capability>/` 擁有。不建立全域 Application ports bucket；否則介面會按 provider 或技術分組，而不是按 consumer 的語意與變更原因分組。
+Application 的 inbound use-case API 與 outbound capability port 都由使用它的 `internal/application/usecases/<capability>/` 擁有。不建立全域 Application ports bucket；否則介面會按 provider 或技術分組，而不是按 consumer 的語意與變更原因分組。Driving Adapter 可以為自身的 effect isolation、lifecycle 或測試替身定義窄介面，但這類 adapter-local dependency interface 不得重定義 Application use-case 語意，也不是 Hexagonal inbound port。
 
 Port 必須小型且由消費者需求定義，不 mirror 整份 SDK。多個 capability 需要相似能力時，仍先保留各自的 consumer-owned contract；只有經證實的共同 Domain 語意才可形成明確的 Domain repository contract 或 published language，不得重建雜項全域 ports 目錄。Domain repository contract 回傳 Domain model 並表達 Domain persistence 語意；Application outbound port 表達工作流程或外部能力，兩者不得重複同一 contract。
 

@@ -32,7 +32,7 @@
 - `internal/infrastructure`：LINE、OpenAI、GenAI、Google Cloud、Google Workspace 的 Typed Client Factory；`httpclient`、`resilience`、`observability`。
 - `internal/adapter/outbound/google/cloud`：Firestore EventStore、Cloud Tasks Queue；`internal/application/usecases/messaging-delivery` 與 `cmd/worker`：持久化流程與私有 Worker。
 - `go run ./cmd/codexcheck`：SDK Catalog、Codex Agents、保留 SDK 模組與 build-tag manifest 驗證；不驗證空 scaffold。合併後 `main` 的 [CI #41568775857](https://github.com/963sup/linebot-platform/actions/runs/41568775857) 通過模組鎖定、格式、Vet、Race Test、Build。
-- Firestore Emulator 的交易／併發整合測試曾在 [PR #8 的 CI #41555545761](https://github.com/963sup/linebot-platform/actions/runs/41555545761) 通過；**合併前依清理要求移除一次性 Emulator Harness**。目前 `main` CI 不會重跑該套 Emulator 測試，後續變更仍有整合回歸風險。
+- Firestore Emulator 的交易／併發整合測試最初在 [PR #8 的 CI #41555545761](https://github.com/963sup/linebot-platform/actions/runs/41555545761) 通過；現行 `main` CI 已恢復獨立 Emulator job，使用 Java 25 啟動 Emulator 並執行 `make integration-test`。這是本機交易回歸證據，仍不能替代真實專案的 IAM、TTL、索引、OIDC 或 Staging 驗收。
 
 ## 歷史殘留稽核與處置
 

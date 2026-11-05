@@ -23,9 +23,14 @@ func (s *Store) Inspect(ctx context.Context, state messagingdelivery.EventState,
 	if err := ctx.Err(); err != nil {
 		return messagingdelivery.EventStatusReport{}, err
 	}
-	if !state.Valid() || limit < 0 || limit > 100 {
+	if !state.Valid() || limit < 0 || limit > 100 || now.IsZero() {
 		return messagingdelivery.EventStatusReport{}, errors.New("invalid outbox status query")
 	}
+	report, err := s.inspect(ctx, state, limit, now)
+	return report, classifyMessagingStoreError("inspect", err)
+}
+
+func (s *Store) inspect(ctx context.Context, state messagingdelivery.EventState, limit int, now time.Time) (messagingdelivery.EventStatusReport, error) {
 	now = now.UTC()
 	coll := s.client.Collection(outboxCollection)
 	report := messagingdelivery.EventStatusReport{

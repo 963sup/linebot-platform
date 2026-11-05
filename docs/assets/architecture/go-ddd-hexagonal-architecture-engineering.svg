@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='UTF-8'?>
-<svg xmlns="http://www.w3.org/2000/svg" xmlns:ev="http://www.w3.org/2001/xml-events" xmlns:xlink="http://www.w3.org/1999/xlink" xml:lang="zh-Hant" aria-label="Golang DDD + Hexagonal Architecture，繁體中文與英文非規範性向量設計藍圖" baseProfile="full" height="2100px" role="img" version="1.1" viewBox="0 0 3200 2100" width="3200px">
-  <title>Golang DDD + Hexagonal Architecture — 設計藍圖</title>
-  <desc>非規範性 Go 領域驅動設計與六角架構藍圖。涵蓋 Strategic Design、Application、Domain、Ports、Adapters、Infrastructure、Tactical Design、Repository Structure、Go Idioms、production-readiness targets 與 Dependency Direction。Staging/Production 尚未驗證；實際契約以文字與測試為準。</desc>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:ev="http://www.w3.org/2001/xml-events" xmlns:xlink="http://www.w3.org/1999/xlink" xml:lang="zh-Hant" aria-labelledby="architecture-engineering-title architecture-engineering-desc" baseProfile="full" height="2100px" role="img" version="1.1" viewBox="0 0 3200 2100" width="3200px">
+  <title id="architecture-engineering-title">Golang DDD + Hexagonal Architecture — 設計藍圖</title>
+  <desc id="architecture-engineering-desc">非規範性 Go 領域驅動設計與六角架構藍圖。涵蓋 Strategic Design、Application、Domain、Ports、Adapters、Infrastructure、Tactical Design、Repository Structure、Go Idioms、quality targets 與 Dependency Direction。Staging/Production 尚未驗證；實際契約以文字與測試為準。</desc>
   <defs>
     <marker id="runtimeArrow" markerHeight="12" markerUnits="userSpaceOnUse" markerWidth="14" orient="auto" refX="12" refY="6">
       <path d="M 1 1 L 12 6 L 1 11 Z" fill="#1261c7"/>
@@ -323,10 +323,7 @@
   <text fill="#2a5688" font-family="&quot;Noto Sans Mono CJK TC&quot;, &quot;Cascadia Code&quot;, monospace" font-size="21" font-weight="700" text-anchor="start" x="2470" y="1018">  bootstrap/</text>
   <text fill="#4c647b" font-family="&quot;Noto Sans CJK TC&quot;, &quot;Microsoft JhengHei&quot;, &quot;PingFang TC&quot;, sans-serif" font-size="19" font-weight="400" text-anchor="start" x="2795" y="1018">Composition only</text>
   <text fill="#2a5688" font-family="&quot;Noto Sans Mono CJK TC&quot;, &quot;Cascadia Code&quot;, monospace" font-size="21" font-weight="700" text-anchor="start" x="2470" y="1049">tests/architecture/</text>
-  <text fill="#4c647b" font-family="&quot;Noto Sans CJK TC&quot;, &quot;Microsoft JhengHei&quot;, &quot;PingFang TC&quot;, sans-serif" font-size="19" font-weight="400" text-anchor="start" x="2795" y="1049">HTTP / Webhook / CLI</text>
-  <rect fill="#f4f9ff" height="31" rx="4" ry="4" stroke="none" stroke-width="1.5" width="691" x="2462" y="1057"/>
-  <text fill="#2a5688" font-family="&quot;Noto Sans Mono CJK TC&quot;, &quot;Cascadia Code&quot;, monospace" font-size="21" font-weight="700" text-anchor="start" x="2470" y="1080">      outbound/</text>
-  <text fill="#4c647b" font-family="&quot;Noto Sans CJK TC&quot;, &quot;Microsoft JhengHei&quot;, &quot;PingFang TC&quot;, sans-serif" font-size="19" font-weight="400" text-anchor="start" x="2795" y="1080">Firestore / Tasks / API</text>
+  <text fill="#4c647b" font-family="&quot;Noto Sans CJK TC&quot;, &quot;Microsoft JhengHei&quot;, &quot;PingFang TC&quot;, sans-serif" font-size="19" font-weight="400" text-anchor="start" x="2795" y="1049">Executable boundaries</text>
   <text fill="#2a5688" font-family="&quot;Noto Sans Mono CJK TC&quot;, &quot;Cascadia Code&quot;, monospace" font-size="21" font-weight="700" text-anchor="start" x="2470" y="1111">docs/  ·  scripts/</text>
   <text fill="#4c647b" font-family="&quot;Noto Sans CJK TC&quot;, &quot;Microsoft JhengHei&quot;, &quot;PingFang TC&quot;, sans-serif" font-size="19" font-weight="400" text-anchor="start" x="2795" y="1111">文件與工程自動化</text>
   <rect fill="#eaf5ff" height="22" rx="8" ry="8" stroke="none" stroke-width="0" width="687" x="2464" y="1144"/>

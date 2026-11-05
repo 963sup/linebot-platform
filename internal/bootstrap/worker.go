@@ -22,11 +22,17 @@ import (
 	lineinfra "github.com/963sup/linebot-platform/internal/infrastructure/line"
 )
 
+const (
+	workerMaxConcurrentRequests = 16
+	workerDrainTimeout          = 10 * time.Second
+)
+
 // WorkerRuntime owns all three native outbound SDK resources used by the
 // private Cloud Run worker. Close is called after the HTTP server has drained.
 type WorkerRuntime struct {
 	Handler   http.Handler
 	outbound  *httpclient.Managed
+	limiter   *taskin.ConcurrencyLimiter
 	closers   []runtimeCloser
 	ready     atomic.Bool
 	closeOnce sync.Once
@@ -38,6 +44,14 @@ func (r *WorkerRuntime) Close() error {
 		return nil
 	}
 	r.ready.Store(false)
+	if r.limiter != nil {
+		ctx, cancel := context.WithTimeout(context.Background(), workerDrainTimeout)
+		err := r.limiter.Shutdown(ctx)
+		cancel()
+		if err != nil {
+			return resourceCloseError{resource: "worker request drain", cause: err}
+		}
+	}
 	r.closeOnce.Do(func() {
 		r.outbound.Close()
 		var closeErr error
@@ -119,6 +133,11 @@ func NewWorkerRuntime(ctx context.Context, cfg WorkerConfig, logger *slog.Logger
 	if err != nil {
 		return cleanup(err)
 	}
+	limiter, err := taskin.NewConcurrencyLimiter(workerMaxConcurrentRequests)
+	if err != nil {
+		return cleanup(err)
+	}
+	rt.limiter = limiter
 	mux := http.NewServeMux()
 	mux.HandleFunc("/healthz", health.Handler)
 	mux.Handle("/readyz", health.ReadyHandler(func(context.Context) error {
@@ -127,7 +146,7 @@ func NewWorkerRuntime(ctx context.Context, cfg WorkerConfig, logger *slog.Logger
 		}
 		return nil
 	}))
-	mux.Handle("/tasks/", workHandler)
+	mux.Handle("/tasks/", limiter.Wrap(workHandler))
 	rt.Handler = telemetry.WrapInboundHTTP("worker", mux)
 	rt.ready.Store(true)
 	return rt, nil

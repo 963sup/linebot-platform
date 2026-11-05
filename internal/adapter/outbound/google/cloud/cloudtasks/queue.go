@@ -22,6 +22,8 @@ import (
 
 type createTask func(context.Context, *cloudtaskspb.CreateTaskRequest) (*cloudtaskspb.Task, error)
 
+var ErrQueueUnavailable = errors.New("Cloud Tasks queue unavailable")
+
 // Cloud Tasks reserves completed/deleted task names for up to 24 hours.
 // Use a new deterministic name per time window, not one permanent name for an
 // event. The Firestore single-use Claim remains the actual send idempotency gate.
@@ -119,7 +121,20 @@ func (q *Queue) Enqueue(ctx context.Context, key ingestion.EventKey) error {
 	if status.Code(err) == codes.AlreadyExists {
 		return nil // duplicate within the same scheduling window
 	}
-	return err // ambiguous RPC results are retried via durable outbox
+	return classifyQueueError(err) // durable outbox may offer the work again; this call is never blindly retried here
+}
+
+func classifyQueueError(err error) error {
+	if err == nil {
+		return nil
+	}
+	if errors.Is(err, context.Canceled) || status.Code(err) == codes.Canceled {
+		return context.Canceled
+	}
+	if errors.Is(err, context.DeadlineExceeded) || status.Code(err) == codes.DeadlineExceeded {
+		return context.DeadlineExceeded
+	}
+	return fmt.Errorf("%w: create task", ErrQueueUnavailable)
 }
 
 // taskHeaderCarrier deliberately exposes only Cloud Tasks' string header map;

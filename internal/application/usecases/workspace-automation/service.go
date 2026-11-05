@@ -17,6 +17,15 @@ var (
 	ErrExecutionInterrupted  = errors.New("execution was interrupted; remote outcome is unknown")
 )
 
+const unknownProviderOutput = "workspace provider outcome unknown"
+
+// ProviderExecutionError preserves error identity for controlled handling
+// without exposing an adapter's raw provider or transport text.
+type ProviderExecutionError struct{ cause error }
+
+func (e *ProviderExecutionError) Error() string { return unknownProviderOutput }
+func (e *ProviderExecutionError) Unwrap() error { return e.cause }
+
 type ProviderOutcome uint8
 
 const (
@@ -121,8 +130,12 @@ func (s *Service) Execute(ctx context.Context, id valueobjects.AutomationRequest
 	result, providerErr := s.provider.Execute(ctx, Execution{
 		RequestID: request.ID(), Action: request.Action(), RequiredScopes: request.RequiredScopes(),
 	})
+	reportedProviderErr := providerErr
 	if providerErr != nil {
-		result = ProviderResult{Outcome: ProviderOutcomeUnknown, Detail: providerErr.Error()}
+		// Provider errors are control-flow evidence, not persistable business
+		// output. Their text may contain remote resource or transport details.
+		result = ProviderResult{Outcome: ProviderOutcomeUnknown, Detail: unknownProviderOutput}
+		reportedProviderErr = &ProviderExecutionError{cause: providerErr}
 	}
 	resultErr := validateProviderResult(result)
 	if resultErr != nil {
@@ -130,7 +143,7 @@ func (s *Service) Execute(ctx context.Context, id valueobjects.AutomationRequest
 	}
 	output, err := valueobjects.NewOutput(result.Detail)
 	if err != nil {
-		return aggregates.AutomationRequest{}, errors.Join(providerErr, resultErr, err)
+		return aggregates.AutomationRequest{}, errors.Join(reportedProviderErr, resultErr, err)
 	}
 	switch result.Outcome {
 	case ProviderOutcomeSucceeded:
@@ -141,13 +154,13 @@ func (s *Service) Execute(ctx context.Context, id valueobjects.AutomationRequest
 		err = request.MarkOutcomeUnknown(output)
 	}
 	if err != nil {
-		return aggregates.AutomationRequest{}, errors.Join(providerErr, resultErr, err)
+		return aggregates.AutomationRequest{}, errors.Join(reportedProviderErr, resultErr, err)
 	}
 	if saveErr := s.repository.Save(ctx, request); saveErr != nil {
-		return aggregates.AutomationRequest{}, errors.Join(providerErr, resultErr, saveErr)
+		return aggregates.AutomationRequest{}, errors.Join(reportedProviderErr, resultErr, saveErr)
 	}
 	request.AcknowledgeEvents()
-	return request, errors.Join(providerErr, resultErr)
+	return request, errors.Join(reportedProviderErr, resultErr)
 }
 
 func validateProviderResult(result ProviderResult) error {

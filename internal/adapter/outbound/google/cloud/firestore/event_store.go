@@ -59,6 +59,12 @@ func (s *Store) outbox(key string) *sdk.DocumentRef {
 // Record creates both Firestore documents atomically; only the first receipt
 // gets to set a reply token. Never store the original user message or user ID.
 func (s *Store) Record(ctx context.Context, job messagingdelivery.DeliveryWorkItem) (bool, error) {
+	if ctx == nil {
+		return false, errors.New("context is required")
+	}
+	if err := ctx.Err(); err != nil {
+		return false, err
+	}
 	if !validKey(job.Key) || job.ReplyToken == "" || job.ReplyUntil.IsZero() {
 		return false, errors.New("invalid event job")
 	}
@@ -132,13 +138,19 @@ func (s *Store) Record(ctx context.Context, job messagingdelivery.DeliveryWorkIt
 		created = true
 		return nil
 	})
-	return created, err
+	return created, classifyMessagingStoreError("record", err)
 }
 
 // Claim commits "sending" before any network send. The lease is for
 // observability/recovery, not permission to send a second time.
 func (s *Store) Claim(ctx context.Context, key, leaseID string, now time.Time) (messagingdelivery.DeliveryWorkItem, bool, error) {
-	if !validKey(key) || leaseID == "" {
+	if ctx == nil {
+		return messagingdelivery.DeliveryWorkItem{}, false, errors.New("context is required")
+	}
+	if err := ctx.Err(); err != nil {
+		return messagingdelivery.DeliveryWorkItem{}, false, err
+	}
+	if !validKey(key) || leaseID == "" || now.IsZero() {
 		return messagingdelivery.DeliveryWorkItem{}, false, errors.New("invalid claim")
 	}
 	var job messagingdelivery.DeliveryWorkItem
@@ -209,10 +221,16 @@ func (s *Store) Claim(ctx context.Context, key, leaseID string, now time.Time) (
 		}
 		return nil
 	})
-	return job, claimed, err
+	return job, claimed, classifyMessagingStoreError("claim", err)
 }
 
 func (s *Store) Complete(ctx context.Context, key, leaseID string, outcome messagingdelivery.DeliveryState, completedAt time.Time) error {
+	if ctx == nil {
+		return errors.New("context is required")
+	}
+	if err := ctx.Err(); err != nil {
+		return err
+	}
 	if !validKey(key) || leaseID == "" || completedAt.IsZero() {
 		return errors.New("invalid completion")
 	}
@@ -220,7 +238,7 @@ func (s *Store) Complete(ctx context.Context, key, leaseID string, outcome messa
 		return errors.New("invalid completion state")
 	}
 	completedAt = completedAt.UTC()
-	return s.client.RunTransaction(ctx, func(ctx context.Context, tx *sdk.Transaction) error {
+	err := s.client.RunTransaction(ctx, func(ctx context.Context, tx *sdk.Transaction) error {
 		ref := s.outbox(key)
 		snapshot, err := tx.Get(ref)
 		if err != nil {
@@ -251,6 +269,7 @@ func (s *Store) Complete(ctx context.Context, key, leaseID string, outcome messa
 			{Path: "version", Value: version},
 		})
 	})
+	return classifyMessagingStoreError("complete", err)
 }
 
 // Recover makes bounded progress across *due* records, rather than repeatedly
@@ -261,9 +280,20 @@ func (s *Store) Complete(ctx context.Context, key, leaseID string, outcome messa
 // Required composite indexes: state+reply_until, state+lease_until,
 // state+next_dispatch_at (all ascending). See deploy/firestore/indexes.json.
 func (s *Store) Recover(ctx context.Context, now time.Time, limit int) ([]string, error) {
-	if limit < 1 || limit > 100 {
-		return nil, errors.New("recovery batch size must be 1–100")
+	if ctx == nil {
+		return nil, errors.New("context is required")
 	}
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	if now.IsZero() || limit < 1 || limit > 100 {
+		return nil, errors.New("valid recovery time and batch size 1–100 are required")
+	}
+	keys, err := s.recover(ctx, now, limit)
+	return keys, classifyMessagingStoreError("recover", err)
+}
+
+func (s *Store) recover(ctx context.Context, now time.Time, limit int) ([]string, error) {
 	coll := s.client.Collection(outboxCollection)
 
 	// Expire only actually overdue replies; a large set of future replies

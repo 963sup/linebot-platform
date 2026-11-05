@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 	"testing"
 	"time"
 
@@ -91,10 +92,25 @@ func TestEnqueueStableIdAndOIDC(t *testing.T) {
 		t.Fatalf("expected 3 CreateTask calls including the new retry window, got %d", calls)
 	}
 	q.create = func(context.Context, *cloudtaskspb.CreateTaskRequest) (*cloudtaskspb.Task, error) {
-		return nil, errors.New("ambiguous network error")
+		return nil, errors.New("ambiguous network error with sensitive endpoint")
 	}
-	if err := q.Enqueue(context.Background(), key); err == nil {
-		t.Fatal("must surface unknown task enqueue result")
+	if err := q.Enqueue(context.Background(), key); !errors.Is(err, ErrQueueUnavailable) || strings.Contains(err.Error(), "sensitive endpoint") {
+		t.Fatalf("unsafe or missing queue classification: %v", err)
+	}
+}
+
+func TestEnqueuePreservesContextErrors(t *testing.T) {
+	key, _ := ingestion.ParseEventKey(testKey)
+	q := &Queue{
+		name: testQueue, worker: "https://worker.example.test/tasks/v2/line-reply",
+		audience: "https://worker.example.test", email: "tasks-invoker@example.iam.gserviceaccount.com",
+		now: time.Now,
+		create: func(context.Context, *cloudtaskspb.CreateTaskRequest) (*cloudtaskspb.Task, error) {
+			return nil, status.Error(codes.DeadlineExceeded, "sensitive provider deadline")
+		},
+	}
+	if err := q.Enqueue(context.Background(), key); !errors.Is(err, context.DeadlineExceeded) {
+		t.Fatalf("deadline classification = %v", err)
 	}
 }
 

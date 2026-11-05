@@ -97,17 +97,17 @@ func TestDesignContract(t *testing.T) {
 		required               []string
 	}{
 		{
-			name: "go-ddd-hexagonal-architecture-overview.svg", hash: "89d2fbd36fd9677a78ee6882871e8ec36d73dea540f0ec32e0de697433753a5d",
+			name: "go-ddd-hexagonal-architecture-overview.svg", hash: "a4e6d294bb59c0610ec3bc0682839de946dbd38f5e71dd49cf59b9097fc71562",
 			width: "1600", height: "1100", viewBox: "0 0 1600 1100",
 			required: []string{"非規範性概覽", "Staging/Production Not Verified", "dependency 指向 consumer"},
 		},
 		{
-			name: "go-ddd-hexagonal-architecture-codex.svg", hash: "64f86a5bff8622729284adeb029f82778d2cc8e10851142f9511c6bb2213485b",
+			name: "go-ddd-hexagonal-architecture-codex.svg", hash: "826f15be3787a68dc49947633eccdb1d516d05a31b5291a9ea8d935633a01ff4",
 			width: "3600", height: "2560", viewBox: "0 0 3600 2560",
-			required: []string{"非規範性參考圖", "Layer-first Modular Monolith", "internal/bootstrap"},
+			required: []string{"非規範性參考圖", "Layer-first Modular Monolith", "internal/bootstrap", "classified-safe retry", "unknown / manual reconciliation", "Application capability ports；Domain repository 由 Domain 擁有"},
 		},
 		{
-			name: "go-ddd-hexagonal-architecture-engineering.svg", hash: "1752116505ddd35913a678eb429871d73688bd6bdac21485aab2b84cf3e5197a",
+			name: "go-ddd-hexagonal-architecture-engineering.svg", hash: "d16771a959e35158698d6dd2cbd77156b8034149ad1419653983b6cfc9213960",
 			width: "3200px", height: "2100px", viewBox: "0 0 3200 2100",
 			required: []string{"非規範性", "Layer-first Structure", "Staging/Production Not Verified", "unknown / manual reconciliation"},
 		},
@@ -146,8 +146,10 @@ func validateArchitectureSVG(t *testing.T, data []byte, width, height, viewBox s
 	t.Helper()
 	decoder := xml.NewDecoder(bytes.NewReader(data))
 	rootSeen := false
-	titleSeen := false
-	descSeen := false
+	var rootTitleID, rootDescID string
+	var titleText, descText strings.Builder
+	depth := 0
+	currentRootMetadata := ""
 	for {
 		token, err := decoder.Token()
 		if err == io.EOF {
@@ -158,8 +160,23 @@ func validateArchitectureSVG(t *testing.T, data []byte, width, height, viewBox s
 		}
 		start, ok := token.(xml.StartElement)
 		if !ok {
+			if charData, ok := token.(xml.CharData); ok && currentRootMetadata != "" {
+				switch currentRootMetadata {
+				case "title":
+					titleText.Write(charData)
+				case "desc":
+					descText.Write(charData)
+				}
+			}
+			if end, ok := token.(xml.EndElement); ok {
+				if depth == 2 && (end.Name.Local == "title" || end.Name.Local == "desc") {
+					currentRootMetadata = ""
+				}
+				depth--
+			}
 			continue
 		}
+		depth++
 		if !rootSeen {
 			rootSeen = true
 			if start.Name.Local != "svg" || start.Name.Space != "http://www.w3.org/2000/svg" {
@@ -174,15 +191,26 @@ func validateArchitectureSVG(t *testing.T, data []byte, width, height, viewBox s
 					t.Fatalf("architecture blueprint SVG %s = %q, want %q", name, attrs[name], want)
 				}
 			}
-			if strings.TrimSpace(attrs["aria-label"]) == "" {
-				t.Fatal("architecture blueprint SVG must have a non-empty aria-label")
+			labelledBy := strings.Fields(attrs["aria-labelledby"])
+			if len(labelledBy) != 2 || labelledBy[0] == labelledBy[1] {
+				t.Fatal("architecture blueprint SVG must reference distinct title and desc IDs with aria-labelledby")
 			}
+			rootTitleID, rootDescID = labelledBy[0], labelledBy[1]
 		}
-		if start.Name.Local == "title" {
-			titleSeen = true
-		}
-		if start.Name.Local == "desc" {
-			descSeen = true
+		if depth == 2 && (start.Name.Local == "title" || start.Name.Local == "desc") {
+			var id string
+			for _, attr := range start.Attr {
+				if attr.Name.Local == "id" {
+					id = attr.Value
+				}
+			}
+			if start.Name.Local == "title" && id != rootTitleID {
+				t.Fatalf("root title id = %q, want %q", id, rootTitleID)
+			}
+			if start.Name.Local == "desc" && id != rootDescID {
+				t.Fatalf("root desc id = %q, want %q", id, rootDescID)
+			}
+			currentRootMetadata = start.Name.Local
 		}
 		if start.Name.Local == "script" || start.Name.Local == "foreignObject" {
 			t.Fatalf("architecture blueprint SVG must not contain active element %q", start.Name.Local)
@@ -203,7 +231,7 @@ func validateArchitectureSVG(t *testing.T, data []byte, width, height, viewBox s
 	if !rootSeen {
 		t.Fatal("architecture blueprint SVG has no root element")
 	}
-	if !titleSeen || !descSeen {
-		t.Fatal("architecture blueprint SVG must contain title and desc metadata")
+	if strings.TrimSpace(titleText.String()) == "" || strings.TrimSpace(descText.String()) == "" {
+		t.Fatal("architecture blueprint SVG must contain direct non-empty title and desc metadata")
 	}
 }

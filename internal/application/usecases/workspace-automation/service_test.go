@@ -3,6 +3,7 @@ package workspaceautomation
 import (
 	"context"
 	"errors"
+	"strings"
 	"testing"
 
 	"github.com/963sup/linebot-platform/internal/domain/workspace-automation/aggregates"
@@ -102,14 +103,16 @@ func TestExecuteMapsKnownProviderOutcomes(t *testing.T) {
 
 func TestExecuteMapsProviderErrorAndInvalidResultToUnknown(t *testing.T) {
 	t.Parallel()
+	sensitiveProviderErr := errors.New("secret provider response body")
 	tests := []struct {
-		name     string
-		provider *workspaceProvider
-		wantErr  error
+		name       string
+		provider   *workspaceProvider
+		wantErr    error
+		wantDetail string
 	}{
-		{"transport ambiguity", &workspaceProvider{err: errWorkspacePort}, errWorkspacePort},
-		{"invalid result", &workspaceProvider{result: ProviderResult{Outcome: 99, Detail: "invalid"}}, ErrInvalidProviderResult},
-		{"empty detail", &workspaceProvider{result: ProviderResult{Outcome: ProviderOutcomeSucceeded}}, ErrInvalidProviderResult},
+		{"transport ambiguity", &workspaceProvider{err: sensitiveProviderErr}, sensitiveProviderErr, unknownProviderOutput},
+		{"invalid result", &workspaceProvider{result: ProviderResult{Outcome: 99, Detail: "invalid"}}, ErrInvalidProviderResult, ErrInvalidProviderResult.Error()},
+		{"empty detail", &workspaceProvider{result: ProviderResult{Outcome: ProviderOutcomeSucceeded}}, ErrInvalidProviderResult, ErrInvalidProviderResult.Error()},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -119,8 +122,17 @@ func TestExecuteMapsProviderErrorAndInvalidResultToUnknown(t *testing.T) {
 			if !errors.Is(err, test.wantErr) {
 				t.Fatalf("Execute() error = %v, want %v", err, test.wantErr)
 			}
+			if test.name == "transport ambiguity" {
+				var safe *ProviderExecutionError
+				if !errors.As(err, &safe) || strings.Contains(err.Error(), "secret provider response body") {
+					t.Fatalf("provider error boundary is unsafe: %v", err)
+				}
+			}
 			if request.Status() != valueobjects.StatusUnknown || repository.value.Status() != valueobjects.StatusUnknown {
 				t.Fatalf("ambiguous result status = %v/%v, want unknown", request.Status(), repository.value.Status())
+			}
+			if got := repository.value.Output().Detail(); got != test.wantDetail || got == sensitiveProviderErr.Error() {
+				t.Fatalf("persisted detail = %q, want safe %q", got, test.wantDetail)
 			}
 			if repository.saveCalls != 2 {
 				t.Fatalf("Save calls = %d, want 2", repository.saveCalls)
