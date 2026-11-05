@@ -38,6 +38,15 @@ func TestStoredVersionChecksFirestoreIntegerRange(t *testing.T) {
 	}
 }
 
+func TestCompleteRejectsMissingCompletionTime(t *testing.T) {
+	t.Parallel()
+	store := &Store{}
+	key := "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+	if err := store.Complete(context.Background(), key, "lease", valueobjects.StatusSent, time.Time{}); err == nil {
+		t.Fatal("Complete accepted a missing completion time")
+	}
+}
+
 func TestStoredJobUsesRealFirestoreEncoder(t *testing.T) {
 	t.Parallel()
 	client, err := sdk.NewClient(

@@ -6,14 +6,17 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	valueobjects "github.com/963sup/linebot-platform/internal/domain/messaging-delivery/value-objects"
 )
 
 type fakeStore struct {
-	recorded map[string]DeliveryWorkItem
-	state    map[string]string
-	lease    map[string]string
-	finished DeliveryState
-	pending  []string
+	recorded   map[string]DeliveryWorkItem
+	state      map[string]DeliveryState
+	lease      map[string]string
+	finished   DeliveryState
+	finishedAt time.Time
+	pending    []string
 }
 
 var (
@@ -31,21 +34,21 @@ func (f inFlightStore) Claim(context.Context, string, string, time.Time) (Delive
 }
 
 func newFakeStore() *fakeStore {
-	return &fakeStore{recorded: map[string]DeliveryWorkItem{}, state: map[string]string{}, lease: map[string]string{}}
+	return &fakeStore{recorded: map[string]DeliveryWorkItem{}, state: map[string]DeliveryState{}, lease: map[string]string{}}
 }
 
 func (f *fakeStore) Record(_ context.Context, job DeliveryWorkItem) (bool, error) {
 	if previous, exists := f.recorded[job.Key]; exists {
-		if (f.state[job.Key] == "pending" || f.state[job.Key] == "expired") && job.ReplyUntil.After(previous.ReplyUntil) {
+		if (f.state[job.Key] == valueobjects.StatusPending || f.state[job.Key] == valueobjects.StatusExpired) && job.ReplyUntil.After(previous.ReplyUntil) {
 			previous.ReplyUntil = job.ReplyUntil
 			previous.ReplyToken = job.ReplyToken
 			f.recorded[job.Key] = previous
-			f.state[job.Key] = "pending"
+			f.state[job.Key] = valueobjects.StatusPending
 		}
 		return false, nil
 	}
 	f.recorded[job.Key] = job
-	f.state[job.Key] = "pending"
+	f.state[job.Key] = valueobjects.StatusPending
 	return true, nil
 }
 func (f *fakeStore) Claim(_ context.Context, key, lease string, now time.Time) (DeliveryWorkItem, bool, error) {
@@ -53,23 +56,24 @@ func (f *fakeStore) Claim(_ context.Context, key, lease string, now time.Time) (
 	if !ok {
 		return DeliveryWorkItem{}, false, errors.New("missing job")
 	}
-	if f.state[key] != "pending" {
+	if f.state[key] != valueobjects.StatusPending {
 		return DeliveryWorkItem{}, false, nil
 	}
 	if !now.Before(job.ReplyUntil) {
-		f.state[key] = "expired"
+		f.state[key] = valueobjects.StatusExpired
 		return DeliveryWorkItem{}, false, nil
 	}
-	f.state[key] = "sending"
+	f.state[key] = valueobjects.StatusSending
 	f.lease[key] = lease
 	return job, true, nil
 }
-func (f *fakeStore) Complete(_ context.Context, key, lease string, outcome DeliveryState) error {
-	if f.state[key] != "sending" || f.lease[key] != lease {
+func (f *fakeStore) Complete(_ context.Context, key, lease string, outcome DeliveryState, completedAt time.Time) error {
+	if f.state[key] != valueobjects.StatusSending || f.lease[key] != lease {
 		return errors.New("invalid lease")
 	}
-	f.state[key] = string(outcome)
+	f.state[key] = outcome
 	f.finished = outcome
+	f.finishedAt = completedAt
 	return nil
 }
 func (f *fakeStore) Recover(_ context.Context, _ time.Time, _ int) ([]string, error) {
@@ -87,12 +91,16 @@ func (q *fakeQueue) Enqueue(_ context.Context, key EventKey) error {
 }
 
 type fakeSender struct {
-	calls int
-	err   error
+	calls   int
+	err     error
+	onReply func()
 }
 
 func (f *fakeSender) Reply(_ context.Context, _ string, _ []Message) error {
 	f.calls++
+	if f.onReply != nil {
+		f.onReply()
+	}
 	return f.err
 }
 func (f *fakeSender) Push(_ context.Context, _ string, _ []Message, _ string) error {
@@ -187,6 +195,46 @@ func TestProcessorSendsAtMostOnce(t *testing.T) {
 	}
 	if sender.calls != 1 || store.finished != DeliverySent {
 		t.Fatalf("calls=%d finish=%s", sender.calls, store.finished)
+	}
+	if !store.finishedAt.Equal(now) {
+		t.Fatalf("completion time=%s, want %s", store.finishedAt, now)
+	}
+}
+
+func TestProcessorRecordsCompletionAfterReplyReturns(t *testing.T) {
+	store, queue := newFakeStore(), &fakeQueue{}
+	base := time.Date(2026, 11, 5, 9, 0, 0, 0, time.UTC)
+	ingestor, _ := NewIngestor(store, queue)
+	ingestor.now = func() time.Time { return base }
+	if err := ingestor.Ingest(context.Background(), "channel", "timed-event", "reply", base, Message{Kind: KindText, Text: "fixed"}); err != nil {
+		t.Fatal(err)
+	}
+
+	clockValues := []time.Time{base, base.Add(time.Second), base.Add(2 * time.Second)}
+	clockCalls := 0
+	sender := &fakeSender{onReply: func() {
+		if clockCalls != 2 {
+			t.Fatalf("Reply called after %d clock reads, want claim and attempt reads", clockCalls)
+		}
+	}}
+	processor, _ := NewProcessor(store, sender)
+	processor.now = func() time.Time {
+		if clockCalls >= len(clockValues) {
+			t.Fatalf("unexpected clock read %d", clockCalls+1)
+		}
+		value := clockValues[clockCalls]
+		clockCalls++
+		return value
+	}
+
+	if err := processor.Process(context.Background(), queue.keys[0]); err != nil {
+		t.Fatal(err)
+	}
+	if clockCalls != 3 {
+		t.Fatalf("clock reads=%d, want claim, attempt, completion", clockCalls)
+	}
+	if !store.finishedAt.Equal(base.Add(2 * time.Second)) {
+		t.Fatalf("completion time=%s, want post-reply time", store.finishedAt)
 	}
 }
 

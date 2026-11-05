@@ -41,8 +41,8 @@ Changing a status from `candidate` requires an ADR. Creating an empty directory,
 - Regenerate `context-map.md`; do not edit it directly.
 - Preserve evidence paths as repository-relative paths.
 - Keep provider vocabulary at adapter boundaries. Names such as LINE, Google, Firestore, Cloud Tasks, OpenAI, OAuth, and ingestion are not bounded-context names.
-- Do not create Domain packages for candidate contexts. A candidate without an independently verified language, owner, lifecycle, and invariant remains documentation only.
+- Candidate status does not by itself justify or require a Domain package. A candidate without independently reviewed language, lifecycle, invariants, and evidence remains documentation only unless an explicit ADR authorizes a tactical model for hypothesis testing. Such a tactical model does not strategically promote the Context.
 
 ## Current confidence
 
-Identity is the only implemented bounded context supported by production Domain code. Messaging Delivery is a medium-confidence Core hypothesis because the repository contains explicit claim, unknown-outcome, Inbox/Outbox, and reconciliation behavior. Other Contexts remain supporting hypotheses or read models. No hypothesis creates a package or persistence migration by itself.
+Identity is the only strategically implemented bounded context. Messaging Delivery is a medium-confidence Core hypothesis because the repository contains explicit claim, unknown-outcome, Inbox/Outbox, and reconciliation behavior. ADR 0003 authorizes provider-independent tactical models for Messaging Delivery, Audience, Experience Presentation, Promotion, and Workspace Automation without promoting those candidate Contexts. A hypothesis never creates a package or persistence migration by itself; either requires explicit decision evidence and separate delivery work.

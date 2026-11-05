@@ -37,7 +37,7 @@ type EventRecorder interface {
 // DeliveryClaimer is the persistence capability needed by a delivery worker.
 type DeliveryClaimer interface {
 	Claim(context.Context, string, string, time.Time) (DeliveryWorkItem, bool, error)
-	Complete(context.Context, string, string, DeliveryState) error
+	Complete(context.Context, string, string, DeliveryState, time.Time) error
 }
 
 // DeliveryRecovery is the persistence capability needed by reconciliation.
@@ -57,24 +57,17 @@ type DeliveryWorkflowStore interface {
 // Deprecated: use DeliveryWorkflowStore or a narrower consumer-owned port.
 type EventStore = DeliveryWorkflowStore
 
-type EventState string
+// EventState is the read-model name for the canonical Domain delivery status.
+// It remains an alias for source compatibility; it is not a second state machine.
+type EventState = valueobjects.Status
 
 const (
-	EventPending EventState = "pending"
-	EventSending EventState = "sending"
-	EventSent    EventState = "sent"
-	EventExpired EventState = "expired"
-	EventUnknown EventState = "unknown"
+	EventPending = valueobjects.StatusPending
+	EventSending = valueobjects.StatusSending
+	EventSent    = valueobjects.StatusSent
+	EventExpired = valueobjects.StatusExpired
+	EventUnknown = valueobjects.StatusUnknown
 )
-
-func (s EventState) Valid() bool {
-	switch s {
-	case EventPending, EventSending, EventSent, EventExpired, EventUnknown:
-		return true
-	default:
-		return false
-	}
-}
 
 type EventStatusSample struct {
 	KeyHint   string

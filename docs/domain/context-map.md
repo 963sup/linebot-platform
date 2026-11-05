@@ -17,18 +17,18 @@
 
 ## Contexts
 
-| Context | Subdomain | Status | Decision | Confidence | Model | Classification | Owner |
-|---|---|---|---|---|---|---|---|
-| audience | customer-segmentation | candidate | hypothesis | medium | domain-model | supporting | unassigned |
-| contact-directory | customer-knowledge | candidate | hypothesis | medium | read-model | supporting | unassigned |
-| content-intelligence | content-intelligence-subdomain | candidate | hypothesis | low | process-model | supporting | unassigned |
-| experience-presentation | customer-experience | candidate | hypothesis | low | domain-model | supporting | unassigned |
-| identity | account-identity-and-authorization | implemented | implemented | high | domain-model | supporting | linebot-platform |
-| insights-reporting | customer-knowledge | candidate | hypothesis | medium | read-model | supporting | unassigned |
-| membership | customer-experience | candidate | hypothesis | low | read-model | supporting | unassigned |
-| messaging-delivery | reliable-customer-communication | candidate | hypothesis | medium | domain-model | core | linebot-platform |
-| promotion | customer-experience | candidate | hypothesis | low | domain-model | supporting | unassigned |
-| workspace-automation | business-automation | candidate | hypothesis | medium | domain-model | supporting | linebot-platform |
+| Context | Subdomain | Status | Decision | Confidence | Model | Classification | Owner | Package |
+|---|---|---|---|---|---|---|---|---|
+| audience | customer-segmentation | candidate | hypothesis | medium | domain-model | supporting | unassigned | internal/domain/audience |
+| contact-directory | customer-knowledge | candidate | hypothesis | medium | read-model | supporting | unassigned | Not Verified |
+| content-intelligence | content-intelligence-subdomain | candidate | hypothesis | low | process-model | supporting | unassigned | Not Verified |
+| experience-presentation | customer-experience | candidate | hypothesis | low | domain-model | supporting | unassigned | internal/domain/experience-presentation |
+| identity | account-identity-and-authorization | implemented | implemented | high | domain-model | supporting | linebot-platform | internal/domain/identity |
+| insights-reporting | customer-knowledge | candidate | hypothesis | medium | read-model | supporting | unassigned | Not Verified |
+| membership | customer-experience | candidate | hypothesis | low | read-model | supporting | unassigned | Not Verified |
+| messaging-delivery | reliable-customer-communication | candidate | hypothesis | medium | domain-model | core | linebot-platform | internal/domain/messaging-delivery |
+| promotion | customer-experience | candidate | hypothesis | low | domain-model | supporting | unassigned | internal/domain/promotion |
+| workspace-automation | business-automation | candidate | hypothesis | medium | domain-model | supporting | linebot-platform | internal/domain/workspace-automation |
 
 ## Aggregates and Data Ownership
 
@@ -129,7 +129,7 @@ flowchart LR
 | membership | entitlement-view | Derived benefits visible to a consumer. |
 | membership | membership-status | Observed membership state at a point in time. |
 | messaging-delivery | delivery | Consistency boundary for claim and terminal outcome. |
-| messaging-delivery | delivery-event | Modeled fact raised by an in-memory Delivery transition; the current workflow does not persist, acknowledge, or publish it. |
+| messaging-delivery | delivery-event | Modeled fact raised by an in-memory Delivery transition; the current workflow does not persist or publish it. |
 | messaging-delivery | delivery-intent | Request to deliver content to a resolved recipient. |
 | messaging-delivery | idempotency-key | Stable identity preventing duplicate business delivery. |
 | messaging-delivery | unknown-outcome | Send whose remote effect cannot be safely determined. |

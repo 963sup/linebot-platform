@@ -27,7 +27,7 @@ func (f *persisted) Record(_ context.Context, job messagingdelivery.DeliveryWork
 func (f *persisted) Claim(context.Context, string, string, time.Time) (messagingdelivery.DeliveryWorkItem, bool, error) {
 	return messagingdelivery.DeliveryWorkItem{}, false, nil
 }
-func (f *persisted) Complete(context.Context, string, string, messagingdelivery.DeliveryState) error {
+func (f *persisted) Complete(context.Context, string, string, messagingdelivery.DeliveryState, time.Time) error {
 	return nil
 }
 func (f *persisted) Recover(context.Context, time.Time, int) ([]string, error) { return nil, nil }

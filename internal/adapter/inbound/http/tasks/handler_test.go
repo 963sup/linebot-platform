@@ -42,7 +42,7 @@ func (fakeStore) Record(context.Context, messagingdelivery.DeliveryWorkItem) (bo
 func (fakeStore) Claim(context.Context, string, string, time.Time) (messagingdelivery.DeliveryWorkItem, bool, error) {
 	return messagingdelivery.DeliveryWorkItem{}, false, nil
 }
-func (fakeStore) Complete(context.Context, string, string, messagingdelivery.DeliveryState) error {
+func (fakeStore) Complete(context.Context, string, string, messagingdelivery.DeliveryState, time.Time) error {
 	return nil
 }
 func (fakeStore) Recover(context.Context, time.Time, int) ([]string, error) { return nil, nil }

@@ -153,13 +153,15 @@ func (p *Processor) Process(ctx context.Context, key EventKey) error {
 	}
 	// Do not automatically retry any ambiguous LINE result. An unknown reply
 	// must be reviewed; sending it again could deliver a duplicate.
+	attemptAt := p.now().UTC()
 	outcome := DeliverySent
-	if !p.now().Before(job.ReplyUntil) {
+	if !attemptAt.Before(job.ReplyUntil) {
 		outcome = DeliveryExpired
 	} else if err := p.sender.Reply(ctx, job.ReplyToken, []Message{job.Message}); err != nil {
 		outcome = DeliveryUnknown
 	}
-	return p.store.Complete(ctx, key.String(), leaseID, outcome)
+	completedAt := p.now().UTC()
+	return p.store.Complete(ctx, key.String(), leaseID, outcome, completedAt)
 }
 
 type Dispatcher struct {

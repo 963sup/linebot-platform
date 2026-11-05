@@ -212,13 +212,14 @@ func (s *Store) Claim(ctx context.Context, key, leaseID string, now time.Time) (
 	return job, claimed, err
 }
 
-func (s *Store) Complete(ctx context.Context, key, leaseID string, outcome messagingdelivery.DeliveryState) error {
-	if !validKey(key) || leaseID == "" {
+func (s *Store) Complete(ctx context.Context, key, leaseID string, outcome messagingdelivery.DeliveryState, completedAt time.Time) error {
+	if !validKey(key) || leaseID == "" || completedAt.IsZero() {
 		return errors.New("invalid completion")
 	}
 	if outcome != messagingdelivery.DeliverySent && outcome != messagingdelivery.DeliveryExpired && outcome != messagingdelivery.DeliveryUnknown {
 		return errors.New("invalid completion state")
 	}
+	completedAt = completedAt.UTC()
 	return s.client.RunTransaction(ctx, func(ctx context.Context, tx *sdk.Transaction) error {
 		ref := s.outbox(key)
 		snapshot, err := tx.Get(ref)
@@ -233,7 +234,7 @@ func (s *Store) Complete(ctx context.Context, key, leaseID string, outcome messa
 		if restoreErr != nil {
 			return restoreErr
 		}
-		if err := delivery.Complete(leaseID, outcome, time.Now().UTC()); err != nil {
+		if err := delivery.Complete(leaseID, outcome, completedAt); err != nil {
 			return err
 		}
 		version, err := storedVersion(delivery.Version())
@@ -245,7 +246,7 @@ func (s *Store) Complete(ctx context.Context, key, leaseID string, outcome messa
 			{Path: "reply_token", Value: ""},
 			{Path: "lease_id", Value: ""},
 			{Path: "lease_until", Value: time.Time{}},
-			{Path: "updated_at", Value: time.Now().UTC()},
+			{Path: "updated_at", Value: completedAt},
 			{Path: "schema_version", Value: 2},
 			{Path: "version", Value: version},
 		})

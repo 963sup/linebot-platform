@@ -35,7 +35,7 @@ func TestFirestoreReadOnlyOutboxInspection(t *testing.T) {
 	if err != nil || !claimed {
 		t.Fatalf("claim failed: claimed=%t err=%v", claimed, err)
 	}
-	if err := store.Complete(ctx, job.Key, "operator-test-lease", messagingdelivery.DeliveryUnknown); err != nil {
+	if err := store.Complete(ctx, job.Key, "operator-test-lease", messagingdelivery.DeliveryUnknown, now.Add(time.Second)); err != nil {
 		t.Fatal(err)
 	}
 	report, err = store.Inspect(ctx, messagingdelivery.EventUnknown, 0, now.Add(2*time.Second))

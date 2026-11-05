@@ -36,9 +36,9 @@ func RenderContextMap(model *DomainModel, capabilities *CapabilityMap, dependenc
 	for _, s := range subdomains {
 		fmt.Fprintf(&out, "| %s | %s | %s |\n", cell(s.ID), cell(s.Classification), cell(s.Purpose))
 	}
-	out.WriteString("\n## Contexts\n\n| Context | Subdomain | Status | Decision | Confidence | Model | Classification | Owner |\n|---|---|---|---|---|---|---|---|\n")
+	out.WriteString("\n## Contexts\n\n| Context | Subdomain | Status | Decision | Confidence | Model | Classification | Owner | Package |\n|---|---|---|---|---|---|---|---|---|\n")
 	for _, c := range contexts {
-		fmt.Fprintf(&out, "| %s | %s | %s | %s | %s | %s | %s | %s |\n", cell(c.ID), cell(c.Subdomain), cell(c.Status), cell(c.DecisionStatus), cell(c.Confidence), cell(c.ModelKind), cell(c.Classification), cell(orNotVerified(c.Owner)))
+		fmt.Fprintf(&out, "| %s | %s | %s | %s | %s | %s | %s | %s | %s |\n", cell(c.ID), cell(c.Subdomain), cell(c.Status), cell(c.DecisionStatus), cell(c.Confidence), cell(c.ModelKind), cell(c.Classification), cell(orNotVerified(c.Owner)), cell(orNotVerified(c.Package)))
 	}
 	out.WriteString("\n## Aggregates and Data Ownership\n\n| Context | Aggregate / Resource | Kind | Authority / Consistency Boundary | Owner |\n|---|---|---|---|---|\n")
 	for _, c := range contexts {

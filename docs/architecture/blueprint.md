@@ -4,9 +4,15 @@
 
 ## 視覺藍圖（Illustrative / non-normative）
 
+PNG 是高階 DDD／Hexagonal Architecture 概覽；其中右下方區塊只是品質閘門名稱，不能宣稱本 repository 已通過部署驗收：
+
 ![Go DDD 與 Hexagonal Architecture 概念藍圖](../assets/architecture/go-ddd-hexagonal-architecture-blueprint.png)
 
-Repository asset: PNG 1536×1024, SHA-256 `ef0d102f2ca863586c27251e5f4848da66426669384dd2a323daa1db4de26d5e`.
+SVG 是較詳細的實作契約導覽；圖中的 context-first 樹仍只是示例，本 repository 不採用該目錄配置：
+
+![Go DDD 與 Hexagonal Architecture 概念藍圖（SVG）](../assets/architecture/go-ddd-hexagonal-architecture-blueprint.svg)
+
+Repository assets: PNG 1536×1024, SHA-256 `ef0d102f2ca863586c27251e5f4848da66426669384dd2a323daa1db4de26d5e`; SVG 3600×2560, SHA-256 `e546c4d23e2b53e600aadbd0926fbeab768606e171d94f70c87854e64a3ce148`.
 
 此圖是目標能力的概念藍圖，不是 repository 狀態或目錄生成器：
 
@@ -376,7 +382,7 @@ stateDiagram-v2
     Reconciliation --> [*]: explicit resolution
 ```
 
-`sending` 與 `unknown` 禁止自動回到 `pending`，因為 timeout 可能代表 LINE 已接收訊息。狀態名稱必須與 `application/usecases/messaging-delivery.EventState` 保持一致。
+`sending` 與 `unknown` 禁止自動回到 `pending`，因為 timeout 可能代表 LINE 已接收訊息。狀態以 Domain 的 `messaging-delivery/value-objects.Status` 為唯一來源；Application 的 `EventState` 只是 read-model 相容 alias。
 
 ### AccountLink Aggregate 狀態圖
 

@@ -108,7 +108,7 @@ func TestFirestoreTransactionAndConcurrentClaim(t *testing.T) {
 	if inFlight.Load() != workers-1 {
 		t.Fatalf("expected %d in-flight losers, got %d", workers-1, inFlight.Load())
 	}
-	if err := store.Complete(ctx, job.Key, winningLease, messagingdelivery.DeliverySent); err != nil {
+	if err := store.Complete(ctx, job.Key, winningLease, messagingdelivery.DeliverySent, now.Add(time.Second)); err != nil {
 		t.Fatal(err)
 	}
 	_, err = store.Record(ctx, messagingdelivery.DeliveryWorkItem{

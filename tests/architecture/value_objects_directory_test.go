@@ -12,8 +12,9 @@ import (
 	"testing"
 )
 
-// TestValueObjectsDirectoryContract checks implemented bounded contexts for
-// the agreed value-objects/ directory and package name.
+// TestValueObjectsDirectoryContract checks tactical Domain model directories
+// for the agreed value-objects/ directory and package name. Directory presence
+// does not strategically promote a candidate Context.
 func TestValueObjectsDirectoryContract(t *testing.T) {
 	domain := filepath.Join("..", "..", "internal", "domain")
 	identityValueDir := filepath.Join(domain, "identity", "value-objects")

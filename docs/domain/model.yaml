@@ -50,12 +50,13 @@ contexts:
     model_kind: domain-model
     classification: core
     owner: linebot-platform
+    package: internal/domain/messaging-delivery
     purpose: Decide and record one reliable delivery outcome for an accepted communication intent.
     non_responsibilities: [Define provider wire formats., Own audience membership., Treat a missing provider response as a known failure.]
     language:
       - {term: delivery-intent, definition: "Request to deliver content to a resolved recipient.", forbidden_aliases: [line-request], code_symbols: []}
       - {term: delivery, definition: "Consistency boundary for claim and terminal outcome.", forbidden_aliases: [cloud-task], code_symbols: [internal/domain/messaging-delivery/aggregates.Delivery]}
-      - {term: delivery-event, definition: "Modeled fact raised by an in-memory Delivery transition; the current workflow does not persist, acknowledge, or publish it.", forbidden_aliases: [integration-event, cloud-task], code_symbols: [internal/domain/messaging-delivery/events.DeliveryEvent]}
+      - {term: delivery-event, definition: "Modeled fact raised by an in-memory Delivery transition; the current workflow does not persist or publish it.", forbidden_aliases: [integration-event, cloud-task], code_symbols: [internal/domain/messaging-delivery/events.DeliveryEvent]}
       - {term: unknown-outcome, definition: "Send whose remote effect cannot be safely determined.", forbidden_aliases: [failed], code_symbols: [internal/domain/messaging-delivery/value-objects.StatusUnknown]}
       - {term: idempotency-key, definition: "Stable identity preventing duplicate business delivery.", forbidden_aliases: [task-name], code_symbols: []}
     owns: [delivery-intent, delivery-claim, delivery-outcome, delivery-domain-events]
@@ -79,6 +80,7 @@ contexts:
     model_kind: domain-model
     classification: supporting
     owner: unassigned
+    package: internal/domain/audience
     purpose: Own provider-independent recipient selection definitions and synchronization intent.
     non_responsibilities: [Own provider audience membership., Deliver messages., Mirror LINE endpoint groups.]
     language:
@@ -104,6 +106,7 @@ contexts:
     model_kind: domain-model
     classification: supporting
     owner: unassigned
+    package: internal/domain/experience-presentation
     purpose: Own desired interactive presentation independently from deployed provider resources.
     non_responsibilities: [Own promotions., Own delivery., Treat rich-menu SDK types as Domain entities.]
     language:
@@ -128,6 +131,7 @@ contexts:
     model_kind: domain-model
     classification: supporting
     owner: unassigned
+    package: internal/domain/promotion
     purpose: Own promotion lifecycle and eligibility when those decisions are product-owned.
     non_responsibilities: [Deliver promotion messages., Own audience definitions., Mirror coupon endpoints.]
     language:
@@ -174,6 +178,7 @@ contexts:
     model_kind: domain-model
     classification: supporting
     owner: linebot-platform
+    package: internal/domain/workspace-automation
     purpose: Own user-approved automation requests and outcomes independently from Google vocabulary.
     non_responsibilities: [Own account links or credentials., Own Google resources., Expose Google SDK types.]
     language:

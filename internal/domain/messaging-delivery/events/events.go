@@ -6,7 +6,8 @@ import (
 	valueobjects "github.com/963sup/linebot-platform/internal/domain/messaging-delivery/value-objects"
 )
 
-// DeliveryEvent marks facts raised by the Delivery aggregate.
+// DeliveryEvent marks modeled-only facts raised by the Delivery aggregate.
+// The current workflow does not persist or publish these facts.
 type DeliveryEvent interface{ DeliveryEvent() }
 
 type Claimed struct {

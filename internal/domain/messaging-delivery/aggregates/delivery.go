@@ -121,8 +121,8 @@ func (d Delivery) PendingEvents() []events.DeliveryEvent {
 	return append([]events.DeliveryEvent(nil), d.pending...)
 }
 
-// AcknowledgeEvents clears events after the aggregate state and event records
-// have been committed successfully by the application boundary.
+// AcknowledgeEvents clears modeled-only facts after a caller has inspected them.
+// The current delivery workflow does not persist or publish these facts.
 func (d *Delivery) AcknowledgeEvents() {
 	if d != nil {
 		d.pending = nil
