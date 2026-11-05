@@ -1,0 +1,68 @@
+
+# Repomix-specific exclusions
+# Git ignores and default exclusions remain enabled.
+
+# Repomix outputs
+repomix-output.*
+repomix-*.xml
+repomix-*.md
+repomix-*.json
+
+# Local runtime and tooling
+.cache/
+.npm-cache/
+node_modules/
+tmp/
+temp/
+logs/
+test-results/
+
+# Generated reports and profiles
+coverage/
+coverage.*
+*.log
+*.trace
+*.prof
+*.pprof
+*.heap
+*.cpuprofile
+*.memprofile
+
+# Local databases and captured data
+*.db
+*.sqlite
+*.sqlite3
+*.har
+*.pcap
+
+# Local secrets and authentication artifacts
+*.secret
+*.secrets
+*.token
+*.pem
+*.key
+*.p12
+*.pfx
+*credentials*.json
+*service-account*.json
+*service_account*.json
+*secret*.local.*
+*token*.local.*
+
+# Terraform local artifacts
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+crash.log
+
+# Local and generated binaries
+*.exe
+*.dll
+*.so
+*.dylib
+*.a
+*.o
+*.zip
+*.tar
+*.gz
