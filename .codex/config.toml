@@ -73,17 +73,41 @@ tool_timeout_sec = 45
 # High-risk Google Cloud operations remain disabled until separately authorized.
 [mcp_servers.google_cloud_cli]
 url = "https://cloudcli.googleapis.com/mcp"
+enabled_tools = ["run_gcloud_command"]
 default_tools_approval_mode = "prompt"
-enabled = false
+enabled = true
 required = false
 startup_timeout_sec = 20
 tool_timeout_sec = 45
+
+# HashiCorp's official server is restricted to public Registry documentation.
+[mcp_servers.terraform]
+command = "docker"
+args = ["run", "-i", "--rm", "hashicorp/terraform-mcp-server:1.4.1", "stdio", "--toolsets=registry"]
+enabled_tools = ["search_provider_docs", "get_provider_details", "get_latest_provider_version", "get_provider_capabilities", "search_modules", "get_module_details", "get_latest_module_version", "search_policies", "get_policy_details"]
+default_tools_approval_mode = "prompt"
+enabled = true
+required = false
+startup_timeout_sec = 45
+tool_timeout_sec = 60
+
+# LINE's pinned OpenAPI description is exposed for discovery and schema reads;
+# invoke-api-endpoint is intentionally absent from enabled_tools.
+[mcp_servers.openapi_line]
+command = "bash"
+args = ["-lc", "exec env npm_config_cache=/workspace/.npm-cache npx -y @ivotoby/openapi-mcp-server@1.16.1 --api-base-url https://api.line.me --openapi-spec /workspace/.linebot-tools/openapi/line-messaging-api.yml --tools dynamic --verbose false"]
+enabled_tools = ["list-api-endpoints", "get-api-endpoint-schema"]
+default_tools_approval_mode = "prompt"
+enabled = true
+required = false
+startup_timeout_sec = 45
+tool_timeout_sec = 60
 
 # Staging-only Firestore tools remain disabled by default.
 [mcp_servers.firestore_toolbox]
 command = "npx"
 args = ["-y", "@toolbox-sdk/server@1.14.0", "--prebuilt=firestore", "--stdio"]
-env_vars = ["FIRESTORE_PROJECT", "FIRESTORE_DATABASE", "GOOGLE_APPLICATION_CREDENTIALS"]
+env_vars = ["FIRESTORE_PROJECT", "GOOGLE_APPLICATION_CREDENTIALS"]
 enabled_tools = ["get_documents", "query_collection", "list_collections", "get_rules", "validate_rules"]
 default_tools_approval_mode = "prompt"
 enabled = false

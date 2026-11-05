@@ -145,7 +145,7 @@ func validateConfig(path string) error {
 	if _, err := parseAgentRegistry(c.Agents); err != nil {
 		return err
 	}
-	expected := []string{"gopls", "firestore_toolbox"}
+	expected := []string{"gopls", "terraform", "openapi_line", "firestore_toolbox"}
 	for name := range remoteEndpoints {
 		expected = append(expected, name)
 	}
@@ -164,7 +164,7 @@ func validateConfig(path string) error {
 		if name != "github" && server.BearerTokenEnvVar != "" {
 			return fmt.Errorf("MCP %s: unexpected bearer token mapping", name)
 		}
-		if name != "firestore_toolbox" && (len(server.EnvVars) != 0 || len(server.EnabledTools) != 0) {
+		if name != "firestore_toolbox" && name != "google_cloud_cli" && name != "terraform" && name != "openapi_line" && (len(server.EnvVars) != 0 || len(server.EnabledTools) != 0) {
 			return fmt.Errorf("MCP %s: unexpected tool or environment override", name)
 		}
 	}
@@ -177,7 +177,7 @@ func validateConfig(path string) error {
 	}
 	for name, endpoint := range remoteEndpoints {
 		server := c.MCPServers[name]
-		enabled := name == "context7" || name == "github" || name == "openaiDeveloperDocs" || name == "google_developer_knowledge"
+		enabled := name == "context7" || name == "github" || name == "openaiDeveloperDocs" || name == "google_developer_knowledge" || name == "google_cloud_cli"
 		if server.URL != endpoint || server.Command != "" || len(server.Args) != 0 || server.Enabled != enabled {
 			return fmt.Errorf("MCP %s: unexpected endpoint, transport or enabled state", name)
 		}
@@ -187,6 +187,9 @@ func validateConfig(path string) error {
 		}
 		if name == "github" {
 			approval = "writes"
+		}
+		if name == "google_cloud_cli" {
+			approval = "prompt"
 		}
 		if server.DefaultToolsApprovalMode != approval {
 			return fmt.Errorf("MCP %s: unexpected approval policy", name)
@@ -199,10 +202,27 @@ func validateConfig(path string) error {
 	if len(knowledge.EnvHTTPHeaders) != 1 || knowledge.EnvHTTPHeaders["X-Goog-Api-Key"] != "DEVELOPERKNOWLEDGE_API_KEY" {
 		return errors.New("Google Developer Knowledge requires X-Goog-Api-Key mapped to DEVELOPERKNOWLEDGE_API_KEY, never a literal secret")
 	}
+	cloudCLI := c.MCPServers["google_cloud_cli"]
+	if !sameStrings(cloudCLI.EnabledTools, []string{"run_gcloud_command"}) {
+		return errors.New("Google Cloud CLI MCP must expose only its approval-gated command tool")
+	}
+	terra := c.MCPServers["terraform"]
+	terraTools := []string{"search_provider_docs", "get_provider_details", "get_latest_provider_version", "get_provider_capabilities", "search_modules", "get_module_details", "get_latest_module_version", "search_policies", "get_policy_details"}
+	if !terra.Enabled || terra.Command != "docker" || terra.URL != "" || terra.DefaultToolsApprovalMode != "prompt" ||
+		!slices.Equal(terra.Args, []string{"run", "-i", "--rm", "hashicorp/terraform-mcp-server:1.4.1", "stdio", "--toolsets=registry"}) ||
+		!sameStrings(terra.EnabledTools, terraTools) || len(terra.EnvVars) != 0 {
+		return errors.New("Terraform MCP must use the pinned official image with public Registry tools only")
+	}
+	openAPI := c.MCPServers["openapi_line"]
+	openAPIArgs := []string{"-lc", "exec env npm_config_cache=/workspace/.npm-cache npx -y @ivotoby/openapi-mcp-server@1.16.1 --api-base-url https://api.line.me --openapi-spec /workspace/.linebot-tools/openapi/line-messaging-api.yml --tools dynamic --verbose false"}
+	if !openAPI.Enabled || openAPI.Command != "bash" || openAPI.URL != "" || openAPI.DefaultToolsApprovalMode != "prompt" ||
+		!slices.Equal(openAPI.Args, openAPIArgs) || !sameStrings(openAPI.EnabledTools, []string{"list-api-endpoints", "get-api-endpoint-schema"}) || len(openAPI.EnvVars) != 0 {
+		return errors.New("OpenAPI MCP must use the pinned LINE spec and omit endpoint invocation")
+	}
 	toolbox := c.MCPServers["firestore_toolbox"]
 	if toolbox.Enabled || toolbox.Command != "npx" || toolbox.URL != "" || toolbox.DefaultToolsApprovalMode != "prompt" ||
 		!slices.Equal(toolbox.Args, []string{"-y", "@toolbox-sdk/server@1.14.0", "--prebuilt=firestore", "--stdio"}) ||
-		!sameStrings(toolbox.EnvVars, []string{"FIRESTORE_PROJECT", "FIRESTORE_DATABASE", "GOOGLE_APPLICATION_CREDENTIALS"}) ||
+		!sameStrings(toolbox.EnvVars, []string{"FIRESTORE_PROJECT", "GOOGLE_APPLICATION_CREDENTIALS"}) ||
 		!sameStrings(toolbox.EnabledTools, []string{"get_documents", "query_collection", "list_collections", "get_rules", "validate_rules"}) {
 		return errors.New("Firestore Toolbox must remain disabled with its pinned executable and restricted tools")
 	}

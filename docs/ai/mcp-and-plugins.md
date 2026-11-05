@@ -9,12 +9,14 @@ Configuration state is not runtime proof. Each MCP must be evaluated separately 
 | `github` | 啟用 |
 | `openaiDeveloperDocs` | 啟用 |
 | `google_developer_knowledge` | 啟用 |
-| `google_cloud_cli` | 停用 |
+| `google_cloud_cli` | 啟用 |
+| `terraform` | 啟用 |
+| `openapi_line` | 啟用 |
 | `firestore_toolbox` | 停用 |
 
 ## Routing
 
-Go symbols use `gopls`; versioned third-party SDK documentation uses Context7; OpenAI/Codex documentation uses `openaiDeveloperDocs`; Google Cloud and Workspace documentation uses `google_developer_knowledge`; GitHub state uses GitHub MCP. Cloud write operations require explicit authorization and a separately verified identity.
+Go symbols use `gopls`; versioned third-party SDK documentation uses Context7; OpenAI/Codex documentation uses `openaiDeveloperDocs`; Google Cloud and Workspace documentation uses `google_developer_knowledge`; GitHub state uses GitHub MCP. `google_cloud_cli` is restricted by policy to read-only Logging, Monitoring, and Trace queries; every command still requires approval. Terraform exposes public Registry documentation only. OpenAPI exposes discovery and schema reads without endpoint invocation. Cloud write operations require explicit authorization and a separately verified identity.
 
 ## Skills
 
