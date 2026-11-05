@@ -11,5 +11,18 @@
 deploy/
 plugins/
 
+# Architecture link tests run inside Cloud Build. Re-include only the tracked
+# documentation targets they resolve, not the rest of these non-runtime trees.
+!.agents/
+.agents/*
+!.agents/skills/
+.agents/skills/*
+!.agents/skills/sdk-integration/
+!.agents/skills/sdk-integration/SKILL.md
+!deploy/
+deploy/*
+!deploy/firestore/
+!deploy/firestore/README.md
+
 # Keep Dockerfile, go.mod, go.sum, cmd/, internal/ and tests/.
 # Never include secrets, local credentials, Terraform state or git history.
