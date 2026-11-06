@@ -53,6 +53,17 @@ enabled = true
 required = true
 startup_timeout_sec = 45
 tool_timeout_sec = 120
+# Filesystem operations are limited to this repository; Roots cannot widen access.
+# Filesystem MCP is not a substitute for the Codex sandbox or OS permissions.
+[mcp_servers.filesystem]
+command = "bash"
+args = ["/workspace/linebot-platform/bootstrap.sh", "exec", "npm:@modelcontextprotocol/server-filesystem@2.2.0", "--", "mcp-server-filesystem", "--confine-roots", "/workspace/linebot-platform"]
+default_tools_approval_mode = "writes"
+enabled = true
+required = false
+startup_timeout_sec = 45
+tool_timeout_sec = 60
+
 [mcp_servers.context7]
 url = "https://mcp.context7.com/mcp"
 enabled = true
