@@ -1,0 +1,95 @@
+---
+title: Golang DDD + Hexagonal Architecture - Overview
+config:
+  theme: base
+  themeVariables:
+    primaryColor: '#e7f1fb'
+    primaryTextColor: '#153654'
+    primaryBorderColor: '#a8c7e8'
+    lineColor: '#3269a4'
+---
+block-beta
+  columns 3
+  block:strategic:1
+    columns 1
+    sh["STRATEGIC DESIGN"]
+    core["Core: Attendance / Timekeeping"]
+    supporting["Supporting: Account / Team / Membership / Access"]
+    generic["Generic: Identity / LINE / Geolocation / Persistence"]
+    ctx["Bounded Context by business language; not by SDK"]
+    map["Context Map: Contract / ACL / Integration Events"]
+  end
+  block:main:1
+    columns 1
+    mh["HEXAGONAL ARCHITECTURE + DDD"]
+    block:frontend
+      columns 2
+      fe1["LINE MINI App / LIFF"]
+      fe2["LINE Login / ID Token"]
+      fe3["Web Geolocation / No Map"]
+      fe4["Check-in UI / HTTPS + JSON"]
+    end
+    block:driving
+      columns 2
+      da1["Attendance HTTP API"]
+      da2["LINE Webhook / Tasks / Admin"]
+    end
+    block:application
+      columns 2
+      ap1["AuthenticateUser / ResolveMembership"]
+      ap2["Authorize / RecordAttendance / GetAttendance"]
+      ap3["BuildTimesheet"]
+      ap4["Use Cases / Transactions / Idempotency"]
+    end
+    block:domain
+      columns 2
+      d1["Identity: ExternalIdentity / Session"]
+      d2["Account: User / Enterprise / Organization"]
+      d3["Team: EnterpriseTeam / OrganizationTeam"]
+      d4["Membership: EnterpriseMembership / OrganizationMembership / TeamMembership"]
+      d5["Access: Role / Permission / RoleAssignment / Scope"]
+      d6["Attendance: AttendanceSession / AttendancePolicy"]
+      d7["Timekeeping: TimeEntry / Timesheet"]
+      d8["Location: Value Object / Evidence"]
+    end
+    block:ports
+      columns 2
+      p1["IdentityVerifier / MembershipReader"]
+      p2["AccessReader / AttendanceRepository"]
+      p3["TimeEntryRepository / TimesheetRepository"]
+      p4["TaskDispatcher / Clock"]
+    end
+    block:driven
+      columns 2
+      dv1["LINE Verify API / LINE Messaging API"]
+      dv2["Firestore / Cloud Tasks"]
+    end
+  end
+  block:principles:1
+    columns 1
+    rh["OWNERSHIP + TRUST"]
+    rp1["Account types are not nested inheritance"]
+    rp2["Team owner: Enterprise or Organization"]
+    rp3["Membership = affiliation; Access = authorization"]
+    rp4["Session = login; AttendanceSession = attendance"]
+    rp5["TimeEntry = work time; Timesheet = aggregation"]
+    rp6["Browser geolocation is client-side evidence"]
+    rp7["Adapters depend inward; Domain imports no SDK"]
+    rp8["Server verifies ID Token / Scope / Policies"]
+  end
+  da1 --> ap2
+  ap2 --> d6
+  ap3 --> d7
+  ap2 --> p2
+  p2 --> dv2
+  classDef header fill:#123453,color:#ffffff,stroke:#123453
+  classDef pale fill:#e9f3ff,stroke:#95bde9,color:#193653
+  classDef domainbox fill:#fff3d9,stroke:#e6a229,color:#664300
+  classDef appbox fill:#eee4ff,stroke:#986fe2,color:#452d75
+  classDef frontendbox fill:#e2f3ee,stroke:#7bc9ad,color:#155842
+  classDef portbox fill:#e3f5ec,stroke:#77b99d,color:#155842
+  class sh,mh,rh header
+  class d1,d2,d3,d4,d5,d6,d7,d8 domainbox
+  class ap1,ap2,ap3,ap4 appbox
+  class fe1,fe2,fe3,fe4 frontendbox
+  class p1,p2,p3,p4 portbox

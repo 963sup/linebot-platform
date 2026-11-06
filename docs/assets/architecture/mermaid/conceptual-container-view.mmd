@@ -1,0 +1,21 @@
+C4Container
+    title Attendance and Timekeeping - Containers
+    Person(user, "User", "LINE MINI App 使用者")
+    Person(admin, "Administrator", "企業及組織管理者")
+    System_Ext(line, "LINE Platform", "LINE Login / Verify API / Messaging API")
+    System_Boundary(system, "Attendance Governance System") {
+        Container(miniapp, "LINE MINI App", "LIFF SDK + Browser JS", "LINE Login / Web Geolocation / Check-in UI - no draggable map")
+        Container(api, "Go API", "Golang", "HTTP adapters, application use cases, domain modules, outbound ports")
+        Container(worker, "Go Task Worker", "Golang", "背景任務與 Timesheet 彙整")
+        ContainerDb(firestore, "Firestore", "Document Database", "Account、Membership、Access、Attendance、Timekeeping 記錄")
+    }
+    System_Ext(tasks, "Cloud Tasks", "任務排程與投遞")
+    Rel(user, miniapp, "開啟與使用")
+    Rel(admin, api, "執行管理操作", "HTTPS")
+    Rel(miniapp, line, "取得 LINE ID Token", "LIFF SDK")
+    Rel(miniapp, api, "傳送 ID Token、定位資料、打卡及查詢", "HTTPS / JSON")
+    Rel(api, line, "驗證 ID Token", "HTTPS")
+    Rel(api, firestore, "讀寫領域資料", "Firestore adapter")
+    Rel(api, tasks, "排送彙整或通知任務", "Cloud Tasks API")
+    Rel(tasks, worker, "觸發任務", "HTTPS")
+    Rel(worker, firestore, "讀寫工時表等資料", "Firestore adapter")

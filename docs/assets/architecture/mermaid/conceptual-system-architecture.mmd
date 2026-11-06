@@ -1,0 +1,56 @@
+architecture-beta
+    group browser(cloud)[Browser and LINE MINI App]
+    service miniapp(server)[LIFF UI] in browser
+    service geolocation(server)[Geolocation API] in browser
+    service idtoken(server)[LINE ID Token] in browser
+
+    group inbound(cloud)[Driving Adapters]
+    service http(server)[Attendance HTTP API] in inbound
+    service webhook(server)[LINE Webhook] in inbound
+    service admin(server)[Admin and Tasks] in inbound
+
+    group application(cloud)[Application]
+    service authenticate(server)[AuthenticateUser] in application
+    service authorize(server)[ResolveMembership and Authorize] in application
+    service record(server)[RecordAttendance] in application
+    service timesheet(server)[BuildTimesheet] in application
+
+    group domain(cloud)[Business Domain]
+    service identity(server)[Identity and Account] in domain
+    service organization(server)[Team Membership Access] in domain
+    service attendance(server)[AttendanceSession and Policy] in domain
+    service timekeeping(server)[TimeEntry and Timesheet] in domain
+
+    group outbound(cloud)[Outbound Ports]
+    service verifyPort(server)[IdentityVerifier] in outbound
+    service membershipPort(server)[MembershipReader and AccessReader] in outbound
+    service attendancePort(database)[AttendanceRepository] in outbound
+    service timePort(database)[TimekeepingRepositories] in outbound
+    service dispatchPort(server)[TaskDispatcher] in outbound
+
+    group infrastructure(cloud)[Driven Adapters]
+    service lineApi(internet)[LINE Verify API] in infrastructure
+    service firestore(database)[Firestore] in infrastructure
+    service cloudtasks(server)[Cloud Tasks] in infrastructure
+
+    miniapp:R --> L:http
+    geolocation:B --> T:miniapp
+    idtoken:B --> T:miniapp
+    http:R --> L:authenticate
+    webhook:R --> L:authorize
+    admin:R --> L:timesheet
+    authenticate:B --> T:identity
+    authorize:B --> T:organization
+    record:B --> T:attendance
+    timesheet:B --> T:timekeeping
+    authorize:R --> L:record
+    authenticate:R --> L:verifyPort
+    authorize:R --> L:membershipPort
+    record:R --> L:attendancePort
+    timesheet:R --> L:timePort
+    record:B --> T:dispatchPort
+    verifyPort:R --> L:lineApi
+    membershipPort:R --> L:firestore
+    attendancePort:R --> L:firestore
+    timePort:R --> L:firestore
+    dispatchPort:R --> L:cloudtasks

@@ -5,6 +5,7 @@
 - `go-ddd-hexagonal-architecture-overview.svg` 是概覽的可編輯來源。
 - `go-ddd-hexagonal-architecture-overview.png` 是該 SVG 的固定尺寸渲染投影。
 - `go-ddd-hexagonal-architecture-codex.svg` 與 `go-ddd-hexagonal-architecture-engineering.svg` 是互補的詳細視圖，不是另一份架構契約。
+- `mermaid/conceptual-*.mmd` 是概念性 Mermaid 原始圖，包含尚未由 `docs/domain/model.yaml` 與 ADR 驗證的候選模型；不得視為已實作的 Domain 或資料契約。
 
 一般編輯預覽可在 repository root 以本機 Inkscape 重建 PNG：
 

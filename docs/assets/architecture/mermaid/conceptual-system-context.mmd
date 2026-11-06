@@ -1,0 +1,15 @@
+C4Context
+    title Attendance and Timekeeping - System Context
+    Person(user, "User", "登入、選擇授權範圍、查詢及記錄出勤")
+    Person(admin, "Administrator", "管理 Enterprise、Organization、Team、Membership 與 Access")
+    System_Boundary(boundary, "Attendance Governance System") {
+        System(system, "Go Domain System", "Identity / Account / Team / Membership / Access / Attendance / Timekeeping")
+    }
+    System_Ext(line, "LINE Platform", "LINE Login / ID Token / Messaging API")
+    System_Ext(db, "Firestore", "持久化適配器使用的資料庫")
+    System_Ext(queue, "Cloud Tasks", "非同步任務服務")
+    Rel(user, system, "使用 MINI App", "HTTPS")
+    Rel(admin, system, "管理成員與授權", "HTTPS")
+    Rel(system, line, "驗證 LINE 身分與傳遞訊息", "HTTPS")
+    Rel(system, db, "存取持久化資料", "SDK")
+    Rel(system, queue, "派送非同步任務", "API")
