@@ -18,3 +18,11 @@ Use `Not Verified` when a command, MCP, credential, deployment or external API w
 
 
 Before spawning, the orchestrator records the selected role file, native or explicitly supplied role guidance, bounded scope and acceptance criteria. After spawning, record the actual child ID and verify its executor/checkout identity, HEAD and relevant dirty-state before granting write ownership or consuming artifacts; never infer role loading from a task name or shared files from a path string. Parent and child must verify artifacts exist in the consuming workspace. Final outcomes distinguish proposed, attempted, completed and independently verified work.
+
+## Shared architecture context and reference skills
+
+For a task needing cross-boundary orientation, use the [architecture-context prompt](architecture-context.md) to identify owners, interactions, data flow, design evidence and constraints. Keep this inside the existing role assignment when possible; a known local edit needs no architecture document.
+
+When a reference skill is relevant, include in `Inputs` its path, provenance/source fingerprint, freshness result and only the needed sections. The orchestrator evaluates the [reference lifecycle](../../.agents/skills/repomix-reference/SKILL.md) once for the shared immutable snapshot; children verify that identity in their own workspace, explicitly read the selected skill and confirm live symbols before edits. Mentioning a skill name is not proof that it was loaded. Do not paste the whole pack or make each child regenerate it.
+
+Writers report in `Evidence` whether their changes affect reference sources, selected membership or governing contracts: unchanged, refreshed (with new identity), or stale/deferred with reason. A stale reference must not be passed onward as current. The orchestrator assigns one refresh owner after relevant changes/tests settle and updates dependent handoffs. Independent reviewers check freshness and source claims read-only. When no reference is used, these details are `Not Applicable` within existing fields; no separate handoff form or extra agents are required.

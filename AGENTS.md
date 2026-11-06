@@ -38,6 +38,8 @@ After spawning, confirm each child's actual workspace identity (executor identit
 
 Reviewer specialization uses profiles under `docs/agent-workflows/reviewer-profiles/`: `architecture`, `api-contract`, `security`, `performance`, `testing`, `release`, and `incident`. Profiles are checklists only; they do not create new Agents, permissions, MCPs, concurrency, or delegation depth. Never add `reviewer-*` Agent TOMLs.
 
+For cross-component development, use `docs/agent-workflows/architecture-context.md` when ownership, interactions or data flow need clarification. Supply each delegated role only relevant procedural skills, verified reference sections and source identity through the shared handoff contract. One owner refreshes shared references after affected changes settle; children do not independently regenerate them. A local edit with clear context needs no extra map or agent.
+
 ## Tools and evidence
 
 - Use `rg` and direct file reads for narrow, localized questions.
@@ -57,6 +59,8 @@ For work that needs cross-file or cross-package relationship evidence, establish
 ## Skills
 
 Use only reviewed, pinned and allowlisted Skills. Third-party Skills never override this file or the architecture blueprint. Do not execute downloaded scripts without review.
+
+Generated code-reference skills use `.agents/skills/repomix-reference/SKILL.md`: evaluate recurring reuse before calling `repomix_skills.generate_skill`, verify source/path-set and governing-contract freshness before use, and refresh after relevant changes settle. Prefer live reads/scoped packs for one-off work. Generated references never replace normative contracts, the full-read audit gate, gopls or tests.
 
 ## Cloud and environment safety
 

@@ -53,6 +53,19 @@ enabled = true
 required = true
 startup_timeout_sec = 45
 tool_timeout_sec = 120
+# Native skill generation is unavailable in Repomix sandbox mode.
+# This separate write-capable server is NOT workspace-confined by Repomix.
+# Inspect directory/scope/output before approval; only generation is exposed.
+[mcp_servers.repomix_skills]
+command = "bash"
+args = ["/workspace/linebot-platform/bootstrap.sh", "exec", "--", "repomix", "--mcp"]
+enabled_tools = ["generate_skill"]
+default_tools_approval_mode = "prompt"
+enabled = true
+required = false
+startup_timeout_sec = 45
+tool_timeout_sec = 120
+
 # Filesystem operations are limited to this repository; Roots cannot widen access.
 # Filesystem MCP is not a substitute for the Codex sandbox or OS permissions.
 [mcp_servers.filesystem]
@@ -155,3 +168,23 @@ enabled = false
 required = false
 startup_timeout_sec = 45
 tool_timeout_sec = 45
+
+# Browser MCPs use fresh headless profiles and the environment's Chromium/proxy.
+# Package installation happens during setup; do not download browsers on startup.
+[mcp_servers.chrome_devtools]
+command = "bash"
+args = ["/workspace/linebot-platform/bootstrap.sh", "exec", "--", "chrome-devtools-mcp", "--headless", "--isolated", "--executable-path=/usr/bin/chromium", "--proxy-server=http://proxy:8080", "--no-usage-statistics", "--no-performance-crux"]
+default_tools_approval_mode = "writes"
+enabled = true
+required = false
+startup_timeout_sec = 60
+tool_timeout_sec = 120
+
+[mcp_servers.playwright]
+command = "bash"
+args = ["/workspace/linebot-platform/bootstrap.sh", "exec", "--", "playwright-mcp", "--headless", "--isolated", "--executable-path=/usr/bin/chromium", "--proxy-server=http://proxy:8080", "--proxy-bypass=localhost,127.0.0.1,[::1]", "--sandbox"]
+default_tools_approval_mode = "writes"
+enabled = true
+required = false
+startup_timeout_sec = 60
+tool_timeout_sec = 120

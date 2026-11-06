@@ -37,6 +37,8 @@ func TestMiseRejectsRuntimeInstallAndVersionDrift(t *testing.T) {
 	for _, tc := range []struct{ name, from, to string }{
 		{"filesystem-runtime-mismatch", `"npm:@modelcontextprotocol/server-filesystem" = "2.2.0"`, `"npm:@modelcontextprotocol/server-filesystem" = "2.2.1"`},
 		{"filesystem-version", `"npm:@modelcontextprotocol/server-filesystem" = "2.2.0"`, `"npm:@modelcontextprotocol/server-filesystem" = "latest"`},
+		{"chrome-version", `"npm:chrome-devtools-mcp" = "1.12.0"`, `"npm:chrome-devtools-mcp" = "latest"`},
+		{"playwright-missing", `"npm:@playwright/mcp" = "0.0.84"`, ``},
 		{"runtime-install", "exec_auto_install = false", "exec_auto_install = true"},
 		{"repomix-version", `"npm:repomix" = "1.18.1"`, `"npm:repomix" = "latest"`},
 	} {

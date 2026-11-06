@@ -22,3 +22,7 @@ Profiles extend the fixed `reviewer` role and are not Agent registrations:
 
 Use `reviewer(profile=security)` or combine only relevant profiles, such as `reviewer(profile=architecture,security,testing)`. Profiles do not add permissions, concurrency, recursion depth or write access. See `reviewer-profiles/` for required checks and evidence rules.
 
+
+## Reusable development context
+
+Before assigning a cross-component task, decide whether the [architecture-context workflow](architecture-context.md) would resolve ownership or data-flow uncertainty. Share one verified map/reference identity and only role-relevant sections. Existing procedural skills guide the work; generated reference skills supply bounded source context. Use the shared [handoff contract](handoff-contract.md) for freshness and refresh ownership. This does not add an agent stage to localized tasks.

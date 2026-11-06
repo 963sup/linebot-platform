@@ -24,6 +24,10 @@ Follow [AGENTS.md: Adaptive execution](../../AGENTS.md#adaptive-execution) as th
 
 Role configuration is not proof of host loading. Read the selected role file and pass its instructions explicitly when the host has no verified native role selector. Use concise scoped context, respect the lower of project and host limits, and verify that parent and child actually share the current checkout. Report unavailable delegation honestly rather than labeling self-review independent.
 
+## Shared context for development
+
+Apply the [architecture-context workflow](../agent-workflows/architecture-context.md), adapted from Repomix's architecture-documentation example, when a task needs ownership or data-flow clarification. One shared verified context supports role-specific implementation and review. The [handoff contract](../agent-workflows/handoff-contract.md) defines selected skill inputs, source identity and refresh ownership for every role; generated context does not prove host skill loading or replace live evidence.
+
 ## Routing
 
 | Task | Primary role | Review |

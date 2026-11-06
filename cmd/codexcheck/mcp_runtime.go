@@ -32,7 +32,7 @@ func validateMCPRuntimeSupplyChain(root string) error {
 			return fmt.Errorf("mise tool %s must have an exact version", name)
 		}
 	}
-	for _, name := range []string{"go", "node", "go:golang.org/x/tools/gopls", "npm:repomix", "npm:@modelcontextprotocol/server-filesystem"} {
+	for _, name := range []string{"go", "node", "go:golang.org/x/tools/gopls", "npm:repomix", "npm:@modelcontextprotocol/server-filesystem", "npm:chrome-devtools-mcp", "npm:@playwright/mcp"} {
 		if miseConfig.Tools[name] == "" {
 			return fmt.Errorf("mise is missing required tool %s", name)
 		}

@@ -138,6 +138,15 @@ func TestRejectConfigDrift(t *testing.T) {
 		{"cloud-approval", `enabled_tools = ["run_gcloud_command"]
 default_tools_approval_mode = "prompt"`, `enabled_tools = ["run_gcloud_command"]
 default_tools_approval_mode = "never"`},
+		{"skill-generator-tools", `enabled_tools = ["generate_skill"]`, `enabled_tools = ["generate_skill", "pack_remote_repository"]`},
+		{"skill-generator-approval", `enabled_tools = ["generate_skill"]
+default_tools_approval_mode = "prompt"`, `enabled_tools = ["generate_skill"]
+default_tools_approval_mode = "writes"`},
+		{"skill-generator-sandbox", `"--", "repomix", "--mcp"]`, `"--", "repomix", "--mcp", "--sandbox"]`},
+		{"browser-proxy", `"--proxy-server=http://proxy:8080"`, `"--proxy-server=direct://"`},
+		{"browser-profile", `"--headless", "--isolated"`, `"--headless", "--user-data-dir=/tmp/shared-profile"`},
+		{"playwright-sandbox", `"--sandbox"]`, `"--no-sandbox"]`},
+		{"chrome-telemetry", `"--no-usage-statistics", "--no-performance-crux"`, `"--no-usage-statistics"`},
 		{"threads", "max_concurrent_threads_per_session = 9", "max_concurrent_threads_per_session = 10"},
 		{"knowledge-secret", `env_http_headers = { "X-Goog-Api-Key" = "DEVELOPERKNOWLEDGE_API_KEY" }`, `http_headers = { "X-Goog-Api-Key" = "do-not-store-keys" }`},
 		{"repomix-runtime", `"repomix", "--mcp"`, `"npx", "--mcp"`},

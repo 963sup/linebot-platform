@@ -8,7 +8,10 @@ Repository MCP configuration is inherited by all configured Agents. Agent role f
 | --- | --- |
 | `gopls` | `configured-enabled` |
 | `repomix` | `configured-enabled` |
+| `repomix_skills` | `configured-enabled` |
 | `filesystem` | `configured-enabled` |
+| `chrome_devtools` | `configured-enabled` |
+| `playwright` | `configured-enabled` |
 | `context7` | `configured-enabled` |
 | `github` | `configured-enabled` |
 | `openaiDeveloperDocs` | `configured-enabled` |
@@ -24,6 +27,10 @@ Repository MCP configuration is inherited by all configured Agents. Agent role f
 Narrow questions use direct search. Cross-package structure uses the preinstalled Repomix 1.18.1 runtime in read-only sandbox mode rooted at `/workspace/linebot-platform`; Go symbols and diagnostics then use `gopls`. Versioned third-party SDK documentation uses Context7; OpenAI/Codex documentation uses `openaiDeveloperDocs`; Google Cloud and Workspace documentation uses `google_developer_knowledge`; GitHub state uses GitHub MCP.
 
 With valid runtime credentials, `google_cloud_cli` exposes `run_gcloud_command` and prompt approval. Repository policy limits its intended use to read-only Logging, Monitoring and Trace queries, but that policy text is not a technical read-only boundary on the general command tool. Every invocation still requires approval, and the actual identity and IAM determine what Google Cloud accepts. Terraform exposes public Registry documentation only. The official LINE MCP exposes the approved read-only account tools, while OpenAPI exposes discovery and schema reads without endpoint invocation. Cloud write operations require explicit authorization and a separately verified identity.
+
+`repomix_skills` uses the same pinned executable without Repomix's `--sandbox`, because that mode does not register skill generation. Only `generate_skill` is client-allowlisted; the generator itself accepts arbitrary accessible absolute paths. This is not workspace confinement. Follow the [reference-skill workflow](../../.agents/skills/repomix-reference/SKILL.md), inspect scope/output before approval, and keep the existing read-only `repomix` for analysis.
+
+Browser inspection uses `chrome_devtools` for DOM/CSS, console, network and performance debugging, and `playwright` for UI interaction and accessibility-based flows. Choose the relevant one per task rather than loading both tool schemas or duplicating a browser session. Both launch isolated headless profiles with the existing `/usr/bin/chromium`, preserve TLS validation and use the environment proxy. Host permissions must allow Chromium to start; neither MCP registration nor `tools/list` proves page automation.
 
 ## Skills
 
