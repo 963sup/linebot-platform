@@ -28,6 +28,18 @@ func TestRejectPythonFiles(t *testing.T) {
 	if err := rejectPythonFiles(root); err != nil {
 		t.Fatal(err)
 	}
+	for _, name := range []string{"mcp_smoke.py", "test_mcp_smoke.py"} {
+		path := filepath.Join(root, "scripts", "codex-cloud", name)
+		if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(path, []byte("pass\n"), 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := rejectPythonFiles(root); err != nil {
+		t.Fatalf("approved protocol tools rejected: %v", err)
+	}
 	path := filepath.Join(root, "unexpected.py")
 	if err := os.WriteFile(path, []byte("pass\n"), 0o600); err != nil {
 		t.Fatal(err)

@@ -51,5 +51,7 @@ explicit configuration change after those prerequisites are satisfied.
 
 For local checks use `bash bootstrap.sh run mcp-check`. This validates repository
 configuration and local tools; it does not certify host registration or remote
-credentials. Legacy lifecycle entrypoints delegate to bootstrap for compatibility.
-No startup entrypoint resets or cleans the checkout.
+credentials. The smoke probe requires Python 3.11+ and uses only its standard library.
+Run its regression tests with `python3 -m unittest discover -s scripts/codex-cloud -p "test_*.py"`.
+Legacy lifecycle wrappers and their unused helpers have been removed; use bootstrap
+and mise tasks directly. No startup entrypoint resets or cleans the checkout.

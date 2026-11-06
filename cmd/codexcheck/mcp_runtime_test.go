@@ -17,7 +17,7 @@ func TestMCPRuntimeSupplyChain(t *testing.T) {
 func copyMCPRuntimeInputs(t *testing.T, root string) string {
 	t.Helper()
 	temp := t.TempDir()
-	for _, source := range []string{"config/toolchain.lock", "mise.toml", "bootstrap.sh"} {
+	for _, source := range []string{"go.mod", "mise.toml", "bootstrap.sh"} {
 		raw, err := os.ReadFile(filepath.Join(root, source))
 		if err != nil {
 			t.Fatal(err)

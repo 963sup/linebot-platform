@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -10,17 +9,6 @@ import (
 )
 
 var exactNPMVersion = regexp.MustCompile(`^v?[0-9]+\.[0-9]+\.[0-9]+(?:[-+][0-9A-Za-z.-]+)?$`)
-
-func decodeJSONFile(path string, into any) error {
-	raw, err := os.ReadFile(path)
-	if err != nil {
-		return err
-	}
-	if err := json.Unmarshal(raw, into); err != nil {
-		return fmt.Errorf("decode %s: %w", path, err)
-	}
-	return nil
-}
 
 func validateMCPRuntimeSupplyChain(root string) error {
 	var miseConfig struct {
@@ -44,27 +32,21 @@ func validateMCPRuntimeSupplyChain(root string) error {
 			return fmt.Errorf("mise tool %s must have an exact version", name)
 		}
 	}
-	var toolchain struct {
-		Go   string `json:"go"`
-		Mise struct {
-			Version        string `json:"version"`
-			LinuxX64SHA256 string `json:"linux_x64_sha256"`
-		} `json:"mise"`
-		Gopls struct {
-			Version string `json:"version"`
-		} `json:"gopls"`
+	for _, name := range []string{"go", "node", "go:golang.org/x/tools/gopls", "npm:repomix"} {
+		if miseConfig.Tools[name] == "" {
+			return fmt.Errorf("mise is missing required tool %s", name)
+		}
 	}
-	if err := decodeJSONFile(filepath.Join(root, "config", "toolchain.lock"), &toolchain); err != nil {
+	goMod, err := os.ReadFile(filepath.Join(root, "go.mod"))
+	if err != nil {
 		return err
 	}
-	if toolchain.Go != "go1.27.3" || toolchain.Mise.Version != "2026.11.3" || !regexp.MustCompile(`^[0-9a-f]{64}$`).MatchString(toolchain.Mise.LinuxX64SHA256) {
-		return fmt.Errorf("Go and mise must use the approved pinned toolchain")
+	goVersion := regexp.MustCompile(`(?m)^go ([0-9.]+)$`).FindStringSubmatch(string(goMod))
+	if len(goVersion) != 2 || miseConfig.Tools["go"] != goVersion[1] {
+		return fmt.Errorf("mise Go version must match go.mod")
 	}
-	if toolchain.Gopls.Version != "v0.24.0" {
-		return fmt.Errorf("gopls must be pinned to v0.24.0")
-	}
-	if miseConfig.MinVersion != toolchain.Mise.Version || miseConfig.Tools["go"] != strings.TrimPrefix(toolchain.Go, "go") || miseConfig.Tools["go:golang.org/x/tools/gopls"] != strings.TrimPrefix(toolchain.Gopls.Version, "v") || miseConfig.Tools["npm:repomix"] != "1.18.1" {
-		return fmt.Errorf("mise must own the approved Go, gopls and Repomix versions")
+	if !exactNPMVersion.MatchString(miseConfig.MinVersion) {
+		return fmt.Errorf("mise min_version must be exact")
 	}
 	if miseConfig.Settings.ExecAutoInstall == nil || *miseConfig.Settings.ExecAutoInstall {
 		return fmt.Errorf("MCP execution must not auto-install tools")
@@ -79,7 +61,10 @@ func validateMCPRuntimeSupplyChain(root string) error {
 			return fmt.Errorf("bootstrap must not contain %q", forbidden)
 		}
 	}
-	for _, required := range []string{"https://github.com/jdx/mise/releases/download/v" + toolchain.Mise.Version, toolchain.Mise.LinuxX64SHA256, "sha256sum -c", "MISE_EXEC_AUTO_INSTALL=0"} {
+	if !regexp.MustCompile(`(?m)printf .* [0-9a-f]{64} .*sha256sum -c`).MatchString(text) {
+		return fmt.Errorf("bootstrap must verify the mise download with a pinned SHA-256")
+	}
+	for _, required := range []string{"https://github.com/jdx/mise/releases/download/v" + miseConfig.MinVersion, "sha256sum -c", "MISE_EXEC_AUTO_INSTALL=0"} {
 		if !strings.Contains(text, required) {
 			return fmt.Errorf("bootstrap missing verified mise setup contract %q", required)
 		}
