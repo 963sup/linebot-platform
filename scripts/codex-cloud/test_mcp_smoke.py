@@ -9,6 +9,7 @@ import sys
 import tempfile
 import time
 import unittest
+from unittest import mock
 
 import mcp_smoke
 
@@ -33,7 +34,7 @@ for line in sys.stdin:
         if msg['params']['name'] == 'graph_stats':
             text = 'Nodes: 0' if mode == 'graph-empty' else 'Nodes: 42'
         else:
-            text = 'No results' if mode == 'graph-no-match' else 'validateConfig (function)'
+            text = 'No results' if mode == 'graph-no-match' else ('Ambiguous: validateConfig' if mode == 'graph-ambiguous' else 'NODE validateConfig() [src=cmd/codexcheck/main.go loc=L139]')
         result = {'content': [{'type': 'text', 'text': text}]}
         if mode == 'graph-error': result['isError'] = True
     elif method == 'tools/call':
@@ -80,12 +81,24 @@ class SmokeTest(unittest.TestCase):
             with self.subTest(mode=mode), self.assertRaises(RuntimeError):
                 mcp_smoke.check('repomix', self.server(mode), self.root)
 
-    def test_graphify_requires_nonempty_graph_and_symbol_query(self):
+    @mock.patch.object(mcp_smoke, "check_asyncio_ipc")
+    def test_graphify_requires_nonempty_graph_and_symbol_query(self, _ipc):
         with contextlib.redirect_stdout(io.StringIO()):
             mcp_smoke.check('graphify', self.server('graph-success'), self.root)
-        for mode in ('graph-empty', 'graph-no-match', 'graph-error'):
+        for mode in ('graph-empty', 'graph-no-match', 'graph-error', 'graph-ambiguous'):
             with self.subTest(mode=mode), self.assertRaises(RuntimeError):
                 mcp_smoke.check('graphify', self.server(mode), self.root)
+
+    def test_graphify_ipc_denial_fails_before_launch(self):
+        sender, receiver = mock.MagicMock(), mock.MagicMock()
+        sender.sendall.side_effect = PermissionError('Operation not permitted')
+        with mock.patch.object(mcp_smoke.socket, 'socketpair', return_value=(sender, receiver)), \
+             mock.patch.object(mcp_smoke.subprocess, 'Popen') as launch:
+            with self.assertRaisesRegex(RuntimeError, 'local socket IPC unavailable'):
+                mcp_smoke.check('graphify', self.server('graph-success'), self.root)
+            launch.assert_not_called()
+        sender.__exit__.assert_called_once()
+        receiver.__exit__.assert_called_once()
 
     def test_timeout_reaps_child(self):
         start = time.monotonic()

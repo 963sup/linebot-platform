@@ -6,6 +6,7 @@ import re
 from pathlib import Path
 import selectors
 import signal
+import socket
 import subprocess
 import sys
 import tempfile
@@ -20,10 +21,26 @@ def require(condition, message):
         raise RuntimeError(message)
 
 
+def check_asyncio_ipc():
+    """Python's event loop wakes worker completions through a local socket pair."""
+    try:
+        sender, receiver = socket.socketpair()
+        with sender, receiver:
+            sender.settimeout(1)
+            receiver.settimeout(1)
+            sender.sendall(b'x')
+            require(receiver.recv(1) == b'x', 'graphify: local IPC roundtrip failed')
+    except OSError as error:
+        raise RuntimeError('graphify: local socket IPC unavailable; host sandbox must permit '
+                           'Python asyncio worker wakeups; no MCP connection attempted') from error
+
+
 def check(name, server, root=root):
     require(name in ('repomix', 'gopls', 'filesystem', 'repomix_skills', 'graphify'), f'Unsupported probe: {name}')
     require(server.get('enabled'), f'{name} is disabled')
     require(server.get('command') and not server.get('url'), f'{name}: expected stdio command')
+    if name == 'graphify':
+        check_asyncio_ipc()
     env = os.environ | server.get('env', {})
     process = subprocess.Popen([server['command'], *server.get('args', [])], cwd=root,
                                env=env, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
@@ -95,7 +112,8 @@ def check(name, server, root=root):
                     'graphify: query_graph unavailable')
             query = request('tools/call', {'name': 'query_graph', 'arguments': {
                 'question': 'validateConfig', 'depth': 1, 'token_budget': 500}})
-            require(not query.get('isError') and 'validateConfig' in json.dumps(query),
+            query_text = '\n'.join(item.get('text', '') for item in query.get('content', []))
+            require(not query.get('isError') and 'NODE validateConfig() [src=cmd/codexcheck/main.go' in query_text,
                     'graphify: query did not return the expected code symbol')
         if name == 'repomix_skills':
             generated = source / '.claude/skills/repomix-reference-probe'

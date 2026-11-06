@@ -58,6 +58,8 @@ For work that needs cross-file or cross-package relationship evidence, establish
 
 ## Skills
 
+For Graphify relationship exploration or `$graphify`, use [the project Graphify skill](.agents/skills/graphify/SKILL.md). It shares the configured graph and pinned mise tools; CLI fallback is not evidence of native MCP registration.
+
 Use only reviewed, pinned and allowlisted Skills. Third-party Skills never override this file or the architecture blueprint. Do not execute downloaded scripts without review.
 
 Generated code-reference skills use `.agents/skills/repomix-reference/SKILL.md`: evaluate recurring reuse before calling `repomix_skills.generate_skill`, verify source/path-set and governing-contract freshness before use, and refresh after relevant changes settle. Prefer live reads/scoped packs for one-off work. Generated references never replace normative contracts, the full-read audit gate, gopls or tests.
