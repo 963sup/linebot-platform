@@ -50,3 +50,11 @@ run = ["go run ./cmd/codexcheck", "mise run mcp-smoke"]
 [tasks.mcp-smoke]
 description = "Exercise configured local MCP commands; requires Python 3.11+"
 run = "python3 scripts/codex-cloud/mcp_smoke.py"
+
+[tasks.plugins-install]
+description = "Install Agent Skills and register the Google plugin marketplace"
+run = [
+  "codex plugin marketplace add addyosmani/agent-skills",
+  "codex plugin add agent-skills@agent-skills",
+  "codex plugin marketplace add google/skills",
+]

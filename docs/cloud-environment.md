@@ -55,3 +55,25 @@ credentials. The smoke probe requires Python 3.11+ and uses only its standard li
 Run its regression tests with `python3 -m unittest discover -s scripts/codex-cloud -p "test_*.py"`.
 Legacy lifecycle wrappers and their unused helpers have been removed; use bootstrap
 and mise tasks directly. No startup entrypoint resets or cleans the checkout.
+
+## Optional Codex Plugins
+
+Run explicitly on a host with Codex CLI and writable plugin configuration/cache:
+
+```bash
+bash bootstrap.sh run plugins-install
+```
+
+This registers `addyosmani/agent-skills`, installs
+`agent-skills@agent-skills`, and registers `google/skills`. Google registration
+does not install any Google plugin. Choose a specific plugin separately.
+The task uses the upstream default revisions; it is not a pinned, reproducible
+Skills snapshot. Review the upstream content before executing it.
+
+`.agents/plugins/marketplace.json` describes a marketplace offered by this
+repository; it is not an installation list. This task does not use that placeholder.
+Matt Pocock's Claude marketplace compatibility remains unverified for this host;
+the samber sources retain the existing pinned `.codex/plugins.lock.json` workflow.
+Neither is installed by this task. Plugin installation is separate from ordinary
+bootstrap setup and MCP startup. Confirm plugin and skill discovery in a fresh
+Codex session after installation.
