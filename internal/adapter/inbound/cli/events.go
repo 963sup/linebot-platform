@@ -16,7 +16,7 @@ import (
 const stagingProjectEnv = "LINEBOT_STAGING_PROJECT"
 
 // runEvents only reads staging Firestore. It cannot enqueue work or call LINE.
-func runEvents(parent context.Context, args []string, getenv func(string) string, dependencies ...Dependencies) error {
+func runEvents(parent context.Context, args []string, getenv func(string) string, dependencies ...Dependencies) (err error) {
 	deps := dependency(dependencies)
 	if getenv == nil {
 		return errors.New("environment reader is required")
@@ -52,7 +52,7 @@ func runEvents(parent context.Context, args []string, getenv func(string) string
 	if err != nil {
 		return err
 	}
-	defer runtime.Close()
+	defer func() { err = errors.Join(err, runtime.Close()) }()
 	samples := *limit
 	if *check {
 		samples = 0 // periodic monitoring never prints correlatable keys

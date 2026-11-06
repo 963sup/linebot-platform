@@ -14,11 +14,13 @@
 | customer-segmentation | supporting | Define recipients independently from provider audience resources. |
 | platform-commodities | generic | Supply replaceable persistence scheduling secrets storage transport identifiers and governance tooling without creating business Contexts. |
 | reliable-customer-communication | core | Make customer communication reliable despite duplicate input and uncertain provider outcomes. |
+| workforce-attendance | supporting | Record and review workforce clock-in and clock-out for assigned shifts without owning HR or payroll lifecycle. |
 
 ## Contexts
 
 | Context | Subdomain | Status | Decision | Confidence | Model | Classification | Owner | Package |
 |---|---|---|---|---|---|---|---|---|
+| attendance | workforce-attendance | implemented | implemented | high | domain-model | supporting | linebot-platform | internal/domain/attendance |
 | audience | customer-segmentation | candidate | hypothesis | medium | domain-model | supporting | unassigned | internal/domain/audience |
 | contact-directory | customer-knowledge | candidate | hypothesis | medium | read-model | supporting | unassigned | Not Verified |
 | content-intelligence | content-intelligence-subdomain | candidate | hypothesis | low | process-model | supporting | unassigned | Not Verified |
@@ -34,6 +36,10 @@
 
 | Context | Aggregate / Resource | Kind | Authority / Consistency Boundary | Owner |
 |---|---|---|---|---|
+| attendance | Attendance | aggregate | One participant and shift assignment owns at most one effective clock-in and one effective clock-out plus immutable review history. | linebot-platform |
+| attendance | attendance-record | data | local-authoritative | attendance |
+| attendance | raw-location-evidence | data | local-authoritative | attendance |
+| attendance | provider-identity-token | data | provider-authoritative | line-provider |
 | audience | AudienceDefinition | aggregate | Definition identity and selection criteria change together. | unassigned |
 | audience | audience-definition | data | local-authoritative | audience |
 | audience | provider-audience-membership | data | provider-authoritative | line-provider |
@@ -65,6 +71,13 @@
 
 | Context | Invariant | Statement |
 |---|---|---|
+| attendance | ATT-001 | A participant and shift assignment own at most one effective clock-in and one effective clock-out. |
+| attendance | ATT-002 | Clock-out requires and follows clock-in using authoritative server timestamps. |
+| attendance | ATT-003 | Each assignment and punch kind is one idempotency slot; after the first success, retries return the existing Punch. |
+| attendance | ATT-004 | Location and schedule anomalies require review but do not reject an otherwise valid in-window punch. |
+| attendance | ATT-005 | Review corrections preserve effective punch ordering and every review action appends immutable history. |
+| attendance | ATT-006 | Punches outside the hard submission window are rejected. |
+| attendance | ATT-007 | Enrollment atomically binds one EmployeeID to one ParticipantID and rejects cross-employee or cross-participant reuse. |
 | audience | AUD-001 | A recipient selection is immutable once accepted by delivery. |
 | contact-directory | CON-001 | A snapshot records observation time and never overwrites provider authority. |
 | content-intelligence | CNT-001 | Generated output remains a draft until accepted by its consumer. |
@@ -96,6 +109,7 @@
 
 ```mermaid
 flowchart LR
+    ctx_attendance["attendance\nimplemented"]
     ctx_audience["audience\ncandidate"]
     ctx_contact_directory["contact-directory\ncandidate"]
     ctx_content_intelligence["content-intelligence\ncandidate"]
@@ -122,6 +136,13 @@ flowchart LR
 
 | Context | Term | Definition |
 |---|---|---|
+| attendance | location-assessment | Long-lived distance accuracy anomaly reasons evidence reference and policy version without raw coordinates; it is not proof of physical presence. |
+| attendance | participant | Attendance employee projection identified by EmployeeID and optionally bound to one verified ParticipantID; Attendance does not own the HR master record. |
+| attendance | punch | Server-timestamped clock-in or clock-out with immutable submission identity and review history. |
+| attendance | review-state | Attendance review lifecycle clear required confirmed corrected or voided. |
+| attendance | shift-assignment | Assignment of one participant to one shift instance. |
+| attendance | shift-instance | Scheduled work interval and hard submission window under one policy version. |
+| attendance | workplace | Attendance location policy with a center radius maximum accepted accuracy and version. |
 | audience | audience-definition | Stable criteria for selecting recipients. |
 | audience | audience-sync | Process aligning a definition with provider representation. |
 | audience | recipient-selection | Immutable result consumed by delivery. |

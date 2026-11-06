@@ -1,4 +1,4 @@
-# Builds both production images after one shared verification pass.
+# Builds the webhook, worker, and MINI App images after one shared verification pass.
 substitutions:
   _REGION: 'asia-east1'
   _AR_REPOSITORY: 'line-bot'
@@ -24,6 +24,7 @@ steps:
         mkdir -p /workspace/.release
         CGO_ENABLED=0 GOOS=linux go build -trimpath -o /workspace/.release/webhook ./cmd/webhook
         CGO_ENABLED=0 GOOS=linux go build -trimpath -o /workspace/.release/worker ./cmd/worker
+        CGO_ENABLED=0 GOOS=linux go build -trimpath -o /workspace/.release/miniapp ./cmd/miniapp
 
   - id: 'build-public-image'
     name: 'gcr.io/cloud-builders/docker@sha256:fbc05705e6f24467e40ae8a4097ab9b8fae1116551f838fa2c55f4367427fc36'
@@ -35,9 +36,15 @@ steps:
     waitFor: ['verify-go']
     args: ['build', '--file', 'Dockerfile', '--build-arg', 'BINARY=worker', '--tag', '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPOSITORY}/line-bot-private:$BUILD_ID', '.']
 
+  - id: 'build-miniapp-image'
+    name: 'gcr.io/cloud-builders/docker@sha256:fbc05705e6f24467e40ae8a4097ab9b8fae1116551f838fa2c55f4367427fc36'
+    waitFor: ['verify-go']
+    args: ['build', '--file', 'Dockerfile', '--build-arg', 'BINARY=miniapp', '--tag', '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPOSITORY}/line-miniapp:$BUILD_ID', '.']
+
 images:
   - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPOSITORY}/line-bot-public:$BUILD_ID'
   - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPOSITORY}/line-bot-private:$BUILD_ID'
+  - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPOSITORY}/line-miniapp:$BUILD_ID'
 
 options:
   logging: CLOUD_LOGGING_ONLY

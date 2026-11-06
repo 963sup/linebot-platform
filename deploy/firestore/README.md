@@ -81,6 +81,42 @@ The OAuth code path uses **separate** collections from LINE inbox/outbox:
 
 Records are bound to their Firestore document ID as AES-GCM authenticated associated data. The first callback to atomically consume a state deletes it in a Firestore transaction; further callbacks cannot use that state. Connection updates use versioned transactional CAS and revoked accounts clear their ciphertext so a stale token refresh cannot reactivate them.
 
-**Before authorized staging use:** Configure the `expires_at` Firestore TTL field for all three collection groups, provision pinned 32-byte encryption keys in Secret Manager with least-privilege IAM and rotation, validate runtime `APP_ENV` / OAuth callback URL, and test concurrent consumes, refresh CAS, disconnect and Identity outbox lease recovery using Firestore Emulator and then isolated staging. TTL is asynchronous and never substitutes for checking expiry and active flags in code.
+**Before authorized staging use:** Configure every `expires_at` TTL declared in `indexes.json`, provision pinned 32-byte encryption keys in Secret Manager with least-privilege IAM and rotation, validate runtime `APP_ENV` / OAuth callback URL, and test concurrent consumes, refresh CAS, disconnect, Identity outbox lease recovery and Attendance retention using Firestore Emulator and then isolated staging. TTL is asynchronous and never substitutes for checking expiry and active flags in code.
+
+## Attendance collections
+
+Attendance uses separate versioned collections so long-lived attendance facts do
+not retain short-lived raw coordinates:
+
+| Collection | Purpose | Retention |
+|---|---|---|
+| `attendance_participants_v1` | Employee projection and optional opaque LINE-derived Participant ID | Active records have no TTL; deactivation sets five-year `expires_at` |
+| `attendance_participant_bindings_v1` | Deterministic uniqueness guard from opaque Participant ID to Employee ID | Deactivation sets the same five-year `expires_at`; no raw provider subject |
+| `attendance_enrollment_tokens_v1` | SHA-256 enrollment-code hash and atomic single-use binding state | 24-hour `expires_at` |
+| `attendance_workplaces_v1` | Workplace center and versioned review thresholds | Configuration lifecycle |
+| `attendance_shift_instances_v1` | Explicit clock-in/out and submission windows | Configuration lifecycle |
+| `attendance_shift_assignments_v1` | Explicit Employee-to-Shift assignment with denormalized submission bounds for a bounded current-options query | Configuration lifecycle; historical rows do not participate in current options |
+| `attendance_shift_assignment_guards_v1` | Deterministic `(EmployeeID, ShiftInstanceID)` uniqueness guard pointing to one opaque assignment | Configuration lifecycle; no TTL |
+| `attendance_records_v1` | Punch times, derived distance/accuracy, review flags and current audit state | Five-year `expires_at` |
+| `attendance_location_evidence_v1` | AES-256-GCM ciphertext containing raw latitude/longitude/accuracy | 90-day `expires_at` |
+| `attendance_evidence_access_v1` | Immutable raw-location access reason; authenticated caller remains in Cloud Audit Logs | Five-year `expires_at` |
+| `attendance_review_actions_v1` | Immutable confirm/correct/void audit actions | Same five-year expiry as its Attendance record |
+
+Shift IDs are immutable: recreating an identical definition is idempotent, but
+changing a stored definition is a conflict. Assignment documents copy the
+shift submission bounds so `/options` queries only assignments open at the
+server time; historical rows do not consume its safety cap. More than 500
+simultaneously open assignments for one employee is rejected as an invalid
+operational state rather than scanned without a bound.
+
+Location ciphertext is authenticated with the opaque Punch ID as AES-GCM
+associated data and stores a pinned key ID for rotation. Runtime configuration
+selects only explicit numeric key versions; IAM grants the Mini App identity
+`secretAccessor` on the single `attendance-location-key` secret (and therefore
+technically all of that secret's versions), never project-wide Secret Manager access. Firestore TTL deletion is
+asynchronous; Application code still rejects expired enrollment tokens and
+access to missing/expired evidence. Repository code and emulator tests do not
+prove that production TTL, IAM or key rotation is configured; those remain
+`Not Verified` until isolated Staging evidence exists.
 
 No Google OAuth keys, user OAuth tokens, or persistent app credentials are shipped in repository or CI. The new OAuth libraries are opt-in and are not mounted on the public LINE webhook by default.

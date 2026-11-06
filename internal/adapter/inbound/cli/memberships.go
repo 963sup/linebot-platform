@@ -12,7 +12,7 @@ import (
 	"github.com/963sup/linebot-platform/internal/application/usecases/promotion"
 )
 
-func runMemberships(parent context.Context, args []string, getenv func(string) string, output io.Writer, dependencies ...Dependencies) error {
+func runMemberships(parent context.Context, args []string, getenv func(string) string, output io.Writer, dependencies ...Dependencies) (err error) {
 	deps := dependency(dependencies)
 	flags := flag.NewFlagSet("memberships", flag.ContinueOnError)
 	kind := flags.String("kind", "", "memberships|subscription|membership-users|coupons|coupon")
@@ -42,7 +42,7 @@ func runMemberships(parent context.Context, args []string, getenv func(string) s
 	if err != nil {
 		return err
 	}
-	defer rt.Close()
+	defer func() { err = errors.Join(err, rt.Close()) }()
 	ctx, cancel := context.WithTimeout(parent, 12*time.Second)
 	defer cancel()
 	page := membership.PageRequest{Token: *start, Limit: *limit}

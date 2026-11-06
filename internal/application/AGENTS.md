@@ -6,3 +6,4 @@
 - 以明確 DTO 隔離 LINE／OpenAI／Gemini／Google SDK 的型別。
 - 任務、外部發送需要可重試與冪等設計；不要宣稱端到端 exactly-once。
 - 尚未建置的 usecase 不要建立假成功回傳或空 implementation。
+- Attendance 以已驗證後的 opaque `ParticipantID`、`ShiftAssignmentID` 與 server time 編排 Domain；不得把 LINE subject、ID token、HTTP DTO 或 Firestore錯誤帶入 Domain。Captured coordinates 只能經原子 `SavePunch` 短期保存；一般結果與長期 Punch 不得回傳或嵌入 raw coordinates。

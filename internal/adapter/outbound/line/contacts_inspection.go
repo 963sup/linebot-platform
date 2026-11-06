@@ -54,8 +54,17 @@ func (s *Sender) GetConversationSummary(ctx context.Context, conversation contac
 	} else {
 		return contactdirectory.ConversationSummary{}, errors.New("unsupported LINE conversation kind")
 	}
-	summaryObject, _ := providerObject(summary)
-	countObject, _ := providerObject(count)
+	summaryObject := make(map[string]any)
+	if summary != nil {
+		summaryObject, err = providerObject(summary)
+		if err != nil {
+			return contactdirectory.ConversationSummary{}, err
+		}
+	}
+	countObject, err := providerObject(count)
+	if err != nil {
+		return contactdirectory.ConversationSummary{}, err
+	}
 	return contactdirectory.ConversationSummary{Conversation: conversation, Name: stringValue(summaryObject, "groupName"), PictureURL: stringValue(summaryObject, "pictureUrl"), MemberCount: int64Value(countObject, "count"), ObservedAt: time.Now()}, nil
 }
 

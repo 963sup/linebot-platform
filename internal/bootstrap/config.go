@@ -21,6 +21,7 @@ type RuntimeRole string
 const (
 	RoleWebhook RuntimeRole = "webhook"
 	RoleWorker  RuntimeRole = "worker"
+	RoleMiniApp RuntimeRole = "miniapp"
 )
 
 // SecretConfig is deliberately separate from ordinary runtime settings.

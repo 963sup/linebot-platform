@@ -127,7 +127,7 @@ func TestValidateRepositoryFailures(t *testing.T) {
 		{"missing implementation", "does not exist", func(_ *DomainModel, c *CapabilityMap) { c.Operations[0].CurrentImplementation = "internal/missing" }},
 		{"implementation path escapes repository", "repository-relative", func(_ *DomainModel, c *CapabilityMap) { c.Operations[0].CurrentImplementation = "../outside" }},
 		{"missing evidence", "does not exist", func(m *DomainModel, _ *CapabilityMap) {
-			m.Contexts[0].Evidence = []string{"internal/domain/identity/missing_test.go"}
+			m.Contexts[0].Evidence = []string{m.Contexts[0].Package + "/missing_test.go"}
 		}},
 		{"missing subdomain evidence", "domain_model.subdomains[0].evidence[0]", func(m *DomainModel, _ *CapabilityMap) {
 			m.Subdomains[0].Evidence = []string{"internal/missing-subdomain-evidence"}

@@ -9,7 +9,7 @@ import (
 	messagingdelivery "github.com/963sup/linebot-platform/internal/application/usecases/messaging-delivery"
 )
 
-func runValidate(parent context.Context, args []string, getenv func(string) string, dependencies ...Dependencies) error {
+func runValidate(parent context.Context, args []string, getenv func(string) string, dependencies ...Dependencies) (err error) {
 	deps := dependency(dependencies)
 	flags := flag.NewFlagSet("validate", flag.ContinueOnError)
 	kind := flags.String("kind", "", "reply|push|multicast|narrowcast|broadcast")
@@ -34,7 +34,7 @@ func runValidate(parent context.Context, args []string, getenv func(string) stri
 	if err != nil {
 		return err
 	}
-	defer rt.Close()
+	defer func() { err = errors.Join(err, rt.Close()) }()
 	ctx, cancel := context.WithTimeout(parent, 12*time.Second)
 	defer cancel()
 	_, err = rt.Validate(ctx, messagingdelivery.ValidationRequest{

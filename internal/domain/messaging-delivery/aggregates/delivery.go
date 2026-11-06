@@ -60,7 +60,7 @@ func (d *Delivery) RefreshReplyWindow(until time.Time) error {
 }
 
 func (d *Delivery) Claim(claimID string, now, claimUntil time.Time) error {
-	if d.status != valueobjects.StatusPending || claimID == "" || claimUntil.IsZero() || !claimUntil.After(now) {
+	if d.status != valueobjects.StatusPending || claimID == "" || now.IsZero() || claimUntil.IsZero() || !claimUntil.After(now) {
 		return ErrNotClaimable
 	}
 	now = now.UTC()
@@ -85,6 +85,9 @@ func (d *Delivery) Complete(claimID string, outcome valueobjects.Status, now tim
 	if outcome != valueobjects.StatusSent && outcome != valueobjects.StatusExpired && outcome != valueobjects.StatusUnknown {
 		return errors.New("invalid delivery outcome")
 	}
+	if now.IsZero() {
+		return errors.New("completion time is required")
+	}
 	d.status, d.claimID, d.claimUntil = outcome, "", time.Time{}
 	d.version++
 	now = now.UTC()
@@ -97,6 +100,9 @@ func (d *Delivery) Complete(claimID string, outcome valueobjects.Status, now tim
 
 // Reconcile expires unsent work and converts abandoned sends to unknown.
 func (d *Delivery) Reconcile(now time.Time) bool {
+	if now.IsZero() {
+		return false
+	}
 	now = now.UTC()
 	switch {
 	case d.status == valueobjects.StatusPending && !now.Before(d.replyUntil):

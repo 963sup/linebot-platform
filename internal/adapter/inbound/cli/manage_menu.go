@@ -11,7 +11,7 @@ import (
 	mediatransfer "github.com/963sup/linebot-platform/internal/application/usecases/media-transfer"
 )
 
-func runManageMenu(parent context.Context, args []string, getenv func(string) string, dependencies ...Dependencies) error {
+func runManageMenu(parent context.Context, args []string, getenv func(string) string, dependencies ...Dependencies) (err error) {
 	deps := dependency(dependencies)
 	flags := flag.NewFlagSet("manage-menu", flag.ContinueOnError)
 	action := flags.String("action", "", "rich menu action")
@@ -54,11 +54,11 @@ func runManageMenu(parent context.Context, args []string, getenv func(string) st
 		if deps.MenuImageUploadRuntime == nil {
 			return errors.New("menu image upload runtime is not configured")
 		}
-		runtime, err := deps.MenuImageUploadRuntime(getenv(channelTokenEnv))
-		if err != nil {
-			return err
+		runtime, runtimeErr := deps.MenuImageUploadRuntime(getenv(channelTokenEnv))
+		if runtimeErr != nil {
+			return runtimeErr
 		}
-		defer runtime.Close()
+		defer func() { err = errors.Join(err, runtime.Close()) }()
 		return runtime.StorePresentationImage(ctx, *menu, mediatransfer.BinaryContent{Data: data, ContentType: *imageType})
 	}
 	if err := validateManageMenuInput(*action, *menu, *user, *alias, document.Value != nil); err != nil {
@@ -71,7 +71,7 @@ func runManageMenu(parent context.Context, args []string, getenv func(string) st
 	if err != nil {
 		return err
 	}
-	defer runtime.Close()
+	defer func() { err = errors.Join(err, runtime.Close()) }()
 	switch *action {
 	case "create":
 		return runtime.CreateRichMenu(ctx, document)

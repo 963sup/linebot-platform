@@ -2,10 +2,33 @@ package cli
 
 import (
 	"bytes"
+	"context"
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
+
+	conversationoperations "github.com/963sup/linebot-platform/internal/application/usecases/conversation-operations"
 )
+
+type failingActionsRuntime struct {
+	operationErr error
+	closeErr     error
+}
+
+func (r failingActionsRuntime) Leave(context.Context, conversationoperations.Conversation) error {
+	return r.operationErr
+}
+func (r failingActionsRuntime) ShowLoading(context.Context, conversationoperations.LoadingIndicator) error {
+	return r.operationErr
+}
+func (r failingActionsRuntime) MarkRead(context.Context, conversationoperations.ReadTarget) error {
+	return r.operationErr
+}
+func (r failingActionsRuntime) MarkReadByToken(context.Context, conversationoperations.ReadToken) error {
+	return r.operationErr
+}
+func (r failingActionsRuntime) Close() error { return r.closeErr }
 
 func TestPrivateFileIsExclusiveAnd0600(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "token.json")
@@ -59,5 +82,19 @@ func TestMissingAuthorityCannotReachLINE(t *testing.T) {
 	}
 	if out.Len() != 0 {
 		t.Fatal("rejected action printed data")
+	}
+}
+
+func TestActionsJoinsOperationAndRuntimeCloseErrors(t *testing.T) {
+	operationErr := errors.New("operation failed")
+	closeErr := errors.New("runtime close failed")
+	deps := Dependencies{ActionsRuntime: func(string) (ActionsRuntime, error) {
+		return failingActionsRuntime{operationErr: operationErr, closeErr: closeErr}, nil
+	}}
+	err := runActions(testContext(), []string{
+		"--action", "leave-group", "--id", "group-1", "--apply", "--confirm", "leave-group",
+	}, func(string) string { return "token" }, deps)
+	if !errors.Is(err, operationErr) || !errors.Is(err, closeErr) {
+		t.Fatalf("runActions error=%v, want operation and close errors", err)
 	}
 }

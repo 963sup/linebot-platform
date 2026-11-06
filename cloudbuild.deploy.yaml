@@ -6,9 +6,11 @@ substitutions:
   _REGION: 'asia-east1'
   _PUBLIC_SERVICE: 'line-bot-public'
   _PRIVATE_SERVICE: 'line-bot-private'
+  _MINIAPP_SERVICE: 'line-miniapp'
   _AR_REPOSITORY: 'line-bot'
   _PUBLIC_IMAGE_URI: ''
   _PRIVATE_IMAGE_URI: ''
+  _MINIAPP_IMAGE_URI: ''
   _QUEUE_ID: 'line-bot-events'
   _LINE_BOT_DESTINATION: ''
   _TASK_INVOKER_EMAIL: 'line-bot-invoker@bubbly-area-513305-s0.iam.gserviceaccount.com'
@@ -16,6 +18,12 @@ substitutions:
   _DEPLOYER_SERVICE_ACCOUNT: 'line-bot-deployer@bubbly-area-513305-s0.iam.gserviceaccount.com'
   _PUBLIC_SERVICE_ACCOUNT: 'line-bot-public@bubbly-area-513305-s0.iam.gserviceaccount.com'
   _WORKER_SERVICE_ACCOUNT: 'line-bot-worker@bubbly-area-513305-s0.iam.gserviceaccount.com'
+  _MINIAPP_SERVICE_ACCOUNT: 'line-miniapp@bubbly-area-513305-s0.iam.gserviceaccount.com'
+  _MINIAPP_PUBLIC_ORIGIN: ''
+  _LINE_LIFF_ID: ''
+  _LINE_LOGIN_CHANNEL_ID: ''
+  _ATTENDANCE_LOCATION_ACTIVE_KEY_ID: ''
+  _ATTENDANCE_LOCATION_KEY_VERSIONS: ''
   _STAGING_EVIDENCE_URI: ''
   _STAGING_EVIDENCE_SHA256: ''
 
@@ -43,10 +51,13 @@ steps:
         case '${_STAGING_EVIDENCE_URI}' in gs://*) ;; *) echo 'Specify an immutable gs:// staging evidence object.' >&2; exit 2;; esac
         gcloud storage cp '${_STAGING_EVIDENCE_URI}' /workspace/staging-evidence.json >/dev/null
         PROJECT_ID='$PROJECT_ID' REGION='${_REGION}' QUEUE_ID='${_QUEUE_ID}' \
-          PUBLIC_IMAGE_URI='${_PUBLIC_IMAGE_URI}' PRIVATE_IMAGE_URI='${_PRIVATE_IMAGE_URI}' \
-          PUBLIC_SERVICE_ACCOUNT='${_PUBLIC_SERVICE_ACCOUNT}' WORKER_SERVICE_ACCOUNT='${_WORKER_SERVICE_ACCOUNT}' \
+          PUBLIC_IMAGE_URI='${_PUBLIC_IMAGE_URI}' PRIVATE_IMAGE_URI='${_PRIVATE_IMAGE_URI}' MINIAPP_IMAGE_URI='${_MINIAPP_IMAGE_URI}' \
+          PUBLIC_SERVICE_ACCOUNT='${_PUBLIC_SERVICE_ACCOUNT}' WORKER_SERVICE_ACCOUNT='${_WORKER_SERVICE_ACCOUNT}' MINIAPP_SERVICE_ACCOUNT='${_MINIAPP_SERVICE_ACCOUNT}' \
           INVOKER_SERVICE_ACCOUNT='${_TASK_INVOKER_EMAIL}' WORKER_SERVICE='${_PRIVATE_SERVICE}' \
-          TASK_WORKER_ORIGIN='${_TASK_WORKER_ORIGIN}' STAGING_EVIDENCE_FILE=/workspace/staging-evidence.json \
+          TASK_WORKER_ORIGIN='${_TASK_WORKER_ORIGIN}' MINIAPP_PUBLIC_ORIGIN='${_MINIAPP_PUBLIC_ORIGIN}' \
+          LINE_LIFF_ID='${_LINE_LIFF_ID}' LINE_LOGIN_CHANNEL_ID='${_LINE_LOGIN_CHANNEL_ID}' \
+          ATTENDANCE_LOCATION_ACTIVE_KEY_ID='${_ATTENDANCE_LOCATION_ACTIVE_KEY_ID}' ATTENDANCE_LOCATION_KEY_VERSIONS='${_ATTENDANCE_LOCATION_KEY_VERSIONS}' \
+          STAGING_EVIDENCE_FILE=/workspace/staging-evidence.json \
           STAGING_EVIDENCE_SHA256='${_STAGING_EVIDENCE_SHA256}' bash deploy/scripts/preflight.sh
 
   - id: 'deploy-public-webhook'
@@ -92,6 +103,27 @@ steps:
       - '--update-secrets=LINE_CHANNEL_ACCESS_TOKEN=line-bot-channel-access-token:latest'
       - '--remove-env-vars=WORKER_MODE,GOOGLE_CLOUD_PROJECT,FIRESTORE_DATABASE,AUTO_TASKS,AUTO_CALENDAR,CALENDAR_SERVICE_ACCOUNT'
       - '--remove-secrets=LINE_CHANNEL_SECRET,OPENAI_API_KEY'
+      - '--quiet'
+      - '--format=value(status.latestCreatedRevisionName)'
+
+  - id: 'deploy-miniapp'
+    name: 'gcr.io/google.com/cloudsdktool/google-cloud-cli@sha256:18d8c484aaef27d7ef7b54dfb018f73712503d254a16f0a76b2626b4f6003af2'
+    waitFor: ['preflight-production']
+    entrypoint: 'gcloud'
+    args:
+      - 'run'
+      - 'deploy'
+      - '${_MINIAPP_SERVICE}'
+      - '--image=${_MINIAPP_IMAGE_URI}'
+      - '--region=${_REGION}'
+      - '--project=$PROJECT_ID'
+      - '--service-account=${_MINIAPP_SERVICE_ACCOUNT}'
+      - '--allow-unauthenticated'
+      - '--no-traffic'
+      - '--tag=candidate'
+      - '--update-env-vars=^@^APP_ENV=production@LINE_API_TIMEOUT=8s@LOG_LEVEL=info@LOG_FORMAT=json@LINE_LIFF_ID=${_LINE_LIFF_ID}@LINE_LOGIN_CHANNEL_ID=${_LINE_LOGIN_CHANNEL_ID}@MINIAPP_PUBLIC_ORIGIN=${_MINIAPP_PUBLIC_ORIGIN}@GCP_PROJECT_ID=$PROJECT_ID@FIRESTORE_DATABASE=(default)@ATTENDANCE_LOCATION_ACTIVE_KEY_ID=${_ATTENDANCE_LOCATION_ACTIVE_KEY_ID}@ATTENDANCE_LOCATION_KEY_VERSIONS=${_ATTENDANCE_LOCATION_KEY_VERSIONS}'
+      - '--remove-env-vars=LINE_EVENT_MODE,LINE_BOT_DESTINATION,TASK_QUEUE_NAME,TASK_WORKER_URL,TASK_OIDC_AUDIENCE,TASK_INVOKER_EMAIL,GOOGLE_CLOUD_PROJECT,OPENAI_MODEL,AUTO_TASKS,AUTO_CALENDAR,CALENDAR_SERVICE_ACCOUNT,WORKER_MODE'
+      - '--remove-secrets=LINE_CHANNEL_SECRET,LINE_CHANNEL_ACCESS_TOKEN,OPENAI_API_KEY'
       - '--quiet'
       - '--format=value(status.latestCreatedRevisionName)'
 

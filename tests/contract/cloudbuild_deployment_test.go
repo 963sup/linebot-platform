@@ -17,6 +17,20 @@ func TestCloudBuildConfigurationTargetsLineBotProduction(t *testing.T) {
 			t.Fatalf("%s must target the line-bot Artifact Registry repository", file)
 		}
 	}
+	buildContents, err := os.ReadFile("../../cloudbuild.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	buildText := string(buildContents)
+	for _, want := range []string{
+		"go build -trimpath -o /workspace/.release/miniapp ./cmd/miniapp",
+		"'BINARY=miniapp'",
+		"/line-miniapp:$BUILD_ID",
+	} {
+		if !strings.Contains(buildText, want) {
+			t.Errorf("cloudbuild.yaml missing MINI App build contract %q", want)
+		}
+	}
 
 	contents, err := os.ReadFile("../../cloudbuild.deploy.yaml")
 	if err != nil {
@@ -27,6 +41,7 @@ func TestCloudBuildConfigurationTargetsLineBotProduction(t *testing.T) {
 		"bubbly-area-513305-s0",
 		"line-bot-public",
 		"line-bot-private",
+		"line-miniapp",
 		"line-bot-events",
 		"_LINE_BOT_DESTINATION",
 		"LINE_CHANNEL_SECRET=line-bot-channel-secret:latest",
@@ -52,6 +67,24 @@ func TestCloudBuildConfigurationTargetsLineBotProduction(t *testing.T) {
 	}
 	if !strings.Contains(privateStep, "--concurrency=16") {
 		t.Fatal("private worker deployment must own the concurrency limit")
+	}
+	miniapp := strings.Index(text, "id: 'deploy-miniapp'")
+	if miniapp < 0 {
+		t.Fatal("MINI App deployment step is missing")
+	}
+	miniappStep := text[miniapp:]
+	if next := strings.Index(miniappStep[1:], "\n  - id:"); next >= 0 {
+		miniappStep = miniappStep[:next+1]
+	}
+	for _, want := range []string{"--service-account=${_MINIAPP_SERVICE_ACCOUNT}", "--allow-unauthenticated", "LINE_LIFF_ID=${_LINE_LIFF_ID}", "LINE_LOGIN_CHANNEL_ID=${_LINE_LOGIN_CHANNEL_ID}", "MINIAPP_PUBLIC_ORIGIN=${_MINIAPP_PUBLIC_ORIGIN}", "GCP_PROJECT_ID=$PROJECT_ID", "ATTENDANCE_LOCATION_ACTIVE_KEY_ID=${_ATTENDANCE_LOCATION_ACTIVE_KEY_ID}", "ATTENDANCE_LOCATION_KEY_VERSIONS=${_ATTENDANCE_LOCATION_KEY_VERSIONS}"} {
+		if !strings.Contains(miniappStep, want) {
+			t.Errorf("MINI App deployment missing %q", want)
+		}
+	}
+	for _, forbidden := range []string{"LINE_CHANNEL_SECRET=line-bot-channel-secret", "LINE_CHANNEL_ACCESS_TOKEN=line-bot-channel-access-token", "--concurrency=16"} {
+		if strings.Contains(miniappStep, forbidden) {
+			t.Errorf("MINI App deployment contains forbidden setting %q", forbidden)
+		}
 	}
 	workerSource, err := os.ReadFile("../../internal/bootstrap/worker.go")
 	if err != nil {

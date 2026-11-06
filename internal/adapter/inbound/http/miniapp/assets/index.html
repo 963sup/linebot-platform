@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>出勤打卡</title>
+  <link rel="stylesheet" href="/miniapp/assets/app.css">
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js" defer></script>
+  <script src="/miniapp/assets/app.js" defer></script>
+</head>
+<body>
+  <main>
+    <h1>出勤打卡</h1>
+    <form id="enrollment" hidden>
+      <label for="enrollment-code">請輸入登錄碼</label>
+      <input id="enrollment-code" name="enrollmentCode" autocomplete="off" required>
+      <button type="submit">登錄</button>
+    </form>
+    <section id="punch-panel" hidden>
+      <label for="attendance-option">目前指派班次與工作地點</label>
+      <select id="attendance-option"></select>
+      <div class="actions">
+        <button id="clock-in" type="button">上班打卡</button>
+        <button id="clock-out" type="button">下班打卡</button>
+      </div>
+      <p>只有按下打卡按鈕後，瀏覽器才會請求一次目前位置。</p>
+    </section>
+    <p id="status" role="status" aria-live="polite"></p>
+  </main>
+</body>
+</html>

@@ -13,7 +13,7 @@ import (
 
 // Mutating webhook configuration is only permitted through a manually
 // confirmed operator CLI. No such handler is exposed on the public webhook.
-func runWebhookAdmin(parent context.Context, args []string, getenv func(string) string, output io.Writer, dependencies ...Dependencies) error {
+func runWebhookAdmin(parent context.Context, args []string, getenv func(string) string, output io.Writer, dependencies ...Dependencies) (err error) {
 	deps := dependency(dependencies)
 	flags := flag.NewFlagSet("webhook-admin", flag.ContinueOnError)
 	action := flags.String("action", "", "set|test")
@@ -39,7 +39,7 @@ func runWebhookAdmin(parent context.Context, args []string, getenv func(string) 
 	if err != nil {
 		return err
 	}
-	defer rt.Close()
+	defer func() { err = errors.Join(err, rt.Close()) }()
 	ctx, cancel := context.WithTimeout(parent, 12*time.Second)
 	defer cancel()
 	if *action == "set" {

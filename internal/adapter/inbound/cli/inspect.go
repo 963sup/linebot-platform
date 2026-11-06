@@ -18,7 +18,7 @@ type providerInspectionRuntime interface {
 	insightsreporting.DeliveryReader
 }
 
-func runInspect(parent context.Context, args []string, getenv func(string) string, output io.Writer, dependencies ...Dependencies) error {
+func runInspect(parent context.Context, args []string, getenv func(string) string, output io.Writer, dependencies ...Dependencies) (err error) {
 	deps := dependency(dependencies)
 	flags := flag.NewFlagSet("inspect", flag.ContinueOnError)
 	kind := flags.String("kind", "", "explicitly whitelisted LINE read-only report")
@@ -43,7 +43,7 @@ func runInspect(parent context.Context, args []string, getenv func(string) strin
 	if err != nil {
 		return err
 	}
-	defer runtime.Close()
+	defer func() { err = errors.Join(err, runtime.Close()) }()
 	reader, ok := any(runtime).(providerInspectionRuntime)
 	if !ok {
 		return errors.New("channel inspection runtime does not implement provider-configuration and insights-reporting")

@@ -29,7 +29,7 @@ func runCoupons(parent context.Context, args []string, getenv func(string) strin
 	return inspectCoupon(parent, *kind, promotion.CouponID(*id), promotion.CouponPageRequest{Cursor: *start, Limit: *limit}, getenv, output, deps)
 }
 
-func inspectCoupon(parent context.Context, kind string, id promotion.CouponID, page promotion.CouponPageRequest, getenv func(string) string, output io.Writer, deps Dependencies) error {
+func inspectCoupon(parent context.Context, kind string, id promotion.CouponID, page promotion.CouponPageRequest, getenv func(string) string, output io.Writer, deps Dependencies) (err error) {
 	if getenv == nil || output == nil {
 		return errors.New("missing CLI configuration")
 	}
@@ -43,7 +43,7 @@ func inspectCoupon(parent context.Context, kind string, id promotion.CouponID, p
 	if err != nil {
 		return err
 	}
-	defer rt.Close()
+	defer func() { err = errors.Join(err, rt.Close()) }()
 	ctx, cancel := context.WithTimeout(parent, 12*time.Second)
 	defer cancel()
 	var result any

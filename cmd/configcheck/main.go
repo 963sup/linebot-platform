@@ -94,21 +94,34 @@ func run(args []string, getenv func(string) string, output io.Writer) error {
 		return errors.New("specify exactly one of --check, --write-doc, --validate")
 	}
 	if *validate {
-		var cfg bootstrap.Config
-		var err error
+		var selectedRole bootstrap.RuntimeRole
+		var environment bootstrap.Environment
+		var mode, port string
+		var logging bootstrap.LogConfig
 		switch *role {
 		case "webhook":
-			cfg, err = bootstrap.LoadConfig(getenv)
+			cfg, err := bootstrap.LoadConfig(getenv)
+			if err != nil {
+				return err
+			}
+			selectedRole, environment, mode, port, logging = cfg.Role, cfg.Environment, cfg.EventMode, cfg.Port, cfg.Log
 		case "worker":
-			cfg, err = bootstrap.LoadWorkerConfig(getenv)
+			cfg, err := bootstrap.LoadWorkerConfig(getenv)
+			if err != nil {
+				return err
+			}
+			selectedRole, environment, mode, port, logging = cfg.Role, cfg.Environment, cfg.EventMode, cfg.Port, cfg.Log
+		case "miniapp":
+			cfg, err := bootstrap.LoadMiniAppConfig(getenv)
+			if err != nil {
+				return err
+			}
+			selectedRole, environment, mode, port, logging = cfg.Role, cfg.Environment, "n/a", cfg.Port, cfg.Log
 		default:
-			return errors.New("--role must be webhook or worker")
+			return errors.New("--role must be webhook, worker or miniapp")
 		}
-		if err != nil {
-			return err // validators report key names, never credential values
-		}
-		_, err = fmt.Fprintf(output, "valid role=%s profile=%s mode=%s port=%s log=%s/%s\n",
-			cfg.Role, cfg.Environment, cfg.EventMode, cfg.Port, cfg.Log.Level, cfg.Log.Format)
+		_, err := fmt.Fprintf(output, "valid role=%s profile=%s mode=%s port=%s log=%s/%s\n",
+			selectedRole, environment, mode, port, logging.Level, logging.Format)
 		return err
 	}
 	if *write {

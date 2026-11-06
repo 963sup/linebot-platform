@@ -17,9 +17,8 @@ import (
 	lineinfra "github.com/963sup/linebot-platform/internal/infrastructure/line"
 )
 
-// LINEOpsRuntime is the composition root for operator-only LINE capabilities.
-// Every exported capability is an Application service backed by a LINE
-// adapter; provider clients and transports remain private to bootstrap.
+// LINEOpsRuntime owns one operator command's LINE capabilities and managed
+// transport. Provider clients and transports remain private to bootstrap.
 //
 // Capabilities whose LINE adapters have not yet implemented their new
 // consumer-owned contracts are deliberately absent. Bootstrap must not route
@@ -51,125 +50,168 @@ type LINEOpsRuntime struct {
 	outbound        *httpclient.Managed
 }
 
-func NewLINEOpsRuntime(token string) (*LINEOpsRuntime, error) {
+func newLINEOpsRuntime() (*LINEOpsRuntime, error) {
 	transport, err := httpclient.New(httpclient.Config{Timeout: httpclient.DefaultTimeout}, nil)
 	if err != nil {
 		return nil, err
 	}
-	cleanup := func(err error) (*LINEOpsRuntime, error) {
-		transport.Close()
+	return &LINEOpsRuntime{outbound: transport}, nil
+}
+
+func (r *LINEOpsRuntime) fail(err error) (*LINEOpsRuntime, error) {
+	_ = r.Close()
+	return nil, err
+}
+
+func newLINEMessagingOpsRuntime(token string) (*LINEOpsRuntime, error) {
+	runtime, err := newLINEOpsRuntime()
+	if err != nil {
 		return nil, err
 	}
-
-	client, err := lineinfra.NewMessagingClientWithHTTPClient(token, transport.Client)
+	client, err := lineinfra.NewMessagingClientWithHTTPClient(token, runtime.outbound.Client)
 	if err != nil {
-		return cleanup(err)
+		return runtime.fail(err)
 	}
 	sender, err := line.NewSender(client)
 	if err != nil {
-		return cleanup(err)
+		return runtime.fail(err)
 	}
 	delivery, err := messagingdelivery.NewDeliveryService(sender)
 	if err != nil {
-		return cleanup(err)
+		return runtime.fail(err)
 	}
 	validation, err := messagingdelivery.NewValidationService(sender)
 	if err != nil {
-		return cleanup(err)
+		return runtime.fail(err)
 	}
 	profiles, err := contactdirectory.NewQueries(sender)
 	if err != nil {
-		return cleanup(err)
+		return runtime.fail(err)
 	}
 	contacts, err := contactdirectory.NewConversationQueries(sender)
 	if err != nil {
-		return cleanup(err)
+		return runtime.fail(err)
 	}
 	webhookAdmin, err := providerconfiguration.New(sender)
 	if err != nil {
-		return cleanup(err)
+		return runtime.fail(err)
 	}
 	actions, err := conversationoperations.New(sender)
 	if err != nil {
-		return cleanup(err)
+		return runtime.fail(err)
 	}
 	accountLink, err := accountlinktoken.New(sender)
 	if err != nil {
-		return cleanup(err)
+		return runtime.fail(err)
 	}
 	coupons, err := promotion.NewCouponQueries(sender)
 	if err != nil {
-		return cleanup(err)
+		return runtime.fail(err)
 	}
 	memberships, err := membership.NewQueries(sender)
 	if err != nil {
-		return cleanup(err)
+		return runtime.fail(err)
 	}
 	menus, err := experiencepresentation.NewProviderQueries(sender)
 	if err != nil {
-		return cleanup(err)
+		return runtime.fail(err)
 	}
-	insightClient, err := lineinfra.NewInsightClientWithHTTPClient(token, transport.Client)
+	runtime.Messaging = delivery
+	runtime.BulkMessaging = delivery
+	runtime.PhoneDelivery = sender
+	runtime.PhoneReports = sender
+	runtime.Validation = validation
+	runtime.Profiles = profiles
+	runtime.Contacts = contacts
+	runtime.WebhookAdmin = webhookAdmin
+	runtime.Channel = sender
+	runtime.DeliveryReports = sender
+	runtime.Coupons = coupons
+	runtime.CouponCreator = sender
+	runtime.Memberships = memberships
+	runtime.Menus = menus
+	runtime.MenuCommands = sender
+	runtime.Actions = actions
+	runtime.AccountLink = accountLink
+	return runtime, nil
+}
+
+func newLINEInsightOpsRuntime(token string) (*LINEOpsRuntime, error) {
+	runtime, err := newLINEOpsRuntime()
 	if err != nil {
-		return cleanup(err)
+		return nil, err
+	}
+	insightClient, err := lineinfra.NewInsightClientWithHTTPClient(token, runtime.outbound.Client)
+	if err != nil {
+		return runtime.fail(err)
 	}
 	insightReader, err := line.NewInsightReader(insightClient)
 	if err != nil {
-		return cleanup(err)
+		return runtime.fail(err)
 	}
 	reports, err := insightsreporting.NewReports(insightReader)
 	if err != nil {
-		return cleanup(err)
+		return runtime.fail(err)
 	}
+	runtime.Insights = reports
+	return runtime, nil
+}
 
-	blobClient, err := lineinfra.NewMessagingBlobClientWithHTTPClient(token, transport.Client)
+func newLINEBlobOpsRuntime(token string) (*LINEOpsRuntime, error) {
+	runtime, err := newLINEOpsRuntime()
 	if err != nil {
-		return cleanup(err)
+		return nil, err
+	}
+	blobClient, err := lineinfra.NewMessagingBlobClientWithHTTPClient(token, runtime.outbound.Client)
+	if err != nil {
+		return runtime.fail(err)
 	}
 	blobSender, err := line.NewBlobSender(blobClient)
 	if err != nil {
-		return cleanup(err)
+		return runtime.fail(err)
 	}
 	media, err := mediatransfer.New(blobSender)
 	if err != nil {
-		return cleanup(err)
+		return runtime.fail(err)
 	}
+	runtime.Content = media
+	runtime.RichMenuImages = media
+	runtime.MenuImageReader = media
+	return runtime, nil
+}
 
-	audienceClient, err := lineinfra.NewAudienceClientWithHTTPClient(token, transport.Client)
+func newLINEAudienceOpsRuntime(token string) (*LINEOpsRuntime, error) {
+	runtime, err := newLINEOpsRuntime()
 	if err != nil {
-		return cleanup(err)
+		return nil, err
+	}
+	audienceClient, err := lineinfra.NewAudienceClientWithHTTPClient(token, runtime.outbound.Client)
+	if err != nil {
+		return runtime.fail(err)
 	}
 	audienceReader, err := line.NewAudienceReader(audienceClient)
 	if err != nil {
-		return cleanup(err)
+		return runtime.fail(err)
 	}
 	audiences, err := audience.NewProviderQueries(audienceReader)
 	if err != nil {
-		return cleanup(err)
+		return runtime.fail(err)
 	}
-	audienceBlobClient, err := lineinfra.NewAudienceBlobClientWithHTTPClient(token, transport.Client)
+	audienceBlobClient, err := lineinfra.NewAudienceBlobClientWithHTTPClient(token, runtime.outbound.Client)
 	if err != nil {
-		return cleanup(err)
+		return runtime.fail(err)
 	}
 	audienceAdapter, err := line.NewAudienceManager(audienceClient, audienceBlobClient)
 	if err != nil {
-		return cleanup(err)
+		return runtime.fail(err)
 	}
 	audienceManager, err := audience.NewProviderOperations(audienceAdapter)
 	if err != nil {
-		return cleanup(err)
+		return runtime.fail(err)
 	}
-
-	return &LINEOpsRuntime{
-		Messaging: delivery, BulkMessaging: delivery, PhoneDelivery: sender, PhoneReports: sender, Validation: validation,
-		Profiles: profiles, Contacts: contacts, WebhookAdmin: webhookAdmin,
-		Channel: sender, DeliveryReports: sender,
-		Audiences: audiences, AudienceManager: audienceManager,
-		Coupons: coupons, CouponCreator: sender,
-		Memberships: memberships, Menus: menus, MenuCommands: sender, Insights: reports,
-		Content: media, RichMenuImages: media, MenuImageReader: media,
-		Actions: actions, AccountLink: accountLink, outbound: transport,
-	}, nil
+	runtime.Audiences = audiences
+	runtime.AudienceManager = audienceManager
+	return runtime, nil
 }
 
 // Close satisfies the CLI runtime contract. Releasing idle HTTP connections

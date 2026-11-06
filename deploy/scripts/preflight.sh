@@ -5,9 +5,11 @@ set -euo pipefail
 # it never creates, updates, deploys, grants, or deletes cloud resources.
 
 required=(
-  PROJECT_ID REGION QUEUE_ID PUBLIC_IMAGE_URI PRIVATE_IMAGE_URI
-  PUBLIC_SERVICE_ACCOUNT WORKER_SERVICE_ACCOUNT INVOKER_SERVICE_ACCOUNT
-  WORKER_SERVICE TASK_WORKER_ORIGIN
+  PROJECT_ID REGION QUEUE_ID PUBLIC_IMAGE_URI PRIVATE_IMAGE_URI MINIAPP_IMAGE_URI
+  PUBLIC_SERVICE_ACCOUNT WORKER_SERVICE_ACCOUNT MINIAPP_SERVICE_ACCOUNT INVOKER_SERVICE_ACCOUNT
+  WORKER_SERVICE TASK_WORKER_ORIGIN MINIAPP_PUBLIC_ORIGIN
+  LINE_LIFF_ID LINE_LOGIN_CHANNEL_ID
+  ATTENDANCE_LOCATION_ACTIVE_KEY_ID ATTENDANCE_LOCATION_KEY_VERSIONS
   STAGING_EVIDENCE_FILE STAGING_EVIDENCE_SHA256
 )
 for name in "${required[@]}"; do
@@ -19,6 +21,47 @@ done
 
 if [[ ! "${TASK_WORKER_ORIGIN}" =~ ^https://[a-z0-9-]+\.[a-z0-9-]+\.run\.app$ ]]; then
   echo "TASK_WORKER_ORIGIN must be a Cloud Run HTTPS origin without a path" >&2
+  exit 2
+fi
+if [[ ! "${MINIAPP_PUBLIC_ORIGIN}" =~ ^https://[a-z0-9.-]+$ ]]; then
+  echo "MINIAPP_PUBLIC_ORIGIN must be an HTTPS origin without userinfo, port, path, query, or fragment" >&2
+  exit 2
+fi
+if [[ ! "${LINE_LIFF_ID}" =~ ^[0-9]+-[A-Za-z0-9_-]+$ ]]; then
+  echo "LINE_LIFF_ID has an invalid format" >&2
+  exit 2
+fi
+if [[ ! "${LINE_LOGIN_CHANNEL_ID}" =~ ^[0-9]{6,20}$ ]]; then
+  echo "LINE_LOGIN_CHANNEL_ID must be a numeric channel ID" >&2
+  exit 2
+fi
+if [[ ! "${ATTENDANCE_LOCATION_ACTIVE_KEY_ID}" =~ ^[A-Za-z0-9._-]+$ ]]; then
+  echo "ATTENDANCE_LOCATION_ACTIVE_KEY_ID has an invalid format" >&2
+  exit 2
+fi
+active_attendance_key_found=false
+declare -A attendance_key_ids=()
+IFS=',' read -r -a attendance_key_versions <<<"${ATTENDANCE_LOCATION_KEY_VERSIONS}"
+for entry in "${attendance_key_versions[@]}"; do
+  if [[ ! "${entry}" =~ ^([A-Za-z0-9._-]+)=projects/([^/]+)/secrets/attendance-location-key/versions/([1-9][0-9]*)$ ]]; then
+    echo "ATTENDANCE_LOCATION_KEY_VERSIONS must contain pinned attendance-location-key resources" >&2
+    exit 2
+  fi
+  if [[ "${BASH_REMATCH[2]}" != "${PROJECT_ID}" ]]; then
+    echo "attendance location key must belong to the target project" >&2
+    exit 2
+  fi
+  if [[ -n "${attendance_key_ids[${BASH_REMATCH[1]}]:-}" ]]; then
+    echo "ATTENDANCE_LOCATION_KEY_VERSIONS contains a duplicate key ID" >&2
+    exit 2
+  fi
+  attendance_key_ids["${BASH_REMATCH[1]}"]=1
+  if [[ "${BASH_REMATCH[1]}" == "${ATTENDANCE_LOCATION_ACTIVE_KEY_ID}" ]]; then
+    active_attendance_key_found=true
+  fi
+done
+if [[ "${active_attendance_key_found}" != true ]]; then
+  echo "active attendance location key is missing from the pinned key mapping" >&2
   exit 2
 fi
 
@@ -47,11 +90,24 @@ jq -e '
   (.reviewer | type == "string" and length > 0) and
   (.image_digests.public | type == "string" and contains("@sha256:")) and
   (.image_digests.private | type == "string" and contains("@sha256:")) and
-  (["iam","credentials","firestore","worker_capacity","redelivery","reply_deadline","reconcile","indexes_ttl","monitoring","rollback"] - (.passed_gates // [] | unique) | length == 0)
+  (.image_digests.miniapp | type == "string" and contains("@sha256:")) and
+  (.miniapp_config.public_origin | type == "string" and length > 0) and
+  (.miniapp_config.liff_id | type == "string" and length > 0) and
+  (.miniapp_config.login_channel_id | type == "string" and length > 0) and
+  .miniapp_config.firestore_database == "(default)" and
+  (.miniapp_config.attendance_location_active_key_id | type == "string" and length > 0) and
+  (.miniapp_config.attendance_location_key_versions_sha256 | type == "string" and test("^[0-9a-f]{64}$")) and
+  (["iam","credentials","firestore","worker_capacity","redelivery","reply_deadline","reconcile","indexes_ttl","monitoring","rollback","miniapp_identity","attendance_enrollment","attendance_concurrency","attendance_review","attendance_retention","miniapp_privacy"] - (.passed_gates // [] | unique) | length == 0)
 ' "${STAGING_EVIDENCE_FILE}" >/dev/null
 
 evidence_public="$(jq -r '.image_digests.public' "${STAGING_EVIDENCE_FILE}")"
 evidence_private="$(jq -r '.image_digests.private' "${STAGING_EVIDENCE_FILE}")"
+evidence_miniapp="$(jq -r '.image_digests.miniapp' "${STAGING_EVIDENCE_FILE}")"
+evidence_miniapp_origin="$(jq -r '.miniapp_config.public_origin' "${STAGING_EVIDENCE_FILE}")"
+evidence_liff_id="$(jq -r '.miniapp_config.liff_id' "${STAGING_EVIDENCE_FILE}")"
+evidence_login_channel_id="$(jq -r '.miniapp_config.login_channel_id' "${STAGING_EVIDENCE_FILE}")"
+evidence_attendance_key_id="$(jq -r '.miniapp_config.attendance_location_active_key_id' "${STAGING_EVIDENCE_FILE}")"
+evidence_attendance_key_versions_sha256="$(jq -r '.miniapp_config.attendance_location_key_versions_sha256' "${STAGING_EVIDENCE_FILE}")"
 expires_at="$(jq -r '.expires_at_utc' "${STAGING_EVIDENCE_FILE}")"
 if ! expires_epoch="$(date -u -d "${expires_at}" +%s 2>/dev/null)" || (( expires_epoch <= $(date -u +%s) )); then
   echo "staging evidence is expired or has an invalid expires_at_utc" >&2
@@ -61,12 +117,23 @@ evidence_public_digest="${evidence_public##*@sha256:}"
 evidence_private_digest="${evidence_private##*@sha256:}"
 public_digest="${PUBLIC_IMAGE_URI##*@sha256:}"
 private_digest="${PRIVATE_IMAGE_URI##*@sha256:}"
-if [[ "${evidence_public_digest}" != "${public_digest}" || "${evidence_private_digest}" != "${private_digest}" ]]; then
+evidence_miniapp_digest="${evidence_miniapp##*@sha256:}"
+miniapp_digest="${MINIAPP_IMAGE_URI##*@sha256:}"
+if [[ "${evidence_public_digest}" != "${public_digest}" || "${evidence_private_digest}" != "${private_digest}" || "${evidence_miniapp_digest}" != "${miniapp_digest}" ]]; then
   echo "deployment images do not match approved staging evidence" >&2
   exit 2
 fi
+if [[ "${evidence_miniapp_origin}" != "${MINIAPP_PUBLIC_ORIGIN}" || "${evidence_liff_id}" != "${LINE_LIFF_ID}" || "${evidence_login_channel_id}" != "${LINE_LOGIN_CHANNEL_ID}" ]]; then
+  echo "MINI App deployment configuration does not match approved staging evidence" >&2
+  exit 2
+fi
+attendance_key_versions_sha256="$(printf '%s' "${ATTENDANCE_LOCATION_KEY_VERSIONS}" | sha256sum | awk '{print $1}')"
+if [[ "${evidence_attendance_key_id}" != "${ATTENDANCE_LOCATION_ACTIVE_KEY_ID}" || "${evidence_attendance_key_versions_sha256}" != "${attendance_key_versions_sha256}" ]]; then
+  echo "Attendance encryption configuration does not match approved staging evidence" >&2
+  exit 2
+fi
 
-for image in "${PUBLIC_IMAGE_URI}" "${PRIVATE_IMAGE_URI}"; do
+for image in "${PUBLIC_IMAGE_URI}" "${PRIVATE_IMAGE_URI}" "${MINIAPP_IMAGE_URI}"; do
   case "${image}" in
     "${REGION}-docker.pkg.dev/${PROJECT_ID}/"*"@sha256:"*) ;;
     *) echo "image must be in the target project/region and pinned by digest" >&2; exit 2 ;;
@@ -81,11 +148,10 @@ if [[ "${authoritative_worker_origin}" != "${TASK_WORKER_ORIGIN}" ]]; then
   echo "TASK_WORKER_ORIGIN does not match the authoritative Cloud Run service URL" >&2
   exit 2
 fi
-
-for account in "${PUBLIC_SERVICE_ACCOUNT}" "${WORKER_SERVICE_ACCOUNT}" "${INVOKER_SERVICE_ACCOUNT}"; do
+for account in "${PUBLIC_SERVICE_ACCOUNT}" "${WORKER_SERVICE_ACCOUNT}" "${MINIAPP_SERVICE_ACCOUNT}" "${INVOKER_SERVICE_ACCOUNT}"; do
   gcloud iam service-accounts describe "${account}" --project="${PROJECT_ID}" --quiet >/dev/null
 done
-for secret in line-bot-channel-secret line-bot-channel-access-token; do
+for secret in line-bot-channel-secret line-bot-channel-access-token attendance-location-key; do
   gcloud secrets describe "${secret}" --project="${PROJECT_ID}" --quiet >/dev/null
 done
 
@@ -128,12 +194,20 @@ require_project_role "${PUBLIC_SERVICE_ACCOUNT}" roles/datastore.user
 require_project_role "${PUBLIC_SERVICE_ACCOUNT}" roles/cloudtasks.enqueuer
 require_project_role "${WORKER_SERVICE_ACCOUNT}" roles/datastore.user
 require_project_role "${WORKER_SERVICE_ACCOUNT}" roles/cloudtasks.enqueuer
+require_project_role "${MINIAPP_SERVICE_ACCOUNT}" roles/datastore.user
 require_secret_role line-bot-channel-secret "${PUBLIC_SERVICE_ACCOUNT}"
 require_secret_role line-bot-channel-access-token "${WORKER_SERVICE_ACCOUNT}"
 reject_project_role "${PUBLIC_SERVICE_ACCOUNT}" roles/secretmanager.secretAccessor
 reject_project_role "${WORKER_SERVICE_ACCOUNT}" roles/secretmanager.secretAccessor
+reject_project_role "${MINIAPP_SERVICE_ACCOUNT}" roles/secretmanager.secretAccessor
+reject_project_role "${MINIAPP_SERVICE_ACCOUNT}" roles/cloudtasks.enqueuer
 reject_secret_role line-bot-channel-access-token "${PUBLIC_SERVICE_ACCOUNT}"
 reject_secret_role line-bot-channel-secret "${WORKER_SERVICE_ACCOUNT}"
+reject_secret_role line-bot-channel-secret "${MINIAPP_SERVICE_ACCOUNT}"
+reject_secret_role line-bot-channel-access-token "${MINIAPP_SERVICE_ACCOUNT}"
+require_secret_role attendance-location-key "${MINIAPP_SERVICE_ACCOUNT}"
+reject_secret_role attendance-location-key "${PUBLIC_SERVICE_ACCOUNT}"
+reject_secret_role attendance-location-key "${WORKER_SERVICE_ACCOUNT}"
 
 # Listing is read-only. The signed staging evidence is the authoritative record
 # that the required definitions are Ready, not merely declared by the API.

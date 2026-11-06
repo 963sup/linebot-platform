@@ -22,7 +22,7 @@ type insightsReportingRuntime interface {
 	PresentationDaily(context.Context, insightsreporting.PresentationStatisticsQuery) (insightsreporting.StatisticsReport, error)
 }
 
-func runInsights(parent context.Context, args []string, getenv func(string) string, output io.Writer, dependencies ...Dependencies) error {
+func runInsights(parent context.Context, args []string, getenv func(string) string, output io.Writer, dependencies ...Dependencies) (err error) {
 	deps := dependency(dependencies)
 	flags := flag.NewFlagSet("insights", flag.ContinueOnError)
 	kind := flags.String("kind", "", "read-only insights report kind")
@@ -49,7 +49,7 @@ func runInsights(parent context.Context, args []string, getenv func(string) stri
 	if err != nil {
 		return err
 	}
-	defer rt.Close()
+	defer func() { err = errors.Join(err, rt.Close()) }()
 	reports, ok := any(rt).(insightsReportingRuntime)
 	if !ok {
 		return errors.New("insights runtime does not implement insights-reporting")

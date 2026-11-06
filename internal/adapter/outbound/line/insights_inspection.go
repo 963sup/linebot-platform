@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"sort"
 	"time"
 
 	insightsreporting "github.com/963sup/linebot-platform/internal/application/usecases/insights-reporting"
@@ -46,7 +47,7 @@ func (s *InsightReader) FriendsDemographics(ctx context.Context) (insightsreport
 	if result == nil {
 		return insightsreporting.DemographicsReport{}, errors.New("empty LINE demographics report")
 	}
-	return demographicsReport(result), nil
+	return demographicsReport(result)
 }
 func (s *InsightReader) MessageDeliveries(ctx context.Context, query insightsreporting.DailyQuery) (insightsreporting.CountReport, error) {
 	client, err := s.clientFor(ctx)
@@ -60,7 +61,7 @@ func (s *InsightReader) MessageDeliveries(ctx context.Context, query insightsrep
 	if result == nil {
 		return insightsreporting.CountReport{}, errors.New("empty LINE delivery report")
 	}
-	return countReport(result, query.Day), nil
+	return countReport(result, query.Day)
 }
 func (s *InsightReader) FollowerMetrics(ctx context.Context, query insightsreporting.DailyQuery) (insightsreporting.CountReport, error) {
 	client, err := s.clientFor(ctx)
@@ -74,7 +75,10 @@ func (s *InsightReader) FollowerMetrics(ctx context.Context, query insightsrepor
 	if result == nil {
 		return insightsreporting.CountReport{}, errors.New("empty LINE follower report")
 	}
-	object, _ := providerObject(result)
+	object, err := providerObject(result)
+	if err != nil {
+		return insightsreporting.CountReport{}, err
+	}
 	return insightsreporting.CountReport{Accepted: int64Value(object, "targetedReaches"), Delivered: int64Value(object, "followers"), Failed: int64Value(object, "blocks"), ObservedAt: query.Day}, nil
 }
 func (s *InsightReader) MessageEvent(ctx context.Context, query insightsreporting.MessageEventQuery) (insightsreporting.MessageEventReport, error) {
@@ -89,7 +93,10 @@ func (s *InsightReader) MessageEvent(ctx context.Context, query insightsreportin
 	if result == nil {
 		return insightsreporting.MessageEventReport{}, errors.New("empty LINE message event report")
 	}
-	object, _ := providerObject(result)
+	object, err := providerObject(result)
+	if err != nil {
+		return insightsreporting.MessageEventReport{}, err
+	}
 	return insightsreporting.MessageEventReport{RequestID: query.RequestID, Status: stringValue(object, "status"), Accepted: int64Value(object, "accepted"), Delivered: int64Value(object, "delivered"), ObservedAt: time.Now().UTC()}, nil
 }
 func (s *InsightReader) StatisticsPerUnit(ctx context.Context, query insightsreporting.UnitStatisticsQuery) (insightsreporting.StatisticsReport, error) {
@@ -117,18 +124,24 @@ func (s *InsightReader) PresentationDaily(ctx context.Context, query insightsrep
 	return statisticsResult("getRichMenuInsightDaily", response, result, err, query.To)
 }
 
-func demographicsReport(value any) insightsreporting.DemographicsReport {
-	object, _ := providerObject(value)
-	return insightsreporting.DemographicsReport{ObservedAt: time.Now().UTC(), Dimensions: numericDimensions(object)}
+func demographicsReport(value any) (insightsreporting.DemographicsReport, error) {
+	object, err := providerObject(value)
+	if err != nil {
+		return insightsreporting.DemographicsReport{}, err
+	}
+	return insightsreporting.DemographicsReport{ObservedAt: time.Now().UTC(), Dimensions: numericDimensions(object)}, nil
 }
 
-func countReport(value any, at time.Time) insightsreporting.CountReport {
-	object, _ := providerObject(value)
+func countReport(value any, at time.Time) (insightsreporting.CountReport, error) {
+	object, err := providerObject(value)
+	if err != nil {
+		return insightsreporting.CountReport{}, err
+	}
 	var delivered int64
 	for _, key := range []string{"broadcast", "targeting", "autoResponse", "welcomeResponse", "chat", "apiBroadcast", "apiPush", "apiMulticast", "apiNarrowcast", "apiReply"} {
 		delivered += int64Value(object, key)
 	}
-	return insightsreporting.CountReport{Delivered: delivered, ObservedAt: at}
+	return insightsreporting.CountReport{Delivered: delivered, ObservedAt: at}, nil
 }
 
 func statisticsResult(op string, response *http.Response, value any, err error, at time.Time) (insightsreporting.StatisticsReport, error) {
@@ -138,7 +151,10 @@ func statisticsResult(op string, response *http.Response, value any, err error, 
 	if value == nil {
 		return insightsreporting.StatisticsReport{}, errors.New("empty LINE statistics report")
 	}
-	object, _ := providerObject(value)
+	object, mapErr := providerObject(value)
+	if mapErr != nil {
+		return insightsreporting.StatisticsReport{}, mapErr
+	}
 	points := make([]insightsreporting.MetricPoint, 0)
 	for _, dimension := range numericDimensions(object) {
 		points = append(points, insightsreporting.MetricPoint{At: at, Name: dimension.Dimension, Value: float64(dimension.Count), Unit: "count"})
@@ -147,12 +163,17 @@ func statisticsResult(op string, response *http.Response, value any, err error, 
 }
 
 func numericDimensions(object map[string]any) []insightsreporting.DimensionValue {
-	result := make([]insightsreporting.DimensionValue, 0)
+	keys := make([]string, 0, len(object))
 	for key, raw := range object {
 		switch raw.(type) {
 		case json.Number, float64:
-			result = append(result, insightsreporting.DimensionValue{Dimension: key, Count: int64Value(object, key)})
+			keys = append(keys, key)
 		}
+	}
+	sort.Strings(keys)
+	result := make([]insightsreporting.DimensionValue, 0, len(keys))
+	for _, key := range keys {
+		result = append(result, insightsreporting.DimensionValue{Dimension: key, Count: int64Value(object, key)})
 	}
 	return result
 }

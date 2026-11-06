@@ -3,6 +3,7 @@ locals {
     deployer = "line-bot-deployer"
     public   = "line-bot-public"
     worker   = "line-bot-worker"
+    miniapp  = "line-miniapp"
     invoker  = "line-bot-invoker"
   }
 }
@@ -50,6 +51,11 @@ resource "google_project_iam_member" "worker_tasks" {
   role    = "roles/cloudtasks.enqueuer"
   member  = "serviceAccount:${google_service_account.runtime["worker"].email}"
 }
+resource "google_project_iam_member" "miniapp_datastore" {
+  project = var.project_id
+  role    = "roles/datastore.user"
+  member  = "serviceAccount:${google_service_account.runtime["miniapp"].email}"
+}
 
 resource "google_project_iam_member" "deployer_run_admin" {
   project = var.project_id
@@ -67,7 +73,7 @@ resource "google_project_iam_member" "deployer_log_writer" {
   member  = "serviceAccount:${google_service_account.runtime["deployer"].email}"
 }
 resource "google_service_account_iam_member" "deployer_uses_runtime" {
-  for_each           = toset(["public", "worker"])
+  for_each           = toset(["public", "worker", "miniapp"])
   service_account_id = google_service_account.runtime[each.value].name
   role               = "roles/iam.serviceAccountUser"
   member             = "serviceAccount:${google_service_account.runtime["deployer"].email}"
@@ -75,6 +81,7 @@ resource "google_service_account_iam_member" "deployer_uses_runtime" {
 
 data "google_secret_manager_secret" "channel_secret" { secret_id = "line-bot-channel-secret" }
 data "google_secret_manager_secret" "access_token" { secret_id = "line-bot-channel-access-token" }
+data "google_secret_manager_secret" "attendance_location_key" { secret_id = "attendance-location-key" }
 
 resource "google_secret_manager_secret_iam_member" "public_channel_secret" {
   secret_id = data.google_secret_manager_secret.channel_secret.id
@@ -85,6 +92,11 @@ resource "google_secret_manager_secret_iam_member" "worker_access_token" {
   secret_id = data.google_secret_manager_secret.access_token.id
   role      = "roles/secretmanager.secretAccessor"
   member    = "serviceAccount:${google_service_account.runtime["worker"].email}"
+}
+resource "google_secret_manager_secret_iam_member" "miniapp_attendance_location_key" {
+  secret_id = data.google_secret_manager_secret.attendance_location_key.id
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${google_service_account.runtime["miniapp"].email}"
 }
 
 # Cloud Run services are deployed from immutable images by Cloud Build. These

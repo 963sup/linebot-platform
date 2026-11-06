@@ -86,3 +86,32 @@ func TestDeliveryReconcileAndRefresh(t *testing.T) {
 		t.Fatalf("unknown delivery reopened: %v", err)
 	}
 }
+
+func TestDeliveryRejectsZeroAuthoritativeTimeWithoutMutation(t *testing.T) {
+	d := delivery(t)
+	initialVersion := d.Version()
+	if err := d.Claim("lease", time.Time{}, d.ReplyUntil().Add(time.Second)); !errors.Is(err, ErrNotClaimable) {
+		t.Fatalf("zero-time claim error=%v, want ErrNotClaimable", err)
+	}
+	if d.Version() != initialVersion || d.Status() != valueobjects.StatusPending || len(d.PendingEvents()) != 0 {
+		t.Fatal("zero-time claim mutated delivery")
+	}
+	now := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
+	if err := d.Claim("lease", now, now.Add(time.Second)); err != nil {
+		t.Fatal(err)
+	}
+	claimedVersion := d.Version()
+	claimedUntil := d.ClaimUntil()
+	if err := d.Complete("lease", valueobjects.StatusSent, time.Time{}); err == nil {
+		t.Fatal("zero-time completion succeeded")
+	}
+	if d.Version() != claimedVersion || d.Status() != valueobjects.StatusSending || d.ClaimID() != "lease" || d.ClaimUntil() != claimedUntil || len(d.PendingEvents()) != 1 {
+		t.Fatal("zero-time completion mutated delivery")
+	}
+	if d.Reconcile(time.Time{}) {
+		t.Fatal("zero-time reconcile reported a transition")
+	}
+	if d.Version() != claimedVersion || d.Status() != valueobjects.StatusSending || d.ClaimID() != "lease" || d.ClaimUntil() != claimedUntil || len(d.PendingEvents()) != 1 {
+		t.Fatal("zero-time reconcile mutated delivery")
+	}
+}

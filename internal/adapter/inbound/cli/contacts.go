@@ -19,7 +19,7 @@ type contactDirectoryRuntime interface {
 	GetMemberProfile(context.Context, contactdirectory.RecipientReference, contactdirectory.RecipientID) (contactdirectory.ProfileSnapshot, error)
 }
 
-func runContacts(parent context.Context, args []string, getenv func(string) string, output io.Writer, dependencies ...Dependencies) error {
+func runContacts(parent context.Context, args []string, getenv func(string) string, output io.Writer, dependencies ...Dependencies) (err error) {
 	deps := dependency(dependencies)
 	flags := flag.NewFlagSet("contacts", flag.ContinueOnError)
 	kind := flags.String("kind", "", "read-only LINE contacts/group query")
@@ -44,7 +44,7 @@ func runContacts(parent context.Context, args []string, getenv func(string) stri
 	if err != nil {
 		return err
 	}
-	defer rt.Close()
+	defer func() { err = errors.Join(err, rt.Close()) }()
 	reader, ok := any(rt).(contactDirectoryRuntime)
 	if !ok {
 		return errors.New("contacts runtime does not implement contact-directory")

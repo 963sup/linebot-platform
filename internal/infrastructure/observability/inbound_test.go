@@ -10,6 +10,27 @@ import (
 	"testing"
 )
 
+func TestMiniAppDimensionsAreBounded(t *testing.T) {
+	if got := boundedRole("miniapp"); got != "miniapp" {
+		t.Fatalf("role=%q", got)
+	}
+	if got := boundedRoute("/miniapp/config.json"); got != "miniapp_config" {
+		t.Fatalf("route=%q", got)
+	}
+	for path, want := range map[string]string{
+		"/miniapp/api/v1/attendance/enrollments": "miniapp_attendance_enrollment",
+		"/miniapp/api/v1/attendance/options":     "miniapp_attendance_options",
+		"/miniapp/api/v1/attendance/punches":     "miniapp_attendance_punch",
+	} {
+		if got := boundedRoute(path); got != want {
+			t.Fatalf("route %q=%q, want %q", path, got, want)
+		}
+	}
+	if got := boundedRoute("/miniapp/private-user-id"); got != "other" {
+		t.Fatalf("unbounded route=%q", got)
+	}
+}
+
 func TestInboundMetadataNeverLeaksQueryOrHeaders(t *testing.T) {
 	var out bytes.Buffer
 	logger := slog.New(slog.NewJSONHandler(&out, &slog.HandlerOptions{Level: slog.LevelDebug}))

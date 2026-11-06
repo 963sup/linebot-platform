@@ -27,7 +27,7 @@ func uuidv4() (string, error) {
 	return id.String(), nil
 }
 
-func runWithContext(ctx context.Context, args []string, getenv func(string) string, dependencies ...Dependencies) error {
+func runWithContext(ctx context.Context, args []string, getenv func(string) string, dependencies ...Dependencies) (err error) {
 	if ctx == nil {
 		return errors.New("CLI context is required")
 	}
@@ -35,6 +35,9 @@ func runWithContext(ctx context.Context, args []string, getenv func(string) stri
 		return err
 	}
 	deps := dependency(dependencies)
+	if len(args) > 0 && args[0] == "attendance" {
+		return runAttendance(ctx, args[1:], getenv, os.Stdout, deps)
+	}
 	if len(args) > 0 && args[0] == "audience-definitions" {
 		return runAudienceDefinitions(ctx, args[1:], getenv, os.Stdout, deps)
 	}
@@ -105,7 +108,7 @@ func runWithContext(ctx context.Context, args []string, getenv func(string) stri
 		return runWebhookAdmin(ctx, args[1:], getenv, os.Stdout, deps)
 	}
 	if len(args) == 0 || args[0] != "push" {
-		return errors.New("usage: ops push --to ID --text MESSAGE [--send] [--retry-key UUID] | ops events --inspect --project PROJECT | ops profile --user ID --lookup")
+		return errors.New("usage: ops attendance employee|workplace|shift|review ACTION [flags] | ops push --to ID --text MESSAGE [--send] [--retry-key UUID] | ops events --inspect --project PROJECT | ops profile --user ID --lookup")
 	}
 	fs := flag.NewFlagSet("push", flag.ContinueOnError)
 	to := fs.String("to", "", "LINE recipient ID")
@@ -158,7 +161,7 @@ func runWithContext(ctx context.Context, args []string, getenv func(string) stri
 	if err != nil {
 		return err
 	}
-	defer runtime.Close()
+	defer func() { err = errors.Join(err, runtime.Close()) }()
 	// Printed before sending so an uncertain result can be retried with the same key.
 	fmt.Fprintln(os.Stderr, "LINE push retry key:", *key)
 	commandCtx, cancel := context.WithTimeout(ctx, pushCommandTimeout)

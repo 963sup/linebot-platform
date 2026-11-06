@@ -7,7 +7,16 @@
   "approved_for_production": false,
   "image_digests": {
     "public": "asia-east1-docker.pkg.dev/REPLACE_PROJECT/line-bot/line-bot-public@sha256:REPLACE_DIGEST",
-    "private": "asia-east1-docker.pkg.dev/REPLACE_PROJECT/line-bot/line-bot-private@sha256:REPLACE_DIGEST"
+    "private": "asia-east1-docker.pkg.dev/REPLACE_PROJECT/line-bot/line-bot-private@sha256:REPLACE_DIGEST",
+    "miniapp": "asia-east1-docker.pkg.dev/REPLACE_PROJECT/line-bot/line-miniapp@sha256:REPLACE_DIGEST"
+  },
+  "miniapp_config": {
+    "public_origin": "https://REPLACE_APPROVED_MINIAPP_ORIGIN",
+    "liff_id": "REPLACE_APPROVED_LIFF_ID",
+    "login_channel_id": "REPLACE_APPROVED_LOGIN_CHANNEL_ID",
+    "firestore_database": "(default)",
+    "attendance_location_active_key_id": "REPLACE_APPROVED_KEY_ID",
+    "attendance_location_key_versions_sha256": "REPLACE_WITH_SHA256_OF_EXACT_KEY_VERSION_MAPPING"
   },
   "passed_gates": []
 }

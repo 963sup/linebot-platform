@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-func runMenuImage(parent context.Context, args []string, getenv func(string) string, dependencies ...Dependencies) error {
+func runMenuImage(parent context.Context, args []string, getenv func(string) string, dependencies ...Dependencies) (err error) {
 	deps := dependency(dependencies)
 	flags := flag.NewFlagSet("menu-image", flag.ContinueOnError)
 	id := flags.String("menu-id", "", "rich menu ID")
@@ -26,7 +26,7 @@ func runMenuImage(parent context.Context, args []string, getenv func(string) str
 	if err != nil {
 		return err
 	}
-	defer r.Close()
+	defer func() { err = errors.Join(err, r.Close()) }()
 	ctx, cancel := context.WithTimeout(parent, 12*time.Second)
 	defer cancel()
 	data, err := r.PresentationImage(ctx, *id)

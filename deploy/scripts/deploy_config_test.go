@@ -30,6 +30,13 @@ func TestCloudBuildDeploymentSafetyContract(t *testing.T) {
 		"_TASK_WORKER_ORIGIN: ''",
 		"--service-account=${_PUBLIC_SERVICE_ACCOUNT}",
 		"--service-account=${_WORKER_SERVICE_ACCOUNT}",
+		"--service-account=${_MINIAPP_SERVICE_ACCOUNT}",
+		"_MINIAPP_IMAGE_URI: ''",
+		"_MINIAPP_PUBLIC_ORIGIN: ''",
+		"_LINE_LIFF_ID: ''",
+		"_LINE_LOGIN_CHANNEL_ID: ''",
+		"_ATTENDANCE_LOCATION_ACTIVE_KEY_ID: ''",
+		"_ATTENDANCE_LOCATION_KEY_VERSIONS: ''",
 		"--ingress=internal",
 		"--concurrency=16",
 		"--no-traffic",
@@ -44,6 +51,47 @@ func TestCloudBuildDeploymentSafetyContract(t *testing.T) {
 	}
 	if strings.Contains(text, "update-traffic") || strings.Contains(text, "latestReadyRevisionName") {
 		t.Error("candidate deployment must not promote or infer a revision")
+	}
+}
+
+func TestPreflightBindsMiniAppConfigToApprovedEvidence(t *testing.T) {
+	raw, err := os.ReadFile("preflight.sh")
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := string(raw)
+	for _, required := range []string{
+		`evidence_miniapp_origin="$(jq -r '.miniapp_config.public_origin'`,
+		`evidence_liff_id="$(jq -r '.miniapp_config.liff_id'`,
+		`evidence_login_channel_id="$(jq -r '.miniapp_config.login_channel_id'`,
+		`"${evidence_miniapp_origin}" != "${MINIAPP_PUBLIC_ORIGIN}"`,
+		`"${evidence_liff_id}" != "${LINE_LIFF_ID}"`,
+		`"${evidence_login_channel_id}" != "${LINE_LOGIN_CHANNEL_ID}"`,
+		`"${evidence_attendance_key_id}" != "${ATTENDANCE_LOCATION_ACTIVE_KEY_ID}"`,
+	} {
+		if !strings.Contains(text, required) {
+			t.Errorf("preflight does not bind approved MINI App configuration: missing %q", required)
+		}
+	}
+
+	evidenceRaw, err := os.ReadFile("../evidence/staging.example.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var evidence struct {
+		MiniAppConfig struct {
+			PublicOrigin   string `json:"public_origin"`
+			LIFFID         string `json:"liff_id"`
+			LoginChannelID string `json:"login_channel_id"`
+			LocationKeyID  string `json:"attendance_location_active_key_id"`
+			KeyMappingHash string `json:"attendance_location_key_versions_sha256"`
+		} `json:"miniapp_config"`
+	}
+	if err := json.Unmarshal(evidenceRaw, &evidence); err != nil {
+		t.Fatal(err)
+	}
+	if evidence.MiniAppConfig.PublicOrigin == "" || evidence.MiniAppConfig.LIFFID == "" || evidence.MiniAppConfig.LoginChannelID == "" || evidence.MiniAppConfig.LocationKeyID == "" || evidence.MiniAppConfig.KeyMappingHash == "" {
+		t.Fatalf("staging evidence omits approved MINI App configuration: %+v", evidence.MiniAppConfig)
 	}
 }
 
@@ -168,6 +216,31 @@ func TestTerraformConsumesAuthoritativeFirestoreContract(t *testing.T) {
 	for _, forbidden := range []string{"line_inbox_v1", "line_outbox_v1", "identity_outbox_v1"} {
 		if strings.Contains(text, forbidden) {
 			t.Errorf("Terraform must not hand-maintain collection %q", forbidden)
+		}
+	}
+}
+
+func TestTerraformGrantsMiniAppOnlyAttendancePersistenceSecrets(t *testing.T) {
+	raw, err := os.ReadFile("../terraform/main.tf")
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := string(raw)
+	for _, required := range []string{
+		`resource "google_project_iam_member" "miniapp_datastore"`,
+		`member  = "serviceAccount:${google_service_account.runtime["miniapp"].email}"`,
+		`data "google_secret_manager_secret" "attendance_location_key"`,
+		`resource "google_secret_manager_secret_iam_member" "miniapp_attendance_location_key"`,
+	} {
+		if !strings.Contains(text, required) {
+			t.Errorf("Terraform MINI App Attendance contract missing %q", required)
+		}
+	}
+	for _, forbidden := range []string{
+		`miniapp_channel_secret`, `miniapp_access_token`, `miniapp_tasks`,
+	} {
+		if strings.Contains(text, forbidden) {
+			t.Errorf("Terraform grants forbidden MINI App capability %q", forbidden)
 		}
 	}
 }

@@ -10,6 +10,7 @@
 |---|---|---|
 | `GET /healthz` | `cmd/webhook`、`internal/adapter/inbound/http/health` | 可在沒有憑證下運行 |
 | `POST /webhook/line` | `internal/adapter/inbound/http/line` | 使用 LINE SDK `webhook.ParseRequest` 驗證簽章並同步處理文字訊息 |
+| LINE MINI App 員工出勤 | `cmd/miniapp`、`internal/domain/attendance`、`internal/application/usecases/attendance` | 已驗證 LINE 身分綁定員工後，對指派班次記錄上下班；位置只形成可審核證據，真實裝置與 Staging／Production 仍為 Not Verified |
 | Reply Text | `internal/application/usecases/conversation-operations` 與 LINE adapter | 使用 LINE Messaging API SDK |
 | Reply Flex | 同上 | 傳入 `flex` 或 `卡片` 時回覆簡單 bubble |
 | Push Text／Flex | `cmd/ops` | 僅 CLI `push --send` 會實際呼叫 API，且需要接收者與 retry key |
@@ -21,7 +22,7 @@
 | `garr` | `go.mod` | 選用工具，仍未啟用 |
 | LINE 官方文件來源 | [line-developers-docs-source](https://github.com/line/line-developers-docs-source) | 僅供查閱，不是 SDK |
 
-請閱讀 [Go DDD + Hexagonal Architecture Blueprint](docs/architecture/blueprint.md)、[main 基礎設施狀態與歷史殘留稽核](docs/architecture/infrastructure-status.md)、[架構](docs/architecture/overview.md)、[SDK 整合設計](docs/architecture/sdk-integration.md)、[SDK Catalog](docs/sdk/catalog.toml)、[技術與版本](docs/versions.md)、[功能矩陣](docs/line/feature-matrix.md)。
+請閱讀 [Go DDD + Hexagonal Architecture Blueprint](docs/architecture/blueprint.md)、[main 基礎設施狀態與歷史殘留稽核](docs/architecture/infrastructure-status.md)、[架構](docs/architecture/overview.md)、[MINI App 員工出勤設計](docs/line/miniapp-attendance.md)、[SDK 整合設計](docs/architecture/sdk-integration.md)、[SDK Catalog](docs/sdk/catalog.toml)、[技術與版本](docs/versions.md)、[功能矩陣](docs/line/feature-matrix.md)。
 
 本專案直接使用 [`github.com/google/uuid`](https://github.com/google/uuid) 的 UUID v4 產生器建立 LINE Push retry key，並驗證手動指定的 retry key；不再自行實作 UUID 編碼。
 
@@ -103,7 +104,9 @@ Profile 回應包含個人資料，請勿將 stdout、Shell 紀錄或查詢結�
 ## 架構與限制
 
 - `internal/domain/identity/`：PR #28 的變更已合併至 `main`，包含 `AccountLink` Aggregate、`GoogleConnection` Entity、`value-objects/`（Go package `valueobjects`）、Policy、Specification、Factory、Domain-owned Repository 讀取契約及 Domain Events。OAuth 憑證仍保存在 Adapter 的加密持久化機制，並非 Domain 狀態；其他 Bounded Context 須依真實業務不變量逐步建模。
+- `internal/domain/attendance/`：員工、場地、明確班次指派、上下班 Punch、位置／時間審核旗標與不可變審核動作；瀏覽器座標不是實體在場證明。
 - `internal/application/`：consumer-owned capability ports、Reply／Push、文字回覆，以及持久 Ingestion／Worker Use Case。
+- `internal/application/usecases/attendance/`：協調 LINE principal、註冊碼、班次資格、Attendance Aggregate 與持久化 transaction；不依賴 LIFF、Firestore 或 Secret Manager 型別。
 - `internal/adapter/`：同步與持久 Webhook、具 OIDC 驗證的 Worker，以及實作 Application capability port 或 Domain repository contract 的 Firestore、Cloud Tasks、LINE adapter。
 - `internal/infrastructure/`：LINE 受管理 HTTP Runtime、Firestore／Cloud Tasks 的可選 Durable 業務接線，以及其餘 Provider 的原生 Typed Client Factories（`client_ready`）；SDK 已可建構不代表其真實服務已獲授權。
 - `internal/bootstrap/`：設定、組裝、啟動與 shutdown。

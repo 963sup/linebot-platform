@@ -17,7 +17,7 @@ type mediaTransferRuntime interface {
 	MessageContentStatus(context.Context, string) (mediatransfer.PreparationStatus, error)
 }
 
-func runContent(parent context.Context, args []string, getenv func(string) string, output io.Writer, dependencies ...Dependencies) error {
+func runContent(parent context.Context, args []string, getenv func(string) string, output io.Writer, dependencies ...Dependencies) (err error) {
 	deps := dependency(dependencies)
 	f := flag.NewFlagSet("content", flag.ContinueOnError)
 	kind := f.String("kind", "", "content|preview|transcoding")
@@ -40,7 +40,7 @@ func runContent(parent context.Context, args []string, getenv func(string) strin
 	if err != nil {
 		return err
 	}
-	defer r.Close()
+	defer func() { err = errors.Join(err, r.Close()) }()
 	media, ok := any(r).(mediaTransferRuntime)
 	if !ok {
 		return errors.New("content runtime does not implement media-transfer")

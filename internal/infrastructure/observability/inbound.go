@@ -140,7 +140,7 @@ func (o *Runtime) WrapInboundHTTP(role string, next http.Handler) http.Handler {
 
 func boundedRole(role string) string {
 	switch role {
-	case "webhook", "worker":
+	case "webhook", "worker", "miniapp":
 		return role
 	default:
 		return "other"
@@ -155,6 +155,18 @@ func boundedRoute(path string) string {
 		return "ready"
 	case "/webhook/line":
 		return "line_webhook"
+	case "/miniapp", "/miniapp/":
+		return "miniapp_index"
+	case "/miniapp/config.json":
+		return "miniapp_config"
+	case "/miniapp/assets/app.css", "/miniapp/assets/app.js":
+		return "miniapp_asset"
+	case "/miniapp/api/v1/attendance/enrollments":
+		return "miniapp_attendance_enrollment"
+	case "/miniapp/api/v1/attendance/options":
+		return "miniapp_attendance_options"
+	case "/miniapp/api/v1/attendance/punches":
+		return "miniapp_attendance_punch"
 	case "/tasks/v2/line-reply", "/tasks/line-reply":
 		return "line_reply_task"
 	case "/tasks/v2/dispatch", "/tasks/dispatch":

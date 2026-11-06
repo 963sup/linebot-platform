@@ -19,6 +19,9 @@ func providerObject(value any) (map[string]any, error) {
 	if err := decoder.Decode(&object); err != nil {
 		return nil, errors.New("invalid LINE response")
 	}
+	if object == nil {
+		return nil, errors.New("invalid LINE response")
+	}
 	return object, nil
 }
 

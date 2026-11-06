@@ -11,9 +11,18 @@ import (
 	"google.golang.org/api/option"
 )
 
-// NewClient returns the native Firestore client. The caller owns Close().
-// Use a dedicated GCP project and least-privilege workload identity.
+const DefaultDatabase = "(default)"
+
+// NewClient returns the native default-database Firestore client. The caller
+// owns Close(). Use a dedicated GCP project and least-privilege workload
+// identity.
 func NewClient(ctx context.Context, projectID string, opts ...option.ClientOption) (*sdk.Client, error) {
+	return NewClientWithDatabase(ctx, projectID, DefaultDatabase, opts...)
+}
+
+// NewClientWithDatabase returns a native client for an explicit Firestore
+// database. The caller owns Close().
+func NewClientWithDatabase(ctx context.Context, projectID, databaseID string, opts ...option.ClientOption) (*sdk.Client, error) {
 	if ctx == nil {
 		return nil, errors.New("Firestore context is required")
 	}
@@ -23,5 +32,8 @@ func NewClient(ctx context.Context, projectID string, opts ...option.ClientOptio
 	if strings.TrimSpace(projectID) == "" {
 		return nil, errors.New("Firestore project ID is required")
 	}
-	return sdk.NewClient(ctx, projectID, opts...)
+	if strings.TrimSpace(databaseID) == "" || databaseID == "." || databaseID == ".." || databaseID != strings.TrimSpace(databaseID) || strings.ContainsAny(databaseID, "/\\\x00\r\n\t ") {
+		return nil, errors.New("Firestore database ID is required")
+	}
+	return sdk.NewClientWithDatabase(ctx, projectID, databaseID, opts...)
 }

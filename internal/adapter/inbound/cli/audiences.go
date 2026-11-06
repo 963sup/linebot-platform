@@ -10,7 +10,7 @@ import (
 	"github.com/963sup/linebot-platform/internal/application/usecases/audience"
 )
 
-func runAudiences(parent context.Context, args []string, getenv func(string) string, output io.Writer, dependencies ...Dependencies) error {
+func runAudiences(parent context.Context, args []string, getenv func(string) string, output io.Writer, dependencies ...Dependencies) (err error) {
 	deps := dependency(dependencies)
 	flags := flag.NewFlagSet("audiences", flag.ContinueOnError)
 	kind := flags.String("kind", "", "group|shared-group|list|shared-list")
@@ -34,7 +34,7 @@ func runAudiences(parent context.Context, args []string, getenv func(string) str
 	if err != nil {
 		return err
 	}
-	defer rt.Close()
+	defer func() { err = errors.Join(err, rt.Close()) }()
 	ctx, cancel := context.WithTimeout(parent, 12*time.Second)
 	defer cancel()
 	var result any
