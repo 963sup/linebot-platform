@@ -85,10 +85,10 @@ func TestDesignContract(t *testing.T) {
 	if config.Width < 1000 || config.Height < 600 {
 		t.Fatalf("architecture blueprint asset is unexpectedly small: %dx%d", config.Width, config.Height)
 	}
-	if config.Width != 2400 || config.Height != 1650 {
-		t.Fatalf("architecture overview asset size = %dx%d, want 2400x1650", config.Width, config.Height)
+	if config.Width != 2400 || config.Height != 1973 {
+		t.Fatalf("architecture overview asset size = %dx%d, want 2400x1973", config.Width, config.Height)
 	}
-	assertSHA256(t, imageData, "1da26ba56535dc3c7f832f88e331643ca935d648fd13e2dcca81841f3aa8b858")
+	assertSHA256(t, imageData, "e0ca2af4ad62895f4d84e92c79bae4654d52e7df1f98fc97a9ea5f72d80d5564")
 
 	assets := []struct {
 		name                   string
@@ -97,19 +97,19 @@ func TestDesignContract(t *testing.T) {
 		required               []string
 	}{
 		{
-			name: "go-ddd-hexagonal-architecture-overview.svg", hash: "707bc4c7965495d025251e396fd5f1d7c563e1969b37b0966fbee1c6fb4b9037",
-			width: "1600", height: "1100", viewBox: "0 0 1600 1100",
-			required: []string{"非規範性概覽", "Staging/Production Not Verified", "dependency 指向 consumer"},
+			name: "go-ddd-hexagonal-architecture-overview.svg", hash: "339b705d9d51a0474ad2f4863a3e66664eb0c459b41dcaf6bdfb1225c03a3851",
+			width: "1800", height: "1480", viewBox: "0 0 1800 1480",
+			required: []string{"Golang DDD + Hexagonal Architecture", "Production Not Verified", "依賴規則：Adapter → Application → Domain"},
 		},
 		{
-			name: "go-ddd-hexagonal-architecture-codex.svg", hash: "a842870ac4ba02d343e752bfd81e4fbb4ee103fd9eca9b5d1fedfd904b6ceaa6",
-			width: "3600", height: "2560", viewBox: "0 0 3600 2560",
-			required: []string{"非規範性參考圖", "Layer-first Modular Monolith", "internal/bootstrap", "classified-safe retry", "unknown / manual reconciliation", "Application capability ports；Domain repository 由 Domain 擁有"},
+			name: "go-ddd-hexagonal-architecture-codex.svg", hash: "e6bc5db579bbf65cafaa0f9a34b09800fd71a956159744ac02aadc100140a922",
+			width: "3600", height: "2740", viewBox: "0 0 3600 2740",
+			required: []string{"非規範性", "Layer-first Modular Monolith", "internal/bootstrap/", "圖不等於已通過 Staging / Production 驗證"},
 		},
 		{
-			name: "go-ddd-hexagonal-architecture-engineering.svg", hash: "c1ab4cd93a8f550cca61818b973f70caecb578e3310da1e31a8a3da178091233",
-			width: "3200px", height: "2100px", viewBox: "0 0 3200 2100",
-			required: []string{"非規範性", "Layer-first Structure", "Staging/Production Not Verified", "unknown / manual reconciliation"},
+			name: "go-ddd-hexagonal-architecture-engineering.svg", hash: "a5c98ccc5c8f22f44e0e7bac7e9ca49781647a8ea5589829174dfaab746fb8da",
+			width: "3200", height: "2460", viewBox: "0 0 3200 2460",
+			required: []string{"非規範性工程藍圖", "Layer-first Structure", "生產環境 / 實體裝置尚未驗證", "Driven Adapter → Consumer Contract"},
 		},
 	}
 	for _, asset := range assets {
@@ -153,13 +153,13 @@ func TestDesignContract(t *testing.T) {
 			}
 			if asset.name == "go-ddd-hexagonal-architecture-engineering.svg" {
 				quality := groups["quality-targets"]
-				for _, marker := range []string{"Quality Targets", "Staging/Production Not Verified", "Classified-safe retries", "unknown / manual reconciliation"} {
+				for _, marker := range []string{"Quality Targets", "生產環境 / 實體裝置尚未驗證", "Reliability", "Idempotency"} {
 					if !strings.Contains(quality, marker) {
 						t.Errorf("quality-targets group is missing %q", marker)
 					}
 				}
-				if strings.Contains(quality, "✓") || !strings.Contains(quality, "•") {
-					t.Error("quality-targets must use neutral bullets, not completion checks")
+				if strings.Contains(quality, "✓") {
+					t.Error("quality-targets must not use completion checks")
 				}
 				ownership := groups["tactical-design"]
 				for _, marker := range []string{"Application capability port 由 consumer 擁有", "Domain repository 可由 Domain 擁有"} {

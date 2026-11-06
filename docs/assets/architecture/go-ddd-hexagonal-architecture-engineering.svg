@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<svg xmlns="http://www.w3.org/2000/svg" xmlns:ev="http://www.w3.org/2001/xml-events" xmlns:xlink="http://www.w3.org/1999/xlink" baseProfile="full" height="2460" version="1.1" viewBox="0 0 3200 2460" width="3200">
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:ev="http://www.w3.org/2001/xml-events" xmlns:xlink="http://www.w3.org/1999/xlink" xml:lang="zh-Hant" aria-labelledby="architecture-engineering-title architecture-engineering-desc" role="img" baseProfile="full" height="2460" version="1.1" viewBox="0 0 3200 2460" width="3200">
+  <title id="architecture-engineering-title">Golang DDD Hexagonal — Engineering Blueprint with LINE MINI App</title>
+  <desc id="architecture-engineering-desc">Detailed engineering blueprint: line login, miniapp, web geolocation, Go Hexagonal DDD, quality targets and dependency direction.</desc>
   <defs>
     <marker id="arrowBlue" markerHeight="10" markerWidth="10" orient="auto" refX="9" refY="5">
       <path d="M0,0 L10,5 L0,10Z" fill="#2367ad"/>
@@ -8,10 +10,9 @@
       <path d="M0,0 L10,5 L0,10Z" fill="#177858"/>
     </marker>
   </defs>
-  <title>Golang DDD Hexagonal — Engineering Blueprint with LINE MINI App</title>
-  <desc>Detailed engineering blueprint: line login, miniapp, web geolocation, Go Hexagonal DDD, quality targets and dependency direction.</desc>
   <rect fill="#f1f6fc" height="2460" rx="0" ry="0" width="3200" x="0" y="0"/>
   <style type="text/css"><![CDATA[text{font-family:Noto Sans CJK TC,Microsoft JhengHei,PingFang TC,sans-serif;}]]></style>
+  <g id="architecture-content">
   <rect fill="#103254" height="136" rx="24" ry="24" width="3156" x="22" y="20"/>
   <rect fill="#e7f6ed" height="75" rx="8" ry="8" width="88" x="47" y="45"/>
   <text fill="#177858" font-family="Noto Sans CJK TC, Microsoft JhengHei, PingFang TC, sans-serif" font-size="28" font-weight="700" opacity="1" text-anchor="middle" x="91.0" y="97.5">Go</text>
@@ -138,6 +139,8 @@
   <text fill="#17334d" font-family="Noto Sans CJK TC, Microsoft JhengHei, PingFang TC, sans-serif" font-size="19" font-weight="400" opacity="1" text-anchor="start" x="2523" y="840">傳 position.timestamp；後端記錄接收時間</text>
   <text fill="#17334d" font-family="Noto Sans CJK TC, Microsoft JhengHei, PingFang TC, sans-serif" font-size="19" font-weight="400" opacity="1" text-anchor="start" x="2523" y="887">拒絕 / timeout / unavailable → 明確狀態</text>
   <text fill="#17334d" font-family="Noto Sans CJK TC, Microsoft JhengHei, PingFang TC, sans-serif" font-size="19" font-weight="400" opacity="1" text-anchor="start" x="2523" y="934">無地圖拖曳；不能宣稱防偽 GPS</text>
+  <g id="ownership-contracts">
+  <g id="tactical-design">
   <rect fill="#ffffff" height="428" rx="14" ry="14" stroke="#a9c5df" stroke-width="1.5" width="678" x="2501" y="1003"/>
   <rect fill="#103254" height="48" rx="12" ry="12" stroke="#103254" stroke-width="0" width="678" x="2501" y="1003"/>
   <rect fill="#103254" height="16" rx="0" ry="0" width="678" x="2501" y="1035"/>
@@ -149,6 +152,8 @@
   <text fill="#17334d" font-family="Noto Sans CJK TC, Microsoft JhengHei, PingFang TC, sans-serif" font-size="20" font-weight="400" opacity="1" text-anchor="start" x="2523" y="1273">LINE SDK / Geolocation 不進 Domain</text>
   <text fill="#17334d" font-family="Noto Sans CJK TC, Microsoft JhengHei, PingFang TC, sans-serif" font-size="20" font-weight="400" opacity="1" text-anchor="start" x="2523" y="1319">不為了抽象而創造多餘 package</text>
   <text fill="#17334d" font-family="Noto Sans CJK TC, Microsoft JhengHei, PingFang TC, sans-serif" font-size="20" font-weight="400" opacity="1" text-anchor="start" x="2523" y="1365">Bootstrap 手動組裝 adapter 與 use case</text>
+  </g>
+  </g>
   <rect fill="#ffffff" height="809" rx="14" ry="14" stroke="#a9c5df" stroke-width="1.5" width="1390" x="22" y="1455"/>
   <rect fill="#103254" height="48" rx="12" ry="12" stroke="#103254" stroke-width="0" width="1390" x="22" y="1455"/>
   <rect fill="#103254" height="16" rx="0" ry="0" width="1390" x="22" y="1487"/>
@@ -166,6 +171,7 @@
   <text fill="#17334d" font-family="Noto Sans CJK TC, Microsoft JhengHei, PingFang TC, sans-serif" font-size="18" font-weight="400" opacity="1" text-anchor="start" x="72" y="1956">internal/adapter/outbound/firestore/</text>
   <text fill="#17334d" font-family="Noto Sans CJK TC, Microsoft JhengHei, PingFang TC, sans-serif" font-size="18" font-weight="400" opacity="1" text-anchor="start" x="72" y="1998">web/miniapp/      # JS + HTML5</text>
   <text fill="#17334d" font-family="Noto Sans CJK TC, Microsoft JhengHei, PingFang TC, sans-serif" font-size="18" font-weight="400" opacity="1" text-anchor="start" x="72" y="2040">docs/domain/ · tests/architecture/</text>
+  <g id="quality-targets">
   <rect fill="#f8fbff" height="580" rx="14" ry="14" stroke="#a9c5df" stroke-width="1.6" width="675" x="713" y="1523"/>
   <text fill="#17334d" font-family="Noto Sans CJK TC, Microsoft JhengHei, PingFang TC, sans-serif" font-size="24" font-weight="700" opacity="1" text-anchor="start" x="736" y="1570">Quality Targets</text>
   <text fill="#2367ad" font-family="Noto Sans CJK TC, Microsoft JhengHei, PingFang TC, sans-serif" font-size="21" font-weight="700" opacity="1" text-anchor="start" x="736" y="1616">Auth</text>
@@ -183,6 +189,7 @@
   <text fill="#2367ad" font-family="Noto Sans CJK TC, Microsoft JhengHei, PingFang TC, sans-serif" font-size="21" font-weight="700" opacity="1" text-anchor="start" x="736" y="2006">CI</text>
   <text fill="#58718b" font-family="Noto Sans CJK TC, Microsoft JhengHei, PingFang TC, sans-serif" font-size="18" font-weight="400" opacity="1" text-anchor="start" x="736" y="2033">gofmt / go test / go vet</text>
   <text fill="#b43d48" font-family="Noto Sans CJK TC, Microsoft JhengHei, PingFang TC, sans-serif" font-size="19" font-weight="700" opacity="1" text-anchor="middle" x="715" y="2198">生產環境 / 實體裝置尚未驗證；圖示不代表功能已實作。</text>
+  </g>
   <rect fill="#ffffff" height="809" rx="14" ry="14" stroke="#a9c5df" stroke-width="1.5" width="1746" x="1433" y="1455"/>
   <rect fill="#103254" height="48" rx="12" ry="12" stroke="#103254" stroke-width="0" width="1746" x="1433" y="1455"/>
   <rect fill="#103254" height="16" rx="0" ry="0" width="1746" x="1433" y="1487"/>
@@ -214,4 +221,5 @@
   <rect fill="#ffffff" height="120" rx="15" ry="15" stroke="#a9c5df" stroke-width="1.6" width="3157" x="22" y="2290"/>
   <text fill="#17334d" font-family="Noto Sans CJK TC, Microsoft JhengHei, PingFang TC, sans-serif" font-size="23" font-weight="400" opacity="1" text-anchor="start" x="49" y="2339">圖例：綠色 = 前端與外部能力　｜　紫色 = Application　｜　黃色 = Domain　｜　藍色 = Adapters / APIs</text>
   <text fill="#58718b" font-family="Noto Sans CJK TC, Microsoft JhengHei, PingFang TC, sans-serif" font-size="21" font-weight="400" opacity="1" text-anchor="start" x="49" y="2381">此圖為非規範性工程藍圖；以實際程式碼、部署驗證、契約文件與 architecture tests 為準。</text>
+  </g>
 </svg>
