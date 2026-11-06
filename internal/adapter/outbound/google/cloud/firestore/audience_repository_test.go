@@ -48,9 +48,6 @@ func TestAudienceRepositoryMappingRoundTripDoesNotRaiseEvents(t *testing.T) {
 	if restored.ID() != value.ID() || restored.Version() != value.Version() || restored.Status() != value.Status() || !restored.Criteria().Equal(value.Criteria()) {
 		t.Fatalf("restored audience = %#v, want %#v", restored, value)
 	}
-	if len(restored.PendingEvents()) != 0 {
-		t.Fatalf("restored pending events = %d, want 0", len(restored.PendingEvents()))
-	}
 }
 
 func TestAudienceRepositoryRejectsCorruptAndConcurrentState(t *testing.T) {

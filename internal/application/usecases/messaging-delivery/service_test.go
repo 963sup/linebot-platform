@@ -24,7 +24,6 @@ var (
 	_ DeliveryClaimer       = (*fakeStore)(nil)
 	_ DeliveryRecovery      = (*fakeStore)(nil)
 	_ DeliveryWorkflowStore = (*fakeStore)(nil)
-	_ EventStore            = (*fakeStore)(nil) // Deprecated alias remains source compatible.
 )
 
 type inFlightStore struct{ *fakeStore }

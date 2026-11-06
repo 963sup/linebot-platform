@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"strconv"
-	"time"
 )
 
 func providerObject(value any) (map[string]any, error) {
@@ -68,31 +67,4 @@ func int64Value(object map[string]any, keys ...string) int64 {
 		}
 	}
 	return 0
-}
-
-func boolValue(object map[string]any, keys ...string) bool {
-	for _, key := range keys {
-		if value, ok := object[key].(bool); ok {
-			return value
-		}
-	}
-	return false
-}
-
-func timeValue(object map[string]any, keys ...string) time.Time {
-	for _, key := range keys {
-		switch value := object[key].(type) {
-		case string:
-			for _, layout := range []string{time.RFC3339, "2006-01-02T15:04:05.000Z", "20060102"} {
-				if result, err := time.Parse(layout, value); err == nil {
-					return result
-				}
-			}
-		case json.Number:
-			if milliseconds, err := value.Int64(); err == nil {
-				return time.UnixMilli(milliseconds)
-			}
-		}
-	}
-	return time.Time{}
 }

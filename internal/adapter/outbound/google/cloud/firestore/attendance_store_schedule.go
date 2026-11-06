@@ -36,7 +36,7 @@ func (s *AttendanceStore) SaveWorkplace(ctx context.Context, workplace entities.
 	}
 	ref := s.client.Collection(attendanceWorkplacesCollection).Doc(attendanceDocumentID("workplace", string(workplace.ID())))
 	now := s.now().UTC()
-	return classifyAttendanceStoreError(ctx, s.upsertWithCreatedAt(ctx, ref, storeAttendanceWorkplace(workplace, now, now)))
+	return classifyAttendanceStoreError(ctx, s.upsertWorkplaceWithCreatedAt(ctx, ref, storeAttendanceWorkplace(workplace, now, now)))
 }
 
 func (s *AttendanceStore) FindShift(ctx context.Context, id valueobjects.ShiftInstanceID) (entities.ShiftInstance, error) {
@@ -170,33 +170,15 @@ func sameAttendanceShift(a, b entities.ShiftInstance) bool {
 		a.PolicyVersion() == b.PolicyVersion()
 }
 
-func (s *AttendanceStore) upsertWithCreatedAt(ctx context.Context, ref *sdk.DocumentRef, value any) error {
+func (s *AttendanceStore) upsertWorkplaceWithCreatedAt(ctx context.Context, ref *sdk.DocumentRef, value attendanceWorkplaceDocument) error {
 	return s.client.RunTransaction(ctx, func(ctx context.Context, tx *sdk.Transaction) error {
 		snap, err := tx.Get(ref)
 		if err == nil {
-			switch d := value.(type) {
-			case attendanceWorkplaceDocument:
-				var current attendanceWorkplaceDocument
-				if err := snap.DataTo(&current); err != nil {
-					return ErrRepositoryCorrupt
-				}
-				d.CreatedAt = current.CreatedAt
-				value = d
-			case attendanceShiftDocument:
-				var current attendanceShiftDocument
-				if err := snap.DataTo(&current); err != nil {
-					return ErrRepositoryCorrupt
-				}
-				d.CreatedAt = current.CreatedAt
-				value = d
-			case attendanceAssignmentDocument:
-				var current attendanceAssignmentDocument
-				if err := snap.DataTo(&current); err != nil {
-					return ErrRepositoryCorrupt
-				}
-				d.CreatedAt = current.CreatedAt
-				value = d
+			var current attendanceWorkplaceDocument
+			if err := snap.DataTo(&current); err != nil {
+				return ErrRepositoryCorrupt
 			}
+			value.CreatedAt = current.CreatedAt
 		} else if status.Code(err) != codes.NotFound {
 			return err
 		}

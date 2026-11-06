@@ -4,7 +4,6 @@ package aggregates
 import (
 	"errors"
 
-	"github.com/963sup/linebot-platform/internal/domain/audience/events"
 	valueobjects "github.com/963sup/linebot-platform/internal/domain/audience/value-objects"
 )
 
@@ -30,7 +29,6 @@ type AudienceDefinition struct {
 	criteria valueobjects.SelectionCriteria
 	version  valueobjects.Version
 	status   Status
-	pending  []events.AudienceEvent
 }
 
 func NewAudienceDefinition(id valueobjects.AudienceID, criteria valueobjects.SelectionCriteria) (AudienceDefinition, error) {
@@ -42,11 +40,10 @@ func NewAudienceDefinition(id valueobjects.AudienceID, criteria valueobjects.Sel
 		criteria: criteria,
 		version:  valueobjects.InitialVersion,
 		status:   StatusDraft,
-		pending:  []events.AudienceEvent{events.Defined{ID: id, Version: valueobjects.InitialVersion}},
 	}, nil
 }
 
-// RestoreAudienceDefinition rehydrates persisted state without raising events.
+// RestoreAudienceDefinition rehydrates persisted state.
 func RestoreAudienceDefinition(id valueobjects.AudienceID, criteria valueobjects.SelectionCriteria, version valueobjects.Version, status Status) (AudienceDefinition, error) {
 	if !id.Valid() || !criteria.Valid() || !version.Valid() || !status.Valid() {
 		return AudienceDefinition{}, ErrInvalidAudienceDefinition
@@ -58,17 +55,6 @@ func (a AudienceDefinition) ID() valueobjects.AudienceID              { return a
 func (a AudienceDefinition) Criteria() valueobjects.SelectionCriteria { return a.criteria }
 func (a AudienceDefinition) Version() valueobjects.Version            { return a.version }
 func (a AudienceDefinition) Status() Status                           { return a.status }
-func (a AudienceDefinition) PendingEvents() []events.AudienceEvent {
-	return append([]events.AudienceEvent(nil), a.pending...)
-}
-
-// AcknowledgeEvents clears modeled-only events after aggregate state has been
-// saved successfully. This context does not publish integration events yet.
-func (a *AudienceDefinition) AcknowledgeEvents() {
-	if a != nil {
-		a.pending = nil
-	}
-}
 
 // Revise replaces the definition and advances its immutable version. Active
 // audiences remain active; archived audiences cannot be revised.
@@ -87,7 +73,6 @@ func (a *AudienceDefinition) Revise(criteria valueobjects.SelectionCriteria) err
 	}
 	a.criteria = criteria
 	a.version = a.version.Next()
-	a.pending = append(a.pending, events.Revised{ID: a.id, Version: a.version})
 	return nil
 }
 
@@ -97,7 +82,6 @@ func (a *AudienceDefinition) Activate() error {
 	}
 	a.status = StatusActive
 	a.version = a.version.Next()
-	a.pending = append(a.pending, events.Activated{ID: a.id, Version: a.version})
 	return nil
 }
 
@@ -107,6 +91,5 @@ func (a *AudienceDefinition) Archive() error {
 	}
 	a.status = StatusArchived
 	a.version = a.version.Next()
-	a.pending = append(a.pending, events.Archived{ID: a.id, Version: a.version})
 	return nil
 }

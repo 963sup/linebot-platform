@@ -88,7 +88,7 @@ func TestDesignContract(t *testing.T) {
 	if config.Width != 2400 || config.Height != 1973 {
 		t.Fatalf("architecture overview asset size = %dx%d, want 2400x1973", config.Width, config.Height)
 	}
-	assertSHA256(t, imageData, "e0ca2af4ad62895f4d84e92c79bae4654d52e7df1f98fc97a9ea5f72d80d5564")
+	assertSHA256(t, imageData, "5112851f4d8bc5e65a09e1f0987cd7ac4db3830f17c96446215ab412e448c8ee")
 
 	assets := []struct {
 		name                   string
@@ -97,17 +97,17 @@ func TestDesignContract(t *testing.T) {
 		required               []string
 	}{
 		{
-			name: "go-ddd-hexagonal-architecture-overview.svg", hash: "339b705d9d51a0474ad2f4863a3e66664eb0c459b41dcaf6bdfb1225c03a3851",
+			name: "go-ddd-hexagonal-architecture-overview.svg", hash: "b3f95b5c9a61e87ee5d7aafd21ef714c00ac23f9f09fb7bb143e64c018c61642",
 			width: "1800", height: "1480", viewBox: "0 0 1800 1480",
 			required: []string{"Golang DDD + Hexagonal Architecture", "Production Not Verified", "依賴規則：Adapter → Application → Domain"},
 		},
 		{
-			name: "go-ddd-hexagonal-architecture-codex.svg", hash: "e6bc5db579bbf65cafaa0f9a34b09800fd71a956159744ac02aadc100140a922",
+			name: "go-ddd-hexagonal-architecture-codex.svg", hash: "faba003222a75c8424786a2040fbbc68fb112ba6bb77c4a5b30e3ffed68fc199",
 			width: "3600", height: "2740", viewBox: "0 0 3600 2740",
 			required: []string{"非規範性", "Layer-first Modular Monolith", "internal/bootstrap/", "圖不等於已通過 Staging / Production 驗證"},
 		},
 		{
-			name: "go-ddd-hexagonal-architecture-engineering.svg", hash: "a5c98ccc5c8f22f44e0e7bac7e9ca49781647a8ea5589829174dfaab746fb8da",
+			name: "go-ddd-hexagonal-architecture-engineering.svg", hash: "0272049fe5446f173b91b666ae10465a9db363fc224c5e4ddc482cec05c8a41e",
 			width: "3200", height: "2460", viewBox: "0 0 3200 2460",
 			required: []string{"非規範性工程藍圖", "Layer-first Structure", "生產環境 / 實體裝置尚未驗證", "Driven Adapter → Consumer Contract"},
 		},
@@ -126,7 +126,7 @@ func TestDesignContract(t *testing.T) {
 					t.Errorf("%s is missing semantic marker %q", asset.name, marker)
 				}
 			}
-			for _, marker := range []string{"Codex 可執行架構藍圖", "示意是規範性概念圖", "Production-Ready", "cmd/server/main.go", "internal/&lt;context&gt;"} {
+			for _, marker := range []string{"Codex 可執行架構藍圖", "示意是規範性概念圖", "Production-Ready", "cmd/server/main.go", "internal/&lt;context&gt;", "internal/application/ports/"} {
 				if strings.Contains(text, marker) {
 					t.Errorf("%s contains obsolete or misleading marker %q", asset.name, marker)
 				}
@@ -169,6 +169,24 @@ func TestDesignContract(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestConceptualArchitectureViewsRemainHypotheses(t *testing.T) {
+	paths, err := filepath.Glob(filepath.Join("..", "..", "docs", "assets", "architecture", "mermaid", "*.mmd"))
+	if err != nil || len(paths) == 0 {
+		t.Fatalf("conceptual architecture assets: paths=%d err=%v", len(paths), err)
+	}
+	for _, path := range paths {
+		data, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, marker := range []string{"title: Hypothesis only", "Non-normative hypothesis", "docs/domain/model.yaml and ADR 0004"} {
+			if !strings.Contains(string(data), marker) {
+				t.Errorf("%s lacks explicit hypothesis boundary %q", path, marker)
+			}
+		}
 	}
 }
 

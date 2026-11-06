@@ -47,7 +47,7 @@ func TestPresentationNoopRevisionSkipsPersistence(t *testing.T) {
 	}
 }
 
-func TestPresentationAcknowledgesOnlyAfterSuccessfulSave(t *testing.T) {
+func TestPresentationReturnsDefinitionOnlyAfterSuccessfulSave(t *testing.T) {
 	t.Parallel()
 	id, presentation := surfaceValues(t, "events", "primary")
 	repository := &surfaceRepository{saveErr: errPresentationPort}
@@ -55,16 +55,13 @@ func TestPresentationAcknowledgesOnlyAfterSuccessfulSave(t *testing.T) {
 	if _, err := service.Define(context.Background(), id, presentation); !errors.Is(err, errPresentationPort) {
 		t.Fatalf("Define(save error) = %v, want %v", err, errPresentationPort)
 	}
-	if len(repository.attempted.PendingEvents()) == 0 {
-		t.Fatal("failed save cleared pending events")
-	}
 	repository.saveErr = nil
 	defined, err := service.Define(context.Background(), id, presentation)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(defined.PendingEvents()) != 0 {
-		t.Fatal("successful save retained pending events")
+	if defined.ID() != id || repository.value.ID() != id || repository.saveCalls != 2 {
+		t.Fatal("successful save did not preserve the definition")
 	}
 }
 

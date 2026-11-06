@@ -34,18 +34,25 @@ type DimensionValue struct {
 }
 
 type DemographicsReport struct {
+	Available  bool
 	Dimensions []DimensionValue
 	ObservedAt time.Time
 }
 
 type CountReport struct {
-	Accepted   int64
-	Delivered  int64
-	Failed     int64
-	ObservedAt time.Time
+	Followers         int64
+	TargetedReaches   int64
+	Blocks            int64
+	CalculationStatus string
+	Accepted          int64
+	Delivered         int64
+	Failed            int64
+	ObservedAt        time.Time
 }
 
 type MetricPoint struct {
+	Area  string
+	Index *int64
 	At    time.Time
 	Name  string
 	Value float64
@@ -58,6 +65,7 @@ type StatisticsReport struct {
 }
 
 type MessageEventReport struct {
+	Points     []MetricPoint
 	RequestID  string
 	Status     string
 	Accepted   int64
@@ -215,3 +223,10 @@ func validateDay(day time.Time) error {
 }
 
 func validReportText(value string) bool { return value != "" && value == strings.TrimSpace(value) }
+
+func validateContext(ctx context.Context) error {
+	if ctx == nil {
+		return errors.New("context is required")
+	}
+	return ctx.Err()
+}

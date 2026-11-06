@@ -8,10 +8,6 @@ import (
 	contactdirectory "github.com/963sup/linebot-platform/internal/application/usecases/contact-directory"
 )
 
-func (s *Sender) ResolveRecipient(_ context.Context, query contactdirectory.ResolveRecipientQuery) (contactdirectory.RecipientReference, error) {
-	return contactdirectory.RecipientReference{ID: query.ID, Kind: query.Kind}, nil
-}
-
 // GetProfile implements the contacts ProfileReader port using the existing
 // typed SDK client. Sender.clientFor isolates SDK WithContext mutations.
 func (s *Sender) GetProfile(ctx context.Context, query contactdirectory.ProfileQuery) (contactdirectory.ProfileSnapshot, error) {

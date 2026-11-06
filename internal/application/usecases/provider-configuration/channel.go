@@ -2,7 +2,6 @@ package providerconfiguration
 
 import (
 	"context"
-	"time"
 )
 
 // ChannelSnapshot is provider-neutral operator visibility into a configured
@@ -18,12 +17,4 @@ type ChannelReader interface {
 	AggregationUnitUsage(context.Context) (ChannelSnapshot, error)
 	AggregationUnitNames(context.Context, string, string) (ChannelSnapshot, error)
 	NarrowcastProgress(context.Context, string) (ChannelSnapshot, error)
-}
-
-type DeliveryCount struct {
-	Status     string
-	Succeeded  int64
-	Failed     int64
-	Targeted   int64
-	ObservedAt time.Time
 }

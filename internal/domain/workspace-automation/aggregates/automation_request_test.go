@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/963sup/linebot-platform/internal/domain/workspace-automation/aggregates"
-	"github.com/963sup/linebot-platform/internal/domain/workspace-automation/events"
 	valueobjects "github.com/963sup/linebot-platform/internal/domain/workspace-automation/value-objects"
 )
 
@@ -69,14 +68,13 @@ func TestExecutionRequiresApproval(t *testing.T) {
 
 func TestTerminalOutcomes(t *testing.T) {
 	tests := []struct {
-		name  string
-		want  valueobjects.Status
-		run   func(*aggregates.AutomationRequest, valueobjects.Output) error
-		event func(events.AutomationEvent) bool
+		name string
+		want valueobjects.Status
+		run  func(*aggregates.AutomationRequest, valueobjects.Output) error
 	}{
-		{"succeeded", valueobjects.StatusSucceeded, func(a *aggregates.AutomationRequest, o valueobjects.Output) error { return a.Succeed(o) }, func(e events.AutomationEvent) bool { _, ok := e.(events.AutomationSucceeded); return ok }},
-		{"failed", valueobjects.StatusFailed, func(a *aggregates.AutomationRequest, o valueobjects.Output) error { return a.Fail(o) }, func(e events.AutomationEvent) bool { _, ok := e.(events.AutomationFailed); return ok }},
-		{"unknown", valueobjects.StatusUnknown, func(a *aggregates.AutomationRequest, o valueobjects.Output) error { return a.MarkOutcomeUnknown(o) }, func(e events.AutomationEvent) bool { _, ok := e.(events.AutomationOutcomeUnknown); return ok }},
+		{"succeeded", valueobjects.StatusSucceeded, func(a *aggregates.AutomationRequest, o valueobjects.Output) error { return a.Succeed(o) }},
+		{"failed", valueobjects.StatusFailed, func(a *aggregates.AutomationRequest, o valueobjects.Output) error { return a.Fail(o) }},
+		{"unknown", valueobjects.StatusUnknown, func(a *aggregates.AutomationRequest, o valueobjects.Output) error { return a.MarkOutcomeUnknown(o) }},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -93,9 +91,8 @@ func TestTerminalOutcomes(t *testing.T) {
 			if request.Status() != test.want {
 				t.Fatalf("status = %q, want %q", request.Status(), test.want)
 			}
-			pending := request.PendingEvents()
-			if len(pending) != 4 || !test.event(pending[3]) {
-				t.Fatalf("unexpected events: %#v", pending)
+			if request.Output() != output || request.Revision() != 4 {
+				t.Fatal("terminal transition lost output or revision")
 			}
 		})
 	}
@@ -112,7 +109,7 @@ func TestInvalidTransitionsDoNotMutate(t *testing.T) {
 	if err := request.Succeed(output); !errors.Is(err, aggregates.ErrInvalidTransition) {
 		t.Fatalf("finish before execution: %v", err)
 	}
-	if request.Status() != valueobjects.StatusApproved || len(request.PendingEvents()) != 2 {
+	if request.Status() != valueobjects.StatusApproved {
 		t.Fatal("invalid transition mutated aggregate")
 	}
 	if request.Revision() != 2 {
@@ -124,40 +121,13 @@ func TestInvalidTransitionsDoNotMutate(t *testing.T) {
 	if err := request.StartExecution(); !errors.Is(err, aggregates.ErrInvalidTransition) {
 		t.Fatalf("second execution: %v", err)
 	}
-	if request.Status() != valueobjects.StatusExecuting || len(request.PendingEvents()) != 3 {
+	if request.Status() != valueobjects.StatusExecuting {
 		t.Fatal("invalid transition mutated aggregate")
 	}
 }
 
-func TestModeledFactsAreOrderedDetachedAndAcknowledged(t *testing.T) {
-	request, approval, _ := fixture(t)
-	if err := request.Approve(approval); err != nil {
-		t.Fatal(err)
-	}
-	if err := request.StartExecution(); err != nil {
-		t.Fatal(err)
-	}
-	pending := request.PendingEvents()
-	if len(pending) != 3 {
-		t.Fatalf("events = %d", len(pending))
-	}
-	if _, ok := pending[0].(events.AutomationRequested); !ok {
-		t.Fatal("first event is not AutomationRequested")
-	}
-	if _, ok := pending[1].(events.AutomationApproved); !ok {
-		t.Fatal("second event is not AutomationApproved")
-	}
-	if _, ok := pending[2].(events.AutomationExecutionStarted); !ok {
-		t.Fatal("third event is not AutomationExecutionStarted")
-	}
-	pending[0] = nil
-	if request.PendingEvents()[0] == nil {
-		t.Fatal("event backing data leaked")
-	}
-	request.AcknowledgeEvents()
-	if len(request.PendingEvents()) != 0 {
-		t.Fatal("AcknowledgeEvents did not clear modeled facts")
-	}
+func TestRequiredScopesAreDetached(t *testing.T) {
+	request, _, _ := fixture(t)
 	scopes := request.RequiredScopes()
 	scopes[0] = "tampered"
 	if request.RequiredScopes()[0] == "tampered" {
@@ -193,9 +163,6 @@ func TestRestoreAutomationRequestValidatesStateShape(t *testing.T) {
 			restored, err := aggregates.RestoreAutomationRequest(id, action, scopes, test.approval, test.output, test.status, 7)
 			if (err != nil) != test.wantError {
 				t.Fatalf("error = %v, wantError %v", err, test.wantError)
-			}
-			if err == nil && len(restored.PendingEvents()) != 0 {
-				t.Fatal("restore emitted events")
 			}
 			if err == nil && restored.Revision() != 7 {
 				t.Fatalf("restored revision = %d, want 7", restored.Revision())

@@ -1,5 +1,10 @@
+---
+title: Hypothesis only - alternate conceptual model
+---
+%% Non-normative hypothesis, not the implemented model or API.
+%% Authority: docs/domain/model.yaml and ADR 0004; no new context, event or persistence commitment.
 C4Component
-    title Go API - Application and Hexagonal Components
+    title Hypothesis only - Go API - Application and Hexagonal Components
     Container_Boundary(goapi, "Go API") {
         Component(http, "Attendance HTTP Adapter", "Driving Adapter", "Session / attendance / timesheet API")
         Component(webhook, "LINE Webhook Adapter", "Driving Adapter", "驗簽與接收 LINE Event")

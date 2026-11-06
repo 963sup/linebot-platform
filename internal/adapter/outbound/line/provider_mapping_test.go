@@ -1,12 +1,8 @@
 package line
 
 import (
-	"encoding/json"
-	"reflect"
 	"testing"
 	"time"
-
-	insightsreporting "github.com/963sup/linebot-platform/internal/application/usecases/insights-reporting"
 )
 
 type malformedProviderPayload struct{}
@@ -52,32 +48,15 @@ func TestProviderObjectAcceptsObject(t *testing.T) {
 	}
 }
 
-func TestInsightMappersPropagateProviderObjectErrors(t *testing.T) {
+func TestInsightMappersRejectAbsentOrWrongResponses(t *testing.T) {
 	value := malformedProviderPayload{}
-	if _, err := demographicsReport(value); err == nil {
+	if _, err := demographicsReport(nil); err == nil {
 		t.Fatal("demographicsReport() error = nil")
 	}
-	if _, err := countReport(value, time.Time{}); err == nil {
+	if _, err := countReport(nil, time.Time{}); err == nil {
 		t.Fatal("countReport() error = nil")
 	}
 	if _, err := statisticsResult("statistics", nil, value, nil, time.Time{}); err == nil {
 		t.Fatal("statisticsResult() error = nil")
-	}
-}
-
-func TestNumericDimensionsAreSortedByKey(t *testing.T) {
-	object := map[string]any{
-		"zeta":  json.Number("3"),
-		"alpha": float64(1),
-		"text":  "excluded",
-		"mu":    json.Number("2"),
-	}
-	want := []insightsreporting.DimensionValue{
-		{Dimension: "alpha", Count: 1},
-		{Dimension: "mu", Count: 2},
-		{Dimension: "zeta", Count: 3},
-	}
-	if got := numericDimensions(object); !reflect.DeepEqual(got, want) {
-		t.Fatalf("numericDimensions() = %#v, want %#v", got, want)
 	}
 }

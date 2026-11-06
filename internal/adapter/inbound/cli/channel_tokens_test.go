@@ -3,10 +3,12 @@ package cli
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"os"
 	"path/filepath"
 	"reflect"
 	"testing"
+	"time"
 
 	credentiallifecycle "github.com/963sup/linebot-platform/internal/application/usecases/credential-lifecycle"
 )
@@ -15,10 +17,14 @@ type fakeTokenRuntime struct {
 	client credentiallifecycle.ClientCredential
 	grant  string
 	result credentiallifecycle.IssuedCredential
+	issue  func(context.Context) error
 }
 
-func (f *fakeTokenRuntime) IssueShortLived(_ context.Context, grant string, client credentiallifecycle.ClientCredential) (credentiallifecycle.IssuedCredential, error) {
+func (f *fakeTokenRuntime) IssueShortLived(ctx context.Context, grant string, client credentiallifecycle.ClientCredential) (credentiallifecycle.IssuedCredential, error) {
 	f.grant, f.client = grant, client
+	if f.issue != nil {
+		return credentiallifecycle.IssuedCredential{}, f.issue(ctx)
+	}
 	return f.result, nil
 }
 func (*fakeTokenRuntime) IssueStatelessWithClient(context.Context, string, credentiallifecycle.ClientCredential) (credentiallifecycle.IssuedCredential, error) {
@@ -116,7 +122,7 @@ func TestTokenRequestMapsSecretsOnlyAtCLIBoundary(t *testing.T) {
 	}
 }
 
-func TestTokenResultEncodingStaysPrivateAndAtCLIBoundary(t *testing.T) {
+func TestRootRoutesTokenResultPrivatelyAtCLIBoundary(t *testing.T) {
 	dir := t.TempDir()
 	request := filepath.Join(dir, "request.json")
 	output := filepath.Join(dir, "result.json")
@@ -125,7 +131,7 @@ func TestTokenResultEncodingStaysPrivateAndAtCLIBoundary(t *testing.T) {
 	}
 	runtime := &fakeTokenRuntime{result: credentiallifecycle.IssuedCredential{AccessToken: "issued-secret"}}
 	deps := Dependencies{TokenRuntime: func() (TokenRuntime, error) { return runtime, nil }}
-	if err := runChannelTokens(testContext(), []string{"--action", "issue-short", "--request", request, "--apply", "--confirm", "issue-short", "--out", output}, deps); err != nil {
+	if err := Run(testContext(), []string{"channel-tokens", "--action", "issue-short", "--request", request, "--apply", "--confirm", "issue-short", "--out", output}, func(string) string { return "" }, deps); err != nil {
 		t.Fatal(err)
 	}
 	info, err := os.Stat(output)
@@ -145,5 +151,33 @@ func TestTokenResultEncodingStaysPrivateAndAtCLIBoundary(t *testing.T) {
 	}
 	if runtime.client.ClientSecret != "secret" || runtime.grant != "client_credentials" {
 		t.Fatal("token command was not routed intact")
+	}
+}
+
+func TestRootTokenOperationPreservesParentCancellation(t *testing.T) {
+	dir := t.TempDir()
+	request, output := filepath.Join(dir, "request.json"), filepath.Join(dir, "result.json")
+	if err := os.WriteFile(request, []byte(`{"grantType":"client_credentials","clientId":"id","clientSecret":"secret"}`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	deadline := time.Now().Add(time.Second)
+	parent, cancel := context.WithDeadline(context.Background(), deadline)
+	defer cancel()
+	called := false
+	runtime := &fakeTokenRuntime{issue: func(ctx context.Context) error {
+		called = true
+		if got, ok := ctx.Deadline(); !ok || !got.Equal(deadline) {
+			t.Fatalf("parent deadline not preserved: %v, %v", got, ok)
+		}
+		cancel()
+		return ctx.Err()
+	}}
+	deps := Dependencies{TokenRuntime: func() (TokenRuntime, error) { return runtime, nil }}
+	err := Run(parent, []string{"channel-tokens", "--action", "issue-short", "--request", request, "--apply", "--confirm", "issue-short", "--out", output}, func(string) string { return "" }, deps)
+	if !called || !errors.Is(err, context.Canceled) {
+		t.Fatalf("operation called=%v, cancellation=%v", called, err)
+	}
+	if _, err := os.Stat(output); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("failed credential operation retained output: %v", err)
 	}
 }

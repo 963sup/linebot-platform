@@ -4,7 +4,6 @@ package aggregates
 import (
 	"errors"
 
-	"github.com/963sup/linebot-platform/internal/domain/experience-presentation/events"
 	valueobjects "github.com/963sup/linebot-platform/internal/domain/experience-presentation/value-objects"
 )
 
@@ -31,7 +30,6 @@ type InteractionSurface struct {
 	presentation valueobjects.Presentation
 	version      valueobjects.Version
 	status       Status
-	pending      []events.SurfaceEvent
 }
 
 func NewInteractionSurface(id valueobjects.SurfaceID, presentation valueobjects.Presentation) (InteractionSurface, error) {
@@ -43,11 +41,10 @@ func NewInteractionSurface(id valueobjects.SurfaceID, presentation valueobjects.
 		presentation: presentation,
 		version:      valueobjects.InitialVersion,
 		status:       StatusDraft,
-		pending:      []events.SurfaceEvent{events.Defined{ID: id, Version: valueobjects.InitialVersion}},
 	}, nil
 }
 
-// RestoreInteractionSurface rehydrates persisted state without raising events.
+// RestoreInteractionSurface rehydrates persisted state.
 func RestoreInteractionSurface(id valueobjects.SurfaceID, presentation valueobjects.Presentation, version valueobjects.Version, status Status) (InteractionSurface, error) {
 	if !id.Valid() || !presentation.Valid() || !version.Valid() || !status.Valid() {
 		return InteractionSurface{}, ErrInvalidInteractionSurface
@@ -59,17 +56,6 @@ func (s InteractionSurface) ID() valueobjects.SurfaceID              { return s.
 func (s InteractionSurface) Presentation() valueobjects.Presentation { return s.presentation }
 func (s InteractionSurface) Version() valueobjects.Version           { return s.version }
 func (s InteractionSurface) Status() Status                          { return s.status }
-func (s InteractionSurface) PendingEvents() []events.SurfaceEvent {
-	return append([]events.SurfaceEvent(nil), s.pending...)
-}
-
-// AcknowledgeEvents clears modeled-only events after aggregate state has been
-// saved successfully. This context does not publish integration events yet.
-func (s *InteractionSurface) AcknowledgeEvents() {
-	if s != nil {
-		s.pending = nil
-	}
-}
 
 func (s *InteractionSurface) Revise(presentation valueobjects.Presentation) error {
 	if s == nil || !presentation.Valid() {
@@ -86,7 +72,6 @@ func (s *InteractionSurface) Revise(presentation valueobjects.Presentation) erro
 	}
 	s.presentation = presentation
 	s.version = s.version.Next()
-	s.pending = append(s.pending, events.Revised{ID: s.id, Version: s.version})
 	return nil
 }
 
@@ -96,7 +81,6 @@ func (s *InteractionSurface) Publish() error {
 	}
 	s.status = StatusPublished
 	s.version = s.version.Next()
-	s.pending = append(s.pending, events.Published{ID: s.id, Version: s.version})
 	return nil
 }
 
@@ -106,6 +90,5 @@ func (s *InteractionSurface) Retire() error {
 	}
 	s.status = StatusRetired
 	s.version = s.version.Next()
-	s.pending = append(s.pending, events.Retired{ID: s.id, Version: s.version})
 	return nil
 }

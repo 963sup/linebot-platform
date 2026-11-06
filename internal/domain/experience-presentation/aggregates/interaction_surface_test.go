@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/963sup/linebot-platform/internal/domain/experience-presentation/aggregates"
-	"github.com/963sup/linebot-platform/internal/domain/experience-presentation/events"
 	valueobjects "github.com/963sup/linebot-platform/internal/domain/experience-presentation/value-objects"
 )
 
@@ -76,27 +75,6 @@ func TestInteractionSurfaceRejectsInvalidTransitions(t *testing.T) {
 	}
 	if err := surface.Publish(); !errors.Is(err, aggregates.ErrInvalidSurfaceTransition) {
 		t.Errorf("InteractionSurface.Publish() twice error = %v, want %v", err, aggregates.ErrInvalidSurfaceTransition)
-	}
-}
-
-func TestInteractionSurfaceEventsAreDetached(t *testing.T) {
-	t.Parallel()
-
-	surface := newSurface(t)
-	got := surface.PendingEvents()
-	if len(got) != 1 {
-		t.Fatalf("InteractionSurface.PendingEvents() length = %d, want 1", len(got))
-	}
-	if _, ok := got[0].(events.Defined); !ok {
-		t.Errorf("InteractionSurface.PendingEvents()[0] = %T, want events.Defined", got[0])
-	}
-	got[0] = nil
-	if surface.PendingEvents()[0] == nil {
-		t.Error("InteractionSurface.PendingEvents() returned mutable internal storage, want detached slice")
-	}
-	surface.AcknowledgeEvents()
-	if len(surface.PendingEvents()) != 0 {
-		t.Error("InteractionSurface.AcknowledgeEvents() did not clear committed events")
 	}
 }
 

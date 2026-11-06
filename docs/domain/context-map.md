@@ -158,12 +158,11 @@ flowchart LR
 | identity | account-unlinked | Fact raised only for the first successful disconnect. |
 | identity | connection | Authorization relationship with scopes and lifecycle status. |
 | identity | google-account | Google identity represented by its verified stable subject claim. |
-| insights-reporting | delivery-fact | Immutable fact emitted by Messaging Delivery. |
+| insights-reporting | delivery-fact | Proposed immutable fact from Messaging Delivery; publication is not implemented. |
 | insights-reporting | metric-snapshot | Derived metric for a defined reporting period. |
 | membership | entitlement-view | Derived benefits visible to a consumer. |
 | membership | membership-status | Observed membership state at a point in time. |
 | messaging-delivery | delivery | Consistency boundary for claim and terminal outcome. |
-| messaging-delivery | delivery-event | Modeled fact raised by an in-memory Delivery transition; the current workflow does not persist or publish it. |
 | messaging-delivery | delivery-intent | Request to deliver content to a resolved recipient. |
 | messaging-delivery | idempotency-key | Stable identity preventing duplicate business delivery. |
 | messaging-delivery | unknown-outcome | Send whose remote effect cannot be safely determined. |

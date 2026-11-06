@@ -12,11 +12,6 @@ import (
 	mediatransfer "github.com/963sup/linebot-platform/internal/application/usecases/media-transfer"
 )
 
-type mediaTransferRuntime interface {
-	MessageContent(context.Context, string, mediatransfer.ContentVariant) (mediatransfer.BinaryContent, error)
-	MessageContentStatus(context.Context, string) (mediatransfer.PreparationStatus, error)
-}
-
 func runContent(parent context.Context, args []string, getenv func(string) string, output io.Writer, dependencies ...Dependencies) (err error) {
 	deps := dependency(dependencies)
 	f := flag.NewFlagSet("content", flag.ContinueOnError)
@@ -41,14 +36,10 @@ func runContent(parent context.Context, args []string, getenv func(string) strin
 		return err
 	}
 	defer func() { err = errors.Join(err, r.Close()) }()
-	media, ok := any(r).(mediaTransferRuntime)
-	if !ok {
-		return errors.New("content runtime does not implement media-transfer")
-	}
 	ctx, cancel := context.WithTimeout(parent, 12*time.Second)
 	defer cancel()
 	if *kind == "transcoding" {
-		status, inspectErr := media.MessageContentStatus(ctx, *id)
+		status, inspectErr := r.MessageContentStatus(ctx, *id)
 		if inspectErr != nil {
 			return inspectErr
 		}
@@ -65,7 +56,7 @@ func runContent(parent context.Context, args []string, getenv func(string) strin
 	} else if *kind != "content" {
 		return errors.New("unsupported message content kind")
 	}
-	b, err := media.MessageContent(ctx, *id, variant)
+	b, err := r.MessageContent(ctx, *id, variant)
 	if err != nil {
 		return err
 	}

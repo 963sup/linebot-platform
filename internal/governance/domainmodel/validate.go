@@ -309,7 +309,7 @@ func validateDomainModel(value *DomainModel) error {
 		if context.ModelKind == "read-model" && len(context.Aggregates) != 0 {
 			return fmt.Errorf("%s read-model must not declare aggregates", path)
 		}
-		if err := validateAggregates(path, context.Status, context.Aggregates); err != nil {
+		if err := validateAggregates(path, context.Aggregates); err != nil {
 			return err
 		}
 		if err := validateDataOwnership(path, context.DataOwnership); err != nil {
@@ -566,7 +566,7 @@ func readDirectModules(path string) (map[string]string, error) {
 	return modules, scanner.Err()
 }
 
-func validateAggregates(path, contextStatus string, values []Aggregate) error {
+func validateAggregates(path string, values []Aggregate) error {
 	seen := map[string]struct{}{}
 	for i, aggregate := range values {
 		field := fmt.Sprintf("%s.aggregates[%d]", path, i)
@@ -581,9 +581,6 @@ func validateAggregates(path, contextStatus string, values []Aggregate) error {
 		seen[aggregate.Name] = struct{}{}
 		if len(aggregate.Owns) == 0 || !oneOf(aggregate.Confidence, "low", "medium", "high") {
 			return fmt.Errorf("%s requires owns and valid confidence", field)
-		}
-		if contextStatus == "implemented" && strings.TrimSpace(aggregate.Repository) == "" {
-			return fmt.Errorf("%s.repository is required for an implemented context aggregate", field)
 		}
 		if aggregate.Repository != "" && isWorkflowStoreReference(aggregate.Repository) {
 			return fmt.Errorf("%s.repository %q must identify an aggregate repository, not a workflow store", field, aggregate.Repository)

@@ -3,6 +3,7 @@ package line
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/963sup/linebot-platform/internal/application/usecases/audience"
 	"github.com/line/line-bot-sdk-go/v8/linebot/manage_audience"
@@ -104,12 +105,35 @@ func (s *AudienceReader) ListAudiences(ctx context.Context, page audience.PageRe
 }
 
 func mapProviderAudience(value any, shared bool) (audience.ProviderAudience, error) {
-	object, err := providerObject(value)
-	if err != nil {
-		return audience.ProviderAudience{}, err
+	var group *manage_audience.AudienceGroup
+	switch v := value.(type) {
+	case *manage_audience.GetAudienceDataResponse:
+		if v != nil {
+			group = v.AudienceGroup
+		}
+	case *manage_audience.GetSharedAudienceDataResponse:
+		if v != nil {
+			group = v.AudienceGroup
+		}
+	case manage_audience.AudienceGroup:
+		group = &v
+	case *manage_audience.CreateAudienceGroupResponse:
+		if v != nil {
+			group = &manage_audience.AudienceGroup{AudienceGroupId: v.AudienceGroupId, Description: v.Description, Created: v.Created}
+		}
+	case *manage_audience.CreateClickBasedAudienceGroupResponse:
+		if v != nil {
+			group = &manage_audience.AudienceGroup{AudienceGroupId: v.AudienceGroupId, Description: v.Description, Created: v.Created}
+		}
+	case *manage_audience.CreateImpBasedAudienceGroupResponse:
+		if v != nil {
+			group = &manage_audience.AudienceGroup{AudienceGroupId: v.AudienceGroupId, Description: v.Description, Created: v.Created}
+		}
 	}
-	created := timeValue(object, "created")
-	return audience.ProviderAudience{ID: audience.ProviderAudienceID(int64Value(object, "audienceGroupId")), Description: stringValue(object, "description"), Status: stringValue(object, "status"), Shared: shared, CreatedAt: created}, nil
+	if group == nil {
+		return audience.ProviderAudience{}, errors.New("invalid LINE audience response")
+	}
+	return audience.ProviderAudience{ID: audience.ProviderAudienceID(group.AudienceGroupId), Description: group.Description, Status: string(group.Status), Shared: shared, CreatedAt: time.Unix(group.Created, 0).UTC()}, nil
 }
 
 var _ audience.ProviderReader = (*AudienceReader)(nil)

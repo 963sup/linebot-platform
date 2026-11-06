@@ -224,7 +224,7 @@ func TestAggregateRepositoryRules(t *testing.T) {
 		want       string
 	}{
 		{name: "candidate may omit repository", status: "candidate"},
-		{name: "implemented requires repository", status: "implemented", want: "repository is required"},
+		{name: "implemented may use a capability workflow store without an aggregate repository", status: "implemented"},
 		{name: "implemented accepts aggregate repository", status: "implemented", repository: "internal/domain/messaging-delivery/repositories.DeliveryRepository"},
 		{name: "implemented accepts event sourced aggregate repository", status: "implemented", repository: "internal/domain/orders/repositories.OrderEventStore"},
 		{name: "event store is a workflow alias", status: "candidate", repository: "internal/application/usecases/messaging-delivery.EventStore", want: "not a workflow store"},
@@ -234,7 +234,7 @@ func TestAggregateRepositoryRules(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			value := candidate
 			value.Repository = tt.repository
-			err := validateAggregates("domain_model.contexts[fixture]", tt.status, []Aggregate{value})
+			err := validateAggregates("domain_model.contexts[fixture]", []Aggregate{value})
 			if tt.want == "" && err != nil {
 				t.Fatalf("validateAggregates() error = %v", err)
 			}

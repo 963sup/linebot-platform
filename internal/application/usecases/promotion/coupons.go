@@ -70,16 +70,8 @@ func (q *CouponQueries) Get(ctx context.Context, id CouponID) (CouponView, error
 	return q.reader.GetCoupon(ctx, id)
 }
 
-type CouponDefinition struct {
-	Title       string
-	Description string
-	StartsAt    time.Time
-	EndsAt      time.Time
-	UsageLimit  int
-}
-
-// ProviderCouponDocument retains optional LINE coupon fields that are not yet
-// part of the domain-level CouponDefinition. The adapter owns SDK decoding.
+// ProviderCouponDocument preserves the complete provider coupon command.
+// The outbound adapter owns SDK decoding.
 type ProviderCouponDocument struct{ Value any }
 
 type ProviderCouponCreator interface {
@@ -89,41 +81,6 @@ type ProviderCouponCreator interface {
 type ProviderCouponGateway interface {
 	ProviderCouponCreator
 	CloseCoupon(context.Context, CouponID) error
-}
-
-type CouponManager interface {
-	CreateCoupon(context.Context, CouponDefinition) (CouponView, error)
-	CloseCoupon(context.Context, CouponID) error
-}
-
-type CouponOperations struct{ manager CouponManager }
-
-func NewCouponOperations(manager CouponManager) (*CouponOperations, error) {
-	if manager == nil {
-		return nil, errors.New("coupon manager is required")
-	}
-	return &CouponOperations{manager: manager}, nil
-}
-
-func (o *CouponOperations) Create(ctx context.Context, definition CouponDefinition) (CouponView, error) {
-	if err := validateContext(ctx); err != nil {
-		return CouponView{}, err
-	}
-	if !validCouponText(definition.Title) || definition.Description != strings.TrimSpace(definition.Description) ||
-		definition.StartsAt.IsZero() || !definition.EndsAt.After(definition.StartsAt) || definition.UsageLimit < 0 {
-		return CouponView{}, errors.New("valid coupon title, period, and usage limit are required")
-	}
-	return o.manager.CreateCoupon(ctx, definition)
-}
-
-func (o *CouponOperations) Close(ctx context.Context, id CouponID) error {
-	if err := validateContext(ctx); err != nil {
-		return err
-	}
-	if !validCouponID(id) {
-		return errors.New("coupon ID is required")
-	}
-	return o.manager.CloseCoupon(ctx, id)
 }
 
 func validCouponID(id CouponID) bool    { return validCouponText(string(id)) }

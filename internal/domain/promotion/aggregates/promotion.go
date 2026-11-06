@@ -5,7 +5,6 @@ import (
 	"errors"
 	"time"
 
-	"github.com/963sup/linebot-platform/internal/domain/promotion/events"
 	valueobjects "github.com/963sup/linebot-platform/internal/domain/promotion/value-objects"
 )
 
@@ -37,7 +36,6 @@ type Promotion struct {
 	period   valueobjects.Period
 	status   Status
 	revision uint64
-	pending  []events.PromotionEvent
 }
 
 func NewPromotion(id valueobjects.PromotionID, offer valueobjects.OfferReference, policy valueobjects.EligibilityPolicyReference, period valueobjects.Period) (Promotion, error) {
@@ -46,11 +44,10 @@ func NewPromotion(id valueobjects.PromotionID, offer valueobjects.OfferReference
 	}
 	return Promotion{
 		id: id, offer: offer, policy: policy, period: period, status: StatusDraft, revision: 1,
-		pending: []events.PromotionEvent{events.Defined{ID: id}},
 	}, nil
 }
 
-// RestorePromotion rehydrates persisted state without raising events.
+// RestorePromotion rehydrates persisted state.
 func RestorePromotion(id valueobjects.PromotionID, offer valueobjects.OfferReference, policy valueobjects.EligibilityPolicyReference, period valueobjects.Period, status Status, revision uint64) (Promotion, error) {
 	if !id.Valid() || !offer.Valid() || !policy.Valid() || !period.Valid() || !status.Valid() || revision == 0 {
 		return Promotion{}, ErrInvalidPromotion
@@ -64,17 +61,6 @@ func (p Promotion) EligibilityPolicy() valueobjects.EligibilityPolicyReference {
 func (p Promotion) Period() valueobjects.Period                                { return p.period }
 func (p Promotion) Status() Status                                             { return p.status }
 func (p Promotion) Revision() uint64                                           { return p.revision }
-func (p Promotion) PendingEvents() []events.PromotionEvent {
-	return append([]events.PromotionEvent(nil), p.pending...)
-}
-
-// AcknowledgeEvents clears modeled-only events after aggregate state has been
-// saved successfully. This context does not publish integration events yet.
-func (p *Promotion) AcknowledgeEvents() {
-	if p != nil {
-		p.pending = nil
-	}
-}
 
 func (p *Promotion) Activate(at time.Time) error {
 	if p == nil || p.status != StatusDraft {
@@ -85,7 +71,6 @@ func (p *Promotion) Activate(at time.Time) error {
 	}
 	p.status = StatusActive
 	p.revision++
-	p.pending = append(p.pending, events.Activated{ID: p.id})
 	return nil
 }
 
@@ -95,7 +80,6 @@ func (p *Promotion) Close() error {
 	}
 	p.status = StatusClosed
 	p.revision++
-	p.pending = append(p.pending, events.Closed{ID: p.id})
 	return nil
 }
 
@@ -125,6 +109,5 @@ func (p *Promotion) CreateDeliveryIntent(recipient string, decision valueobjects
 		return valueobjects.DeliveryIntent{}, err
 	}
 	p.revision++
-	p.pending = append(p.pending, events.DeliveryIntentCreated{Intent: intent})
 	return intent, nil
 }

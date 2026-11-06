@@ -7,14 +7,8 @@ import (
 )
 
 type fakeReader struct {
-	resolve ResolveRecipientQuery
 	profile ProfileQuery
 	err     error
-}
-
-func (f *fakeReader) ResolveRecipient(_ context.Context, query ResolveRecipientQuery) (RecipientReference, error) {
-	f.resolve = query
-	return RecipientReference{ID: query.ID, Kind: query.Kind}, f.err
 }
 
 func (f *fakeReader) GetProfile(_ context.Context, query ProfileQuery) (ProfileSnapshot, error) {
@@ -28,10 +22,6 @@ func TestQueriesDispatchTypedContactReads(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	resolve := ResolveRecipientQuery{ID: "user-1", Kind: RecipientUser}
-	if got, err := queries.ResolveRecipient(context.Background(), resolve); err != nil || got.ID != "user-1" || reader.resolve != resolve {
-		t.Fatalf("ResolveRecipient() = %+v, %v", got, err)
-	}
 	profile := ProfileQuery{Recipient: RecipientReference{ID: "group-1", Kind: RecipientGroup}}
 	if got, err := queries.GetProfile(context.Background(), profile); err != nil || got.DisplayName != "Ada" || reader.profile != profile {
 		t.Fatalf("GetProfile() = %+v, %v", got, err)
@@ -44,14 +34,14 @@ func TestQueriesRejectInvalidContactReadsAndPropagateErrors(t *testing.T) {
 	}
 	portErr := errors.New("reader failed")
 	queries, _ := NewQueries(&fakeReader{err: portErr})
-	if _, err := queries.ResolveRecipient(context.Background(), ResolveRecipientQuery{ID: "u", Kind: RecipientUser}); !errors.Is(err, portErr) {
-		t.Fatalf("ResolveRecipient error = %v", err)
+	if _, err := queries.GetProfile(context.Background(), ProfileQuery{Recipient: RecipientReference{ID: "u", Kind: RecipientUser}}); !errors.Is(err, portErr) {
+		t.Fatalf("GetProfile error = %v", err)
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 	for name, call := range map[string]func() error{
 		"nil context": func() error {
-			_, err := queries.ResolveRecipient(nil, ResolveRecipientQuery{ID: "u", Kind: RecipientUser})
+			_, err := queries.GetProfile(nil, ProfileQuery{Recipient: RecipientReference{ID: "u", Kind: RecipientUser}})
 			return err
 		},
 		"cancelled": func() error {
@@ -59,7 +49,7 @@ func TestQueriesRejectInvalidContactReadsAndPropagateErrors(t *testing.T) {
 			return err
 		},
 		"empty ID": func() error {
-			_, err := queries.ResolveRecipient(context.Background(), ResolveRecipientQuery{Kind: RecipientUser})
+			_, err := queries.GetProfile(context.Background(), ProfileQuery{Recipient: RecipientReference{Kind: RecipientUser}})
 			return err
 		},
 		"spaced ID": func() error {
@@ -67,7 +57,7 @@ func TestQueriesRejectInvalidContactReadsAndPropagateErrors(t *testing.T) {
 			return err
 		},
 		"bad kind": func() error {
-			_, err := queries.ResolveRecipient(context.Background(), ResolveRecipientQuery{ID: "u", Kind: "channel"})
+			_, err := queries.GetProfile(context.Background(), ProfileQuery{Recipient: RecipientReference{ID: "u", Kind: "channel"}})
 			return err
 		},
 	} {

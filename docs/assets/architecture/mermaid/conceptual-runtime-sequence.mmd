@@ -1,3 +1,8 @@
+---
+title: Hypothesis only - alternate conceptual model
+---
+%% Non-normative hypothesis, not the implemented model or API.
+%% Authority: docs/domain/model.yaml and ADR 0004; no new context, event or persistence commitment.
 sequenceDiagram
     autonumber
     actor user as User
@@ -40,7 +45,7 @@ sequenceDiagram
     else authorized
         access-->>api: Authorized
         api->>attendance: Apply AttendancePolicy and open AttendanceSession
-        alt invalid policy or duplicate
+        alt hard submission window or invariant rejected
             attendance-->>api: Rejected
             api-->>mini: Validation error
         else accepted
@@ -48,8 +53,8 @@ sequenceDiagram
             db-->>attendance: Committed
             attendance-->>api: AttendanceSession
             api-->>mini: Check-in success
-            opt Work time workflow enabled
-                api->>queue: Dispatch AttendanceRecorded event
+            opt Unimplemented hypothesis: requires approved publication contract
+                api->>queue: Hypothesis only: future versioned event after atomic outbox commit
                 queue->>time: Process attendance event
                 time->>db: Create or update TimeEntry
                 time->>db: Aggregate Timesheet when required
@@ -57,3 +62,5 @@ sequenceDiagram
         end
     end
     Note over mini,api: Browser Geolocation is evidence, not trusted proof of physical presence.
+
+    Note over attendance,db: Current ATT-003: successful assignment/kind retry returns existing Punch; no Attendance publication contract.

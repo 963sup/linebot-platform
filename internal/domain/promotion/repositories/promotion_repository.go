@@ -10,6 +10,6 @@ import (
 
 type PromotionRepository interface {
 	Find(context.Context, valueobjects.PromotionID) (aggregates.Promotion, error)
-	// Save atomically persists aggregate state and its pending Domain events.
+	// Save atomically persists aggregate state.
 	Save(context.Context, aggregates.Promotion) error
 }

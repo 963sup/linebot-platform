@@ -4,7 +4,6 @@ package aggregates
 import (
 	"errors"
 
-	"github.com/963sup/linebot-platform/internal/domain/workspace-automation/events"
 	valueobjects "github.com/963sup/linebot-platform/internal/domain/workspace-automation/value-objects"
 )
 
@@ -24,7 +23,6 @@ type AutomationRequest struct {
 	output         valueobjects.Output
 	status         valueobjects.Status
 	revision       uint64
-	pending        []events.AutomationEvent
 }
 
 func NewAutomationRequest(id valueobjects.AutomationRequestID, action valueobjects.Action, scopes valueobjects.RequiredScopes) (AutomationRequest, error) {
@@ -37,11 +35,10 @@ func NewAutomationRequest(id valueobjects.AutomationRequestID, action valueobjec
 		requiredScopes: scopes,
 		status:         valueobjects.StatusRequested,
 		revision:       1,
-		pending:        []events.AutomationEvent{events.AutomationRequested{ID: id, Action: action}},
 	}, nil
 }
 
-// RestoreAutomationRequest rehydrates a valid persisted state without raising events.
+// RestoreAutomationRequest rehydrates a valid persisted state.
 func RestoreAutomationRequest(id valueobjects.AutomationRequestID, action valueobjects.Action, scopes valueobjects.RequiredScopes, approval valueobjects.Approval, output valueobjects.Output, status valueobjects.Status, revision uint64) (AutomationRequest, error) {
 	if !id.Valid() || !action.Valid() || !scopes.Valid() || !status.Valid() || revision == 0 {
 		return AutomationRequest{}, ErrInvalidAutomationRequest
@@ -71,20 +68,6 @@ func (a AutomationRequest) Output() valueobjects.Output          { return a.outp
 func (a AutomationRequest) Status() valueobjects.Status          { return a.status }
 func (a AutomationRequest) Revision() uint64                     { return a.revision }
 
-// PendingEvents returns a detached snapshot of modeled Domain facts. This
-// tactical model does not itself persist or publish them.
-func (a AutomationRequest) PendingEvents() []events.AutomationEvent {
-	return append([]events.AutomationEvent(nil), a.pending...)
-}
-
-// AcknowledgeEvents clears modeled-only facts after aggregate state has been
-// saved successfully. It does not imply event publication.
-func (a *AutomationRequest) AcknowledgeEvents() {
-	if a != nil {
-		a.pending = nil
-	}
-}
-
 func (a *AutomationRequest) Approve(approval valueobjects.Approval) error {
 	if !a.valid() || !approval.Valid() {
 		return ErrInvalidAutomationRequest
@@ -95,7 +78,6 @@ func (a *AutomationRequest) Approve(approval valueobjects.Approval) error {
 	a.approval = approval
 	a.status = valueobjects.StatusApproved
 	a.revision++
-	a.pending = append(a.pending, events.AutomationApproved{ID: a.id, Approval: approval})
 	return nil
 }
 
@@ -111,7 +93,6 @@ func (a *AutomationRequest) StartExecution() error {
 	}
 	a.status = valueobjects.StatusExecuting
 	a.revision++
-	a.pending = append(a.pending, events.AutomationExecutionStarted{ID: a.id})
 	return nil
 }
 
@@ -137,14 +118,6 @@ func (a *AutomationRequest) finish(status valueobjects.Status, output valueobjec
 	a.status = status
 	a.output = output
 	a.revision++
-	switch status {
-	case valueobjects.StatusSucceeded:
-		a.pending = append(a.pending, events.AutomationSucceeded{ID: a.id, Output: output})
-	case valueobjects.StatusFailed:
-		a.pending = append(a.pending, events.AutomationFailed{ID: a.id, Output: output})
-	case valueobjects.StatusUnknown:
-		a.pending = append(a.pending, events.AutomationOutcomeUnknown{ID: a.id, Output: output})
-	}
 	return nil
 }
 

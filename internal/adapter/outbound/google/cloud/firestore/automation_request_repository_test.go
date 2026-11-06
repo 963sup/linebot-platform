@@ -44,9 +44,6 @@ func TestAutomationRequestRepositoryMappingRoundTripDoesNotRaiseEvents(t *testin
 		!slicesEqual(restored.RequiredScopes(), value.RequiredScopes()) {
 		t.Fatalf("restored automation request = %#v, want %#v", restored, value)
 	}
-	if got := len(restored.PendingEvents()); got != 0 {
-		t.Fatalf("restored pending events = %d, want 0", got)
-	}
 }
 
 func TestAutomationRequestRepositoryRevisionGate(t *testing.T) {

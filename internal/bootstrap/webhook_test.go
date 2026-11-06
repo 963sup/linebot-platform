@@ -7,10 +7,15 @@ import (
 )
 
 func TestRouterWithoutCredentials(t *testing.T) {
-	handler, err := NewWebhookRouter(Config{Port: "8080"}, nil)
+	runtime, err := NewWebhookRuntime(Config{Port: "8080"}, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
+	t.Cleanup(func() {
+		if err := runtime.Close(); err != nil {
+			t.Error(err)
+		}
+	})
 	for _, tc := range []struct {
 		method string
 		path   string
@@ -24,18 +29,9 @@ func TestRouterWithoutCredentials(t *testing.T) {
 		{http.MethodGet, "/missing", http.StatusNotFound},
 	} {
 		rec := httptest.NewRecorder()
-		handler.ServeHTTP(rec, httptest.NewRequest(tc.method, tc.path, nil))
+		runtime.Handler.ServeHTTP(rec, httptest.NewRequest(tc.method, tc.path, nil))
 		if rec.Code != tc.status {
 			t.Fatalf("%s %s status = %d, expected %d", tc.method, tc.path, rec.Code, tc.status)
 		}
-	}
-}
-
-func TestRouterRejectsConfiguredRuntimeWithoutCloseOwner(t *testing.T) {
-	_, err := NewWebhookRouter(Config{
-		Secrets: SecretConfig{ChannelSecret: "secret", ChannelToken: "token"},
-	}, nil)
-	if err == nil {
-		t.Fatal("configured router without close owner was accepted")
 	}
 }

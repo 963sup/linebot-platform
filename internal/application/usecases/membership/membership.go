@@ -33,11 +33,36 @@ type MembershipPage struct {
 }
 
 type SubscriptionView struct {
-	RecipientID RecipientID
-	Membership  MembershipView
-	Status      string
-	ValidUntil  time.Time
-	ObservedAt  time.Time
+	Subscriptions []Subscription
+	RecipientID   RecipientID
+	Membership    MembershipView
+	Status        string
+	ValidUntil    time.Time
+	ObservedAt    time.Time
+}
+
+// Subscription preserves each membership plan and subscriber returned by the provider.
+// Either nested value can be absent in a provider response.
+type Subscription struct {
+	Membership *SubscriptionPlan
+	User       *Subscriber
+}
+
+type SubscriptionPlan struct {
+	ID          MembershipID
+	Name        string
+	Description string
+	Benefits    []string
+	Price       float64
+	Currency    string
+}
+
+type Subscriber struct {
+	MembershipNo int32
+	JoinedAt     time.Time
+	// NextBillingDate is the provider's calendar date, not a UTC instant.
+	NextBillingDate         string
+	TotalSubscriptionMonths int32
 }
 
 type MemberView struct {

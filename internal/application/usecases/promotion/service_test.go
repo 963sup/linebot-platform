@@ -39,29 +39,20 @@ func TestPromotionCommandsPersistLifecycle(t *testing.T) {
 	if err != nil || defined.Status() != aggregates.StatusDraft {
 		t.Fatalf("Define() = (%v, %v), want draft, nil", defined.Status(), err)
 	}
-	if len(defined.PendingEvents()) != 0 {
-		t.Fatal("Define() returned acknowledged events")
-	}
 	active, err := service.Activate(context.Background(), id, now)
 	if err != nil || active.Status() != aggregates.StatusActive {
 		t.Fatalf("Activate() = (%v, %v), want active, nil", active.Status(), err)
 	}
-	if len(active.PendingEvents()) != 0 {
-		t.Fatal("Activate() returned acknowledged events")
-	}
 	closed, err := service.Close(context.Background(), id)
 	if err != nil || closed.Status() != aggregates.StatusClosed {
 		t.Fatalf("Close() = (%v, %v), want closed, nil", closed.Status(), err)
-	}
-	if len(closed.PendingEvents()) != 0 {
-		t.Fatal("Close() returned acknowledged events")
 	}
 	if repository.saveCalls != 3 {
 		t.Fatalf("Save calls = %d, want 3", repository.saveCalls)
 	}
 }
 
-func TestCreateDeliveryIntentPersistsDomainEventWithoutRemoteSideEffect(t *testing.T) {
+func TestCreateDeliveryIntentPersistsRevisionWithoutRemoteSideEffect(t *testing.T) {
 	t.Parallel()
 	id, _, policy, _, now := promotionValues(t)
 	promotion := activePromotion(t)
@@ -70,7 +61,10 @@ func TestCreateDeliveryIntentPersistsDomainEventWithoutRemoteSideEffect(t *testi
 	decision, _ := valueobjects.NewEligibilityDecision(policy, true)
 	intent, err := service.CreateDeliveryIntent(context.Background(), id, "recipient-1", decision, now)
 	if err != nil || !intent.Valid() {
-		t.Fatalf("CreateDeliveryIntent() = (%v, %v), want valid persisted intent", intent, err)
+		t.Fatalf("CreateDeliveryIntent() = (%v, %v), want valid intent", intent, err)
+	}
+	if repository.value.Revision() != promotion.Revision()+1 {
+		t.Fatal("delivery intent did not persist the advanced promotion revision")
 	}
 	if repository.saveCalls != 1 {
 		t.Fatalf("Save calls = %d, want 1", repository.saveCalls)

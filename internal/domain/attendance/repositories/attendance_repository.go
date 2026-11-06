@@ -12,10 +12,9 @@ import (
 )
 
 var (
-	ErrNotFound           = errors.New("attendance repository record not found")
-	ErrAttendanceNotFound = ErrNotFound
-	ErrConflict           = errors.New("attendance repository uniqueness conflict")
-	ErrConcurrentUpdate   = errors.New("attendance repository concurrent update")
+	ErrNotFound         = errors.New("attendance repository record not found")
+	ErrConflict         = errors.New("attendance repository uniqueness conflict")
+	ErrConcurrentUpdate = errors.New("attendance repository concurrent update")
 )
 
 // AttendanceRepository persists one participant/assignment aggregate atomically.

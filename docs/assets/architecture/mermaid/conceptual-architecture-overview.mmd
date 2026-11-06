@@ -1,5 +1,5 @@
 ---
-title: Golang DDD + Hexagonal Architecture - Overview
+title: Hypothesis only - Golang DDD + Hexagonal Architecture - Overview
 config:
   theme: base
   themeVariables:
@@ -8,14 +8,17 @@ config:
     primaryBorderColor: '#a8c7e8'
     lineColor: '#3269a4'
 ---
+%% Non-normative hypothesis, not the implemented model or API.
+%% Authority: docs/domain/model.yaml and ADR 0004; no new context, event or persistence commitment.
+
 block-beta
   columns 3
   block:strategic:1
     columns 1
     sh["STRATEGIC DESIGN"]
-    core["Core: Attendance / Timekeeping"]
-    supporting["Supporting: Account / Team / Membership / Access"]
-    generic["Generic: Identity / LINE / Geolocation / Persistence"]
+    core["Core hypothesis: Messaging Delivery"]
+    supporting["Implemented Supporting: Identity / Attendance"]
+    generic["Generic: LINE / Geolocation / Persistence"]
     ctx["Bounded Context by business language; not by SDK"]
     map["Context Map: Contract / ACL / Integration Events"]
   end

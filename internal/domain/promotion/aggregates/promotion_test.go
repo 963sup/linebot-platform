@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/963sup/linebot-platform/internal/domain/promotion/aggregates"
-	"github.com/963sup/linebot-platform/internal/domain/promotion/events"
 	valueobjects "github.com/963sup/linebot-platform/internal/domain/promotion/value-objects"
 )
 
@@ -60,9 +59,8 @@ func TestActivePromotionCreatesDeliveryIntent(t *testing.T) {
 	if got, want := intent.RecipientReference(), "line:user:1"; got != want {
 		t.Errorf("DeliveryIntent.RecipientReference() = %q, want %q", got, want)
 	}
-	gotEvents := promotion.PendingEvents()
-	if _, ok := gotEvents[len(gotEvents)-1].(events.DeliveryIntentCreated); !ok {
-		t.Errorf("Promotion.PendingEvents() last event = %T, want events.DeliveryIntentCreated", gotEvents[len(gotEvents)-1])
+	if promotion.Revision() != 3 || intent.PromotionID() != promotion.ID() || intent.OfferReference() != promotion.Offer() {
+		t.Fatal("delivery intent lost its promotion identity, offer or revision")
 	}
 }
 
@@ -102,21 +100,6 @@ func TestPromotionRejectsInvalidTransitionsAndActivationTime(t *testing.T) {
 	}
 }
 
-func TestPromotionEventsAreDetached(t *testing.T) {
-	t.Parallel()
-
-	promotion := newPromotion(t)
-	got := promotion.PendingEvents()
-	got[0] = nil
-	if promotion.PendingEvents()[0] == nil {
-		t.Error("Promotion.PendingEvents() returned mutable internal storage, want detached slice")
-	}
-	promotion.AcknowledgeEvents()
-	if len(promotion.PendingEvents()) != 0 {
-		t.Error("Promotion.AcknowledgeEvents() did not clear committed events")
-	}
-}
-
 func TestPromotionRevisionAdvancesOnlyOnSuccessfulMutations(t *testing.T) {
 	t.Parallel()
 
@@ -144,7 +127,7 @@ func TestPromotionRevisionAdvancesOnlyOnSuccessfulMutations(t *testing.T) {
 	}
 }
 
-func TestRestorePromotionPreservesRevisionWithoutEvents(t *testing.T) {
+func TestRestorePromotionPreservesRevision(t *testing.T) {
 	t.Parallel()
 
 	promotion := newPromotion(t)
@@ -159,8 +142,8 @@ func TestRestorePromotionPreservesRevisionWithoutEvents(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if restored.Revision() != 7 || len(restored.PendingEvents()) != 0 {
-		t.Fatalf("restored promotion revision/events = %d/%d, want 7/0", restored.Revision(), len(restored.PendingEvents()))
+	if restored.Revision() != 7 {
+		t.Fatalf("restored promotion revision = %d, want 7", restored.Revision())
 	}
 }
 

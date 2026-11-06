@@ -4,7 +4,6 @@ import (
 	"errors"
 	"time"
 
-	"github.com/963sup/linebot-platform/internal/domain/messaging-delivery/events"
 	valueobjects "github.com/963sup/linebot-platform/internal/domain/messaging-delivery/value-objects"
 )
 
@@ -22,7 +21,6 @@ type Delivery struct {
 	claimID    string
 	claimUntil time.Time
 	version    uint64
-	pending    []events.DeliveryEvent
 }
 
 func NewDelivery(id valueobjects.DeliveryID, replyUntil time.Time) (Delivery, error) {
@@ -71,7 +69,6 @@ func (d *Delivery) Claim(claimID string, now, claimUntil time.Time) error {
 	}
 	d.status, d.claimID, d.claimUntil = valueobjects.StatusSending, claimID, claimUntil.UTC()
 	d.version++
-	d.pending = append(d.pending, events.Claimed{DeliveryID: d.id, At: now})
 	return nil
 }
 
@@ -90,11 +87,6 @@ func (d *Delivery) Complete(claimID string, outcome valueobjects.Status, now tim
 	}
 	d.status, d.claimID, d.claimUntil = outcome, "", time.Time{}
 	d.version++
-	now = now.UTC()
-	d.pending = append(d.pending, events.Completed{DeliveryID: d.id, Outcome: outcome, At: now})
-	if outcome == valueobjects.StatusUnknown {
-		d.pending = append(d.pending, events.OutcomeUnknown{DeliveryID: d.id, At: now})
-	}
 	return nil
 }
 
@@ -109,7 +101,6 @@ func (d *Delivery) Reconcile(now time.Time) bool {
 		d.status = valueobjects.StatusExpired
 	case d.status == valueobjects.StatusSending && !now.Before(d.claimUntil):
 		d.status, d.claimID, d.claimUntil = valueobjects.StatusUnknown, "", time.Time{}
-		d.pending = append(d.pending, events.OutcomeUnknown{DeliveryID: d.id, At: now})
 	default:
 		return false
 	}
@@ -123,14 +114,3 @@ func (d Delivery) ReplyUntil() time.Time       { return d.replyUntil }
 func (d Delivery) ClaimID() string             { return d.claimID }
 func (d Delivery) ClaimUntil() time.Time       { return d.claimUntil }
 func (d Delivery) Version() uint64             { return d.version }
-func (d Delivery) PendingEvents() []events.DeliveryEvent {
-	return append([]events.DeliveryEvent(nil), d.pending...)
-}
-
-// AcknowledgeEvents clears modeled-only facts after a caller has inspected them.
-// The current delivery workflow does not persist or publish these facts.
-func (d *Delivery) AcknowledgeEvents() {
-	if d != nil {
-		d.pending = nil
-	}
-}

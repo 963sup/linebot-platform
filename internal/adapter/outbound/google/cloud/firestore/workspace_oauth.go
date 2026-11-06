@@ -708,13 +708,6 @@ func (s *OAuthStore) FindConnection(ctx context.Context, id valueobjects.Connect
 	return auth.Link, nil
 }
 
-var (
-	_ repositories.ConnectionReader   = (*OAuthStore)(nil)
-	_ identity.OAuthSessionRepository = (*OAuthStore)(nil)
-	_ identity.ConnectionStore        = (*OAuthStore)(nil)
-	_ identity.IntegrationOutbox      = (*OAuthStore)(nil)
-)
-
 func (s *OAuthStore) DeactivateConnection(ctx context.Context, authorization identity.OAuthAuthorization) error {
 	if ctx == nil {
 		return errors.New("context required")

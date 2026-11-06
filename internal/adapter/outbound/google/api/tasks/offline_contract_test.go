@@ -15,9 +15,24 @@ import (
 
 func testCommand(t *testing.T, request codec.Request) workspace.OperationCommand {
 	t.Helper()
-	command, err := codec.Command(request)
-	if err != nil {
-		t.Fatal(err)
+	encode := func(value any) string {
+		t.Helper()
+		data, err := json.Marshal(value)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return string(data)
+	}
+	command := workspace.OperationCommand{Operation: workspace.Operation(request.Operation)}
+	for name, value := range request.Parameters {
+		command.Parameters = append(command.Parameters, workspace.Parameter{Name: name, Value: encode(value)})
+	}
+	for name, value := range request.Options {
+		command.Options = append(command.Options, workspace.Option{Name: name, Values: []string{encode(value)}})
+	}
+	// Nil fixture maps arrive as typed nil through Request.Body.
+	if body := encode(request.Body); body != "null" {
+		command.Payload = []byte(body)
 	}
 	return command
 }

@@ -1,4 +1,4 @@
-// Package promotion orchestrates the Promotion bounded context.
+// Package promotion orchestrates the Promotion candidate tactical model.
 package promotion
 
 import (
@@ -35,7 +35,6 @@ func (s *Service) Define(ctx context.Context, id valueobjects.PromotionID, offer
 	if err := s.repository.Save(ctx, promotion); err != nil {
 		return aggregates.Promotion{}, err
 	}
-	promotion.AcknowledgeEvents()
 	return promotion, nil
 }
 
@@ -63,13 +62,10 @@ func (s *Service) CreateDeliveryIntent(ctx context.Context, id valueobjects.Prom
 	if err != nil {
 		return valueobjects.DeliveryIntent{}, err
 	}
-	// DeliveryIntentCreated is modeled for the application boundary, but this
-	// context does not publish an integration event in the current baseline.
-	// Persist the aggregate before acknowledging the modeled event.
+	// Persist the revised aggregate before returning the approved intent.
 	if err := s.repository.Save(ctx, promotion); err != nil {
 		return valueobjects.DeliveryIntent{}, err
 	}
-	promotion.AcknowledgeEvents()
 	return intent, nil
 }
 
@@ -87,7 +83,6 @@ func (s *Service) change(ctx context.Context, id valueobjects.PromotionID, chang
 	if err := s.repository.Save(ctx, promotion); err != nil {
 		return aggregates.Promotion{}, err
 	}
-	promotion.AcknowledgeEvents()
 	return promotion, nil
 }
 

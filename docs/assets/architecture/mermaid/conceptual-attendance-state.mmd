@@ -1,3 +1,8 @@
+---
+title: Hypothesis only - alternate conceptual model
+---
+%% Non-normative hypothesis, not the implemented model or API.
+%% Authority: docs/domain/model.yaml and ADR 0004; no new context, event or persistence commitment.
 stateDiagram-v2
     [*] --> NotCheckedIn
     NotCheckedIn --> CheckingIn : request check-in
@@ -10,7 +15,7 @@ stateDiagram-v2
     CheckingOut --> CheckedOut : close AttendanceSession
     CheckedOut --> [*]
     note right of CheckedIn
-        Identity.Session authenticates User.
+        Hypothesis only; current model uses verified ParticipantID.
         AttendanceSession records attendance.
-        TimeEntry and Timesheet belong to Timekeeping.
+        Current ATT-003 replays the existing Punch on retry.
     end note

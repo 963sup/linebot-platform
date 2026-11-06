@@ -33,9 +33,6 @@ func TestPromotionRepositoryMappingRoundTripDoesNotRaiseEvents(t *testing.T) {
 		!restored.Period().Start().Equal(value.Period().Start()) || !restored.Period().End().Equal(value.Period().End()) {
 		t.Fatalf("restored promotion = %#v, want %#v", restored, value)
 	}
-	if got := len(restored.PendingEvents()); got != 0 {
-		t.Fatalf("restored pending events = %d, want 0", got)
-	}
 }
 
 func TestPromotionRepositoryRevisionGate(t *testing.T) {

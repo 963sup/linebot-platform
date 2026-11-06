@@ -45,6 +45,52 @@ func attendanceEmulatorStore(t *testing.T) (*fsadapter.AttendanceStore, time.Tim
 	return store, time.Now().UTC().Truncate(time.Millisecond)
 }
 
+func TestWorkplaceUpdatePreservesCreatedAtWithFirestoreEmulator(t *testing.T) {
+	client, _ := emulatorStore(t)
+	keyring, err := attendancecrypto.NewKeyring("v1", map[string][]byte{"v1": bytes.Repeat([]byte{0x51}, 32)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	store, err := fsadapter.NewAttendanceStore(client, keyring)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	defer cancel()
+	id, _ := valueobjects.NewWorkplaceID("workplace-update")
+	center, _ := valueobjects.NewGeoPoint(25.033, 121.565)
+	before, _ := entities.DefineWorkplace(id, "Original", center, 100, 50, "v1")
+	if err := store.SaveWorkplace(ctx, before); err != nil {
+		t.Fatal(err)
+	}
+	docs, err := client.Collection("attendance_workplaces_v1").Documents(ctx).GetAll()
+	if err != nil || len(docs) != 1 {
+		t.Fatalf("workplace documents=%d err=%v", len(docs), err)
+	}
+	// Use a distinct historical value so an accidental overwrite cannot pass
+	// because two writes happened within the same clock tick.
+	created := time.Date(2020, 1, 2, 3, 4, 5, 0, time.UTC)
+	if _, err := docs[0].Ref.Update(ctx, []sdk.Update{{Path: "created_at", Value: created}}); err != nil {
+		t.Fatal(err)
+	}
+	after, _ := entities.DefineWorkplace(id, "Updated", center, 200, 75, "v2")
+	if err := store.SaveWorkplace(ctx, after); err != nil {
+		t.Fatal(err)
+	}
+	snapshot, err := docs[0].Ref.Get(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	gotCreated, err := snapshot.DataAt("created_at")
+	if err != nil || gotCreated != created {
+		t.Fatalf("created_at=%v err=%v; want %v", gotCreated, err, created)
+	}
+	restored, err := store.FindWorkplace(ctx, id)
+	if err != nil || restored.DisplayName() != "Updated" || restored.PolicyVersion() != "v2" {
+		t.Fatalf("updated workplace=%#v err=%v", restored, err)
+	}
+}
+
 func TestAttendanceEnrollmentPunchAndEncryptedEvidenceWithFirestoreEmulator(t *testing.T) {
 	store, now := attendanceEmulatorStore(t)
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)

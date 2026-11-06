@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/963sup/linebot-platform/internal/infrastructure/httpclient"
 	"github.com/line/line-bot-sdk-go/v8/linebot/channel_access_token"
 	"github.com/line/line-bot-sdk-go/v8/linebot/insight"
 	"github.com/line/line-bot-sdk-go/v8/linebot/manage_audience"
@@ -47,13 +46,6 @@ func managedLINEHTTPClient(client *http.Client) (*http.Client, error) {
 	}
 	copy.Transport = closeOnEOFTransport{next: transport}
 	return &copy, nil
-}
-
-// NewMessagingClient preserves the existing convenience API.
-// Long-running processes should inject a managed HTTP client and close its
-// owned transport after shutdown.
-func NewMessagingClient(token string) (*messaging_api.MessagingApiAPI, error) {
-	return NewMessagingClientWithHTTPClient(token, &http.Client{Timeout: httpclient.DefaultTimeout})
 }
 
 // NewMessagingClientWithHTTPClient returns the native LINE SDK API client.

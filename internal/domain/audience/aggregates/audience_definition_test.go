@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/963sup/linebot-platform/internal/domain/audience/aggregates"
-	"github.com/963sup/linebot-platform/internal/domain/audience/events"
 	valueobjects "github.com/963sup/linebot-platform/internal/domain/audience/value-objects"
 )
 
@@ -77,27 +76,6 @@ func TestAudienceRevisionNoOpAndArchivedProtection(t *testing.T) {
 	}
 	if err := audience.Revise(mustCriteria(t, "orders", "count > 3")); !errors.Is(err, aggregates.ErrArchivedAudience) {
 		t.Errorf("AudienceDefinition.Revise(...) after Archive error = %v, want %v", err, aggregates.ErrArchivedAudience)
-	}
-}
-
-func TestAudienceEventsAreDetached(t *testing.T) {
-	t.Parallel()
-
-	audience := newAudience(t)
-	got := audience.PendingEvents()
-	if len(got) != 1 {
-		t.Fatalf("AudienceDefinition.PendingEvents() length = %d, want 1", len(got))
-	}
-	if _, ok := got[0].(events.Defined); !ok {
-		t.Errorf("AudienceDefinition.PendingEvents()[0] = %T, want events.Defined", got[0])
-	}
-	got[0] = nil
-	if audience.PendingEvents()[0] == nil {
-		t.Error("AudienceDefinition.PendingEvents() returned mutable internal storage, want detached slice")
-	}
-	audience.AcknowledgeEvents()
-	if len(audience.PendingEvents()) != 0 {
-		t.Error("AudienceDefinition.AcknowledgeEvents() did not clear committed events")
 	}
 }
 

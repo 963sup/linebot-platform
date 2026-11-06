@@ -182,7 +182,7 @@ func attendanceFixture(tb testing.TB) (Dependencies, valueobjects.ParticipantID)
 	aid, _ := valueobjects.NewShiftAssignmentID("assignment")
 	assignment, _ := entities.NewShiftAssignment(aid, eid, sid)
 	enrollment := &enrollmentFake{participant: p}
-	attendance := &attendanceRepoFake{findErr: repositories.ErrAttendanceNotFound}
+	attendance := &attendanceRepoFake{findErr: repositories.ErrNotFound}
 	reader := &currentAttendanceReaderFake{
 		resolved:   CurrentAttendanceSnapshot{Participant: p, Assignment: assignment, Shift: shift, Workplace: w},
 		attendance: attendance,

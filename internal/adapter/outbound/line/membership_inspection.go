@@ -39,7 +39,21 @@ func (s *Sender) GetSubscription(ctx context.Context, userID membership.Recipien
 	if result == nil {
 		return membership.SubscriptionView{}, errors.New("empty LINE membership subscription")
 	}
-	return membership.SubscriptionView{RecipientID: userID, ObservedAt: time.Now().UTC()}, nil
+	out := membership.SubscriptionView{RecipientID: userID, ObservedAt: time.Now().UTC()}
+	if result.Subscriptions != nil {
+		out.Subscriptions = make([]membership.Subscription, 0, len(result.Subscriptions))
+	}
+	for _, item := range result.Subscriptions {
+		mapped := membership.Subscription{}
+		if v := item.Membership; v != nil {
+			mapped.Membership = &membership.SubscriptionPlan{ID: membership.MembershipID(strconv.FormatInt(int64(v.MembershipId), 10)), Name: v.Title, Description: v.Description, Benefits: append([]string(nil), v.Benefits...), Price: v.Price, Currency: string(v.Currency)}
+		}
+		if v := item.User; v != nil {
+			mapped.User = &membership.Subscriber{MembershipNo: v.MembershipNo, JoinedAt: time.Unix(int64(v.JoinedTime), 0).UTC(), NextBillingDate: v.NextBillingDate, TotalSubscriptionMonths: v.TotalSubscriptionMonths}
+		}
+		out.Subscriptions = append(out.Subscriptions, mapped)
+	}
+	return out, nil
 }
 func (s *Sender) ListMembershipMembers(ctx context.Context, membershipID membership.MembershipID, page membership.PageRequest) (membership.MemberPage, error) {
 	client, err := s.clientFor(ctx)

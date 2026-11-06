@@ -50,9 +50,6 @@ func TestInteractionSurfaceRepositoryMappingRoundTripDoesNotRaiseEvents(t *testi
 	if restored.ID() != value.ID() || restored.Version() != value.Version() || restored.Status() != value.Status() || !restored.Presentation().Equal(value.Presentation()) {
 		t.Fatalf("restored surface = %#v, want %#v", restored, value)
 	}
-	if len(restored.PendingEvents()) != 0 {
-		t.Fatalf("restored pending events = %d, want 0", len(restored.PendingEvents()))
-	}
 }
 
 func TestInteractionSurfaceRepositoryRejectsCorruptAndConcurrentState(t *testing.T) {

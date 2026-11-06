@@ -67,9 +67,6 @@ func TestDurableConfigRequiresAllCredentialsAndEndpoints(t *testing.T) {
 	if !cfg.LiveLINE() || cfg.Secrets.ChannelToken != "" {
 		t.Fatal("durable webhook must not use a send token")
 	}
-	if _, err := NewWebhookRouter(cfg, nil); err == nil {
-		t.Fatal("durable router must require explicit runtime ownership")
-	}
 	withToken := make(map[string]string, len(fields)+1)
 	for key, value := range fields {
 		withToken[key] = value

@@ -13,11 +13,6 @@ import (
 	providerconfiguration "github.com/963sup/linebot-platform/internal/application/usecases/provider-configuration"
 )
 
-type providerInspectionRuntime interface {
-	providerconfiguration.ChannelReader
-	insightsreporting.DeliveryReader
-}
-
 func runInspect(parent context.Context, args []string, getenv func(string) string, output io.Writer, dependencies ...Dependencies) (err error) {
 	deps := dependency(dependencies)
 	flags := flag.NewFlagSet("inspect", flag.ContinueOnError)
@@ -44,28 +39,24 @@ func runInspect(parent context.Context, args []string, getenv func(string) strin
 		return err
 	}
 	defer func() { err = errors.Join(err, runtime.Close()) }()
-	reader, ok := any(runtime).(providerInspectionRuntime)
-	if !ok {
-		return errors.New("channel inspection runtime does not implement provider-configuration and insights-reporting")
-	}
 	ctx, cancel := context.WithTimeout(parent, 12*time.Second)
 	defer cancel()
 	var data any
 	switch *kind {
 	case "bot-info":
-		data, err = reader.BotInfo(ctx)
+		data, err = runtime.BotInfo(ctx)
 	case "webhook-endpoint":
-		data, err = reader.WebhookEndpoint(ctx)
+		data, err = runtime.WebhookEndpoint(ctx)
 	case "message-quota":
-		data, err = reader.MessageQuota(ctx)
+		data, err = runtime.MessageQuota(ctx)
 	case "message-quota-consumption":
-		data, err = reader.MessageQuotaConsumption(ctx)
+		data, err = runtime.MessageQuotaConsumption(ctx)
 	case "aggregation-usage":
-		data, err = reader.AggregationUnitUsage(ctx)
+		data, err = runtime.AggregationUnitUsage(ctx)
 	case "aggregation-names":
-		data, err = reader.AggregationUnitNames(ctx, fmt.Sprint(*limit), *start)
+		data, err = runtime.AggregationUnitNames(ctx, fmt.Sprint(*limit), *start)
 	case "narrowcast-progress":
-		data, err = reader.NarrowcastProgress(ctx, *requestID)
+		data, err = runtime.NarrowcastProgress(ctx, *requestID)
 	case "delivery-reply", "delivery-push", "delivery-multicast", "delivery-broadcast":
 		day, parseErr := time.Parse("20060102", *date)
 		if parseErr != nil {
@@ -74,13 +65,13 @@ func runInspect(parent context.Context, args []string, getenv func(string) strin
 		query := insightsreporting.DailyQuery{Day: day}
 		switch *kind {
 		case "delivery-reply":
-			data, err = reader.DeliveryReply(ctx, query)
+			data, err = runtime.DeliveryReply(ctx, query)
 		case "delivery-push":
-			data, err = reader.DeliveryPush(ctx, query)
+			data, err = runtime.DeliveryPush(ctx, query)
 		case "delivery-multicast":
-			data, err = reader.DeliveryMulticast(ctx, query)
+			data, err = runtime.DeliveryMulticast(ctx, query)
 		default:
-			data, err = reader.DeliveryBroadcast(ctx, query)
+			data, err = runtime.DeliveryBroadcast(ctx, query)
 		}
 	default:
 		return errors.New("unsupported channel inspection kind")

@@ -16,10 +16,6 @@ type DeliveryWorkItem struct {
 	CreatedAt  time.Time
 }
 
-// EventJob is retained for source compatibility.
-// Deprecated: use DeliveryWorkItem.
-type EventJob = DeliveryWorkItem
-
 type DeliveryState = valueobjects.Status
 
 const (
@@ -52,10 +48,6 @@ type DeliveryWorkflowStore interface {
 	DeliveryClaimer
 	DeliveryRecovery
 }
-
-// EventStore is retained for source compatibility.
-// Deprecated: use DeliveryWorkflowStore or a narrower consumer-owned port.
-type EventStore = DeliveryWorkflowStore
 
 // EventState is the read-model name for the canonical Domain delivery status.
 // It remains an alias for source compatibility; it is not a second state machine.

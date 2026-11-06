@@ -20,11 +20,6 @@ type RecipientReference struct {
 	Kind RecipientKind
 }
 
-type ResolveRecipientQuery struct {
-	ID   string
-	Kind RecipientKind
-}
-
 type ProfileQuery struct {
 	Recipient RecipientReference
 }
@@ -40,7 +35,6 @@ type ProfileSnapshot struct {
 // Reader is a consumer-owned query port. Provider SDK types must be mapped by
 // the implementing adapter before crossing this boundary.
 type Reader interface {
-	ResolveRecipient(context.Context, ResolveRecipientQuery) (RecipientReference, error)
 	GetProfile(context.Context, ProfileQuery) (ProfileSnapshot, error)
 }
 
@@ -53,16 +47,6 @@ func NewQueries(reader Reader) (*Queries, error) {
 		return nil, errors.New("contact reader is required")
 	}
 	return &Queries{reader: reader}, nil
-}
-
-func (q *Queries) ResolveRecipient(ctx context.Context, query ResolveRecipientQuery) (RecipientReference, error) {
-	if err := validateContext(ctx); err != nil {
-		return RecipientReference{}, err
-	}
-	if err := validateRecipient(RecipientReference{ID: query.ID, Kind: query.Kind}); err != nil {
-		return RecipientReference{}, err
-	}
-	return q.reader.ResolveRecipient(ctx, query)
 }
 
 func (q *Queries) GetProfile(ctx context.Context, query ProfileQuery) (ProfileSnapshot, error) {

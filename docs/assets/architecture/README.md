@@ -5,7 +5,7 @@
 - `go-ddd-hexagonal-architecture-overview.svg` 是概覽的可編輯來源。
 - `go-ddd-hexagonal-architecture-overview.png` 是該 SVG 的固定尺寸渲染投影。
 - `go-ddd-hexagonal-architecture-codex.svg` 與 `go-ddd-hexagonal-architecture-engineering.svg` 是互補的詳細視圖，不是另一份架構契約。
-- `mermaid/conceptual-*.mmd` 是概念性 Mermaid 原始圖，包含尚未由 `docs/domain/model.yaml` 與 ADR 驗證的候選模型；不得視為已實作的 Domain 或資料契約。
+- `mermaid/conceptual-*.mmd` 是概念性 Mermaid 原始圖，包含尚未由 `docs/domain/model.yaml` 與 ADR 驗證的候選模型；不得視為已實作的 Domain 或資料契約。每張 Mermaid 都以可見標題與來源註解標示 hypothesis；其中 Account／Team／Access／Timekeeping 與替代 Identity Session 模型沒有因圖而獲得實作授權。現行 Attendance 的 Participant／ShiftAssignment／Punch、成功重試回傳原 Punch、審核歷史與獨立位置證據保留，以 ADR 0004 為準；圖中的未實作事件須先另立發布與 outbox 契約。
 
 一般編輯預覽可在 repository root 以本機 Inkscape 重建 PNG：
 

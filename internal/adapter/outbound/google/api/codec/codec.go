@@ -108,34 +108,6 @@ func scalarJSON(value string) json.RawMessage {
 	return json.RawMessage(encoded)
 }
 
-// Command is used by adapter tests and trusted inbound mapping code to build
-// the typed application contract from already-decoded JSON values.
-func Command(request Request) (workspace.OperationCommand, error) {
-	command := workspace.OperationCommand{Operation: workspace.Operation(request.Operation)}
-	for name, value := range request.Parameters {
-		encoded, err := json.Marshal(value)
-		if err != nil {
-			return workspace.OperationCommand{}, errors.New("invalid workspace parameter")
-		}
-		command.Parameters = append(command.Parameters, workspace.Parameter{Name: name, Value: string(encoded)})
-	}
-	for name, value := range request.Options {
-		encoded, err := json.Marshal(value)
-		if err != nil {
-			return workspace.OperationCommand{}, errors.New("invalid workspace option")
-		}
-		command.Options = append(command.Options, workspace.Option{Name: name, Values: []string{string(encoded)}})
-	}
-	if !isNil(request.Body) {
-		encoded, err := json.Marshal(request.Body)
-		if err != nil {
-			return workspace.OperationCommand{}, errors.New("invalid workspace request body")
-		}
-		command.Payload = encoded
-	}
-	return command, nil
-}
-
 func Validate(req Request, expectsBody bool, required, allowed []string) error {
 	if req.Operation == "" {
 		return errors.New("workspace operation is required")

@@ -101,12 +101,11 @@ contexts:
     language:
       - {term: delivery-intent, definition: "Request to deliver content to a resolved recipient.", forbidden_aliases: [line-request], code_symbols: []}
       - {term: delivery, definition: "Consistency boundary for claim and terminal outcome.", forbidden_aliases: [cloud-task], code_symbols: [internal/domain/messaging-delivery/aggregates.Delivery]}
-      - {term: delivery-event, definition: "Modeled fact raised by an in-memory Delivery transition; the current workflow does not persist or publish it.", forbidden_aliases: [integration-event, cloud-task], code_symbols: [internal/domain/messaging-delivery/events.DeliveryEvent]}
       - {term: unknown-outcome, definition: "Send whose remote effect cannot be safely determined.", forbidden_aliases: [failed], code_symbols: [internal/domain/messaging-delivery/value-objects.StatusUnknown]}
       - {term: idempotency-key, definition: "Stable identity preventing duplicate business delivery.", forbidden_aliases: [task-name], code_symbols: []}
-    owns: [delivery-intent, delivery-claim, delivery-outcome, delivery-domain-events]
+    owns: [delivery-intent, delivery-claim, delivery-outcome]
     aggregates:
-      - {name: Delivery, root: delivery, consistency_boundary: "Claim is single-use and completion accepts one terminal outcome.", owns: [delivery-claim, delivery-outcome, idempotency-key, delivery-domain-events], confidence: medium, evidence: [internal/domain/messaging-delivery/aggregates/delivery.go, internal/domain/messaging-delivery/aggregates/delivery_test.go]}
+      - {name: Delivery, root: delivery, consistency_boundary: "Claim is single-use and completion accepts one terminal outcome.", owns: [delivery-claim, delivery-outcome, idempotency-key], confidence: medium, evidence: [internal/domain/messaging-delivery/aggregates/delivery.go, internal/domain/messaging-delivery/aggregates/delivery_test.go]}
     data_ownership:
       - {resource: delivery-state, authority: local-authoritative, owner: messaging-delivery, write_policy: "Only the delivery workflow may claim or complete it.", evidence: [internal/adapter/outbound/google/cloud/firestore/event_store.go]}
       - {resource: provider-message-result, authority: provider-authoritative, owner: line-provider, write_policy: "Imported through the messaging ACL.", evidence: [internal/adapter/outbound/line]}
@@ -115,7 +114,7 @@ contexts:
       - {id: MSG-002, statement: "Transport ambiguity becomes unknown-outcome rather than known failure.", evidence: [internal/application/usecases/messaging-delivery/service.go]}
     capabilities: [accept-delivery-intent, claim-delivery, complete-delivery, reconcile-pending-delivery]
     open_questions: [Confirm delivery reliability as the primary product differentiator.]
-    evidence: [internal/application/usecases/messaging-delivery/ports.go, internal/application/usecases/messaging-delivery/service.go, internal/application/usecases/messaging-delivery/service_test.go, internal/domain/messaging-delivery/events/events.go]
+    evidence: [internal/application/usecases/messaging-delivery/ports.go, internal/application/usecases/messaging-delivery/service.go, internal/application/usecases/messaging-delivery/service_test.go]
 
   - id: audience
     subdomain: customer-segmentation
@@ -272,15 +271,15 @@ contexts:
     purpose: Build reporting projections from delivery facts and provider analytics.
     non_responsibilities: [Change delivery outcomes., Own provider analytics., Enforce delivery invariants.]
     language:
-      - {term: delivery-fact, definition: "Immutable fact emitted by Messaging Delivery.", forbidden_aliases: [firestore-row], code_symbols: []}
+      - {term: delivery-fact, definition: "Proposed immutable fact from Messaging Delivery; publication is not implemented.", forbidden_aliases: [firestore-row], code_symbols: []}
       - {term: metric-snapshot, definition: "Derived metric for a defined reporting period.", forbidden_aliases: [api-response], code_symbols: []}
     owns: [reporting-projection]
     data_ownership:
       - {resource: delivery-facts, authority: local-authoritative, owner: messaging-delivery, write_policy: "Consumed without mutation.", evidence: [internal/application/usecases/messaging-delivery]}
-      - {resource: reporting-projection, authority: derived-projection, owner: insights-reporting, write_policy: "Rebuilt from facts and analytics.", evidence: [internal/application/usecases/insights-reporting/insights.go]}
-    invariants: [{id: INS-001, statement: "A metric snapshot identifies its period and source facts.", evidence: [internal/application/usecases/insights-reporting/insights_test.go]}]
+      - {resource: reporting-projection, authority: derived-projection, owner: insights-reporting, write_policy: "Rebuilt from facts and analytics.", evidence: [internal/application/usecases/insights-reporting/reports.go]}
+    invariants: [{id: INS-001, statement: "A metric snapshot identifies its period and source facts.", evidence: [internal/application/usecases/insights-reporting/reports_test.go]}]
     capabilities: [project-delivery-facts, query-metrics]
-    evidence: [internal/application/usecases/insights-reporting/insights_test.go]
+    evidence: [internal/application/usecases/insights-reporting/reports_test.go]
 
   - id: content-intelligence
     subdomain: content-intelligence-subdomain
@@ -297,12 +296,12 @@ contexts:
       - {term: content-draft, definition: "Unapproved generated output returned to a consumer.", forbidden_aliases: [final-message], code_symbols: []}
     owns: [generation-policy, generation-audit]
     data_ownership:
-      - {resource: generation-policy, authority: local-authoritative, owner: content-intelligence, write_policy: "Changed only through policy configuration.", evidence: [internal/application/usecases/content-intelligence/content.go]}
+      - {resource: generation-policy, authority: local-authoritative, owner: content-intelligence, write_policy: "Proposed consumer policy; no production generation workflow is implemented.", evidence: [docs/architecture/decisions/0003-tactical-models-without-strategic-promotion.md]}
       - {resource: model-output, authority: provider-authoritative, owner: ai-provider, write_policy: "Imported as an unapproved draft.", evidence: [internal/infrastructure/openai, internal/infrastructure/google/genai]}
-    invariants: [{id: CNT-001, statement: "Generated output remains a draft until accepted by its consumer.", evidence: [internal/application/usecases/content-intelligence/content_test.go]}]
+    invariants: [{id: CNT-001, statement: "Generated output remains a draft until accepted by its consumer.", evidence: [docs/architecture/decisions/0003-tactical-models-without-strategic-promotion.md]}]
     capabilities: [generate-content-draft, record-generation-outcome]
     open_questions: [Validate whether product-owned prompt policy warrants a context.]
-    evidence: [internal/application/usecases/content-intelligence/content_test.go]
+    evidence: [docs/architecture/decisions/0003-tactical-models-without-strategic-promotion.md]
 
 relationships:
   - {upstream: identity, downstream: workspace-automation, pattern: anti-corruption-layer, contract: AuthorizedWorkspaceAccount, interaction: synchronous, decision_status: hypothesis, confidence: high, consumer_owned_by: workspace-automation}
