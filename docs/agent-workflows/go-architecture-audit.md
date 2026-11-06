@@ -2,6 +2,14 @@
 
 Trigger this workflow for a request to align or refactor all production Go against DDD and Hexagonal Architecture. The primary orchestrator owns the decision and delegates read-only analysis to `architecture_auditor` and the smallest useful specialist set. Localized changes do not trigger a full audit.
 
+## Canonical natural-language trigger
+
+可直接使用以下指令：
+
+> 使用 `architecture_auditor` 透過 Repomix MCP 完整分析 production `.go`（排除 `*_test.go`），對照 `docs/assets/architecture/**`、Blueprint 與 Domain manifest，一次找出所有架構、領域語意、抽象、型別、介面、package、函數與命名不一致。先完整盤點與規劃，不要邊讀邊改；將既有項目分類為 `Keep`、`Rename`、`Merge`、`Delete` 或 `Exception`，產出統一且可執行的修正計畫，再由主代理依計畫實施、驗證，並以測試、gopls與同範圍 Repomix review 確保儲存庫完全對齊。
+
+This trigger covers architecture, domain semantics, abstractions, types, interfaces, packages, functions, and naming. The auditor remains read-only; only the primary orchestrator implements the reviewed plan.
+
 ## Full-read gate
 
 1. Record HEAD, dirty-state fingerprint, normalized patterns and baseline output IDs. Call Repomix MCP `pack_codebase` with `includePatterns: **/*.go` and `ignorePatterns: **/*_test.go`; verify the output contains no test files. Separately inventory and read `docs/assets/architecture/**`, `docs/architecture/blueprint.md`, domain manifests and relevant ADRs. The user-facing `/assets/architecture/**` means the repository path `docs/assets/architecture/**`.

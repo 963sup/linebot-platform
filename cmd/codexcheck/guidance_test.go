@@ -38,6 +38,7 @@ func TestGuidanceTracksRegisteredCapabilities(t *testing.T) {
 	for _, marker := range []string{
 		"includePatterns: **/*.go", "ignorePatterns: **/*_test.go", "docs/assets/architecture/**",
 		"No code or architecture asset edits before", "one decision-complete plan", "same-pattern Repomix MCP review pack",
+		"語意、抽象、型別、介面、package、函數與命名不一致", "Keep`、`Rename`、`Merge`、`Delete` 或 `Exception",
 		"Mandatory architecture decision matrix", "Aggregate Root", "Domain Error", "Application Service",
 		"Input Port", "Output Port", "Unit of Work", "Transaction Boundary", "Event Handler", "Authorization",
 		"Repository implementations are outbound adapters", "Anti-Corruption Layer", "not a scaffold checklist",
