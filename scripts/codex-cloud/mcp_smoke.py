@@ -2,6 +2,7 @@
 """Exercise the actual project stdio commands; this cannot certify host registration."""
 import json
 import os
+import re
 from pathlib import Path
 import selectors
 import signal
@@ -20,7 +21,7 @@ def require(condition, message):
 
 
 def check(name, server, root=root):
-    require(name in ('repomix', 'gopls', 'filesystem', 'repomix_skills'), f'Unsupported probe: {name}')
+    require(name in ('repomix', 'gopls', 'filesystem', 'repomix_skills', 'graphify'), f'Unsupported probe: {name}')
     require(server.get('enabled'), f'{name} is disabled')
     require(server.get('command') and not server.get('url'), f'{name}: expected stdio command')
     env = os.environ | server.get('env', {})
@@ -68,7 +69,7 @@ def check(name, server, root=root):
         send({'method': 'notifications/initialized'})
         tools = request('tools/list', {})['tools']
         names = {tool['name'] for tool in tools}
-        tool = {'repomix': 'file_system_read_file', 'gopls': 'go_workspace', 'filesystem': 'read_text_file', 'repomix_skills': 'generate_skill'}[name]
+        tool = {'repomix': 'file_system_read_file', 'gopls': 'go_workspace', 'filesystem': 'read_text_file', 'repomix_skills': 'generate_skill', 'graphify': 'graph_stats'}[name]
         require(tool in names, f'{name}: required tool {tool} not advertised')
         require(tool in server.get('enabled_tools', [tool]) and tool not in server.get('disabled_tools', []),
                 f'{name}: {tool} blocked by tool policy')
@@ -85,6 +86,17 @@ def check(name, server, root=root):
         require(result.get('content'), f'{name}: empty tool response')
         if name in ('repomix', 'filesystem'):
             require('min_version' in json.dumps(result), f'{name} did not read expected file')
+        if name == 'graphify':
+            stats = '\n'.join(item.get('text', '') for item in result['content'])
+            nodes = re.search(r'^Nodes: ([0-9]+)$', stats, re.MULTILINE)
+            require(nodes and int(nodes.group(1)) > 0, 'graphify: graph is empty or unavailable')
+            require('query_graph' in names and 'query_graph' in server.get('enabled_tools', names)
+                    and 'query_graph' not in server.get('disabled_tools', []),
+                    'graphify: query_graph unavailable')
+            query = request('tools/call', {'name': 'query_graph', 'arguments': {
+                'question': 'validateConfig', 'depth': 1, 'token_budget': 500}})
+            require(not query.get('isError') and 'validateConfig' in json.dumps(query),
+                    'graphify: query did not return the expected code symbol')
         if name == 'repomix_skills':
             generated = source / '.claude/skills/repomix-reference-probe'
             require((generated / 'SKILL.md').is_file(), 'generator did not create SKILL.md')
@@ -123,8 +135,8 @@ def check(name, server, root=root):
 
 
 if __name__ == '__main__':
-    selected = sys.argv[1:] or ['repomix', 'gopls', 'filesystem']
+    selected = sys.argv[1:] or ['repomix', 'gopls', 'filesystem', 'graphify']
     config = tomllib.loads((root / '.codex/config.toml').read_text())
     for name in selected:
-        require(name in ('repomix', 'gopls', 'filesystem', 'repomix_skills'), f'Unsupported probe: {name}')
+        require(name in ('repomix', 'gopls', 'filesystem', 'repomix_skills', 'graphify'), f'Unsupported probe: {name}')
         check(name, config['mcp_servers'][name])

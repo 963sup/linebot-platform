@@ -6,6 +6,7 @@ Repository MCP configuration is inherited by all configured Agents. Agent role f
 
 | MCP | Repository configured state |
 | --- | --- |
+| `graphify` | `configured-enabled` |
 | `gopls` | `configured-enabled` |
 | `repomix` | `configured-enabled` |
 | `repomix_skills` | `configured-enabled` |
@@ -43,3 +44,13 @@ Skills are installed only from reviewed, pinned sources and selected allowlists.
 - `BLOCKED`: a required tool, credential, network path or policy prerequisite is unavailable.
 
 No report may claim external API, OAuth, Cloud Run, IAM or production success without actual evidence.
+
+## Graphify local code graph
+
+`mise.toml` owns Python 3.12.14, uv 0.13.7 and `graphifyy[mcp]` 0.9.103 from [Graphify-Labs/graphify](https://github.com/Graphify-Labs/graphify). `bash bootstrap.sh setup` installs these tools and builds a local AST code graph. No separate database or LLM API is required: `GRAPHIFY_BACKEND=none` and `--code-only` skip semantic document/media extraction. Dependency versions below the pinned tools are resolved by the package installer.
+
+After checkout, pull, or relevant source changes, run `bash bootstrap.sh run graphify-update` before querying. The rebuild reads the current checkout (including local edits) and writes `/workspace/.cache/linebot-graphify/graphify-out/`; generated graphs are not tracked. MCP startup only launches the installed `graphify-mcp` against that graph; it never installs packages or rebuilds automatically. A missing graph needs setup/update, not a server configuration workaround.
+
+Use Graphify for relationship/neighborhood/path exploration, with a bounded `query_graph` token budget (for example 1500). Use Repomix for exact scoped source context and gopls for current Go semantics. Graph results can become stale and are not architecture contracts. Seven graph-query tools are client-allowlisted; PR/network/LLM triage tools are excluded. The upstream server accepts a `project_path` override, so this setting is not a filesystem security boundary. Host sandbox permissions remain authoritative. Query logging is disabled.
+
+Verify the actual stdio connection with `python3 scripts/codex-cloud/mcp_smoke.py graphify`; this checks initialization, advertised tools, graph statistics and a code query. A successful local protocol test does not prove that an already-running Codex session has reloaded its MCP registry.

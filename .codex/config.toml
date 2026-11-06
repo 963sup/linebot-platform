@@ -188,3 +188,12 @@ enabled = true
 required = false
 startup_timeout_sec = 60
 tool_timeout_sec = 120
+
+[mcp_servers.graphify]
+command = "bash"
+args = ["/workspace/linebot-platform/bootstrap.sh", "exec", "--", "graphify-mcp", "/workspace/.cache/linebot-graphify/graphify-out/graph.json"]
+enabled = true
+required = false
+startup_timeout_sec = 45
+tool_timeout_sec = 60
+enabled_tools = ["query_graph", "get_node", "get_neighbors", "get_community", "god_nodes", "graph_stats", "shortest_path"]

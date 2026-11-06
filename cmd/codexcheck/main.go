@@ -155,7 +155,7 @@ func validateConfig(path string) error {
 	if !sameStrings(actualRoles, approvedAgentRoles) {
 		return fmt.Errorf("agent registry must contain exactly the approved delegated roles: %v", approvedAgentRoles)
 	}
-	expected := []string{"gopls", "repomix", "repomix_skills", "filesystem", "chrome_devtools", "playwright", "terraform", "line", "openapi_line", "firestore_toolbox"}
+	expected := []string{"graphify", "gopls", "repomix", "repomix_skills", "filesystem", "chrome_devtools", "playwright", "terraform", "line", "openapi_line", "firestore_toolbox"}
 	for name := range remoteEndpoints {
 		expected = append(expected, name)
 	}
@@ -174,12 +174,19 @@ func validateConfig(path string) error {
 		if name != "github" && name != "google_cloud_cli" && server.BearerTokenEnvVar != "" {
 			return fmt.Errorf("MCP %s: unexpected bearer token mapping", name)
 		}
-		if name != "firestore_toolbox" && name != "google_cloud_cli" && name != "filesystem" && name != "repomix" && name != "repomix_skills" && name != "terraform" && name != "line" && name != "openapi_line" && (len(server.EnvVars) != 0 || len(server.EnabledTools) != 0) {
+		if name != "graphify" && name != "firestore_toolbox" && name != "google_cloud_cli" && name != "filesystem" && name != "repomix" && name != "repomix_skills" && name != "terraform" && name != "line" && name != "openapi_line" && (len(server.EnvVars) != 0 || len(server.EnabledTools) != 0) {
 			return fmt.Errorf("MCP %s: unexpected tool or environment override", name)
 		}
 	}
 	if !sameStrings(actual, expected) {
 		return fmt.Errorf("MCP servers differ from the approved set: %v", actual)
+	}
+	graphify := c.MCPServers["graphify"]
+	graphifyArgs := []string{"/workspace/linebot-platform/bootstrap.sh", "exec", "--", "graphify-mcp", "/workspace/.cache/linebot-graphify/graphify-out/graph.json"}
+	graphifyTools := []string{"query_graph", "get_node", "get_neighbors", "get_community", "god_nodes", "graph_stats", "shortest_path"}
+	if !graphify.Enabled || graphify.Command != "bash" || graphify.URL != "" || !slices.Equal(graphify.Args, graphifyArgs) ||
+		!sameStrings(graphify.EnabledTools, graphifyTools) || len(graphify.EnvVars) != 0 || graphify.DefaultToolsApprovalMode != "" {
+		return errors.New("Graphify must use the installed local server, cached graph and graph-query allowlist")
 	}
 	gopls := c.MCPServers["gopls"]
 	goplsArgs := []string{"/workspace/linebot-platform/bootstrap.sh", "exec", "--", "gopls", "mcp"}

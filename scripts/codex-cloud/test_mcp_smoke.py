@@ -27,7 +27,16 @@ for line in sys.stdin:
         continue
     result = {}
     if method == 'tools/list': result = {'tools': [{'name': 'generate_skill' if mode == 'skill-no-files' else ('read_text_file' if mode == 'filesystem' else 'file_system_read_file')}]}
-    if method == 'tools/call':
+    if method == 'tools/list' and mode.startswith('graph-'):
+        result = {'tools': [{'name': 'graph_stats'}, {'name': 'query_graph'}]}
+    if method == 'tools/call' and mode.startswith('graph-'):
+        if msg['params']['name'] == 'graph_stats':
+            text = 'Nodes: 0' if mode == 'graph-empty' else 'Nodes: 42'
+        else:
+            text = 'No results' if mode == 'graph-no-match' else 'validateConfig (function)'
+        result = {'content': [{'type': 'text', 'text': text}]}
+        if mode == 'graph-error': result['isError'] = True
+    elif method == 'tools/call':
         expected = os.path.join(os.path.dirname(__file__), 'mise.toml') if mode == 'filesystem' else 'mise.toml'
         if mode != 'skill-no-files' and msg['params']['arguments'] != {'path': expected}: raise ValueError('unexpected read path')
         result = {'content':[{'type':'text','text':'min_version = "2026.11.3"'}]}
@@ -70,6 +79,13 @@ class SmokeTest(unittest.TestCase):
         for mode in ('rpc-error', 'tool-error', 'wrong-content'):
             with self.subTest(mode=mode), self.assertRaises(RuntimeError):
                 mcp_smoke.check('repomix', self.server(mode), self.root)
+
+    def test_graphify_requires_nonempty_graph_and_symbol_query(self):
+        with contextlib.redirect_stdout(io.StringIO()):
+            mcp_smoke.check('graphify', self.server('graph-success'), self.root)
+        for mode in ('graph-empty', 'graph-no-match', 'graph-error'):
+            with self.subTest(mode=mode), self.assertRaises(RuntimeError):
+                mcp_smoke.check('graphify', self.server(mode), self.root)
 
     def test_timeout_reaps_child(self):
         start = time.monotonic()

@@ -17,11 +17,16 @@ GOPATH = "{{ env.GOPATH | default(value='/workspace/.cache/go') }}"
 XDG_CACHE_HOME = "{{ env.XDG_CACHE_HOME | default(value='/workspace/.cache') }}"
 GOFLAGS = "-mod=readonly"
 GOTOOLCHAIN = "local"
+GRAPHIFY_BACKEND = "none"
+GRAPHIFY_QUERY_LOG_DISABLE = "1"
 
 [tools]
 # Tool versions are owned here; scripts consume this configuration.
 go = "1.27.3"
 node = "24.22.1"
+python = "3.12.14"
+uv = "0.13.7"
+"pipx:graphifyy" = { version = "0.9.103", extras = "mcp" }
 "go:golang.org/x/tools/gopls" = "0.24.0"
 "npm:repomix" = "1.18.1"
 "npm:chrome-devtools-mcp" = "1.12.0"
@@ -39,7 +44,11 @@ exec_auto_install = false
 
 
 [tasks.setup]
-run = ["go mod download", "go mod verify"]
+run = ["go mod download", "go mod verify", "mise run graphify-update"]
+
+[tasks.graphify-update]
+description = "Rebuild the local code graph after checkout or source changes; no LLM calls"
+run = "graphify extract . --code-only --out /workspace/.cache/linebot-graphify"
 
 [tasks.check]
 run = "make check"
