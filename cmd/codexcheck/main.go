@@ -155,7 +155,7 @@ func validateConfig(path string) error {
 	if !sameStrings(actualRoles, approvedAgentRoles) {
 		return fmt.Errorf("agent registry must contain exactly the approved delegated roles: %v", approvedAgentRoles)
 	}
-	expected := []string{"gopls", "repomix", "terraform", "line", "openapi_line", "firestore_toolbox"}
+	expected := []string{"gopls", "repomix", "filesystem", "terraform", "line", "openapi_line", "firestore_toolbox"}
 	for name := range remoteEndpoints {
 		expected = append(expected, name)
 	}
@@ -168,13 +168,13 @@ func validateConfig(path string) error {
 		if len(server.HTTPHeaders) != 0 {
 			return fmt.Errorf("MCP %s: literal HTTP headers are not allowed; use approved environment mappings", name)
 		}
-		if name != "google_developer_knowledge" && len(server.EnvHTTPHeaders) != 0 {
+		if name != "google_developer_knowledge" && name != "google_cloud_cli" && len(server.EnvHTTPHeaders) != 0 {
 			return fmt.Errorf("MCP %s: unexpected environment header mapping", name)
 		}
-		if name != "github" && server.BearerTokenEnvVar != "" {
+		if name != "github" && name != "google_cloud_cli" && server.BearerTokenEnvVar != "" {
 			return fmt.Errorf("MCP %s: unexpected bearer token mapping", name)
 		}
-		if name != "firestore_toolbox" && name != "google_cloud_cli" && name != "repomix" && name != "terraform" && name != "line" && name != "openapi_line" && (len(server.EnvVars) != 0 || len(server.EnabledTools) != 0) {
+		if name != "firestore_toolbox" && name != "google_cloud_cli" && name != "filesystem" && name != "repomix" && name != "terraform" && name != "line" && name != "openapi_line" && (len(server.EnvVars) != 0 || len(server.EnabledTools) != 0) {
 			return fmt.Errorf("MCP %s: unexpected tool or environment override", name)
 		}
 	}
@@ -194,9 +194,16 @@ func validateConfig(path string) error {
 		len(repomix.EnvVars) != 0 || repomix.BearerTokenEnvVar != "" || len(repomix.EnvHTTPHeaders) != 0 {
 		return errors.New("Repomix MCP must use the pinned workspace-confined read-only sandbox")
 	}
+	filesystem := c.MCPServers["filesystem"]
+	filesystemArgs := []string{"/workspace/linebot-platform/bootstrap.sh", "exec", "npm:@modelcontextprotocol/server-filesystem@2.2.0", "--", "mcp-server-filesystem", "--confine-roots", "/workspace/linebot-platform"}
+	if !filesystem.Enabled || filesystem.Command != "bash" || filesystem.URL != "" ||
+		!slices.Equal(filesystem.Args, filesystemArgs) || filesystem.DefaultToolsApprovalMode != "writes" ||
+		len(filesystem.EnabledTools) != 0 || len(filesystem.EnvVars) != 0 || filesystem.BearerTokenEnvVar != "" || len(filesystem.EnvHTTPHeaders) != 0 {
+		return errors.New("Filesystem MCP must use the pinned repository-confined executable with write approval")
+	}
 	for name, endpoint := range remoteEndpoints {
 		server := c.MCPServers[name]
-		enabled := name == "context7" || name == "github" || name == "openaiDeveloperDocs"
+		enabled := name == "context7" || name == "github" || name == "openaiDeveloperDocs" || name == "google_cloud_cli"
 		if server.URL != endpoint || server.Command != "" || len(server.Args) != 0 || server.Enabled != enabled {
 			return fmt.Errorf("MCP %s: unexpected endpoint, transport or enabled state", name)
 		}
@@ -219,7 +226,7 @@ func validateConfig(path string) error {
 		return errors.New("Google Developer Knowledge requires X-Goog-Api-Key mapped to DEVELOPERKNOWLEDGE_API_KEY, never a literal secret")
 	}
 	cloudCLI := c.MCPServers["google_cloud_cli"]
-	if !sameStrings(cloudCLI.EnabledTools, []string{"run_gcloud_command"}) {
+	if cloudCLI.BearerTokenEnvVar != "GOOGLE_CLOUD_ACCESS_TOKEN" || len(cloudCLI.EnvHTTPHeaders) != 1 || cloudCLI.EnvHTTPHeaders["x-goog-user-project"] != "GOOGLE_CLOUD_PROJECT" || !sameStrings(cloudCLI.EnabledTools, []string{"run_gcloud_command"}) {
 		return errors.New("Google Cloud CLI MCP must expose only its approval-gated command tool")
 	}
 	terra := c.MCPServers["terraform"]
