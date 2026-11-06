@@ -7,12 +7,16 @@ script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 source "$script_dir/lib/common.sh"
 source "$script_dir/lib/paths.sh"
 source "$script_dir/lib/skills.sh"
+source "$script_dir/lib/mcp.sh"
 source "$script_dir/lib/mcp_runtime.sh"
 repo_root="$(codex_cloud_repo_root)"
 cd "$repo_root"
 bash "$script_dir/preflight.sh"
 mkdir -p "$CODEX_CLOUD_BIN" "$GOCACHE" "$GOPATH" "$XDG_CACHE_HOME"
-codex_cloud_require go
+for command in go sha256sum docker; do
+  codex_cloud_require "$command"
+done
+codex_cloud_ensure_project_trusted
 
 for setting in CODEX_CLOUD_INSTALL_SKILLS CODEX_CLOUD_REGISTER_GOOGLE_MARKETPLACE CODEX_CLOUD_WARM_TESTS; do
   value="${!setting:-0}"
@@ -39,13 +43,18 @@ fi
 
 codex_cloud_mcp_runtime_install "$repo_root"
 codex_cloud_mcp_runtime_check "$repo_root"
+docker pull hashicorp/terraform-mcp-server:1.4.1
 
 if [[ "${CODEX_CLOUD_INSTALL_SKILLS:-0}" == 1 ]]; then
   plugin_args=()
   [[ "${CODEX_CLOUD_REGISTER_GOOGLE_MARKETPLACE:-0}" == 1 ]] && plugin_args+=(--register-google-marketplace)
   codex_cloud_skills_install "$repo_root" "${plugin_args[@]}"
+  if [[ "${CODEX_CLOUD_REGISTER_GOOGLE_MARKETPLACE:-0}" == 1 ]]; then
+    codex_cloud_google_plugin_check || codex_cloud_google_plugin_install
+  fi
 else
   codex_cloud_skills_check "$repo_root" || codex_cloud_log "DEGRADED: optional approved skills are not fully verified"
 fi
+codex_cloud_mcp_registration_check
 [[ "${CODEX_CLOUD_WARM_TESTS:-0}" == 1 ]] && go test ./...
 codex_cloud_log "install completed; host skill discovery and live MCP calls require a fresh task"

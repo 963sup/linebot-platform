@@ -24,6 +24,10 @@ codex_cloud_google_plugin_check() {
 		grep -qE '^google-cloud-developer@google-plugins[[:space:]]+installed, enabled'
 }
 
+codex_cloud_google_plugin_install() {
+  codex plugin add google-cloud-developer@google-plugins
+}
+
 codex_cloud_skills_direct_discovery_check() {
   local root="$HOME/.agents/skills"
   test -f "$root/conventional-git/SKILL.md"
