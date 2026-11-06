@@ -17,6 +17,9 @@ func TestGuidanceTracksRegisteredCapabilities(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	if got := roles["architecture_auditor"].Description; !strings.Contains(got, "semantics, abstractions, types, interfaces, functions, naming") {
+		t.Errorf("architecture_auditor registry description does not route semantic and naming audits: %q", got)
+	}
 	read := func(path string) string {
 		t.Helper()
 		b, err := os.ReadFile(filepath.Join(root, path))
@@ -32,15 +35,45 @@ func TestGuidanceTracksRegisteredCapabilities(t *testing.T) {
 		}
 	}
 	audit := read("docs/agent-workflows/go-architecture-audit.md")
-	for _, marker := range []string{"includePatterns: **/*.go", "ignorePatterns: **/*_test.go", "docs/assets/architecture/**", "No code or architecture asset edits before", "one decision-complete plan", "same-pattern Repomix MCP review pack"} {
+	for _, marker := range []string{
+		"includePatterns: **/*.go", "ignorePatterns: **/*_test.go", "docs/assets/architecture/**",
+		"No code or architecture asset edits before", "one decision-complete plan", "same-pattern Repomix MCP review pack",
+		"Mandatory architecture decision matrix", "Aggregate Root", "Domain Error", "Application Service",
+		"Input Port", "Output Port", "Unit of Work", "Transaction Boundary", "Event Handler", "Authorization",
+		"Repository implementations are outbound adapters", "Anti-Corruption Layer", "not a scaffold checklist",
+		"production consumer", "Not Applicable", "internal/application/usecases/<capability>/",
+		"cmd/*", "internal/bootstrap", "Candidate Contexts are not promoted", "Authority order",
+	} {
 		if !strings.Contains(audit, marker) {
 			t.Errorf("full-read audit missing %q", marker)
 		}
 	}
+	blueprint := read("docs/architecture/blueprint.md")
+	for _, marker := range []string{
+		"Business Fact -> Invariant -> Owner -> Boundary -> Component Kind -> Name -> Acceptance Test",
+		"Structure = Facts + Invariants + Ownership + Dependencies",
+		"Abstraction = Necessary Behavior + Real Boundary + Production Consumer",
+		"Name = shortest unambiguous official term within its Context",
+		"`term`、`definition`、`forbidden_aliases` 與 `code_symbols` 是 Semantic Registry",
+		"Existing Symbol -> Semantic Registry / Capability Ownership -> Keep / Rename / Merge / Delete / Exception -> gopls Impact -> Ordered Migration -> Tests -> Repomix Review",
+		"不得留下 unresolved／unmapped core item",
+		"長期例外必須由 accepted ADR 核准",
+	} {
+		if !strings.Contains(blueprint, marker) {
+			t.Errorf("architecture blueprint missing semantic derivation contract %q", marker)
+		}
+	}
 	for _, path := range []string{"AGENTS.md", "docs/ai/agents.md", "docs/agent-workflows/routing-policy.md"} {
-		if !strings.Contains(read(path), "architecture_auditor") {
+		guidance := read(path)
+		if !strings.Contains(guidance, "architecture_auditor") {
 			t.Errorf("%s does not route repository-wide audits", path)
 		}
+		if path == "docs/agent-workflows/routing-policy.md" && !strings.Contains(guidance, "mandatory six-part decision matrix") {
+			t.Errorf("%s does not require the architecture decision matrix before writers", path)
+		}
+	}
+	if !strings.Contains(read("AGENTS.md"), "semantic/naming unification") {
+		t.Error("AGENTS.md does not route repository-wide semantic and naming unification")
 	}
 	mcpDoc := read("docs/ai/mcp-and-plugins.md")
 	for name, server := range c.MCPServers {

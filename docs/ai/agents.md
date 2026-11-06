@@ -5,7 +5,7 @@ The primary Codex session is the `orchestrator`. It may delegate to exactly thes
 | Role | Responsibility |
 | --- | --- |
 | `architect` | Go DDD, Hexagonal boundaries, ports and ADRs |
-| `architecture_auditor` | Read-only full production Go and architecture asset audit before unified refactoring |
+| `architecture_auditor` | Read-only full production Go audit of layer composition, DDD ownership, necessary abstractions and architecture assets before unified refactoring |
 | `researcher` | Current Go, SDK, CLI, Google, OpenAI and Codex documentation |
 | `domain` | Entities, aggregates, value objects, events and invariants |
 | `application` | Use cases, commands, queries, DTOs and consumer-owned ports |
@@ -30,7 +30,7 @@ The primary orchestrator interprets requests, orders dependencies, assigns one w
 | Cross-package semantic change | `architect` then `application`/`integration` | `reviewer` |
 | Repository-wide Go DDD/Hexagonal alignment | `architecture_auditor` first; orchestrator integrates one plan | `architect`, then independent `reviewer` |
 
-For this repository-wide route, use [the full-read phase gate](../agent-workflows/go-architecture-audit.md). The orchestrator verifies complete coverage and decides file ownership before writers begin.
+For this repository-wide route, use [the full-read phase gate](../agent-workflows/go-architecture-audit.md). The auditor must apply its six-part Domain, Application, Adapter, Infrastructure/Bootstrap, Strategic DDD and global-constraint matrix without treating DDD building blocks as mandatory scaffolding. The orchestrator verifies complete coverage, reviews the decision-complete plan and decides file ownership before writers begin.
 
 ## Evidence policy
 

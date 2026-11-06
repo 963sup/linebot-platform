@@ -4,7 +4,7 @@ The primary session is the orchestrator. Use the smallest role set that can comp
 
 Nine is a technical capacity limit, not the default fan-out. The nine roles may have multiple instances only when their scopes do not overlap. Assign one write owner per file, sequence waves that share files or contracts, keep reviewers independent and read-only, and close completed child threads promptly. Keep a slot available for review, replacement, or non-overlapping research when practical. Host scheduling and resource limits still require runtime verification.
 
-For a full Go architecture request, the orchestrator starts the [full-read audit](go-architecture-audit.md) before assigning writers. The auditor cannot delegate recursively; writers begin only after one reviewed plan exists.
+For a full Go architecture request, the orchestrator starts the [full-read audit](go-architecture-audit.md) before assigning writers and requires its mandatory six-part decision matrix across Domain, Application, Adapters, Infrastructure/Bootstrap, Strategic DDD and global constraints. The auditor cannot delegate recursively; writers begin only after one reviewed, decision-complete plan exists.
 
 ## Reviewer profiles
 

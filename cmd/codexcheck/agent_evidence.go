@@ -37,6 +37,11 @@ func validateAgentEvidence(role string, a agent) error {
 	if strings.Contains(instructions, "same-scope post-change pack") {
 		return fmt.Errorf("agent %s contains the obsolete universal Repomix clause", role)
 	}
+	if role == "architecture_auditor" {
+		if err := validateArchitectureAuditorInstructions(instructions); err != nil {
+			return err
+		}
+	}
 
 	switch want {
 	case "writer":

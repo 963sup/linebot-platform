@@ -349,6 +349,9 @@ func validate(root string) error {
 	if err := validateAgents(filepath.Join(root, ".codex", "agents")); err != nil {
 		return err
 	}
+	if err := validateArchitectureAuditorWorkflow(root); err != nil {
+		return err
+	}
 	if err := validateCatalog(root); err != nil {
 		return fmt.Errorf("SDK catalog: %w", err)
 	}

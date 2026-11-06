@@ -29,7 +29,14 @@ func TestArchitectureAuditorIsReadOnlyAndRequiresCompleteSnapshot(t *testing.T) 
 	if err := readTOML(filepath.Join("..", "..", ".codex", "agents", "architecture_auditor.toml"), &a); err != nil {
 		t.Fatal(err)
 	}
-	for _, marker := range []string{"Lifecycle: read-only.", "**/*.go", "**/*_test.go", "docs/assets/architecture/**", "Do not edit while reading", "do not spawn subagents"} {
+	for _, marker := range []string{
+		"Lifecycle: read-only.", "**/*.go", "**/*_test.go", "docs/assets/architecture/**",
+		"Do not edit while reading", "do not spawn subagents", "mandatory six-part decision matrix",
+		"Aggregate Root", "Application Service", "Repository Interface", "Transaction Boundary",
+		"Anti-Corruption Layer", "never as a scaffold checklist", "production consumer",
+		"composition roots stay in cmd/* and internal/bootstrap", "global ports package",
+		"Candidate Contexts are not promoted", "smallest correction", "residual risk",
+	} {
 		if !strings.Contains(a.DeveloperInstructions, marker) {
 			t.Errorf("auditor instructions missing %q", marker)
 		}

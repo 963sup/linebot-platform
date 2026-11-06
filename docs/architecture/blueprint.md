@@ -321,6 +321,36 @@ Aggregate 是 transaction consistency boundary；Entity 不能脫離其 Aggregat
 
 縮寫遵循 Go 慣例，統一使用 `ID`、`URL`、`HTTP`、`API`、`OAuth`。禁止同一概念交替使用 `Manager`、`Service`、`Provider`、`Client`；`Client` 僅指外部 SDK／transport client，`Service` 僅用於有獨立 Domain 或 Application 行為的元件。
 
+### 語意與命名推導
+
+新增或修改領域、抽象、型別、介面、函數或名稱時，固定依序推導：
+
+```text
+Business Fact -> Invariant -> Owner -> Boundary -> Component Kind -> Name -> Acceptance Test
+```
+
+只使用三條生成規則：
+
+```text
+Structure = Facts + Invariants + Ownership + Dependencies
+Abstraction = Necessary Behavior + Real Boundary + Production Consumer
+Name = shortest unambiguous official term within its Context
+```
+
+`docs/domain/model.yaml` 的 `term`、`definition`、`forbidden_aliases` 與 `code_symbols` 是 Semantic Registry，不另建命名權威或 schema。名稱放在推導最後：package 與 receiver 已提供的上下文不得在 symbol 重複；Interface 依 consuming capability 而非 provider／implementation 命名；Domain Event 使用已發生的業務事實且必須有 production consumer；沒有必要行為與 production consumer 的 `Manager`、`Service` 或 Interface 不成立；`forbidden_aliases` 不得被採用為正式名稱。
+
+### 既有程式碼收斂
+
+全庫語意稽核必須先讀完所有 production `.go` 並排除 `*_test.go`，再處理既有項目：
+
+```text
+Existing Symbol -> Semantic Registry / Capability Ownership -> Keep / Rename / Merge / Delete / Exception -> gopls Impact -> Ordered Migration -> Tests -> Repomix Review
+```
+
+Domain 與 Application 的 architecture-bearing package-level declarations、exported types、interfaces、functions 與 methods 必須映射至 Semantic Registry 或明確 capability owner。Adapter 與 Infrastructure 依 provider／技術責任命名，不強制登錄成 Domain term；local variables 不進 registry，只遵循 Go 慣例與上下文最短無歧義原則。
+
+每個項目必須分類為 `Keep`、`Rename`、`Merge`、`Delete` 或 `Exception`，不得留下 unresolved／unmapped core item。`Exception` 只適用於 API、持久化或相容性約束，必須記錄 owner、理由、退出條件與驗收測試；長期例外必須由 accepted ADR 核准，不新增例外 schema。修改順序固定為 Semantic Registry／contracts、types／interfaces／package-level declarations、call sites／composition、tests、Markdown／architecture assets、同範圍 Repomix review、independent review；完整盤點與計畫完成前不得修改。
+
 ## 5. 同步流程與資料邊界
 
 ```mermaid
