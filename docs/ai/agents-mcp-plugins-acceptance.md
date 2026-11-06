@@ -8,7 +8,7 @@
 | --- | --- |
 | 註冊 | 固定 9 個 specialist roles 與 config 一對一；無 orchestrator child、reviewer-*、重複／未知鍵／越界路徑 |
 | 並行上限 | Validator 接受 1／4／8／9，拒絕 0／10；深度只接受 1；此單元測試不是 Host 排程證明 |
-| MCP | 保留 11 宣告、10 啟用、1 個服務維持停用；無明文 secrets |
+| MCP | 保留 11 宣告、5 啟用、6 個服務維持停用；無明文 secrets |
 | 安裝來源 | 僅核准來源、精確 commit、實際 FETCH_HEAD 一致 |
 | 安全安裝 | 不能越界、跟隨 symlink、覆寫個人內容；失敗不發布半成品；重跑冪等 |
 | Marketplace | CLI 不支援即 blocked；既有來源 pin 不符不覆寫；認證失敗不繞過 |

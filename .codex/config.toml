@@ -40,17 +40,17 @@ config_file = "agents/reviewer.toml"
 
 [mcp_servers.gopls]
 command = "bash"
-args = ["-lc", "exec env XDG_CACHE_HOME=/workspace/.cache MISE_DATA_DIR=/workspace/.linebot-tools/mise MISE_CACHE_DIR=/workspace/.cache/mise MISE_CONFIG_DIR=/workspace/.config/mise MISE_STATE_DIR=/workspace/.local/state/mise /workspace/.linebot-tools/mise/shims/gopls mcp"]
+args = ["/workspace/linebot-platform/bootstrap.sh", "exec", "--", "gopls", "mcp"]
 enabled = true
 required = false
-startup_timeout_sec = 30
+startup_timeout_sec = 120
 tool_timeout_sec = 60
 [mcp_servers.repomix]
-command = "/workspace/.linebot-tools/mcp-runtime/node_modules/.bin/repomix"
-args = ["--mcp", "--sandbox", "/workspace/linebot-platform"]
+command = "bash"
+args = ["/workspace/linebot-platform/bootstrap.sh", "exec", "--", "repomix", "--mcp", "--sandbox", "/workspace/linebot-platform"]
 enabled_tools = ["pack_codebase", "read_repomix_output", "grep_repomix_output", "file_system_read_file", "file_system_read_directory"]
 enabled = true
-required = false
+required = true
 startup_timeout_sec = 45
 tool_timeout_sec = 120
 [mcp_servers.context7]
@@ -76,7 +76,7 @@ tool_timeout_sec = 45
 [mcp_servers.google_developer_knowledge]
 url = "https://developerknowledge.googleapis.com/mcp"
 env_http_headers = { "X-Goog-Api-Key" = "DEVELOPERKNOWLEDGE_API_KEY" }
-enabled = true
+enabled = false
 required = false
 startup_timeout_sec = 20
 tool_timeout_sec = 45
@@ -87,7 +87,7 @@ tool_timeout_sec = 45
 url = "https://cloudcli.googleapis.com/mcp"
 enabled_tools = ["run_gcloud_command"]
 default_tools_approval_mode = "prompt"
-enabled = true
+enabled = false
 required = false
 startup_timeout_sec = 20
 tool_timeout_sec = 45
@@ -98,7 +98,7 @@ command = "docker"
 args = ["run", "-i", "--rm", "hashicorp/terraform-mcp-server@sha256:11dd418bba6003dd5777e9d0979b68de59929a155b355f338f407947e00e9d80", "stdio", "--toolsets=registry"]
 enabled_tools = ["search_provider_docs", "get_provider_details", "get_latest_provider_version", "get_provider_capabilities", "search_modules", "get_module_details", "get_latest_module_version", "search_policies", "get_policy_details"]
 default_tools_approval_mode = "prompt"
-enabled = true
+enabled = false
 required = false
 startup_timeout_sec = 45
 tool_timeout_sec = 60
@@ -108,12 +108,12 @@ tool_timeout_sec = 60
 # CHANNEL_ACCESS_TOKEN must be supplied via the Codex runtime environment.
 # Keep openapi_line separately for read-only API schema discovery.
 [mcp_servers.line]
-command = "/workspace/.linebot-tools/mcp-runtime/node_modules/.bin/line-bot-mcp-server"
-args = []
+command = "bash"
+args = ["/workspace/linebot-platform/bootstrap.sh", "exec", "npm:@line/line-bot-mcp-server@0.5.0", "--", "line-bot-mcp-server"]
 env_vars = ["CHANNEL_ACCESS_TOKEN"]
 enabled_tools = ["get_profile", "get_message_quota", "get_rich_menu_list", "get_follower_ids", "get_group_summary"]
 default_tools_approval_mode = "prompt"
-enabled = true
+enabled = false
 required = false
 startup_timeout_sec = 45
 tool_timeout_sec = 60
@@ -121,19 +121,19 @@ tool_timeout_sec = 60
 # LINE's pinned OpenAPI description is exposed for discovery and schema reads;
 # invoke-api-endpoint is intentionally absent from enabled_tools.
 [mcp_servers.openapi_line]
-command = "/workspace/.linebot-tools/mcp-runtime/node_modules/.bin/openapi-mcp-server"
-args = ["--api-base-url", "https://api.line.me", "--openapi-spec", "/workspace/.linebot-tools/openapi/line-messaging-api.yml", "--tools", "dynamic", "--verbose", "false"]
+command = "bash"
+args = ["/workspace/linebot-platform/bootstrap.sh", "exec", "npm:@ivotoby/openapi-mcp-server@1.16.1", "--", "openapi-mcp-server", "--api-base-url", "https://api.line.me", "--openapi-spec", "/workspace/.linebot-tools/openapi/line-messaging-api.yml", "--tools", "dynamic", "--verbose", "false"]
 enabled_tools = ["list-api-endpoints", "get-api-endpoint-schema"]
 default_tools_approval_mode = "prompt"
-enabled = true
+enabled = false
 required = false
 startup_timeout_sec = 45
 tool_timeout_sec = 60
 
 # Staging-only Firestore tools remain disabled by default.
 [mcp_servers.firestore_toolbox]
-command = "/workspace/.linebot-tools/mcp-runtime/node_modules/.bin/toolbox"
-args = ["--prebuilt=firestore", "--stdio"]
+command = "bash"
+args = ["/workspace/linebot-platform/bootstrap.sh", "exec", "npm:@toolbox-sdk/server@1.14.0", "--", "toolbox", "--prebuilt=firestore", "--stdio"]
 env_vars = ["FIRESTORE_PROJECT", "GOOGLE_APPLICATION_CREDENTIALS"]
 enabled_tools = ["get_documents", "query_collection", "list_collections", "get_rules", "validate_rules"]
 default_tools_approval_mode = "prompt"

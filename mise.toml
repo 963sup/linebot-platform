@@ -12,9 +12,9 @@ TELEMETRY_MODE = "off"
 OTEL_TRACE_SAMPLE_RATIO = "0.05"
 OTEL_METRIC_INTERVAL = "60s"
 FIRESTORE_DATABASE = "(default)"
-GOCACHE = "{{ env.GOCACHE | default(value=config_root ~ '/.cache/go-build') }}"
-GOPATH = "{{ env.GOPATH | default(value=config_root ~ '/.cache/go') }}"
-XDG_CACHE_HOME = "{{ env.XDG_CACHE_HOME | default(value=config_root ~ '/.cache') }}"
+GOCACHE = "{{ env.GOCACHE | default(value='/workspace/.cache/go-build') }}"
+GOPATH = "{{ env.GOPATH | default(value='/workspace/.cache/go') }}"
+XDG_CACHE_HOME = "{{ env.XDG_CACHE_HOME | default(value='/workspace/.cache') }}"
 GOFLAGS = "-mod=readonly"
 GOTOOLCHAIN = "local"
 
@@ -23,7 +23,17 @@ GOTOOLCHAIN = "local"
 go = "1.27.3"
 node = "24.22.1"
 "go:golang.org/x/tools/gopls" = "0.24.0"
-gcloud = "592.0.0"
+"npm:repomix" = "1.18.1"
+
+# Optional integrations are installed explicitly, not required for core MCPs.
+[tasks.install-integrations]
+run = "mise install gcloud@592.0.0 npm:@line/line-bot-mcp-server@0.5.0 npm:@ivotoby/openapi-mcp-server@1.16.1 npm:@toolbox-sdk/server@1.14.0"
+[tasks.install-integrations.env]
+CLOUDSDK_CONFIG = "/workspace/.cache/gcloud-install"
+
+[settings]
+exec_auto_install = false
+
 
 [tasks.setup]
 run = ["go mod download", "go mod verify"]
@@ -35,4 +45,8 @@ run = "make check"
 run = "make dev"
 
 [tasks.mcp-check]
-run = ["gopls version", "go run ./cmd/codexcheck"]
+run = ["go run ./cmd/codexcheck", "mise run mcp-smoke"]
+
+[tasks.mcp-smoke]
+description = "Exercise configured local MCP commands; requires Python 3.11+"
+run = "python3 scripts/codex-cloud/mcp_smoke.py"

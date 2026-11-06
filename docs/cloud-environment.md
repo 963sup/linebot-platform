@@ -1,20 +1,55 @@
-# Codex Cloud Environment
+# Codex Cloud environment
 
-## Migration status
+The normal workflow has three files:
 
-The mise/bootstrap migration is in progress, not a verified reusable environment.
-Shell syntax and the codexcheck unit tests pass. Full clean installation and
-`make check` remain unverified. The gcloud installer currently fails when it
-inherits the platform's read-only CLOUDSDK_CONFIG. Local MCP commands still
-contain legacy absolute paths and must be aligned with the dynamic tool root.
-The setup task currently prepares Go modules only. Do not run the legacy
-`start.sh` against local work: it still resets and cleans the checkout.
-The empty `.agents/plugins/marketplace.json` is a placeholder, not a validated
-plugin marketplace manifest.
+- `mise.toml` owns tool versions and tasks.
+- `bootstrap.sh` installs checksum-pinned mise, then runs mise. All mutable tool state stays under `/workspace`.
+- `.codex/config.toml` declares MCP commands and tool permissions for a host that loads trusted project configuration.
 
-Codex Cloud scripts are isolated under `scripts/codex-cloud/`. Every entry point first loads the immutable PATH contract from `lib/paths.sh` and runs the read-only `preflight.sh`. The environment lifecycle then runs `install.sh`, `start.sh`, and `verify.sh`; `repair.sh` is an explicit recovery path.
+Run once during environment setup, from the checkout:
 
-`install.sh` installs the checksum-pinned mise binary, uses repo `mise.toml` to install Go, Node.js and gopls with secret-free local bootstrap defaults, prepares the remaining pinned local tools without authentication, and never writes Host-owned Codex configuration. All mise data and mutable caches stay under `/workspace`. Project trust and loading the repository `.codex/config.toml` belong to the Cloud Environment Host and are verified from a fresh task. `start.sh` intentionally discards local checkout changes and synchronizes exactly to `origin/main` before verification. `repair.sh` is limited to pinned local tools, PATH, caches and approved Skills. These scripts never perform OAuth, IAM, deployment, network expansion or cloud data writes.
+```bash
+bash /workspace/linebot-platform/bootstrap.sh setup
+```
 
-Publish/Republish is an environment lifecycle action and must be verified separately from repository tests. New tasks use the published environment version; documentation or configuration alone is not runtime evidence.
+This installs Go, Node, gopls and Repomix, then downloads and verifies Go modules.
+MCP startup uses `bootstrap.sh exec -- …` with automatic installation disabled;
+startup therefore fails clearly if setup was not completed. It does not download
+tools, change Git branches, clean files, or modify user-level Codex settings.
+There is no daemon to preserve between tasks: the MCP host starts the configured
+stdio processes when it opens the session. The checkout must be mounted at
+`/workspace/linebot-platform`, matching `.codex/config.toml`.
 
+## What counts as working
+
+Installation, an MCP handshake, and a tool exposed to the assistant are separate
+checks. In a new task, the host must load the project configuration, list Repomix
+in the assistant's available tools, and successfully call `pack_codebase` on a
+small scope such as `mise.toml,bootstrap.sh`. `required = true` makes a Repomix
+startup failure visible on a host that honors this option; it cannot make a host
+load ignored configuration. Neither a setup script nor `codex mcp list` in a
+separate CLI process can prove that this chat has those tools.
+
+This session did not expose Repomix MCP tools. Do not report Cloud MCP readiness
+until that fresh-session tool call succeeds. Publishing the environment snapshot
+is a separate user action and is not performed by these files.
+
+## Optional integrations
+
+Context7 and OpenAI Docs are public remote MCPs. GitHub needs the host-provided
+`GITHUB_MCP_TOKEN`. Google, LINE, Terraform and LINE OpenAPI integrations are
+configured but disabled until their credentials, runtime or schema are prepared.
+Firestore remains disabled. Their existing tool allowlists and approval policies
+still apply when enabled.
+
+`bash bootstrap.sh run install-integrations` explicitly installs the optional
+mise-managed gcloud and npm tools. It gives the gcloud installer a writable local
+configuration directory without changing the credentials used by later commands.
+Terraform still needs Docker and its pinned image; LINE OpenAPI still needs the
+reviewed schema at the configured path. Enabling either entry is a separate,
+explicit configuration change after those prerequisites are satisfied.
+
+For local checks use `bash bootstrap.sh run mcp-check`. This validates repository
+configuration and local tools; it does not certify host registration or remote
+credentials. Legacy lifecycle entrypoints delegate to bootstrap for compatibility.
+No startup entrypoint resets or cleans the checkout.

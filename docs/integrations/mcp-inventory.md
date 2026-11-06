@@ -14,7 +14,7 @@
 | line | preinstalled local stdio | enabled, prompt | Official LINE MCP with the approved read-only account tools |
 | firestore_toolbox | preinstalled local stdio | disabled | Staging-only Firestore tools |
 
-The local npm-backed servers are installed together from `tools/mcp-runtime/package-lock.json` into `/workspace/.linebot-tools/mcp-runtime`; Codex starts their fixed local binaries rather than resolving packages with `npx` at task time. The runtime receipt, lock and package versions are checked separately from MCP initialization and tool calls.
+Local servers are installed by mise with versions declared in `mise.toml`. Codex invokes `bootstrap.sh exec` with automatic installation disabled; setup runs before the session. `mcp-smoke` checks actual protocol responses separately from host tool discovery.
 
 All configured Agents inherit the repository MCP configuration. This makes the servers available for host initialization; it does not grant credentials, IAM or approval bypasses. Each MCP is tracked separately as configured, enabled, started, initialized, authenticated, authorized and verified. In particular, `configured-enabled` is not evidence of initialization, authentication or a successful tool call. A remote HTTP MCP does not require a local server binary.
 

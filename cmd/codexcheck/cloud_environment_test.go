@@ -12,7 +12,8 @@ func TestCloudInstallLeavesHostCodexConfigUntouched(t *testing.T) {
 	paths := []string{
 		"scripts/codex-cloud/install.sh",
 		"scripts/codex-cloud/verify.sh",
-		"scripts/codex-cloud/lib/mcp.sh",
+		"bootstrap.sh",
+		"scripts/codex-cloud/start.sh",
 	}
 	for _, path := range paths {
 		data, err := os.ReadFile(filepath.Join(root, path))
@@ -20,7 +21,7 @@ func TestCloudInstallLeavesHostCodexConfigUntouched(t *testing.T) {
 			t.Fatal(err)
 		}
 		text := string(data)
-		for _, forbidden := range []string{"CODEX_HOME", "$HOME/.codex", "trust_level"} {
+		for _, forbidden := range []string{"CODEX_HOME", "$HOME/.codex", "trust_level", "git reset", "git clean"} {
 			if strings.Contains(text, forbidden) {
 				t.Errorf("%s must not manage Host-owned Codex configuration: found %q", path, forbidden)
 			}
@@ -39,7 +40,7 @@ func TestCloudInstallLeavesHostCodexConfigUntouched(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(string(verify), "codex_cloud_mcp_registration_check") {
-		t.Error("verify must check Host MCP registration in a fresh task")
+	if !strings.Contains(string(verify), "mcp-check") {
+		t.Error("verify must run the MCP protocol checks")
 	}
 }

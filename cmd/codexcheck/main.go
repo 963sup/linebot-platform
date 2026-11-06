@@ -162,8 +162,8 @@ func validateConfig(path string) error {
 	actual := make([]string, 0, len(c.MCPServers))
 	for name, server := range c.MCPServers {
 		actual = append(actual, name)
-		if server.Required || server.StartupTimeoutSec <= 0 || server.ToolTimeoutSec <= 0 {
-			return fmt.Errorf("MCP %s must be optional with positive timeouts", name)
+		if server.Required != (name == "repomix") || server.StartupTimeoutSec <= 0 || server.ToolTimeoutSec <= 0 {
+			return fmt.Errorf("MCP %s must have the approved required state and positive timeouts", name)
 		}
 		if len(server.HTTPHeaders) != 0 {
 			return fmt.Errorf("MCP %s: literal HTTP headers are not allowed; use approved environment mappings", name)
@@ -182,28 +182,25 @@ func validateConfig(path string) error {
 		return fmt.Errorf("MCP servers differ from the approved set: %v", actual)
 	}
 	gopls := c.MCPServers["gopls"]
-	goplsArgs := []string{"-lc", "exec env XDG_CACHE_HOME=/workspace/.cache MISE_DATA_DIR=/workspace/.linebot-tools/mise MISE_CACHE_DIR=/workspace/.cache/mise MISE_CONFIG_DIR=/workspace/.config/mise MISE_STATE_DIR=/workspace/.local/state/mise /workspace/.linebot-tools/mise/shims/gopls mcp"}
+	goplsArgs := []string{"/workspace/linebot-platform/bootstrap.sh", "exec", "--", "gopls", "mcp"}
 	if !gopls.Enabled || gopls.Command != "bash" || !slices.Equal(gopls.Args, goplsArgs) || gopls.URL != "" || gopls.DefaultToolsApprovalMode != "" {
 		return errors.New("gopls must use the pinned workspace path and writable XDG cache")
 	}
 	repomix := c.MCPServers["repomix"]
-	repomixArgs := []string{"--mcp", "--sandbox", "/workspace/linebot-platform"}
+	repomixArgs := []string{"/workspace/linebot-platform/bootstrap.sh", "exec", "--", "repomix", "--mcp", "--sandbox", "/workspace/linebot-platform"}
 	repomixTools := []string{"pack_codebase", "read_repomix_output", "grep_repomix_output", "file_system_read_file", "file_system_read_directory"}
-	if !repomix.Enabled || repomix.Command != "/workspace/.linebot-tools/mcp-runtime/node_modules/.bin/repomix" || repomix.URL != "" || repomix.DefaultToolsApprovalMode != "" ||
+	if !repomix.Enabled || repomix.Command != "bash" || repomix.URL != "" || repomix.DefaultToolsApprovalMode != "" ||
 		!slices.Equal(repomix.Args, repomixArgs) || !sameStrings(repomix.EnabledTools, repomixTools) ||
 		len(repomix.EnvVars) != 0 || repomix.BearerTokenEnvVar != "" || len(repomix.EnvHTTPHeaders) != 0 {
 		return errors.New("Repomix MCP must use the pinned workspace-confined read-only sandbox")
 	}
 	for name, endpoint := range remoteEndpoints {
 		server := c.MCPServers[name]
-		enabled := name == "context7" || name == "github" || name == "openaiDeveloperDocs" || name == "google_developer_knowledge" || name == "google_cloud_cli"
+		enabled := name == "context7" || name == "github" || name == "openaiDeveloperDocs"
 		if server.URL != endpoint || server.Command != "" || len(server.Args) != 0 || server.Enabled != enabled {
 			return fmt.Errorf("MCP %s: unexpected endpoint, transport or enabled state", name)
 		}
 		approval := ""
-		if !enabled {
-			approval = "prompt"
-		}
 		if name == "github" {
 			approval = "writes"
 		}
@@ -227,28 +224,28 @@ func validateConfig(path string) error {
 	}
 	terra := c.MCPServers["terraform"]
 	terraTools := []string{"search_provider_docs", "get_provider_details", "get_latest_provider_version", "get_provider_capabilities", "search_modules", "get_module_details", "get_latest_module_version", "search_policies", "get_policy_details"}
-	if !terra.Enabled || terra.Command != "docker" || terra.URL != "" || terra.DefaultToolsApprovalMode != "prompt" ||
+	if terra.Enabled || terra.Command != "docker" || terra.URL != "" || terra.DefaultToolsApprovalMode != "prompt" ||
 		!slices.Equal(terra.Args, []string{"run", "-i", "--rm", "hashicorp/terraform-mcp-server@sha256:11dd418bba6003dd5777e9d0979b68de59929a155b355f338f407947e00e9d80", "stdio", "--toolsets=registry"}) ||
 		!sameStrings(terra.EnabledTools, terraTools) || len(terra.EnvVars) != 0 {
 		return errors.New("Terraform MCP must use the pinned official image with public Registry tools only")
 	}
 	line := c.MCPServers["line"]
 	lineTools := []string{"get_profile", "get_message_quota", "get_rich_menu_list", "get_follower_ids", "get_group_summary"}
-	if !line.Enabled || line.Command != "/workspace/.linebot-tools/mcp-runtime/node_modules/.bin/line-bot-mcp-server" || line.URL != "" || line.DefaultToolsApprovalMode != "prompt" ||
-		len(line.Args) != 0 ||
+	if line.Enabled || line.Command != "bash" || line.URL != "" || line.DefaultToolsApprovalMode != "prompt" ||
+		!slices.Equal(line.Args, []string{"/workspace/linebot-platform/bootstrap.sh", "exec", "npm:@line/line-bot-mcp-server@0.5.0", "--", "line-bot-mcp-server"}) ||
 		!sameStrings(line.EnvVars, []string{"CHANNEL_ACCESS_TOKEN"}) ||
 		!sameStrings(line.EnabledTools, lineTools) {
 		return errors.New("LINE MCP must use the approved read-only tool set")
 	}
 	openAPI := c.MCPServers["openapi_line"]
-	openAPIArgs := []string{"--api-base-url", "https://api.line.me", "--openapi-spec", "/workspace/.linebot-tools/openapi/line-messaging-api.yml", "--tools", "dynamic", "--verbose", "false"}
-	if !openAPI.Enabled || openAPI.Command != "/workspace/.linebot-tools/mcp-runtime/node_modules/.bin/openapi-mcp-server" || openAPI.URL != "" || openAPI.DefaultToolsApprovalMode != "prompt" ||
+	openAPIArgs := []string{"/workspace/linebot-platform/bootstrap.sh", "exec", "npm:@ivotoby/openapi-mcp-server@1.16.1", "--", "openapi-mcp-server", "--api-base-url", "https://api.line.me", "--openapi-spec", "/workspace/.linebot-tools/openapi/line-messaging-api.yml", "--tools", "dynamic", "--verbose", "false"}
+	if openAPI.Enabled || openAPI.Command != "bash" || openAPI.URL != "" || openAPI.DefaultToolsApprovalMode != "prompt" ||
 		!slices.Equal(openAPI.Args, openAPIArgs) || !sameStrings(openAPI.EnabledTools, []string{"list-api-endpoints", "get-api-endpoint-schema"}) || len(openAPI.EnvVars) != 0 {
 		return errors.New("OpenAPI MCP must use the pinned LINE spec and omit endpoint invocation")
 	}
 	toolbox := c.MCPServers["firestore_toolbox"]
-	if toolbox.Enabled || toolbox.Command != "/workspace/.linebot-tools/mcp-runtime/node_modules/.bin/toolbox" || toolbox.URL != "" || toolbox.DefaultToolsApprovalMode != "prompt" ||
-		!slices.Equal(toolbox.Args, []string{"--prebuilt=firestore", "--stdio"}) ||
+	if toolbox.Enabled || toolbox.Command != "bash" || toolbox.URL != "" || toolbox.DefaultToolsApprovalMode != "prompt" ||
+		!slices.Equal(toolbox.Args, []string{"/workspace/linebot-platform/bootstrap.sh", "exec", "npm:@toolbox-sdk/server@1.14.0", "--", "toolbox", "--prebuilt=firestore", "--stdio"}) ||
 		!sameStrings(toolbox.EnvVars, []string{"FIRESTORE_PROJECT", "GOOGLE_APPLICATION_CREDENTIALS"}) ||
 		!sameStrings(toolbox.EnabledTools, []string{"get_documents", "query_collection", "list_collections", "get_rules", "validate_rules"}) {
 		return errors.New("Firestore Toolbox must remain disabled with its pinned executable and restricted tools")
@@ -372,9 +369,6 @@ func validate(root string) error {
 		"scripts/codex-cloud/lib/paths.sh",
 		"scripts/codex-cloud/lib/skills.sh",
 		"scripts/codex-cloud/lib/mcp.sh",
-		"scripts/codex-cloud/lib/mcp_runtime.sh",
-		"scripts/codex-cloud/lib/mise.sh",
-		"scripts/codex-cloud/tests/mcp_runtime_test.sh",
 	} {
 		cmd := exec.Command("bash", "-n", filepath.Join(root, name))
 		if output, err := cmd.CombinedOutput(); err != nil {
