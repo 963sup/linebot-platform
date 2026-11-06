@@ -271,11 +271,11 @@ flowchart LR
 | unlinkRichMenuIdFromUsers | provisional | experience-presentation | experience-presentation | internal/application/usecases/experience-presentation |
 | updateAudienceGroupDescription | provisional | audience-management | audience | internal/application/usecases/audience |
 | updateRichMenuAlias | provisional | experience-presentation | experience-presentation | internal/application/usecases/experience-presentation |
-| validateBroadcast | not-domain-relevant | provider-boundary-operation | Not Verified | internal/application/usecases/request-validation |
-| validateMulticast | not-domain-relevant | provider-boundary-operation | Not Verified | internal/application/usecases/request-validation |
-| validateNarrowcast | not-domain-relevant | provider-boundary-operation | Not Verified | internal/application/usecases/request-validation |
-| validatePush | not-domain-relevant | provider-boundary-operation | Not Verified | internal/application/usecases/request-validation |
-| validateReply | not-domain-relevant | provider-boundary-operation | Not Verified | internal/application/usecases/request-validation |
+| validateBroadcast | not-domain-relevant | provider-boundary-operation | Not Verified | internal/application/usecases/messaging-delivery |
+| validateMulticast | not-domain-relevant | provider-boundary-operation | Not Verified | internal/application/usecases/messaging-delivery |
+| validateNarrowcast | not-domain-relevant | provider-boundary-operation | Not Verified | internal/application/usecases/messaging-delivery |
+| validatePush | not-domain-relevant | provider-boundary-operation | Not Verified | internal/application/usecases/messaging-delivery |
+| validateReply | not-domain-relevant | provider-boundary-operation | Not Verified | internal/application/usecases/messaging-delivery |
 | validateRichMenuBatchRequest | not-domain-relevant | provider-boundary-operation | Not Verified | internal/application/usecases/experience-presentation |
 | validateRichMenuObject | not-domain-relevant | provider-boundary-operation | Not Verified | internal/application/usecases/experience-presentation |
 | verifyChannelToken | not-domain-relevant | provider-boundary-operation | Not Verified | internal/application/usecases/credential-lifecycle |

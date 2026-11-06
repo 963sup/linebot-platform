@@ -151,41 +151,41 @@ operations:
   - operation: "validateReply"
     status: not-domain-relevant
     capability: "provider-boundary-operation"
-    current_implementation: "internal/application/usecases/request-validation"
+    current_implementation: "internal/application/usecases/messaging-delivery"
     ownership:
-      application: "internal/application/usecases/request-validation"
+      application: "internal/application/usecases/messaging-delivery"
       integration: "internal/adapter/outbound/line"
     reason: "Transport, provider configuration, validation, media transfer, or token lifecycle is owned by the Application/LINE adapter boundary rather than a Domain Context."
   - operation: "validatePush"
     status: not-domain-relevant
     capability: "provider-boundary-operation"
-    current_implementation: "internal/application/usecases/request-validation"
+    current_implementation: "internal/application/usecases/messaging-delivery"
     ownership:
-      application: "internal/application/usecases/request-validation"
+      application: "internal/application/usecases/messaging-delivery"
       integration: "internal/adapter/outbound/line"
     reason: "Transport, provider configuration, validation, media transfer, or token lifecycle is owned by the Application/LINE adapter boundary rather than a Domain Context."
   - operation: "validateMulticast"
     status: not-domain-relevant
     capability: "provider-boundary-operation"
-    current_implementation: "internal/application/usecases/request-validation"
+    current_implementation: "internal/application/usecases/messaging-delivery"
     ownership:
-      application: "internal/application/usecases/request-validation"
+      application: "internal/application/usecases/messaging-delivery"
       integration: "internal/adapter/outbound/line"
     reason: "Transport, provider configuration, validation, media transfer, or token lifecycle is owned by the Application/LINE adapter boundary rather than a Domain Context."
   - operation: "validateNarrowcast"
     status: not-domain-relevant
     capability: "provider-boundary-operation"
-    current_implementation: "internal/application/usecases/request-validation"
+    current_implementation: "internal/application/usecases/messaging-delivery"
     ownership:
-      application: "internal/application/usecases/request-validation"
+      application: "internal/application/usecases/messaging-delivery"
       integration: "internal/adapter/outbound/line"
     reason: "Transport, provider configuration, validation, media transfer, or token lifecycle is owned by the Application/LINE adapter boundary rather than a Domain Context."
   - operation: "validateBroadcast"
     status: not-domain-relevant
     capability: "provider-boundary-operation"
-    current_implementation: "internal/application/usecases/request-validation"
+    current_implementation: "internal/application/usecases/messaging-delivery"
     ownership:
-      application: "internal/application/usecases/request-validation"
+      application: "internal/application/usecases/messaging-delivery"
       integration: "internal/adapter/outbound/line"
     reason: "Transport, provider configuration, validation, media transfer, or token lifecycle is owned by the Application/LINE adapter boundary rather than a Domain Context."
   - operation: "getAggregationUnitUsage"
