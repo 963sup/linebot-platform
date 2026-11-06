@@ -19,6 +19,23 @@ For repository-wide production Go DDD/Hexagonal alignment, semantic/naming unifi
 
 The primary orchestrator interprets the request, challenges invalid premises, orders dependencies, assigns one write owner per file, sequences shared contracts, resolves conflicts and verifies completion. Prefer the smallest reversible, verifiable vertical slice. Nine is a capacity limit, not a default fan-out. Use the smallest necessary role set; role instances may repeat only for disjoint scopes. Close completed child threads promptly and keep the ninth slot available for an independent reviewer, replacement, or non-overlapping research when practical. Do not spawn agents for trivial localized changes. Reviewers are independent, read-only, and do not modify the implementation they review.
 
+### Adaptive execution
+
+Accuracy comes first; minimize redundant context, calls and coordination without dropping required evidence. At task start, choose direct execution or delegation from the actual scope, uncertainty and risk. Reassess when scope changes. Do not wait for the user to request agents when these triggers apply:
+
+- Direct execution: a bounded question, routine Git operation, or localized mechanical edit with clear acceptance criteria. Do not create a planning/writing/review team for trivial work.
+- Delegate: use the relevant specialist for a nontrivial behavior change, unclear root cause requiring independent investigation, cross-component contract change, or security/concurrency/data-integrity risk. One focused specialist is the default; delegate only work with a distinct purpose. The primary may implement while a read-only specialist investigates an independent question.
+- Independent review: after nontrivial implementation, assign a read-only `reviewer` who did not author that implementation. For a trivial edit, direct verification is sufficient. Pure investigation does not require a writer or artificial before/after artifacts.
+- Parallelize only independent scopes. Serialize dependent decisions and shared-file edits. The nine-role project budget is a ceiling; the host's actual concurrency/depth limits always apply when lower.
+
+Use Skills for relevant reusable procedures, MCP for available authoritative data or semantic operations, and Plugins as providers of those capabilities. These are complementary to agents, not mandatory stages. Discover capabilities before relying on them; read only the selected Skill and needed references. Prefer direct reads for narrow questions; use scoped Repomix for relationships. Do not install or invoke every available integration. A failed capability lookup is not a reason to repeat discovery without a state change; use a documented fallback and state its limits.
+
+Before delegation, read the selected `.codex/agents/<role>.toml`. Use the host's native role selector only if available and verified. Otherwise explicitly pass its `developer_instructions` together with task constraints to the child; a task name alone does not load a role. Report this as explicit role guidance, not native role registration. Repository guidance never overrides host instructions or permissions. If delegation is unavailable or prohibited, report that limitation and continue authorized independent work; do not claim independent review.
+
+Give each child only the task, role guidance, relevant paths/evidence, ownership, acceptance criteria and required constraints. Avoid full-history forks unless the task depends on that history. Reuse current snapshots and research, request concise findings with source locations, and fetch more context only when needed. Do not repeat a completed check without a new change or unresolved concern.
+
+After spawning, confirm each child's actual workspace identity (executor identity, resolved checkout, HEAD and scoped dirty state) before sharing file ownership or artifacts. After an environment publication/restart, do not assume old children share the current filesystem. If separate, transfer and verify a patch against its base and validate it in the target workspace. Record actual child IDs, role-guidance mode, scope and outcome internally; summarize only consequential delegation and evidence to the user. Configuration files or CLI listings are not execution evidence.
+
 Reviewer specialization uses profiles under `docs/agent-workflows/reviewer-profiles/`: `architecture`, `api-contract`, `security`, `performance`, `testing`, `release`, and `incident`. Profiles are checklists only; they do not create new Agents, permissions, MCPs, concurrency, or delegation depth. Never add `reviewer-*` Agent TOMLs.
 
 ## Tools and evidence

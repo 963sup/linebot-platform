@@ -1,6 +1,6 @@
 # Agent Handoff Contract
 
-Every delegated result must contain:
+Keep handoffs concise. The following fields may share one line; use `None` or `Not Applicable` instead of inventing work. Link existing evidence rather than copying logs or full snapshots. Every delegated result must contain:
 
 ```text
 Task / Owner / Inputs / Scope / Files / Contract Changes / Evidence / Tests Run / Findings / Risks / Next Action
@@ -16,3 +16,5 @@ The orchestrator owns the baseline identity. Writers consume it and, after scope
 
 Use `Not Verified` when a command, MCP, credential, deployment or external API was not actually verified. One write owner per file; reviewer roles remain independent and read-only.
 
+
+Before spawning, the orchestrator records the selected role file, native or explicitly supplied role guidance, bounded scope and acceptance criteria. After spawning, record the actual child ID and verify its executor/checkout identity, HEAD and relevant dirty-state before granting write ownership or consuming artifacts; never infer role loading from a task name or shared files from a path string. Parent and child must verify artifacts exist in the consuming workspace. Final outcomes distinguish proposed, attempted, completed and independently verified work.

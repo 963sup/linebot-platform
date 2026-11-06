@@ -20,3 +20,6 @@
 - Agent 檔案不能自行擴權或代替主 Session 的 sandbox、approval、MCP 授權。
 - Codex 設定驗證已改用純 Go 程式 `go run ./cmd/codexcheck`，不依賴 Python 檔案或 Python 執行環境。
 - 完成 PR 後，Codex Cloud 的管理者仍需在 Cloud UI 測試、Publish／Republish 才可重用此環境。
+
+- 一般工作的派工條件統一見根 `AGENTS.md` 的 Adaptive execution：簡單任務直接完成；複雜修改或獨立調查使用適合角色，非簡單實作完成後獨立審查。Skills／MCP／Plugins 按需要選用。
+- Host 沒有可驗證的原生角色選擇介面時，主 Session 需讀取角色 TOML，明確傳入指引；任務名稱不代表角色已載入。委派前核對實際工作區，環境重新發布後尤其不可沿用舊假設。

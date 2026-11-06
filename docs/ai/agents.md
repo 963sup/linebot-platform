@@ -18,6 +18,12 @@ Roles are behavior guidance, not sandbox or IAM boundaries. The host controls ac
 
 The primary orchestrator interprets requests, orders dependencies, assigns one write owner per file, sequences shared contracts, resolves conflicts and verifies completion. Nine is a capacity limit, not a required fan-out. Use the smallest necessary role set; repeated role instances require disjoint scopes. Keep reviewers independent and read-only, close completed threads promptly, and reserve the ninth slot for review, replacement, or non-overlapping research when practical. Do not delegate trivial localized changes. Every handoff reports Task, Owner, Inputs, Scope, Files, Contract Changes, Evidence, Tests Run, Findings, Risks and Next Action. Unverified states must be reported as `Not Verified`.
 
+## Execution policy
+
+Follow [AGENTS.md: Adaptive execution](../../AGENTS.md#adaptive-execution) as the single routing contract. Roles below are choices for a triggered delegation, not a requirement to launch every listed role. Simple tasks stay direct; nontrivial changes, independent root-cause investigations and cross-component or high-risk work trigger focused delegation. Nontrivial implementation receives independent review. Skills, MCPs and Plugins are selected for the evidence or workflow needed, not invoked as a fixed pipeline.
+
+Role configuration is not proof of host loading. Read the selected role file and pass its instructions explicitly when the host has no verified native role selector. Use concise scoped context, respect the lower of project and host limits, and verify that parent and child actually share the current checkout. Report unavailable delegation honestly rather than labeling self-review independent.
+
 ## Routing
 
 | Task | Primary role | Review |
