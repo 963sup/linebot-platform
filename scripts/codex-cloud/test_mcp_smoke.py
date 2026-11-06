@@ -26,9 +26,10 @@ for line in sys.stdin:
         print(json.dumps({'jsonrpc':'2.0', 'id':msg['id'], 'error':{'code':-32603,'message':'failed'}}), flush=True)
         continue
     result = {}
-    if method == 'tools/list': result = {'tools': [{'name':'file_system_read_file'}]}
+    if method == 'tools/list': result = {'tools': [{'name': 'read_text_file' if mode == 'filesystem' else 'file_system_read_file'}]}
     if method == 'tools/call':
-        if msg['params']['arguments'] != {'path': 'mise.toml'}: raise ValueError('expected sandbox-relative path')
+        expected = os.path.join(os.path.dirname(__file__), 'mise.toml') if mode == 'filesystem' else 'mise.toml'
+        if msg['params']['arguments'] != {'path': expected}: raise ValueError('unexpected read path')
         result = {'content':[{'type':'text','text':'min_version = "2026.11.3"'}]}
         if mode == 'tool-error': result['isError'] = True
         if mode == 'wrong-content': result['content'][0]['text'] = 'wrong file'
@@ -54,6 +55,11 @@ class SmokeTest(unittest.TestCase):
         with contextlib.redirect_stdout(io.StringIO()) as output:
             mcp_smoke.check('repomix', self.server('success'), self.root)
         self.assertIn('file_system_read_file passed', output.getvalue())
+
+    def test_filesystem_reads_workspace_file(self):
+        with contextlib.redirect_stdout(io.StringIO()) as output:
+            mcp_smoke.check('filesystem', self.server('filesystem'), self.root)
+        self.assertIn('read_text_file passed', output.getvalue())
 
     def test_protocol_and_tool_failures(self):
         for mode in ('rpc-error', 'tool-error', 'wrong-content'):

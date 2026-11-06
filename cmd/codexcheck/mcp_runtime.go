@@ -32,10 +32,13 @@ func validateMCPRuntimeSupplyChain(root string) error {
 			return fmt.Errorf("mise tool %s must have an exact version", name)
 		}
 	}
-	for _, name := range []string{"go", "node", "go:golang.org/x/tools/gopls", "npm:repomix"} {
+	for _, name := range []string{"go", "node", "go:golang.org/x/tools/gopls", "npm:repomix", "npm:@modelcontextprotocol/server-filesystem"} {
 		if miseConfig.Tools[name] == "" {
 			return fmt.Errorf("mise is missing required tool %s", name)
 		}
+	}
+	if miseConfig.Tools["npm:@modelcontextprotocol/server-filesystem"] != "2.2.0" {
+		return fmt.Errorf("Filesystem MCP install version must match the configured 2.2.0 runtime")
 	}
 	goMod, err := os.ReadFile(filepath.Join(root, "go.mod"))
 	if err != nil {

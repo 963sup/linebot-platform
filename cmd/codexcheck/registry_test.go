@@ -131,6 +131,13 @@ func TestRejectConfigDrift(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, tc := range []struct{ name, from, to string }{
+		{"filesystem-roots", `"--confine-roots", "/workspace/linebot-platform"`, `"--confine-roots", "/workspace"`},
+		{"filesystem-unconfined", `"--confine-roots", `, ``},
+		{"cloud-bearer", `bearer_token_env_var = "GOOGLE_CLOUD_ACCESS_TOKEN"`, `bearer_token_env_var = "OTHER_TOKEN"`},
+		{"cloud-project", `"x-goog-user-project" = "GOOGLE_CLOUD_PROJECT"`, `"x-goog-user-project" = "OTHER_PROJECT"`},
+		{"cloud-approval", `enabled_tools = ["run_gcloud_command"]
+default_tools_approval_mode = "prompt"`, `enabled_tools = ["run_gcloud_command"]
+default_tools_approval_mode = "never"`},
 		{"threads", "max_concurrent_threads_per_session = 9", "max_concurrent_threads_per_session = 10"},
 		{"knowledge-secret", `env_http_headers = { "X-Goog-Api-Key" = "DEVELOPERKNOWLEDGE_API_KEY" }`, `http_headers = { "X-Goog-Api-Key" = "do-not-store-keys" }`},
 		{"repomix-runtime", `"repomix", "--mcp"`, `"npx", "--mcp"`},

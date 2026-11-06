@@ -26,7 +26,7 @@ if [[ "${1:-setup}" == setup ]]; then
   fi
   [[ "$("$mise" --version)" == '2026.11.3 '* ]] || { echo 'Expected mise 2026.11.3' >&2; exit 1; }
   "$mise" trust "$repo_root/mise.toml"
-  "$mise" install node npm:repomix go go:golang.org/x/tools/gopls
+  "$mise" install
   exec "$mise" run setup
 fi
 [[ -x "$mise" ]] || { echo 'Run bash bootstrap.sh setup before starting Codex.' >&2; exit 1; }

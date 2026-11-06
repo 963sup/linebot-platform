@@ -10,11 +10,12 @@ Install script 使用 `bash /workspace/linebot-platform/bootstrap.sh setup`。
 MCP host 載入受信任的專案設定後，會自行執行 stdio 命令；不需要維持背景
 server，也不需要重複安裝或在新任務開始時 reset／clean Git。
 
-設定檔不能強迫 Codex Cloud host 載入工具。本對話的可用工具中沒有 Repomix；
-不能用 CLI 列表、安裝成功或本地 handshake 推論它已出現在對話中。
+設定檔不能強迫 Codex Cloud host 載入工具；不能用 CLI 列表、安裝成功或本地
+handshake 推論它已出現在對話中。
 新任務必須真的找到並呼叫 Repomix `pack_codebase` 才算完成驗收。
 
 本地資料、mise state 和 cache 位於 `/workspace`。腳本不覆寫個人 Codex
 設定、不建立憑證、不做 OAuth、IAM 或部署。遠端 MCP 仍需要 agent phase
-可連線的網路及各自憑證。Google／LINE／Docker／OpenAPI 整合預設停用，
+可連線的網路及各自憑證。Google Cloud CLI 已啟用，需有效的短效 token 與專案權限；Filesystem 固定安裝並限制於儲存庫。
+其餘 Google／LINE／Docker／OpenAPI 整合預設停用，
 依主文件準備前置條件後再啟用，避免開局出現沒有工具可用的失敗 server。
