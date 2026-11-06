@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<svg xmlns="http://www.w3.org/2000/svg" xmlns:ev="http://www.w3.org/2001/xml-events" xmlns:xlink="http://www.w3.org/1999/xlink" baseProfile="full" height="1480" version="1.1" viewBox="0 0 1800 1480" width="1800">
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:ev="http://www.w3.org/2001/xml-events" xmlns:xlink="http://www.w3.org/1999/xlink" xml:lang="zh-Hant" aria-labelledby="architecture-overview-title architecture-overview-desc" role="img" baseProfile="full" height="1480" version="1.1" viewBox="0 0 1800 1480" width="1800">
+  <title id="architecture-overview-title">Go DDD Hexagonal — LINE Login MINI App Geolocation Overview</title>
+  <desc id="architecture-overview-desc">Updated architecture: frontend LIFF and browser geolocation, HTTP adapters, application, domain, identity verification, persistence. Illustrative only.</desc>
   <defs>
     <marker id="arrowBlue" markerHeight="10" markerWidth="10" orient="auto" refX="9" refY="5">
       <path d="M0,0 L10,5 L0,10Z" fill="#2367ad"/>
@@ -8,10 +10,9 @@
       <path d="M0,0 L10,5 L0,10Z" fill="#177858"/>
     </marker>
   </defs>
-  <title>Go DDD Hexagonal — LINE Login MINI App Geolocation Overview</title>
-  <desc>Updated architecture: frontend LIFF and browser geolocation, HTTP adapters, application, domain, identity verification, persistence. Illustrative only.</desc>
   <rect fill="#f1f6fc" height="1480" rx="0" ry="0" width="1800" x="0" y="0"/>
   <style type="text/css"><![CDATA[text{font-family:Noto Sans CJK TC,Microsoft JhengHei,PingFang TC,sans-serif;}]]></style>
+  <g id="architecture-content">
   <rect fill="#103254" height="101" rx="17" ry="17" width="1768" x="16" y="12"/>
   <text fill="#ffffff" font-family="Noto Sans CJK TC, Microsoft JhengHei, PingFang TC, sans-serif" font-size="39" font-weight="700" opacity="1" text-anchor="start" x="38" y="62">Golang DDD + Hexagonal Architecture</text>
   <text fill="#d1e8fa" font-family="Noto Sans CJK TC, Microsoft JhengHei, PingFang TC, sans-serif" font-size="20" font-weight="400" opacity="1" text-anchor="start" x="40" y="94">LINE Login  ·  LINE MINI App (LIFF SDK)  ·  Web Geolocation API  ·  Production Not Verified</text>
@@ -154,15 +155,17 @@
   <text fill="#17334d" font-family="Noto Sans CJK TC, Microsoft JhengHei, PingFang TC, sans-serif" font-size="18" font-weight="400" opacity="1" text-anchor="start" x="1420" y="289">LINE Login 是身份整合</text>
   <text fill="#17334d" font-family="Noto Sans CJK TC, Microsoft JhengHei, PingFang TC, sans-serif" font-size="18" font-weight="400" opacity="1" text-anchor="start" x="1420" y="328">Geolocation 是瀏覽器能力</text>
   <text fill="#17334d" font-family="Noto Sans CJK TC, Microsoft JhengHei, PingFang TC, sans-serif" font-size="18" font-weight="400" opacity="1" text-anchor="start" x="1420" y="367">SDK / DB 不決定上下文切分</text>
+  <g id="ownership-contracts">
   <rect fill="#ffffff" height="295" rx="14" ry="14" stroke="#a9c5df" stroke-width="1.5" width="382" x="1402" y="429"/>
   <rect fill="#103254" height="48" rx="12" ry="12" stroke="#103254" stroke-width="0" width="382" x="1402" y="429"/>
   <rect fill="#103254" height="16" rx="0" ry="0" width="382" x="1402" y="461"/>
   <text fill="#ffffff" font-family="Noto Sans CJK TC, Microsoft JhengHei, PingFang TC, sans-serif" font-size="22" font-weight="700" opacity="1" text-anchor="start" x="1420" y="461">Port / Repository Ownership</text>
   <text fill="#17334d" font-family="Noto Sans CJK TC, Microsoft JhengHei, PingFang TC, sans-serif" font-size="18" font-weight="400" opacity="1" text-anchor="start" x="1420" y="505">Inbound API：Application 提供</text>
-  <text fill="#17334d" font-family="Noto Sans CJK TC, Microsoft JhengHei, PingFang TC, sans-serif" font-size="18" font-weight="400" opacity="1" text-anchor="start" x="1420" y="545">Capability Port：消費者定義</text>
-  <text fill="#17334d" font-family="Noto Sans CJK TC, Microsoft JhengHei, PingFang TC, sans-serif" font-size="18" font-weight="400" opacity="1" text-anchor="start" x="1420" y="585">Repository：依模型與需求定義</text>
+  <text fill="#17334d" font-family="Noto Sans CJK TC, Microsoft JhengHei, PingFang TC, sans-serif" font-size="18" font-weight="400" opacity="1" text-anchor="start" x="1420" y="545">Application capability port：消費者定義</text>
+  <text fill="#17334d" font-family="Noto Sans CJK TC, Microsoft JhengHei, PingFang TC, sans-serif" font-size="18" font-weight="400" opacity="1" text-anchor="start" x="1420" y="585">Domain repository：依 Aggregate 語義定義</text>
   <text fill="#17334d" font-family="Noto Sans CJK TC, Microsoft JhengHei, PingFang TC, sans-serif" font-size="18" font-weight="400" opacity="1" text-anchor="start" x="1420" y="625">LINE token 驗證是外部技術</text>
   <text fill="#17334d" font-family="Noto Sans CJK TC, Microsoft JhengHei, PingFang TC, sans-serif" font-size="18" font-weight="400" opacity="1" text-anchor="start" x="1420" y="665">Domain 不依賴 SDK / HTTP / GPS</text>
+  </g>
   <rect fill="#ffffff" height="451" rx="14" ry="14" stroke="#a9c5df" stroke-width="1.5" width="382" x="1402" y="740"/>
   <rect fill="#103254" height="48" rx="12" ry="12" stroke="#103254" stroke-width="0" width="382" x="1402" y="740"/>
   <rect fill="#103254" height="16" rx="0" ry="0" width="382" x="1402" y="772"/>
@@ -215,4 +218,5 @@
   <text fill="#17334d" font-family="Noto Sans CJK TC, Microsoft JhengHei, PingFang TC, sans-serif" font-size="18" font-weight="700" opacity="1" text-anchor="middle" x="1647.5" y="1311">07 保存與回應</text>
   <text fill="#58718b" font-family="Noto Sans CJK TC, Microsoft JhengHei, PingFang TC, sans-serif" font-size="15" font-weight="400" opacity="1" text-anchor="middle" x="1647.5" y="1341">Firestore / HTTP</text>
   <text fill="#b43d48" font-family="Noto Sans CJK TC, Microsoft JhengHei, PingFang TC, sans-serif" font-size="19" font-weight="700" opacity="1" text-anchor="middle" x="900" y="1411">不顯示地圖／不提供拖曳；不聲稱能阻擋虛擬定位。正式上線仍需完整驗證安全、裝置相容性與權限流程。</text>
+  </g>
 </svg>
