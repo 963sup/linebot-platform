@@ -52,3 +52,31 @@ func TestBlobSenderUsesOfficialLINEBlobEndpoints(t *testing.T) {
 		t.Fatalf("paths = %v", paths)
 	}
 }
+
+func TestReadBlobRejectsEmptyResponse(t *testing.T) {
+	if _, err := readBlob(nil, nil); err == nil {
+		t.Fatal("nil response accepted")
+	}
+	if _, err := readBlob(&http.Response{}, nil); err == nil {
+		t.Fatal("nil response body accepted")
+	}
+}
+
+func TestMessageContentStatusRejectsUnknownProviderStatus(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"status":"unknown"}`))
+	}))
+	defer server.Close()
+	client, err := messaging_api.NewMessagingApiBlobAPI("private-token", messaging_api.WithBlobEndpoint(server.URL), messaging_api.WithBlobHTTPClient(server.Client()))
+	if err != nil {
+		t.Fatal(err)
+	}
+	sender, err := NewBlobSender(client)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := sender.MessageContentStatus(context.Background(), "1"); err == nil {
+		t.Fatal("unknown transcoding status accepted")
+	}
+}

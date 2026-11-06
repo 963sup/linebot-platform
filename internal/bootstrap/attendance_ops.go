@@ -11,6 +11,7 @@ import (
 	"github.com/963sup/linebot-platform/internal/adapter/inbound/cli"
 	firestoreout "github.com/963sup/linebot-platform/internal/adapter/outbound/google/cloud/firestore"
 	attendanceapp "github.com/963sup/linebot-platform/internal/application/usecases/attendance"
+	"github.com/963sup/linebot-platform/internal/infrastructure/attendancecrypto"
 	firestoreinfra "github.com/963sup/linebot-platform/internal/infrastructure/google/cloud/firestore"
 	secretmanagerinfra "github.com/963sup/linebot-platform/internal/infrastructure/google/cloud/secretmanager"
 )
@@ -32,14 +33,9 @@ func newAttendanceOpsRuntime(ctx context.Context, config cli.AttendanceRuntimeCo
 	if _, ok := versions[config.ActiveKeyID]; !ok {
 		return nil, errors.New("Attendance Ops active key is missing")
 	}
-	secretClient, err := secretmanagerinfra.NewClient(ctx)
+	keyring, err := loadAttendanceKeyring(ctx, config.ActiveKeyID, versions)
 	if err != nil {
 		return nil, err
-	}
-	keyring, keyErr := secretmanagerinfra.LoadAttendanceKeyring(ctx, secretClient, config.ActiveKeyID, versions)
-	closeSecretErr := secretClient.Close()
-	if keyErr != nil || closeSecretErr != nil {
-		return nil, errors.Join(keyErr, closeSecretErr)
 	}
 	database := config.FirestoreDatabase
 	if database == "" {
@@ -65,6 +61,18 @@ func newAttendanceOpsRuntime(ctx context.Context, config cli.AttendanceRuntimeCo
 		return nil, errors.Join(err, client.Close())
 	}
 	return runtime, nil
+}
+
+func loadAttendanceKeyring(ctx context.Context, active string, versions map[string]string) (*attendancecrypto.Keyring, error) {
+	client, err := secretmanagerinfra.NewClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	keyring, loadErr := secretmanagerinfra.LoadAttendanceKeyring(ctx, client, active, versions)
+	if err := errors.Join(loadErr, client.Close()); err != nil {
+		return nil, err
+	}
+	return keyring, nil
 }
 
 type opsClock struct{}

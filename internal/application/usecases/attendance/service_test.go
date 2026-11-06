@@ -120,7 +120,6 @@ func (f *workplaceRepoFake) SaveWorkplace(context.Context, entities.Workplace) e
 
 type shiftRepoFake struct {
 	shift           entities.ShiftInstance
-	assignment      entities.ShiftAssignment
 	savedAssignment entities.ShiftAssignment
 	err             error
 	saved           bool
@@ -132,18 +131,6 @@ func (f *shiftRepoFake) FindShift(context.Context, valueobjects.ShiftInstanceID)
 func (f *shiftRepoFake) SaveShift(context.Context, entities.ShiftInstance) error {
 	f.saved = true
 	return f.err
-}
-func (f *shiftRepoFake) FindAssignment(context.Context, valueobjects.ShiftAssignmentID) (entities.ShiftAssignment, error) {
-	return f.assignment, f.err
-}
-func (f *shiftRepoFake) FindAssignmentForParticipant(context.Context, valueobjects.ParticipantID, valueobjects.ShiftInstanceID) (entities.ShiftAssignment, error) {
-	return f.assignment, f.err
-}
-func (f *shiftRepoFake) ListOpenAssignments(context.Context, valueobjects.ParticipantID, time.Time) ([]entities.ShiftAssignment, error) {
-	if f.err != nil {
-		return nil, f.err
-	}
-	return []entities.ShiftAssignment{f.assignment}, nil
 }
 func (f *shiftRepoFake) SaveAssignment(_ context.Context, assignment entities.ShiftAssignment) error {
 	f.savedAssignment = assignment

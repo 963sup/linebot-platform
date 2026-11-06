@@ -15,7 +15,6 @@ import (
 	lineout "github.com/963sup/linebot-platform/internal/adapter/outbound/line"
 	attendanceapp "github.com/963sup/linebot-platform/internal/application/usecases/attendance"
 	firestoreinfra "github.com/963sup/linebot-platform/internal/infrastructure/google/cloud/firestore"
-	secretmanagerinfra "github.com/963sup/linebot-platform/internal/infrastructure/google/cloud/secretmanager"
 	"github.com/963sup/linebot-platform/internal/infrastructure/httpclient"
 	"github.com/963sup/linebot-platform/internal/infrastructure/observability"
 )
@@ -108,12 +107,7 @@ func composeMiniApp(ctx context.Context, cfg MiniAppConfig, logger *slog.Logger)
 	if err != nil {
 		return fail(err)
 	}
-	secretClient, err := secretmanagerinfra.NewClient(ctx)
-	if err != nil {
-		return fail(err)
-	}
-	result.closers = append(result.closers, runtimeCloser{name: "Secret Manager", close: secretClient.Close})
-	keyring, err := secretmanagerinfra.LoadAttendanceKeyring(ctx, secretClient, cfg.LocationActiveKeyID, cfg.LocationKeyVersions)
+	keyring, err := loadAttendanceKeyring(ctx, cfg.LocationActiveKeyID, cfg.LocationKeyVersions)
 	if err != nil {
 		return fail(err)
 	}
@@ -140,19 +134,6 @@ func composeMiniApp(ctx context.Context, cfg MiniAppConfig, logger *slog.Logger)
 type systemClock struct{}
 
 func (systemClock) Now() time.Time { return time.Now().UTC() }
-
-func closeRuntimeClosers(closers []runtimeCloser) error {
-	var closeErr error
-	for i := len(closers) - 1; i >= 0; i-- {
-		if closers[i].close == nil {
-			continue
-		}
-		if err := closers[i].close(); err != nil {
-			closeErr = errors.Join(closeErr, resourceCloseError{resource: closers[i].name, cause: err})
-		}
-	}
-	return closeErr
-}
 
 func (r *MiniAppRuntime) Close() error {
 	if r == nil {

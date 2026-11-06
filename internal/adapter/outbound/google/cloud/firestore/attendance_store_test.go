@@ -194,6 +194,10 @@ func TestAttendancePunchUpdateComparesTimestampInstants(t *testing.T) {
 	zone := time.FixedZone("wire-offset", 8*60*60)
 	current.ClockIn.RecordedAt = current.ClockIn.RecordedAt.In(zone)
 	current.ClockIn.EffectiveAt = current.ClockIn.EffectiveAt.In(zone)
+	current.Assignment.SubmissionOpensAt = current.Assignment.SubmissionOpensAt.In(zone)
+	current.Assignment.SubmissionClosesAt = current.Assignment.SubmissionClosesAt.In(zone)
+	current.Shift.SubmissionOpensAt = current.Shift.SubmissionOpensAt.In(zone)
+	current.Shift.SubmissionClosesAt = current.Shift.SubmissionClosesAt.In(zone)
 	if err := validateAttendanceUpdate(current, incoming, true); err != nil {
 		t.Fatalf("equal timestamp instants rejected after wire round trip: %v", err)
 	}

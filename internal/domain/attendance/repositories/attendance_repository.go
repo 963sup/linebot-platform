@@ -55,8 +55,5 @@ type WorkplaceRepository interface {
 type ShiftRepository interface {
 	FindShift(context.Context, valueobjects.ShiftInstanceID) (entities.ShiftInstance, error)
 	SaveShift(context.Context, entities.ShiftInstance) error
-	FindAssignment(context.Context, valueobjects.ShiftAssignmentID) (entities.ShiftAssignment, error)
-	FindAssignmentForParticipant(context.Context, valueobjects.ParticipantID, valueobjects.ShiftInstanceID) (entities.ShiftAssignment, error)
-	ListOpenAssignments(context.Context, valueobjects.ParticipantID, time.Time) ([]entities.ShiftAssignment, error)
 	SaveAssignment(context.Context, entities.ShiftAssignment) error
 }

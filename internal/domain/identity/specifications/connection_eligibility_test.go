@@ -31,3 +31,22 @@ func TestCanUseGoogleAPI(t *testing.T) {
 		t.Fatal("disconnected link allowed access")
 	}
 }
+
+var benchmarkEligible bool
+
+func BenchmarkCanUseGoogleAPI(b *testing.B) {
+	link, err := factories.NewVerifiedLink("line-owner", "google-sub", []string{
+		"calendar.read", "calendar.write", "forms.read", "forms.write", "tasks.read", "tasks.write",
+	})
+	if err != nil {
+		b.Fatal(err)
+	}
+	required := []string{"calendar.read", "forms.write", "tasks.write"}
+	if !specifications.CanUseGoogleAPI(link, required) {
+		b.Fatal("benchmark fixture is not eligible")
+	}
+	b.ReportAllocs()
+	for b.Loop() {
+		benchmarkEligible = specifications.CanUseGoogleAPI(link, required)
+	}
+}

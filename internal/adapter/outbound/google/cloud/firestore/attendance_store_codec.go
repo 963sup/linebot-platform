@@ -426,7 +426,7 @@ func restoreAttendanceRecord(d attendanceRecordDocument) (aggregates.Attendance,
 	if e != nil {
 		return aggregates.Attendance{}, e
 	}
-	if d.Assignment.SubmissionOpensAt != shift.SubmissionOpensAt() || d.Assignment.SubmissionClosesAt != shift.SubmissionClosesAt() {
+	if !d.Assignment.SubmissionOpensAt.Equal(shift.SubmissionOpensAt()) || !d.Assignment.SubmissionClosesAt.Equal(shift.SubmissionClosesAt()) {
 		return aggregates.Attendance{}, ErrRepositoryCorrupt
 	}
 	in, e := restoreAttendancePunch(d.ClockIn)

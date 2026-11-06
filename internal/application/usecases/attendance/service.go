@@ -41,8 +41,7 @@ func (s *Service) Enroll(ctx context.Context, command EnrollCommand) (EnrollResu
 	if !utf8.ValidString(code) || utf8.RuneCountInString(code) > maxEnrollmentCodeLength {
 		return EnrollResult{}, ErrInvalidInput
 	}
-	hash := sha256.Sum256([]byte("attendance-enrollment-v1\x00" + code))
-	codeHash, _ := valueobjects.NewEnrollmentCodeHash("v1:" + hex.EncodeToString(hash[:]))
+	codeHash := enrollmentCodeHash(code)
 	participant, outcome, err := s.deps.Enrollment.ConsumeEnrollment(ctx, codeHash, principal.ParticipantID, now)
 	if err != nil {
 		return EnrollResult{}, repositoryError(ctx, err, ErrEnrollmentInvalid)
@@ -191,15 +190,9 @@ func (s *Service) Punch(ctx context.Context, command PunchCommand) (PunchResult,
 	if command.Kind == ClockOut {
 		punch, _ = attendance.ClockOut()
 	}
-	reasons := []string{}
-	if punch.Location().OutsideWorkplace() {
-		reasons = append(reasons, "outside_workplace")
-	}
-	if punch.Location().LowAccuracy() {
-		reasons = append(reasons, "low_accuracy")
-	}
-	if punch.TimeAnomaly() {
-		reasons = append(reasons, "time_anomaly")
+	reasons := reviewReasons(punch)
+	if reasons == nil {
+		reasons = []string{}
 	}
 	status := PunchRecorded
 	if outcome == valueobjects.SubmissionDuplicate {

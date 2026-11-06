@@ -82,3 +82,9 @@ func TestChannelReportErrorIsSanitized(t *testing.T) {
 		t.Fatal("SDK errors may not expose private report data")
 	}
 }
+
+func TestDeliveryCountResultRejectsNonObjectPayload(t *testing.T) {
+	if _, err := deliveryCountResult("test", nil, "not-an-object", nil, time.Now()); err == nil {
+		t.Fatal("non-object delivery count accepted")
+	}
+}

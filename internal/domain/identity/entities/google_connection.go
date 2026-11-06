@@ -28,6 +28,7 @@ func RestoreGoogleConnection(subject valueobjects.GoogleAccountID, scopes valueo
 
 func (c GoogleConnection) AccountID() valueobjects.GoogleAccountID { return c.subject }
 func (c GoogleConnection) Scopes() []string                        { return c.scopes.Values() }
+func (c GoogleConnection) HasScope(scope string) bool              { return c.scopes.Contains(scope) }
 func (c GoogleConnection) Status() valueobjects.ConnectionStatus   { return c.status }
 func (c GoogleConnection) IsActive() bool                          { return c.status == valueobjects.ConnectionActive }
 

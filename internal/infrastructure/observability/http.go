@@ -50,15 +50,14 @@ func (o *Runtime) WrapHTTP(provider string) func(http.RoundTripper) http.RoundTr
 func (t *loggingTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	started := time.Now()
 	method := boundedMethod(req.Method)
-	attrs := []attribute.KeyValue{
+	attrs := [3]attribute.KeyValue{
 		attribute.String("server.address.name", t.provider),
 		attribute.String("http.request.method", method),
 	}
 	ctx, span := t.runtime.tracer.Start(req.Context(), "HTTP "+t.provider,
-		trace.WithSpanKind(trace.SpanKindClient), trace.WithAttributes(attrs...))
+		trace.WithSpanKind(trace.SpanKindClient), trace.WithAttributes(attrs[:2]...))
 	defer span.End()
 	request := req.Clone(ctx)
-	request.Header = req.Header.Clone()
 	t.runtime.Propagator().Inject(ctx, propagation.HeaderCarrier(request.Header))
 	resp, err := t.next.RoundTrip(request)
 	code := 0
@@ -66,9 +65,11 @@ func (t *loggingTransport) RoundTrip(req *http.Request) (*http.Response, error) 
 		code = resp.StatusCode
 	}
 	statusClass := boundedStatusClass(code)
-	resultAttrs := append(attrs, attribute.String("http.response.status_class", statusClass))
+	attrs[2] = attribute.String("http.response.status_class", statusClass)
+	resultAttrs := attrs[:]
+	duration := time.Since(started)
 	t.runtime.clientRequests.Add(ctx, 1, metric.WithAttributes(resultAttrs...))
-	t.runtime.clientDuration.Record(ctx, time.Since(started).Seconds(), metric.WithAttributes(resultAttrs...))
+	t.runtime.clientDuration.Record(ctx, duration.Seconds(), metric.WithAttributes(resultAttrs...))
 	if code != 0 {
 		span.SetAttributes(attribute.Int("http.response.status_code", code))
 	}
@@ -82,13 +83,13 @@ func (t *loggingTransport) RoundTrip(req *http.Request) (*http.Response, error) 
 	if t.runtime.logger == nil {
 		return resp, err
 	}
-	logAttrs := []slog.Attr{
+	logAttrs := append(make([]slog.Attr, 0, 7),
 		slog.String("provider", t.provider),
 		slog.String("method", method),
 		slog.Int("status_code", code),
-		slog.Duration("duration", time.Since(started)),
+		slog.Duration("duration", duration),
 		slog.Bool("transport_error", err != nil),
-	}
+	)
 	if sc := span.SpanContext(); sc.IsValid() {
 		logAttrs = append(logAttrs, slog.String("trace_id", sc.TraceID().String()), slog.String("span_id", sc.SpanID().String()))
 	}

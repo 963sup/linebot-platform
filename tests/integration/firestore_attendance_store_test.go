@@ -153,12 +153,9 @@ func TestAttendanceEnrollmentPunchAndEncryptedEvidenceWithFirestoreEmulator(t *t
 	if err := store.SaveAssignment(ctx, historicalAssignment); err != nil {
 		t.Fatal(err)
 	}
-	openAssignments, err := store.ListOpenAssignments(ctx, participantID, now)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(openAssignments) != 1 || openAssignments[0].ID() != assignmentID {
-		t.Fatalf("open assignments=%v, want only %s", openAssignments, assignmentID)
+	options, err = store.ListCurrentOptions(ctx, participantID, now)
+	if err != nil || len(options) != 1 || options[0].Assignment.ID() != assignmentID {
+		t.Fatalf("current options include historical assignment: %#v err=%v", options, err)
 	}
 	boundParticipant, err := store.FindByParticipantID(ctx, participantID)
 	if err != nil {

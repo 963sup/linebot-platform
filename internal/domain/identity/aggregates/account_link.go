@@ -45,6 +45,7 @@ func RestoreAccountLink(owner valueobjects.LineUserID, subject valueobjects.Goog
 func (a AccountLink) Owner() valueobjects.LineUserID              { return a.owner }
 func (a AccountLink) GoogleAccount() valueobjects.GoogleAccountID { return a.google.AccountID() }
 func (a AccountLink) Scopes() []string                            { return a.google.Scopes() }
+func (a AccountLink) HasScope(scope string) bool                  { return a.google.HasScope(scope) }
 func (a AccountLink) Status() valueobjects.ConnectionStatus       { return a.google.Status() }
 func (a AccountLink) IsActive() bool                              { return a.owner.Valid() && a.google.IsActive() }
 func (a AccountLink) ConnectionID() (valueobjects.ConnectionID, error) {

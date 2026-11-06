@@ -2,6 +2,7 @@ package line
 
 import (
 	"context"
+	"errors"
 
 	messagingdelivery "github.com/963sup/linebot-platform/internal/application/usecases/messaging-delivery"
 	"github.com/line/line-bot-sdk-go/v8/linebot/messaging_api"
@@ -34,6 +35,8 @@ func (s *Sender) Validate(ctx context.Context, request messagingdelivery.Validat
 	case messagingdelivery.DeliveryBroadcast:
 		response, _, err := client.ValidateBroadcastWithHttpInfo(req)
 		responseErr = lineWriteError("validateBroadcast", response, err)
+	default:
+		return messagingdelivery.ValidationReport{}, errors.New("unsupported LINE validation delivery kind")
 	}
 	if responseErr != nil {
 		return messagingdelivery.ValidationReport{}, responseErr

@@ -12,13 +12,6 @@ import (
 	contactdirectory "github.com/963sup/linebot-platform/internal/application/usecases/contact-directory"
 )
 
-type contactDirectoryRuntime interface {
-	ListFollowers(context.Context, contactdirectory.PageRequest) (contactdirectory.RecipientPage, error)
-	GetSummary(context.Context, contactdirectory.RecipientReference) (contactdirectory.ConversationSummary, error)
-	ListMembers(context.Context, contactdirectory.RecipientReference, contactdirectory.PageRequest) (contactdirectory.RecipientPage, error)
-	GetMemberProfile(context.Context, contactdirectory.RecipientReference, contactdirectory.RecipientID) (contactdirectory.ProfileSnapshot, error)
-}
-
 func runContacts(parent context.Context, args []string, getenv func(string) string, output io.Writer, dependencies ...Dependencies) (err error) {
 	deps := dependency(dependencies)
 	flags := flag.NewFlagSet("contacts", flag.ContinueOnError)
@@ -45,10 +38,6 @@ func runContacts(parent context.Context, args []string, getenv func(string) stri
 		return err
 	}
 	defer func() { err = errors.Join(err, rt.Close()) }()
-	reader, ok := any(rt).(contactDirectoryRuntime)
-	if !ok {
-		return errors.New("contacts runtime does not implement contact-directory")
-	}
 	ctx, cancel := context.WithTimeout(parent, 12*time.Second)
 	defer cancel()
 	page := contactdirectory.PageRequest{Cursor: *start, Limit: *limit}
@@ -56,25 +45,25 @@ func runContacts(parent context.Context, args []string, getenv func(string) stri
 	var result any
 	switch *kind {
 	case "followers":
-		result, err = reader.ListFollowers(ctx, page)
+		result, err = rt.ListFollowers(ctx, page)
 	case "group-summary", "group-member-count":
 		conversation.Kind = contactdirectory.RecipientGroup
-		result, err = reader.GetSummary(ctx, conversation)
+		result, err = rt.GetSummary(ctx, conversation)
 	case "room-member-count":
 		conversation.Kind = contactdirectory.RecipientRoom
-		result, err = reader.GetSummary(ctx, conversation)
+		result, err = rt.GetSummary(ctx, conversation)
 	case "group-members":
 		conversation.Kind = contactdirectory.RecipientGroup
-		result, err = reader.ListMembers(ctx, conversation, page)
+		result, err = rt.ListMembers(ctx, conversation, page)
 	case "room-members":
 		conversation.Kind = contactdirectory.RecipientRoom
-		result, err = reader.ListMembers(ctx, conversation, page)
+		result, err = rt.ListMembers(ctx, conversation, page)
 	case "group-member-profile":
 		conversation.Kind = contactdirectory.RecipientGroup
-		result, err = reader.GetMemberProfile(ctx, conversation, contactdirectory.RecipientID(*userID))
+		result, err = rt.GetMemberProfile(ctx, conversation, contactdirectory.RecipientID(*userID))
 	case "room-member-profile":
 		conversation.Kind = contactdirectory.RecipientRoom
-		result, err = reader.GetMemberProfile(ctx, conversation, contactdirectory.RecipientID(*userID))
+		result, err = rt.GetMemberProfile(ctx, conversation, contactdirectory.RecipientID(*userID))
 	default:
 		return errors.New("unsupported contacts inspection kind")
 	}

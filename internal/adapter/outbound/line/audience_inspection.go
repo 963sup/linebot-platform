@@ -70,13 +70,30 @@ func (s *AudienceReader) ListAudiences(ctx context.Context, page audience.PageRe
 	if responseErr != nil {
 		return audience.ProviderAudiencePage{}, responseErr
 	}
-	object, err := providerObject(result)
-	if err != nil {
-		return audience.ProviderAudiencePage{}, err
+	var groups []manage_audience.AudienceGroup
+	var hasNext bool
+	switch value := result.(type) {
+	case *manage_audience.GetAudienceGroupsResponse:
+		if value == nil {
+			return audience.ProviderAudiencePage{}, errors.New("invalid LINE audience page")
+		}
+		groups, hasNext = value.AudienceGroups, value.HasNextPage
+	case *manage_audience.GetSharedAudienceGroupsResponse:
+		if value == nil {
+			return audience.ProviderAudiencePage{}, errors.New("invalid LINE audience page")
+		}
+		groups, hasNext = value.AudienceGroups, value.HasNextPage
+	default:
+		return audience.ProviderAudiencePage{}, errors.New("invalid LINE audience page")
 	}
-	output := audience.ProviderAudiencePage{Page: page.Number, NextPage: int64Value(object, "nextPage")}
-	values, _ := object["audienceGroups"].([]any)
-	for _, value := range values {
+	if groups == nil {
+		return audience.ProviderAudiencePage{}, errors.New("invalid LINE audience page")
+	}
+	output := audience.ProviderAudiencePage{Page: page.Number}
+	if hasNext {
+		output.NextPage = page.Number + 1
+	}
+	for _, value := range groups {
 		mapped, mapErr := mapProviderAudience(value, shared)
 		if mapErr != nil {
 			return audience.ProviderAudiencePage{}, mapErr

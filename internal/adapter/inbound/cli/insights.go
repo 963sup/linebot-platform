@@ -12,16 +12,6 @@ import (
 	insightsreporting "github.com/963sup/linebot-platform/internal/application/usecases/insights-reporting"
 )
 
-type insightsReportingRuntime interface {
-	Demographics(context.Context) (insightsreporting.DemographicsReport, error)
-	Deliveries(context.Context, insightsreporting.DailyQuery) (insightsreporting.CountReport, error)
-	Followers(context.Context, insightsreporting.DailyQuery) (insightsreporting.CountReport, error)
-	MessageEvent(context.Context, insightsreporting.MessageEventQuery) (insightsreporting.MessageEventReport, error)
-	StatisticsPerUnit(context.Context, insightsreporting.UnitStatisticsQuery) (insightsreporting.StatisticsReport, error)
-	PresentationSummary(context.Context, insightsreporting.PresentationStatisticsQuery) (insightsreporting.StatisticsReport, error)
-	PresentationDaily(context.Context, insightsreporting.PresentationStatisticsQuery) (insightsreporting.StatisticsReport, error)
-}
-
 func runInsights(parent context.Context, args []string, getenv func(string) string, output io.Writer, dependencies ...Dependencies) (err error) {
 	deps := dependency(dependencies)
 	flags := flag.NewFlagSet("insights", flag.ContinueOnError)
@@ -50,29 +40,25 @@ func runInsights(parent context.Context, args []string, getenv func(string) stri
 		return err
 	}
 	defer func() { err = errors.Join(err, rt.Close()) }()
-	reports, ok := any(rt).(insightsReportingRuntime)
-	if !ok {
-		return errors.New("insights runtime does not implement insights-reporting")
-	}
 	ctx, cancel := context.WithTimeout(parent, 12*time.Second)
 	defer cancel()
 	parseDay := func(value string) (time.Time, error) { return time.Parse("20060102", value) }
 	var result any
 	switch *kind {
 	case "demographics":
-		result, err = reports.Demographics(ctx)
+		result, err = rt.Demographics(ctx)
 	case "deliveries", "followers":
 		day, parseErr := parseDay(*date)
 		if parseErr != nil {
 			return errors.New("insights date must be valid YYYYMMDD")
 		}
 		if *kind == "deliveries" {
-			result, err = reports.Deliveries(ctx, insightsreporting.DailyQuery{Day: day})
+			result, err = rt.Deliveries(ctx, insightsreporting.DailyQuery{Day: day})
 		} else {
-			result, err = reports.Followers(ctx, insightsreporting.DailyQuery{Day: day})
+			result, err = rt.Followers(ctx, insightsreporting.DailyQuery{Day: day})
 		}
 	case "message-event":
-		result, err = reports.MessageEvent(ctx, insightsreporting.MessageEventQuery{RequestID: *requestID})
+		result, err = rt.MessageEvent(ctx, insightsreporting.MessageEventQuery{RequestID: *requestID})
 	case "statistics-per-unit", "menu-summary", "menu-daily":
 		fromDay, fromErr := parseDay(*from)
 		toDay, toErr := parseDay(*to)
@@ -80,13 +66,13 @@ func runInsights(parent context.Context, args []string, getenv func(string) stri
 			return errors.New("insights date range must be valid YYYYMMDD and ordered")
 		}
 		if *kind == "statistics-per-unit" {
-			result, err = reports.StatisticsPerUnit(ctx, insightsreporting.UnitStatisticsQuery{Unit: *unit, RangeQuery: insightsreporting.RangeQuery{From: fromDay, To: toDay}})
+			result, err = rt.StatisticsPerUnit(ctx, insightsreporting.UnitStatisticsQuery{Unit: *unit, RangeQuery: insightsreporting.RangeQuery{From: fromDay, To: toDay}})
 		} else {
 			query := insightsreporting.PresentationStatisticsQuery{PresentationID: *menu, RangeQuery: insightsreporting.RangeQuery{From: fromDay, To: toDay}}
 			if *kind == "menu-summary" {
-				result, err = reports.PresentationSummary(ctx, query)
+				result, err = rt.PresentationSummary(ctx, query)
 			} else {
-				result, err = reports.PresentationDaily(ctx, query)
+				result, err = rt.PresentationDaily(ctx, query)
 			}
 		}
 	default:

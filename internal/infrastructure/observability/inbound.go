@@ -4,7 +4,6 @@ import (
 	"context"
 	"log/slog"
 	"net/http"
-	"strconv"
 	"time"
 
 	"go.opentelemetry.io/otel/attribute"
@@ -95,13 +94,13 @@ func (o *Runtime) WrapInboundHTTP(role string, next http.Handler) http.Handler {
 		// Never accept client-controlled trace parentage here. Private task
 		// handlers extract trace context only after OIDC verification succeeds.
 		parent := r.Context()
-		attrs := []attribute.KeyValue{
+		attrs := [4]attribute.KeyValue{
 			attribute.String("service.role", role),
 			attribute.String("http.route.name", route),
 			attribute.String("http.request.method", method),
 		}
 		ctx, span := o.tracer.Start(parent, "HTTP "+route,
-			trace.WithSpanKind(trace.SpanKindServer), trace.WithAttributes(attrs...))
+			trace.WithSpanKind(trace.SpanKindServer), trace.WithAttributes(attrs[:3]...))
 		defer span.End()
 		r = r.WithContext(ctx)
 		writer := &inboundWriter{ResponseWriter: w}
@@ -110,10 +109,11 @@ func (o *Runtime) WrapInboundHTTP(role string, next http.Handler) http.Handler {
 			writer.status = http.StatusOK
 		}
 		statusClass := boundedStatusClass(writer.status)
-		resultAttrs := append(attrs,
-			attribute.String("http.response.status_class", statusClass))
+		attrs[3] = attribute.String("http.response.status_class", statusClass)
+		resultAttrs := attrs[:]
+		duration := time.Since(started)
 		o.serverRequests.Add(ctx, 1, metric.WithAttributes(resultAttrs...))
-		o.serverDuration.Record(ctx, time.Since(started).Seconds(), metric.WithAttributes(resultAttrs...))
+		o.serverDuration.Record(ctx, duration.Seconds(), metric.WithAttributes(resultAttrs...))
 		level := slog.LevelDebug
 		if writer.status >= http.StatusInternalServerError {
 			level = slog.LevelWarn
@@ -124,13 +124,13 @@ func (o *Runtime) WrapInboundHTTP(role string, next http.Handler) http.Handler {
 		if o.logger == nil {
 			return
 		}
-		logAttrs := []slog.Attr{
+		logAttrs := append(make([]slog.Attr, 0, 7),
 			slog.String("role", role),
 			slog.String("route", route),
 			slog.String("method", method),
 			slog.Int("status_code", writer.status),
-			slog.Duration("duration", time.Since(started)),
-		}
+			slog.Duration("duration", duration),
+		)
 		if sc := span.SpanContext(); sc.IsValid() {
 			logAttrs = append(logAttrs, slog.String("trace_id", sc.TraceID().String()), slog.String("span_id", sc.SpanID().String()))
 		}
@@ -187,8 +187,18 @@ func boundedMethod(method string) string {
 }
 
 func boundedStatusClass(status int) string {
-	if status < 100 || status > 599 {
+	switch status / 100 {
+	case 1:
+		return "1xx"
+	case 2:
+		return "2xx"
+	case 3:
+		return "3xx"
+	case 4:
+		return "4xx"
+	case 5:
+		return "5xx"
+	default:
 		return "other"
 	}
-	return strconv.Itoa(status/100) + "xx"
 }

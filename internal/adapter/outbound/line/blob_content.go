@@ -41,6 +41,9 @@ func readBlob(response *http.Response, err error) (mediatransfer.BinaryContent, 
 	if err != nil {
 		return mediatransfer.BinaryContent{}, lineAPIError("blobRead", response, err)
 	}
+	if response == nil || response.Body == nil {
+		return mediatransfer.BinaryContent{}, errors.New("LINE blob response is empty")
+	}
 	defer response.Body.Close()
 	data, err := io.ReadAll(io.LimitReader(response.Body, maxLINEBlobBytes+1))
 	if err != nil {
@@ -98,8 +101,10 @@ func (s *BlobSender) MessageContentStatus(ctx context.Context, id string) (media
 		return mediatransfer.PreparationReady, nil
 	case "failed":
 		return mediatransfer.PreparationFailed, nil
-	default:
+	case "processing":
 		return mediatransfer.PreparationProcessing, nil
+	default:
+		return "", errors.New("LINE transcoding status is invalid")
 	}
 }
 

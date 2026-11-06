@@ -40,7 +40,7 @@ func adminDependencies(deps Dependencies, evidence EvidenceReader) AdminDependen
 	return AdminDependencies{
 		Enrollment:   deps.Enrollment,
 		Participants: &participantRepoFake{participant: snapshot.Participant},
-		Shifts:       &shiftRepoFake{shift: snapshot.Shift, assignment: snapshot.Assignment},
+		Shifts:       &shiftRepoFake{shift: snapshot.Shift},
 		Workplaces:   &workplaceRepoFake{value: snapshot.Workplace},
 		Attendance:   deps.Attendance,
 		Clock:        deps.Clock,

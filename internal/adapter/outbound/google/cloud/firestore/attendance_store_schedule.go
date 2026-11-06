@@ -3,13 +3,11 @@ package firestore
 import (
 	"context"
 	"errors"
-	"time"
 
 	sdk "cloud.google.com/go/firestore"
 	"github.com/963sup/linebot-platform/internal/domain/attendance/entities"
 	"github.com/963sup/linebot-platform/internal/domain/attendance/repositories"
 	valueobjects "github.com/963sup/linebot-platform/internal/domain/attendance/value-objects"
-	"google.golang.org/api/iterator"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -89,24 +87,6 @@ func (s *AttendanceStore) SaveShift(ctx context.Context, shift entities.ShiftIns
 	return classifyAttendanceStoreError(ctx, err)
 }
 
-func (s *AttendanceStore) FindAssignment(ctx context.Context, id valueobjects.ShiftAssignmentID) (entities.ShiftAssignment, error) {
-	if ctx == nil || !id.Valid() {
-		return entities.ShiftAssignment{}, errors.New("valid assignment ID is required")
-	}
-	snapshot, err := s.assignmentRef(id).Get(ctx)
-	if status.Code(err) == codes.NotFound {
-		return entities.ShiftAssignment{}, repositories.ErrNotFound
-	}
-	if err != nil {
-		return entities.ShiftAssignment{}, attendanceStoreError(ctx, "read assignment")
-	}
-	var stored attendanceAssignmentDocument
-	if err := snapshot.DataTo(&stored); err != nil {
-		return entities.ShiftAssignment{}, ErrRepositoryCorrupt
-	}
-	return restoreAttendanceAssignment(stored)
-}
-
 func (s *AttendanceStore) SaveAssignment(ctx context.Context, assignment entities.ShiftAssignment) error {
 	if ctx == nil || !assignment.ID().Valid() {
 		return errors.New("valid assignment is required")
@@ -174,91 +154,6 @@ func (s *AttendanceStore) SaveAssignment(ctx context.Context, assignment entitie
 		return tx.Set(ref, doc)
 	})
 	return classifyAttendanceStoreError(ctx, err)
-}
-
-func (s *AttendanceStore) FindAssignmentForParticipant(ctx context.Context, participantID valueobjects.ParticipantID, shiftID valueobjects.ShiftInstanceID) (entities.ShiftAssignment, error) {
-	if ctx == nil || !participantID.Valid() || !shiftID.Valid() {
-		return entities.ShiftAssignment{}, errors.New("valid participant and shift IDs are required")
-	}
-	participant, err := s.FindByParticipantID(ctx, participantID)
-	if err != nil {
-		return entities.ShiftAssignment{}, err
-	}
-	if !participant.Active() {
-		return entities.ShiftAssignment{}, repositories.ErrConflict
-	}
-	guardSnapshot, err := s.assignmentGuardRef(participant.EmployeeID(), shiftID).Get(ctx)
-	if status.Code(err) == codes.NotFound {
-		return entities.ShiftAssignment{}, repositories.ErrNotFound
-	}
-	if err != nil {
-		return entities.ShiftAssignment{}, attendanceStoreError(ctx, "read assignment guard")
-	}
-	var guard attendanceAssignmentGuardDocument
-	if err := guardSnapshot.DataTo(&guard); err != nil || guard.SchemaVersion != attendanceSchemaVersion || guard.EmployeeID != string(participant.EmployeeID()) || guard.ShiftInstanceID != string(shiftID) {
-		return entities.ShiftAssignment{}, ErrRepositoryCorrupt
-	}
-	assignmentID, err := valueobjects.NewShiftAssignmentID(guard.AssignmentID)
-	if err != nil {
-		return entities.ShiftAssignment{}, ErrRepositoryCorrupt
-	}
-	assignment, err := s.FindAssignment(ctx, assignmentID)
-	if err != nil {
-		return entities.ShiftAssignment{}, err
-	}
-	if assignment.EmployeeID() != participant.EmployeeID() || assignment.ShiftInstanceID() != shiftID {
-		return entities.ShiftAssignment{}, ErrRepositoryCorrupt
-	}
-	return assignment, nil
-}
-
-func (s *AttendanceStore) ListOpenAssignments(ctx context.Context, participantID valueobjects.ParticipantID, at time.Time) ([]entities.ShiftAssignment, error) {
-	participant, err := s.FindByParticipantID(ctx, participantID)
-	if err != nil {
-		return nil, err
-	}
-	if !participant.Active() {
-		return nil, repositories.ErrConflict
-	}
-	query := s.client.Collection(attendanceAssignmentsCollection).
-		Where("employee_id", "==", string(participant.EmployeeID())).
-		Where("active", "==", true).
-		Where("submission_opens_at", "<=", at.UTC()).
-		Where("submission_closes_at", ">=", at.UTC()).
-		Limit(maxParticipantAssignments + 1)
-	iter := query.Documents(ctx)
-	defer iter.Stop()
-	var result []entities.ShiftAssignment
-	scanned := 0
-	for {
-		snap, err := iter.Next()
-		if err == iterator.Done {
-			break
-		}
-		if err != nil {
-			return nil, attendanceStoreError(ctx, "list assignments")
-		}
-		var stored attendanceAssignmentDocument
-		if err := snap.DataTo(&stored); err != nil {
-			return nil, ErrRepositoryCorrupt
-		}
-		assignment, err := restoreAttendanceAssignment(stored)
-		if err != nil {
-			return nil, err
-		}
-		scanned++
-		if scanned > maxParticipantAssignments {
-			return nil, repositories.ErrConflict
-		}
-		shift, err := s.FindShift(ctx, assignment.ShiftInstanceID())
-		if err != nil {
-			return nil, err
-		}
-		if shift.AcceptsSubmission(at) {
-			result = append(result, assignment)
-		}
-	}
-	return result, nil
 }
 
 func sameAttendanceShift(a, b entities.ShiftInstance) bool {

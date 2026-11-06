@@ -13,6 +13,8 @@ type fakeTransport func(*http.Request) (*http.Response, error)
 
 func (f fakeTransport) RoundTrip(r *http.Request) (*http.Response, error) { return f(r) }
 
+var benchmarkHTTPResponse *http.Response
+
 func TestLoggingDoesNotExposeSecretsOrURLs(t *testing.T) {
 	var logs bytes.Buffer
 	logger := slog.New(slog.NewJSONHandler(&logs, &slog.HandlerOptions{Level: slog.LevelDebug}))
@@ -41,5 +43,36 @@ func TestLoggingDoesNotExposeSecretsOrURLs(t *testing.T) {
 	}
 	if _, ok := WrapHTTP("line", nil)(base).(fakeTransport); !ok {
 		t.Fatal("nil logger should preserve the original RoundTripper")
+	}
+}
+
+func BenchmarkLoggingTransportRoundTrip(b *testing.B) {
+	for _, benchmark := range []struct {
+		name   string
+		logger *slog.Logger
+	}{
+		{name: "without-logger"},
+		{name: "with-logger", logger: slog.New(slog.NewJSONHandler(io.Discard, &slog.HandlerOptions{Level: slog.LevelDebug}))},
+	} {
+		b.Run(benchmark.name, func(b *testing.B) {
+			runtime := newLoggingRuntime(benchmark.logger)
+			response := &http.Response{StatusCode: http.StatusAccepted, Body: http.NoBody}
+			transport := runtime.WrapHTTP("line")(fakeTransport(func(*http.Request) (*http.Response, error) {
+				return response, nil
+			}))
+			request, err := http.NewRequest(http.MethodPost, "https://example.test/path", strings.NewReader("body"))
+			if err != nil {
+				b.Fatal(err)
+			}
+			request.Header.Set("Authorization", "Bearer private-token")
+			request.Header.Set("X-Test", "value")
+			b.ReportAllocs()
+			for b.Loop() {
+				benchmarkHTTPResponse, err = transport.RoundTrip(request)
+				if err != nil {
+					b.Fatal(err)
+				}
+			}
+		})
 	}
 }

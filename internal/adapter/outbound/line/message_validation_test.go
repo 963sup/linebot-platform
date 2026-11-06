@@ -36,3 +36,18 @@ func TestLINEMessageValidationEndpoints(t *testing.T) {
 		t.Fatalf("expected five message validators, got %v", calls)
 	}
 }
+
+func TestLINEMessageValidationRejectsUnknownDeliveryWithoutProviderCall(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
+		t.Fatal("unknown delivery must not call LINE")
+	}))
+	defer server.Close()
+
+	_, err := contractSender(t, server).Validate(context.Background(), messagingdelivery.ValidationRequest{
+		Delivery: messagingdelivery.DeliveryKind("unknown"),
+		Messages: []messagingdelivery.Message{{Kind: messagingdelivery.KindText, Text: "hello"}},
+	})
+	if err == nil {
+		t.Fatal("unknown delivery accepted")
+	}
+}

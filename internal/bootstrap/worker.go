@@ -54,13 +54,7 @@ func (r *WorkerRuntime) Close() error {
 	}
 	r.closeOnce.Do(func() {
 		r.outbound.Close()
-		var closeErr error
-		for i := len(r.closers) - 1; i >= 0; i-- {
-			if err := r.closers[i].close(); err != nil {
-				closeErr = errors.Join(closeErr, resourceCloseError{resource: r.closers[i].name, cause: err})
-			}
-		}
-		r.closeErr = closeErr
+		r.closeErr = closeRuntimeClosers(r.closers)
 	})
 	return r.closeErr
 }

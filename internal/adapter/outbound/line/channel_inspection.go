@@ -169,7 +169,10 @@ func deliveryCountResult(op string, response *http.Response, data any, err error
 	if err != nil {
 		return insightsreporting.CountReport{}, errors.New("invalid LINE report")
 	}
-	object, _ := value.(map[string]any)
+	object, ok := value.(map[string]any)
+	if !ok {
+		return insightsreporting.CountReport{}, errors.New("invalid LINE count report")
+	}
 	return insightsreporting.CountReport{
 		Accepted:   int64Value(object, "success", "successCount"),
 		Delivered:  int64Value(object, "success", "successCount"),

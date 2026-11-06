@@ -9,15 +9,8 @@ func CanUseGoogleAPI(link aggregates.AccountLink, required []string) bool {
 	if !link.IsActive() {
 		return false
 	}
-	granted := make(map[string]struct{}, len(link.Scopes()))
-	for _, scope := range link.Scopes() {
-		granted[scope] = struct{}{}
-	}
 	for _, scope := range required {
-		if scope == "" {
-			return false
-		}
-		if _, ok := granted[scope]; !ok {
+		if scope == "" || !link.HasScope(scope) {
 			return false
 		}
 	}

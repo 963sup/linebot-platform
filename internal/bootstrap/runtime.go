@@ -29,6 +29,19 @@ type WebhookRuntime struct {
 	closeErr  error
 }
 
+func closeRuntimeClosers(closers []runtimeCloser) error {
+	var closeErr error
+	for i := len(closers) - 1; i >= 0; i-- {
+		if closers[i].close == nil {
+			continue
+		}
+		if err := closers[i].close(); err != nil {
+			closeErr = errors.Join(closeErr, resourceCloseError{resource: closers[i].name, cause: err})
+		}
+	}
+	return closeErr
+}
+
 // NewWebhookRuntime constructs only the clients needed by the webhook process.
 func NewWebhookRuntime(cfg Config, logger *slog.Logger) (*WebhookRuntime, error) {
 	if cfg.EventMode == "durable" && cfg.Secrets.ChannelToken != "" {
@@ -121,13 +134,7 @@ func (r *WebhookRuntime) Close() error {
 	r.ready.Store(false)
 	r.closeOnce.Do(func() {
 		r.outbound.Close()
-		var closeErr error
-		for i := len(r.closers) - 1; i >= 0; i-- {
-			if err := r.closers[i].close(); err != nil {
-				closeErr = errors.Join(closeErr, resourceCloseError{resource: r.closers[i].name, cause: err})
-			}
-		}
-		r.closeErr = closeErr
+		r.closeErr = closeRuntimeClosers(r.closers)
 	})
 	return r.closeErr
 }
