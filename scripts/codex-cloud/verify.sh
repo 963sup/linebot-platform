@@ -30,7 +30,6 @@ else
   block "Go-dependent checks skipped"
 fi
 if command -v codex >/dev/null 2>&1; then
-  codex_cloud_ensure_project_trusted || block "project-scoped Codex configuration is not trusted"
   codex_cloud_mcp_registration_check || block "one or more MCP registrations are missing or incorrectly enabled"
   test -f /workspace/.linebot-tools/openapi/line-messaging-api.yml || block "pinned LINE OpenAPI spec is missing"
   docker image inspect hashicorp/terraform-mcp-server:1.4.1 >/dev/null 2>&1 || block "pinned Terraform MCP image is missing"

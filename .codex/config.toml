@@ -40,7 +40,7 @@ config_file = "agents/reviewer.toml"
 
 [mcp_servers.gopls]
 command = "bash"
-args = ["-lc", "exec env XDG_CACHE_HOME=/workspace/.cache /workspace/.linebot-tools/bin/gopls mcp"]
+args = ["-lc", "exec env XDG_CACHE_HOME=/workspace/.cache MISE_DATA_DIR=/workspace/.linebot-tools/mise MISE_CACHE_DIR=/workspace/.cache/mise MISE_CONFIG_DIR=/workspace/.config/mise MISE_STATE_DIR=/workspace/.local/state/mise /workspace/.linebot-tools/mise/shims/gopls mcp"]
 enabled = true
 required = false
 startup_timeout_sec = 30

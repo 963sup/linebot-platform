@@ -10,7 +10,7 @@
 bash scripts/codex-cloud/install.sh
 ```
 
-腳本依 go.mod 的 Go 1.27.3 要求，下載／驗證已鎖定 module、執行 codexcheck、安裝既定 gopls v0.24.0 至 `/workspace/.linebot-tools/bin`，並依 `tools/mcp-runtime/package-lock.json` 以 `npm ci` 安裝固定的本地 MCP runtime 至 `/workspace/.linebot-tools/mcp-runtime`。Install phase 會把 `/workspace/linebot-platform` 標記為 trusted project，讓 Codex 載入 repo 的 `.codex/config.toml`；該檔案是 MCP 設定、工具白名單與 approval policy 的單一來源。安裝後會驗證 lock hash、receipt、package versions 與四個 binary；這不等於 MCP 已初始化或工具呼叫成功。Task phase 的 `/home/agent` 可能唯讀，因此可變工具與 Go、gopls、XDG cache 只寫入 `/workspace`；`$HOME/.agents/skills` 僅供探索驗證。所有階段共同載入 `scripts/codex-cloud/lib/paths.sh`，不依賴 install phase 的 export 延續。不以 go mod tidy 修改依賴、不部署、不執行 OAuth／gcloud、不建立 key、不修改個人模型／approval。
+腳本先依 `config/toolchain.lock` 下載並驗證 mise v2026.11.3，再由 repo `mise.toml` 安裝 Go 1.27.3、Node.js 24.22.1 與 gopls 0.24.0；同一檔案提供不含 Secret 的 local bootstrap 預設。mise 的 data、state、config、cache 與 shims 全部位於 `/workspace`。接著下載／驗證已鎖定 module、執行 codexcheck，並依 `tools/mcp-runtime/package-lock.json` 以 npm 安裝固定的本地 MCP runtime 至 `/workspace/.linebot-tools/mcp-runtime`。Install phase 不寫入 Host-owned `/home/agent/.codex/config.toml`，也不自行建立替代 `CODEX_HOME`；專案信任與 repo `.codex/config.toml` 載入由 Cloud Environment Host 負責，並在 Publish／Republish 後的新工作階段驗證。repo `.codex/config.toml` 是 MCP 設定、工具白名單與 approval policy 的單一來源。安裝後會驗證 lock hash、receipt、package versions 與四個 binary；這不等於 Host 已載入 MCP、MCP 已初始化或工具呼叫成功。Task phase 的 `/home/agent` 可能唯讀，因此可變工具、mise、Go、Node、gopls 與 cache 只寫入 `/workspace`；`$HOME/.agents/skills` 僅供探索驗證。所有階段共同載入 `scripts/codex-cloud/lib/paths.sh`，不依賴 install phase 的 export 延續。不以 go mod tidy 修改依賴、不部署、不執行 OAuth／gcloud、不建立 key、不修改個人模型／approval。
 
 每個入口在任何寫入前執行 `preflight.sh`：確認 PATH 前綴、必要系統命令、`/workspace` 可寫，以及所有可變工具與 cache 路徑都位於 `/workspace`。preflight 本身不建立目錄、不安裝工具、不修改 repository。
 
@@ -30,7 +30,7 @@ bash scripts/codex-cloud/start.sh
 | CODEX_CLOUD_REGISTER_GOOGLE_MARKETPLACE | 0 | 設 1 且 INSTALL_SKILLS=1，依 CLI 能力註冊固定 Google marketplace；不是安裝 Plugin |
 | CODEX_CLOUD_WARM_TESTS | 0 | 設 1 額外執行 go test ./... |
 
-Install 完成後會檢查 `.codex/config.toml` 中全部 10 個 `enabled = true` MCP，以及確認 `firestore_toolbox` 維持停用：gopls、Repomix、Context7、GitHub、OpenAI Developer Docs、Google Developer Knowledge、Google Cloud CLI、Terraform、LINE 與 LINE OpenAPI。缺少註冊或 pinned runtime 時腳本失敗，不吞掉錯誤。MCP registration 與實際 handshake／工具呼叫分開回報；後者必須在 fresh task 以最小唯讀呼叫驗證。未允許安裝時只執行技能檢查；缺少項目會標記，不因可選技能缺少而把整個 Go 工具鏈設置說成失敗。CLI 不支援、版本不同或已有非受控目錄時不覆寫。
+Install 完成後會驗證 repository-owned `.codex/config.toml`、固定 MCP runtime 的 lock hash、receipt、package versions 與四個 binary。Host 是否載入全部 10 個啟用 MCP，以及 `firestore_toolbox` 是否維持停用，留在 Publish／Republish 後的新工作階段由 `verify.sh` 與最小唯讀工具呼叫驗證。缺少 pinned runtime 時安裝失敗，不吞掉錯誤；Host registration、authentication、authorization 與實際 handshake 分開回報。未允許安裝時只執行技能檢查；缺少項目會標記，不因可選技能缺少而把整個 Go 工具鏈設置說成失敗。CLI 不支援、版本不同或已有非受控目錄時不覆寫。
 
 ## 認證與網路
 
@@ -38,7 +38,7 @@ Install 完成後會檢查 `.codex/config.toml` 中全部 10 個 `enabled = true
 
 | 能力 | Host 前置條件 |
 | --- | --- |
-| gopls | `/workspace/.linebot-tools/bin/gopls`；POSIX／WSL／Cloud Bash |
+| Go／Node／gopls | `mise.toml` 固定版本；執行檔由 `/workspace/.linebot-tools/mise/shims` 提供 |
 | 本地 npm MCP runtime | Node.js 22+、npm、jq、sha256sum；依 lock 預安裝到 `/workspace/.linebot-tools/mcp-runtime` |
 | Repomix | 預安裝固定 1.18.1 sandbox，只讀取 linebot-platform |
 | Context7 | mcp.context7.com 網路；匿名額度可能受限 |
@@ -60,7 +60,7 @@ bash -n scripts/codex-cloud/start.sh
 bash scripts/codex-cloud/verify.sh
 go mod verify
 make check
-"/workspace/.linebot-tools/bin/gopls" version
+gopls version
 jq . /workspace/.linebot-tools/mcp-runtime/receipt.json
 /workspace/.linebot-tools/mcp-runtime/node_modules/.bin/repomix --version
 # 只有 Host 確實提供 Codex CLI 才執行：

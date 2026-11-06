@@ -1,0 +1,38 @@
+min_version = "2026.11.3"
+
+[env]
+# Local development defaults; credentials are supplied by the host.
+APP_ENV = "local"
+PORT = "8080"
+LINE_EVENT_MODE = "sync"
+LINE_API_TIMEOUT = "8s"
+LOG_LEVEL = "info"
+LOG_FORMAT = "text"
+TELEMETRY_MODE = "off"
+OTEL_TRACE_SAMPLE_RATIO = "0.05"
+OTEL_METRIC_INTERVAL = "60s"
+FIRESTORE_DATABASE = "(default)"
+GOCACHE = "{{ env.GOCACHE | default(value=config_root ~ '/.cache/go-build') }}"
+GOPATH = "{{ env.GOPATH | default(value=config_root ~ '/.cache/go') }}"
+XDG_CACHE_HOME = "{{ env.XDG_CACHE_HOME | default(value=config_root ~ '/.cache') }}"
+GOFLAGS = "-mod=readonly"
+GOTOOLCHAIN = "local"
+
+[tools]
+# Tool versions are owned here; scripts consume this configuration.
+go = "1.27.3"
+node = "24.22.1"
+"go:golang.org/x/tools/gopls" = "0.24.0"
+gcloud = "592.0.0"
+
+[tasks.setup]
+run = ["go mod download", "go mod verify"]
+
+[tasks.check]
+run = "make check"
+
+[tasks.dev]
+run = "make dev"
+
+[tasks.mcp-check]
+run = ["gopls version", "go run ./cmd/codexcheck"]

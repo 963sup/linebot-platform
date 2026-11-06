@@ -182,7 +182,7 @@ func validateConfig(path string) error {
 		return fmt.Errorf("MCP servers differ from the approved set: %v", actual)
 	}
 	gopls := c.MCPServers["gopls"]
-	goplsArgs := []string{"-lc", "exec env XDG_CACHE_HOME=/workspace/.cache /workspace/.linebot-tools/bin/gopls mcp"}
+	goplsArgs := []string{"-lc", "exec env XDG_CACHE_HOME=/workspace/.cache MISE_DATA_DIR=/workspace/.linebot-tools/mise MISE_CACHE_DIR=/workspace/.cache/mise MISE_CONFIG_DIR=/workspace/.config/mise MISE_STATE_DIR=/workspace/.local/state/mise /workspace/.linebot-tools/mise/shims/gopls mcp"}
 	if !gopls.Enabled || gopls.Command != "bash" || !slices.Equal(gopls.Args, goplsArgs) || gopls.URL != "" || gopls.DefaultToolsApprovalMode != "" {
 		return errors.New("gopls must use the pinned workspace path and writable XDG cache")
 	}
@@ -373,6 +373,7 @@ func validate(root string) error {
 		"scripts/codex-cloud/lib/skills.sh",
 		"scripts/codex-cloud/lib/mcp.sh",
 		"scripts/codex-cloud/lib/mcp_runtime.sh",
+		"scripts/codex-cloud/lib/mise.sh",
 		"scripts/codex-cloud/tests/mcp_runtime_test.sh",
 	} {
 		cmd := exec.Command("bash", "-n", filepath.Join(root, name))

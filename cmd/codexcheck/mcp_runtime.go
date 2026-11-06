@@ -46,6 +46,22 @@ func decodeJSONFile(path string, into any) error {
 }
 
 func validateMCPRuntimeSupplyChain(root string) error {
+	var miseConfig struct {
+		MinVersion string            `toml:"min_version"`
+		Env        map[string]string `toml:"env"`
+		Tools      map[string]string `toml:"tools"`
+		Tasks      map[string]struct {
+			Run any `toml:"run"`
+		} `toml:"tasks"`
+	}
+	if err := readTOML(filepath.Join(root, "mise.toml"), &miseConfig); err != nil {
+		return err
+	}
+	for name, version := range miseConfig.Tools {
+		if !exactNPMVersion.MatchString(version) {
+			return fmt.Errorf("mise tool %s must have an exact version", name)
+		}
+	}
 	dir := filepath.Join(root, "tools", "mcp-runtime")
 	var manifest npmManifest
 	if err := decodeJSONFile(filepath.Join(dir, "package.json"), &manifest); err != nil {
@@ -77,6 +93,11 @@ func validateMCPRuntimeSupplyChain(root string) error {
 		}
 	}
 	var toolchain struct {
+		Go   string `json:"go"`
+		Mise struct {
+			Version        string `json:"version"`
+			LinuxX64SHA256 string `json:"linux_x64_sha256"`
+		} `json:"mise"`
 		Gopls struct {
 			Version string `json:"version"`
 		} `json:"gopls"`
@@ -84,8 +105,20 @@ func validateMCPRuntimeSupplyChain(root string) error {
 	if err := decodeJSONFile(filepath.Join(root, "config", "toolchain.lock"), &toolchain); err != nil {
 		return err
 	}
+	if toolchain.Go != "go1.27.3" || toolchain.Mise.Version != "2026.11.3" || !regexp.MustCompile(`^[0-9a-f]{64}$`).MatchString(toolchain.Mise.LinuxX64SHA256) {
+		return fmt.Errorf("Go and mise must use the approved pinned toolchain")
+	}
 	if toolchain.Gopls.Version != "v0.24.0" {
 		return fmt.Errorf("gopls must be pinned to v0.24.0")
+	}
+	miseInstall, err := os.ReadFile(filepath.Join(root, "scripts", "codex-cloud", "lib", "mise.sh"))
+	if err != nil {
+		return err
+	}
+	for _, required := range []string{"https://github.com/jdx/mise/releases/download/v", "linux_x64_sha256", "sha256sum", "mv -Tf"} {
+		if !strings.Contains(string(miseInstall), required) {
+			return fmt.Errorf("mise installer is missing %q", required)
+		}
 	}
 	install, err := os.ReadFile(filepath.Join(root, "scripts", "codex-cloud", "lib", "mcp_runtime.sh"))
 	if err != nil {

@@ -2,9 +2,11 @@
 
 ## 環境
 
-安裝 Go 1.27.3、Git、make。確認版本後：
+安裝 mise、Git、make，然後由 repo `mise.toml` 準備 Go、Node.js 與 gopls：
 
 ```bash
+mise install
+eval "$(mise activate bash)"
 go version
 make bootstrap # 首次解析依賴並產生 go.sum
 make check
