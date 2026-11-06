@@ -19,7 +19,7 @@
 ## SDK-Aware Codex Foundation — 開發知識與驗證
 
 - [x] 建立直接依賴 Catalog，並由 `codexcheck` 持續對齊 `go.mod`；不在自由格式文件硬編碼模組總數。
-- [x] 建立通用 `sdk-integration` Skill 與查證參考；PR #8 當時的六角色集合屬歷史基線，現已由 `.codex/config.toml` 註冊的八個 depth-one specialist roles 取代。
+- [x] 建立通用 `sdk-integration` Skill 與查證參考；PR #8 當時的六角色集合屬歷史基線，現已由 `.codex/config.toml` 註冊的九個 depth-one specialist roles 取代。
 - [x] 擴充 `cmd/codexcheck` 驗證 Catalog、架構邊界及測試，並由既有 CI 執行。
 - [x] 同步 README、Skills、架構、版本與開發文件。
 - [x] PR #8 已通過 CI 並合併至 `main`。

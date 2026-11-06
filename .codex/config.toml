@@ -13,6 +13,9 @@ max_depth = 1
 [agents.architect]
 description = "Designs Go DDD and Hexagonal boundaries, ports and architecture decisions"
 config_file = "agents/architect.toml"
+[agents.architecture_auditor]
+description = "Reads all production Go and architecture assets before designing repository-wide DDD refactors"
+config_file = "agents/architecture_auditor.toml"
 [agents.researcher]
 description = "Verifies current Go, SDK, CLI, Google, OpenAI and Codex documentation"
 config_file = "agents/researcher.toml"

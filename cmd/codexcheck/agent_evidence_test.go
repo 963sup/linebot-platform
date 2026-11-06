@@ -24,6 +24,18 @@ func TestRegisteredAgentsDeclareRoleSpecificEvidenceLifecycle(t *testing.T) {
 	}
 }
 
+func TestArchitectureAuditorIsReadOnlyAndRequiresCompleteSnapshot(t *testing.T) {
+	var a agent
+	if err := readTOML(filepath.Join("..", "..", ".codex", "agents", "architecture_auditor.toml"), &a); err != nil {
+		t.Fatal(err)
+	}
+	for _, marker := range []string{"Lifecycle: read-only.", "**/*.go", "**/*_test.go", "docs/assets/architecture/**", "Do not edit while reading", "do not spawn subagents"} {
+		if !strings.Contains(a.DeveloperInstructions, marker) {
+			t.Errorf("auditor instructions missing %q", marker)
+		}
+	}
+}
+
 func TestAgentEvidenceRejectsWrongOrUniversalLifecycle(t *testing.T) {
 	validWriter := agent{DeveloperInstructions: "Lifecycle: writer. Follow " + agentHandoffContract + "; consume the orchestrator-owned baseline and provide review evidence."}
 	tests := []struct {

@@ -31,6 +31,17 @@ func TestGuidanceTracksRegisteredCapabilities(t *testing.T) {
 			t.Errorf("role %s missing from matrix", name)
 		}
 	}
+	audit := read("docs/agent-workflows/go-architecture-audit.md")
+	for _, marker := range []string{"includePatterns: **/*.go", "ignorePatterns: **/*_test.go", "docs/assets/architecture/**", "No code or architecture asset edits before", "one decision-complete plan", "same-pattern Repomix MCP review pack"} {
+		if !strings.Contains(audit, marker) {
+			t.Errorf("full-read audit missing %q", marker)
+		}
+	}
+	for _, path := range []string{"AGENTS.md", "docs/ai/agents.md", "docs/agent-workflows/routing-policy.md"} {
+		if !strings.Contains(read(path), "architecture_auditor") {
+			t.Errorf("%s does not route repository-wide audits", path)
+		}
+	}
 	mcpDoc := read("docs/ai/mcp-and-plugins.md")
 	for name, server := range c.MCPServers {
 		state := "configured-disabled"
@@ -53,7 +64,7 @@ func TestGuidanceTracksRegisteredCapabilities(t *testing.T) {
 		}
 	}
 	acceptance := read("docs/ai/agents-mcp-plugins-acceptance.md")
-	for _, want := range []string{"8 個角色", "11 宣告、10 啟用、1 個服務維持停用", "1／4／8／9", "0／10"} {
+	for _, want := range []string{"9 個角色", "11 宣告、10 啟用、1 個服務維持停用", "1／4／8／9", "0／10"} {
 		if !strings.Contains(acceptance, want) {
 			t.Errorf("acceptance guidance missing current baseline %q", want)
 		}
@@ -80,6 +91,11 @@ func TestGuidanceTracksRegisteredCapabilities(t *testing.T) {
 	}
 	if !strings.Contains(read("docs/ai/agents-mcp-plugins-plan.md"), "已由目前的九個 child threads 政策取代") {
 		t.Error("historical plan must identify its concurrency policy as superseded")
+	}
+	for _, path := range []string{"docs/roadmap.md", "docs/ai/agents-mcp-plugins-plan.md"} {
+		if strings.Contains(read(path), "現行 8 個角色") || strings.Contains(read(path), "八個 depth-one specialist roles") {
+			t.Errorf("%s describes a stale current role count", path)
+		}
 	}
 	profiles := []string{"architecture", "api-contract", "security", "performance", "testing", "release", "incident"}
 	for _, profile := range profiles {

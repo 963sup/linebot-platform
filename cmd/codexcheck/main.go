@@ -18,7 +18,7 @@ import (
 
 const maxAgentThreads = 9
 
-var approvedAgentRoles = []string{"application", "architect", "domain", "environment", "integration", "platform", "researcher", "reviewer"}
+var approvedAgentRoles = []string{"application", "architect", "architecture_auditor", "domain", "environment", "integration", "platform", "researcher", "reviewer"}
 
 var roleNamePattern = regexp.MustCompile(`^[a-z][a-z0-9_]*$`)
 

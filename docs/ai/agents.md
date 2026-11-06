@@ -1,10 +1,11 @@
 # Codex V3 Agent Governance
 
-The primary Codex session is the `orchestrator`. It may delegate to exactly these eight project roles:
+The primary Codex session is the `orchestrator`. It may delegate to exactly these nine project roles:
 
 | Role | Responsibility |
 | --- | --- |
 | `architect` | Go DDD, Hexagonal boundaries, ports and ADRs |
+| `architecture_auditor` | Read-only full production Go and architecture asset audit before unified refactoring |
 | `researcher` | Current Go, SDK, CLI, Google, OpenAI and Codex documentation |
 | `domain` | Entities, aggregates, value objects, events and invariants |
 | `application` | Use cases, commands, queries, DTOs and consumer-owned ports |
@@ -27,6 +28,9 @@ The primary orchestrator interprets requests, orders dependencies, assigns one w
 | Cloud or environment configuration | `platform` / `environment` | `reviewer` |
 | Unknown API or version | `researcher` | implementing role |
 | Cross-package semantic change | `architect` then `application`/`integration` | `reviewer` |
+| Repository-wide Go DDD/Hexagonal alignment | `architecture_auditor` first; orchestrator integrates one plan | `architect`, then independent `reviewer` |
+
+For this repository-wide route, use [the full-read phase gate](../agent-workflows/go-architecture-audit.md). The orchestrator verifies complete coverage and decides file ownership before writers begin.
 
 ## Evidence policy
 

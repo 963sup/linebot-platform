@@ -8,14 +8,15 @@ import (
 const agentHandoffContract = "docs/agent-workflows/handoff-contract.md"
 
 var approvedAgentLifecycles = map[string]string{
-	"application": "writer",
-	"architect":   "read-only-or-writer",
-	"domain":      "writer",
-	"environment": "read-only-or-writer",
-	"integration": "writer",
-	"platform":    "read-only-or-writer",
-	"researcher":  "read-only",
-	"reviewer":    "reviewer",
+	"application":          "writer",
+	"architect":            "read-only-or-writer",
+	"architecture_auditor": "read-only",
+	"domain":               "writer",
+	"environment":          "read-only-or-writer",
+	"integration":          "writer",
+	"platform":             "read-only-or-writer",
+	"researcher":           "read-only",
+	"reviewer":             "reviewer",
 }
 
 // validateAgentEvidence checks stable lifecycle declarations while leaving the

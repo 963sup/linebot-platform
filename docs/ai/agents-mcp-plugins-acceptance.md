@@ -6,7 +6,7 @@
 
 | 項目 | 通過條件 |
 | --- | --- |
-| 註冊 | 固定 8 個 specialist roles 與 config 一對一；無 orchestrator child、reviewer-*、重複／未知鍵／越界路徑 |
+| 註冊 | 固定 9 個 specialist roles 與 config 一對一；無 orchestrator child、reviewer-*、重複／未知鍵／越界路徑 |
 | 並行上限 | Validator 接受 1／4／8／9，拒絕 0／10；深度只接受 1；此單元測試不是 Host 排程證明 |
 | MCP | 保留 11 宣告、10 啟用、1 個服務維持停用；無明文 secrets |
 | 安裝來源 | 僅核准來源、精確 commit、實際 FETCH_HEAD 一致 |
@@ -21,7 +21,7 @@
 
 | 能力 | 最小驗收 | 未具備環境時 |
 | --- | --- | --- |
-| 8 個角色 | 在信任專案確認載入，啟動受控唯讀／獨立測試任務；確認模型有效 | 未驗證，不能由 TOML 推論 |
+| 9 個角色 | 在信任專案確認載入，包含唯讀 `architecture_auditor`；確認模型有效 | 未驗證，不能由 TOML 推論 |
 | gopls | 已儲存 Go 檔的符號／references／diagnostics | Go CLI fallback 並註明 |
 | Repomix | 固定 1.18.1；sandbox 只能讀取 linebot-platform，拒絕 `..` 與外部路徑；以 `includePatterns` 驗證 `**/*.md` 與 `**/*.{go,mod,sum}` scoped pack；有 scoped source 變更時 baseline/review 使用相同 pattern，純唯讀工作只記一份 snapshot | 直接搜尋或 pinned CLI fallback，標記 Repomix MCP 未驗證 |
 | Context7 | 查詢目前使用 SDK 的一段版本文件 | 官方文件 fallback |

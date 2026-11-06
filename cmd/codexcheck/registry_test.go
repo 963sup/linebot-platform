@@ -112,13 +112,13 @@ func TestRetainApprovedRoles(t *testing.T) {
 		t.Fatal(err)
 	}
 	// This regression assertion protects the V3 role set; production parsing stays data-driven.
-	for _, name := range strings.Fields(`architect researcher domain application integration platform environment reviewer`) {
+	for _, name := range strings.Fields(`architect architecture_auditor researcher domain application integration platform environment reviewer`) {
 		if _, ok := roles[name]; !ok {
 			t.Errorf("approved role %s missing", name)
 		}
 	}
-	if len(roles) != 8 {
-		t.Fatalf("expected exactly eight delegated roles, got %d", len(roles))
+	if len(roles) != 9 {
+		t.Fatalf("expected exactly nine delegated roles, got %d", len(roles))
 	}
 	if _, ok := roles["orchestrator"]; ok {
 		t.Fatal("primary orchestrator must not be registered as a delegated role")

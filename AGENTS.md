@@ -13,7 +13,9 @@ Build maintainable Go services with pragmatic DDD, Hexagonal Architecture and id
 
 ## Agent routing
 
-The primary session is the orchestrator. Delegate only to the eight registered roles: `architect`, `researcher`, `domain`, `application`, `integration`, `platform`, `environment`, and `reviewer`. Delegation depth is one, maximum concurrent child threads is nine, and the orchestrator must not spawn another orchestrator.
+The primary session is the orchestrator. Delegate only to the nine registered roles: `architect`, `architecture_auditor`, `researcher`, `domain`, `application`, `integration`, `platform`, `environment`, and `reviewer`. Delegation depth is one, maximum concurrent child threads is nine, and the orchestrator must not spawn another orchestrator.
+
+For repository-wide production Go DDD/Hexagonal alignment or unified refactoring, proactively route a read-only `architecture_auditor` before implementation. Follow `docs/agent-workflows/go-architecture-audit.md`: fully read a Repomix MCP production Go pack (`**/*.go`, excluding `**/*_test.go`), all relevant `docs/assets/architecture/**`, and normative contracts; reconcile one decision-complete plan, then assign disjoint implementation scopes and independent review. Visuals are non-normative and conceptual Mermaid models are hypotheses. This route does not apply to localized fixes.
 
 The primary orchestrator interprets the request, challenges invalid premises, orders dependencies, assigns one write owner per file, sequences shared contracts, resolves conflicts and verifies completion. Prefer the smallest reversible, verifiable vertical slice. Nine is a capacity limit, not a default fan-out. Use the smallest necessary role set; role instances may repeat only for disjoint scopes. Close completed child threads promptly and keep the ninth slot available for an independent reviewer, replacement, or non-overlapping research when practical. Do not spawn agents for trivial localized changes. Reviewers are independent, read-only, and do not modify the implementation they review.
 
