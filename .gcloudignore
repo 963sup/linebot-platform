@@ -19,6 +19,12 @@ plugins/
 .agents/skills/*
 !.agents/skills/sdk-integration/
 !.agents/skills/sdk-integration/SKILL.md
+!.agents/skills/agent-tool-preflight/
+!.agents/skills/agent-tool-preflight/SKILL.md
+!.agents/skills/graphify/
+!.agents/skills/graphify/SKILL.md
+!.agents/skills/repomix-reference/
+!.agents/skills/repomix-reference/SKILL.md
 !deploy/
 deploy/*
 !deploy/firestore/
