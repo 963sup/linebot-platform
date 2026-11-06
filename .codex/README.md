@@ -15,6 +15,7 @@
 - 專案級 `config.toml` 只在 Codex **信任此儲存庫** 時載入；不要將 token 寫到 Git。
 - `gopls` 本地 MCP 透過 mise 安裝；Repomix 固定為 1.18.1，並以 `/workspace/linebot-platform` 為唯讀 sandbox。Context7 與 OpenAI Docs 使用遠端文件 MCP。OpenAI Docs 須允許 `developers.openai.com` 的 agent-phase 網路連線。
 - GitHub MCP 已啟用並可在明確授權下寫入，且僅使用安全環境提供的 `GITHUB_MCP_TOKEN`；Firestore Toolbox 維持停用。
+- Google Cloud CLI 遠端 MCP 已啟用；Codex 執行環境須安全提供 `GOOGLE_CLOUD_ACCESS_TOKEN`（短效 OAuth Token，需更新）與 `GOOGLE_CLOUD_PROJECT`（例如 `line-bot-963sup`）。必須事先啟用 Cloud CLI Execution API 並配置最小 IAM 權限。`run_gcloud_command` 可能修改或刪除資源，所有工具呼叫採 `prompt` 核准；設定檔啟用不代表已驗證實際連線。切勿將 Token 提交至 Git。
 - 角色清單與數量只以 `config.toml` 為準；全庫 Go 架構任務由唯讀 `architecture_auditor` 先依完整閱讀閘門分析；不得額外建立 orchestrator／reviewer profile Agent。
 - [Go 全域架構稽核流程](../docs/agent-workflows/go-architecture-audit.md) 定義 Repomix 全讀、統一規劃、分批實施及獨立審查；TOML 註冊不保證 Host 自動派工，實際路由仍由主 Session 依 `AGENTS.md` 執行。
 - Agent 檔案不能自行擴權或代替主 Session 的 sandbox、approval、MCP 授權。
