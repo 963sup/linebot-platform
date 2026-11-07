@@ -48,7 +48,7 @@ func runActions(parent context.Context, args []string, getenv func(string) strin
 	if deps.ActionsRuntime == nil {
 		return errors.New("actions runtime is not configured")
 	}
-	r, err := deps.ActionsRuntime(getenv(channelTokenEnv))
+	r, err := deps.ActionsRuntime(getenv(messagingAPIChannelAccessTokenEnv))
 	if err != nil {
 		return err
 	}

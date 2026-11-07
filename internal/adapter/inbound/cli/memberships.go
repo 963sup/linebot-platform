@@ -38,7 +38,7 @@ func runMemberships(parent context.Context, args []string, getenv func(string) s
 	if deps.MembershipsRuntime == nil {
 		return errors.New("memberships runtime is not configured")
 	}
-	rt, err := deps.MembershipsRuntime(getenv(channelTokenEnv))
+	rt, err := deps.MembershipsRuntime(getenv(messagingAPIChannelAccessTokenEnv))
 	if err != nil {
 		return err
 	}

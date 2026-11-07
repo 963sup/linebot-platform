@@ -34,7 +34,7 @@ func runInspect(parent context.Context, args []string, getenv func(string) strin
 	if deps.ChannelInspectionRuntime == nil {
 		return errors.New("channel inspection runtime is not configured")
 	}
-	runtime, err := deps.ChannelInspectionRuntime(getenv(channelTokenEnv))
+	runtime, err := deps.ChannelInspectionRuntime(getenv(messagingAPIChannelAccessTokenEnv))
 	if err != nil {
 		return err
 	}

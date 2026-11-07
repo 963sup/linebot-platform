@@ -33,7 +33,7 @@ func runContacts(parent context.Context, args []string, getenv func(string) stri
 	if deps.ContactsRuntime == nil {
 		return errors.New("contacts runtime is not configured")
 	}
-	rt, err := deps.ContactsRuntime(getenv(channelTokenEnv))
+	rt, err := deps.ContactsRuntime(getenv(messagingAPIChannelAccessTokenEnv))
 	if err != nil {
 		return err
 	}

@@ -28,15 +28,15 @@ Cloud Run 預期分別使用 `line-bot-public@bubbly-area-513305-s0.iam.gservice
 | 設定位置 | 項目 | 用途 |
 | --- | --- | --- |
 | Codex Cloud secure environment | `GITHUB_MCP_TOKEN` | GitHub MCP（依使用者授權可讀寫），僅可送至 `api.githubcopilot.com`；不屬於 Cloud Run runtime。 |
-| Google Secret Manager | `LINE_CHANNEL_SECRET` | 僅注入 `line-bot-public`。 |
-| Google Secret Manager | `LINE_CHANNEL_ACCESS_TOKEN` | 僅注入 `line-bot-private`。 |
+| Google Secret Manager | `LINE_MESSAGING_API_CHANNEL_SECRET` | 僅注入 `line-bot-public`。 |
+| Google Secret Manager | `LINE_MESSAGING_API_CHANNEL_ACCESS_TOKEN` | 僅注入 `line-bot-private`。 |
 | MINI App Cloud Run | `LINE_MINI_APP_CHANNEL_ID`、`LINE_MINI_APP_LIFF_URL`、`LINE_MINI_APP_ENDPOINT_URL`、`FIRESTORE_DATABASE` | LINE MINI App audience、LIFF、同源與 Firestore 基礎設施契約；Project ID 由 ADC 自動發現。 |
-| Cloud Run deployment | `APP_ENV`、`LINE_EVENT_MODE`、`LINE_API_TIMEOUT`、`LOG_LEVEL`、`LOG_FORMAT`、`LINE_BOT_DESTINATION`、`GCP_PROJECT_ID`、`TASK_QUEUE_NAME`、`TASK_WORKER_URL`、`TASK_OIDC_AUDIENCE`、`TASK_INVOKER_EMAIL` | 非敏感 production 設定；由 `cloudbuild.deploy.yaml` 寫入。 |
+| Cloud Run deployment | `APP_ENV`、`LINE_EVENT_MODE`、`LINE_API_TIMEOUT`、`LOG_LEVEL`、`LOG_FORMAT`、`LINE_MESSAGING_API_BOT_USER_ID`、`GCP_PROJECT_ID`、`TASK_QUEUE_NAME`、`TASK_WORKER_URL`、`TASK_OIDC_AUDIENCE`、`TASK_INVOKER_EMAIL` | 非敏感 production 設定；由 `cloudbuild.deploy.yaml` 寫入。 |
 | Cloud Run platform | `PORT`、`K_SERVICE` | 由平台注入，不手動設定。 |
 | 操作人員 shell | `LINEBOT_STAGING_PROJECT` | 只有隔離 staging 的 `ops events` 使用；不注入任一服務。 |
 
-- 經授權部署的 `line-bot-public` 必須使用 `APP_ENV=production`、`LINE_EVENT_MODE=durable` 與 JSON logs；它只可取得 `LINE_CHANNEL_SECRET` 的 Secret Manager reference，不得取得 Access Token。
-- 經授權部署的 `line-bot-private` 必須使用相同 durable、Firestore、Cloud Tasks 與 OIDC 設定；它只可取得 `LINE_CHANNEL_ACCESS_TOKEN` 的 Secret Manager reference，不得取得 Channel Secret。
+- 經授權部署的 `line-bot-public` 必須使用 `APP_ENV=production`、`LINE_EVENT_MODE=durable` 與 JSON logs；它只可取得 `LINE_MESSAGING_API_CHANNEL_SECRET` 的 Secret Manager reference，不得取得 Access Token。
+- 經授權部署的 `line-bot-private` 必須使用相同 durable、Firestore、Cloud Tasks 與 OIDC 設定；它只可取得 `LINE_MESSAGING_API_CHANNEL_ACCESS_TOKEN` 的 Secret Manager reference，不得取得 Channel Secret。
 - `line-bot-private` 的目標 Cloud Run concurrency 為 16，與應用程式的有界 request admission cap 一致。超過容量的 task 應收到 `503 Service Unavailable` 與 `Retry-After`，交由 Cloud Tasks 稍後重試，不在程序內建立無界 backlog；實際平台設定與行為仍須依 Staging capacity gate 驗證。
 - `line-miniapp` 公開提供 embedded assets；session API 必須驗證 LINE ID token。它不得取得 Messaging Secret、Secret Manager 或 Cloud Tasks IAM；瀏覽器取得的定位目前不提交到 server，也不得記錄到 logs。
 - `K_SERVICE` 由 Cloud Run 自動注入，程式以此拒絕套用 local profile。
@@ -83,7 +83,7 @@ gcloud builds submit . \
 gcloud builds submit . \
   --project=bubbly-area-513305-s0 \
   --config=cloudbuild.deploy.yaml \
-  --substitutions="_APPROVE_DEPLOYMENT=true,_STAGING_EVIDENCE_URI=gs://APPROVED_BUCKET/evidence.json,_STAGING_EVIDENCE_SHA256=EVIDENCE_SHA256,_TASK_WORKER_ORIGIN=https://AUTHORIZED_WORKER_ORIGIN,_LINE_BOT_DESTINATION=YOUR_LINE_BOT_DESTINATION,_PUBLIC_IMAGE_URI=asia-east1-docker.pkg.dev/bubbly-area-513305-s0/line-bot/line-bot-public@sha256:PUBLIC_DIGEST,_PRIVATE_IMAGE_URI=asia-east1-docker.pkg.dev/bubbly-area-513305-s0/line-bot/line-bot-private@sha256:PRIVATE_DIGEST,_MINIAPP_IMAGE_URI=asia-east1-docker.pkg.dev/bubbly-area-513305-s0/line-bot/line-miniapp@sha256:MINIAPP_DIGEST,_LINE_MINI_APP_CHANNEL_ID=YOUR_MINI_APP_CHANNEL_ID,_LINE_MINI_APP_LIFF_URL=https://miniapp.line.me/YOUR_LIFF_ID,_LINE_MINI_APP_ENDPOINT_URL=https://YOUR_MINIAPP_ORIGIN/miniapp/"
+  --substitutions="_APPROVE_DEPLOYMENT=true,_STAGING_EVIDENCE_URI=gs://APPROVED_BUCKET/evidence.json,_STAGING_EVIDENCE_SHA256=EVIDENCE_SHA256,_TASK_WORKER_ORIGIN=https://AUTHORIZED_WORKER_ORIGIN,_LINE_MESSAGING_API_BOT_USER_ID=YOUR_LINE_MESSAGING_API_BOT_USER_ID,_PUBLIC_IMAGE_URI=asia-east1-docker.pkg.dev/bubbly-area-513305-s0/line-bot/line-bot-public@sha256:PUBLIC_DIGEST,_PRIVATE_IMAGE_URI=asia-east1-docker.pkg.dev/bubbly-area-513305-s0/line-bot/line-bot-private@sha256:PRIVATE_DIGEST,_MINIAPP_IMAGE_URI=asia-east1-docker.pkg.dev/bubbly-area-513305-s0/line-bot/line-miniapp@sha256:MINIAPP_DIGEST,_LINE_MINI_APP_CHANNEL_ID=YOUR_MINI_APP_CHANNEL_ID,_LINE_MINI_APP_LIFF_URL=https://miniapp.line.me/YOUR_LIFF_ID,_LINE_MINI_APP_ENDPOINT_URL=https://YOUR_MINIAPP_ORIGIN/miniapp/"
 ```
 
 完成後應檢查三個 revision 的 Ready condition、public webhook 的 LINE 簽章拒絕行為、private worker 對匿名請求與錯誤 OIDC audience 的拒絕行為，以及 MINI App 對無效 ID token、跨來源、Geolocation 拒絕／timeout、座標不出現在 request／response／URL／log 的處理。真實 LINE MINI App、裝置與 Firestore IAM 驗證完成前維持 `Not Verified`。

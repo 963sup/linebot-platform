@@ -17,29 +17,29 @@ type SettingSpec struct {
 }
 
 const (
-	KeyAppEnv             = "APP_ENV"
-	KeyPort               = "PORT"
-	KeyEventMode          = "LINE_EVENT_MODE"
-	KeyLINETimeout        = "LINE_API_TIMEOUT"
-	KeyLogLevel           = "LOG_LEVEL"
-	KeyLogFormat          = "LOG_FORMAT"
-	KeyTelemetryMode      = "TELEMETRY_MODE"
-	KeyTraceSampleRatio   = "OTEL_TRACE_SAMPLE_RATIO"
-	KeyMetricInterval     = "OTEL_METRIC_INTERVAL"
-	KeyChannelSecret      = "LINE_CHANNEL_SECRET"
-	KeyChannelToken       = "LINE_CHANNEL_ACCESS_TOKEN"
-	KeyBotDestination     = "LINE_BOT_DESTINATION"
-	KeyProjectID          = "GCP_PROJECT_ID"
-	KeyQueueName          = "TASK_QUEUE_NAME"
-	KeyWorkerURL          = "TASK_WORKER_URL"
-	KeyOIDCAudience       = "TASK_OIDC_AUDIENCE"
-	KeyInvokerEmail       = "TASK_INVOKER_EMAIL"
-	KeyCloudRunService    = "K_SERVICE"
-	KeyOpsStagingProject  = "LINEBOT_STAGING_PROJECT"
-	KeyMiniAppChannelID   = "LINE_MINI_APP_CHANNEL_ID"
-	KeyMiniAppLIFFURL     = "LINE_MINI_APP_LIFF_URL"
-	KeyMiniAppEndpointURL = "LINE_MINI_APP_ENDPOINT_URL"
-	KeyFirestoreDatabase  = "FIRESTORE_DATABASE"
+	KeyAppEnv                         = "APP_ENV"
+	KeyPort                           = "PORT"
+	KeyEventMode                      = "LINE_EVENT_MODE"
+	KeyLINETimeout                    = "LINE_API_TIMEOUT"
+	KeyLogLevel                       = "LOG_LEVEL"
+	KeyLogFormat                      = "LOG_FORMAT"
+	KeyTelemetryMode                  = "TELEMETRY_MODE"
+	KeyTraceSampleRatio               = "OTEL_TRACE_SAMPLE_RATIO"
+	KeyMetricInterval                 = "OTEL_METRIC_INTERVAL"
+	KeyMessagingAPIChannelSecret      = "LINE_MESSAGING_API_CHANNEL_SECRET"
+	KeyMessagingAPIChannelAccessToken = "LINE_MESSAGING_API_CHANNEL_ACCESS_TOKEN"
+	KeyMessagingAPIBotUserID          = "LINE_MESSAGING_API_BOT_USER_ID"
+	KeyProjectID                      = "GCP_PROJECT_ID"
+	KeyQueueName                      = "TASK_QUEUE_NAME"
+	KeyWorkerURL                      = "TASK_WORKER_URL"
+	KeyOIDCAudience                   = "TASK_OIDC_AUDIENCE"
+	KeyInvokerEmail                   = "TASK_INVOKER_EMAIL"
+	KeyCloudRunService                = "K_SERVICE"
+	KeyOpsStagingProject              = "LINEBOT_STAGING_PROJECT"
+	KeyMiniAppChannelID               = "LINE_MINI_APP_CHANNEL_ID"
+	KeyMiniAppLIFFURL                 = "LINE_MINI_APP_LIFF_URL"
+	KeyMiniAppEndpointURL             = "LINE_MINI_APP_ENDPOINT_URL"
+	KeyFirestoreDatabase              = "FIRESTORE_DATABASE"
 )
 
 // settingContract owns the role, default and secret metadata for each key.
@@ -55,9 +55,9 @@ var settingContract = []SettingSpec{
 	{Key: KeyTelemetryMode, Roles: "webhook,worker,miniapp", Secret: false, Default: "off", Required: "選用", Description: "off 或 gcp-otlp；gcp-otlp 固定送往 127.0.0.1:4317 collector"},
 	{Key: KeyTraceSampleRatio, Roles: "webhook,worker,miniapp", Secret: false, Default: "0.05", Required: "TELEMETRY_MODE=gcp-otlp 時套用", Description: "parent-based trace sample ratio，0–1"},
 	{Key: KeyMetricInterval, Roles: "webhook,worker,miniapp", Secret: false, Default: "60s", Required: "TELEMETRY_MODE=gcp-otlp 時套用", Description: "metrics 匯出週期，10s–5m"},
-	{Key: KeyChannelSecret, Roles: "webhook", Secret: true, Default: "—", Required: "durable 必需；sync 與 Token 成對", Description: "僅驗證原始 Webhook 簽章，不應傳給 Worker"},
-	{Key: KeyChannelToken, Roles: "worker,local-sync,ops-push,ops-profile", Secret: true, Default: "—", Required: "worker 必需；本機 sync 成對", Description: "durable 公開 Webhook 禁止持有"},
-	{Key: KeyBotDestination, Roles: "webhook-durable,worker", Secret: false, Default: "—", Required: "durable 必需", Description: "LINE Bot Info API 的 userId；不是 Console 的 Your user ID"},
+	{Key: KeyMessagingAPIChannelSecret, Roles: "webhook", Secret: true, Default: "—", Required: "durable 必需；sync 與 Token 成對", Description: "僅驗證原始 Webhook 簽章，不應傳給 Worker"},
+	{Key: KeyMessagingAPIChannelAccessToken, Roles: "worker,local-sync,ops-push,ops-profile", Secret: true, Default: "—", Required: "worker 必需；本機 sync 成對", Description: "durable 公開 Webhook 禁止持有"},
+	{Key: KeyMessagingAPIBotUserID, Roles: "webhook-durable,worker", Secret: false, Default: "—", Required: "durable 必需", Description: "LINE Bot Info API 的 userId；不是 Console 的 Your user ID"},
 	{Key: KeyProjectID, Roles: "webhook-durable,worker", Secret: false, Default: "—", Required: "durable 必需", Description: "最小 IAM 的指定 Google Cloud Project；Mini App 由 ADC 自動偵測"},
 	{Key: KeyQueueName, Roles: "webhook-durable,worker", Secret: false, Default: "—", Required: "durable 必需", Description: "六段 Queue 資源名稱；Project 必須等於 GCP_PROJECT_ID；Queue ID 僅限 1–100 字元英數或連字號"},
 	{Key: KeyWorkerURL, Roles: "webhook-durable,worker", Secret: false, Default: "—", Required: "durable 必需", Description: "HTTPS Worker /tasks/v2/line-reply"},

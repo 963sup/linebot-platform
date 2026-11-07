@@ -20,11 +20,11 @@ func TestLoadConfig(t *testing.T) {
 	}{
 		{name: "defaults", values: nil, wantPort: "8080", wantTimeout: 8 * time.Second},
 		{name: "custom", values: map[string]string{"PORT": "8081", "LINE_API_TIMEOUT": "6s"}, wantPort: "8081", wantTimeout: 6 * time.Second},
-		{name: "credentials", values: map[string]string{"LINE_CHANNEL_SECRET": "secret", "LINE_CHANNEL_ACCESS_TOKEN": "token"}, wantPort: "8080", wantLive: true, wantTimeout: 8 * time.Second},
+		{name: "credentials", values: map[string]string{"LINE_MESSAGING_API_CHANNEL_SECRET": "secret", "LINE_MESSAGING_API_CHANNEL_ACCESS_TOKEN": "token"}, wantPort: "8080", wantLive: true, wantTimeout: 8 * time.Second},
 		{name: "bad port", values: map[string]string{"PORT": "not-a-port"}, wantErr: true},
 		{name: "zero", values: map[string]string{"PORT": "0"}, wantErr: true},
 		{name: "port overflow", values: map[string]string{"PORT": "70000"}, wantErr: true},
-		{name: "partial credentials", values: map[string]string{"LINE_CHANNEL_SECRET": "secret"}, wantErr: true},
+		{name: "partial credentials", values: map[string]string{"LINE_MESSAGING_API_CHANNEL_SECRET": "secret"}, wantErr: true},
 		{name: "invalid duration", values: map[string]string{"LINE_API_TIMEOUT": "bad"}, wantErr: true},
 		{name: "zero duration", values: map[string]string{"LINE_API_TIMEOUT": "0s"}, wantErr: true},
 		{name: "too short", values: map[string]string{"LINE_API_TIMEOUT": "500ms"}, wantErr: true},
@@ -51,14 +51,14 @@ func TestLoadConfigNilEnv(t *testing.T) {
 
 func TestDurableConfigRequiresAllCredentialsAndEndpoints(t *testing.T) {
 	fields := map[string]string{
-		"LINE_EVENT_MODE":      "durable",
-		"LINE_CHANNEL_SECRET":  "secret",
-		"LINE_BOT_DESTINATION": "U0123456789abcdef0123456789abcdef",
-		"GCP_PROJECT_ID":       "test-project",
-		"TASK_QUEUE_NAME":      "projects/test-project/locations/asia-east1/queues/line-queue",
-		"TASK_WORKER_URL":      "https://worker.example.test/tasks/v2/line-reply",
-		"TASK_OIDC_AUDIENCE":   "https://worker.example.test",
-		"TASK_INVOKER_EMAIL":   "invoker@test-project.iam.gserviceaccount.com",
+		"LINE_EVENT_MODE":                   "durable",
+		"LINE_MESSAGING_API_CHANNEL_SECRET": "secret",
+		"LINE_MESSAGING_API_BOT_USER_ID":    "U0123456789abcdef0123456789abcdef",
+		"GCP_PROJECT_ID":                    "test-project",
+		"TASK_QUEUE_NAME":                   "projects/test-project/locations/asia-east1/queues/line-queue",
+		"TASK_WORKER_URL":                   "https://worker.example.test/tasks/v2/line-reply",
+		"TASK_OIDC_AUDIENCE":                "https://worker.example.test",
+		"TASK_INVOKER_EMAIL":                "invoker@test-project.iam.gserviceaccount.com",
 	}
 	cfg, err := LoadConfig(env(fields))
 	if err != nil || cfg.EventMode != "durable" || cfg.Durable.ProjectID != "test-project" {
@@ -71,14 +71,14 @@ func TestDurableConfigRequiresAllCredentialsAndEndpoints(t *testing.T) {
 	for key, value := range fields {
 		withToken[key] = value
 	}
-	withToken["LINE_CHANNEL_ACCESS_TOKEN"] = "token"
+	withToken["LINE_MESSAGING_API_CHANNEL_ACCESS_TOKEN"] = "token"
 	if _, err := LoadConfig(env(withToken)); err == nil {
 		t.Fatal("durable public webhook accepted LINE sending token")
 	}
 	if _, err := LoadConfig(env(map[string]string{"LINE_EVENT_MODE": "sync", "K_SERVICE": "webhook"})); err == nil {
 		t.Fatal("Cloud Run must reject sync mode")
 	}
-	for _, missing := range []string{"GCP_PROJECT_ID", "TASK_QUEUE_NAME", "TASK_INVOKER_EMAIL", "LINE_BOT_DESTINATION"} {
+	for _, missing := range []string{"GCP_PROJECT_ID", "TASK_QUEUE_NAME", "TASK_INVOKER_EMAIL", "LINE_MESSAGING_API_BOT_USER_ID"} {
 		copy := make(map[string]string, len(fields))
 		for k, v := range fields {
 			copy[k] = v
@@ -93,14 +93,14 @@ func TestDurableConfigRequiresAllCredentialsAndEndpoints(t *testing.T) {
 		for key, value := range fields {
 			copy[key] = value
 		}
-		copy[KeyBotDestination] = destination
+		copy[KeyMessagingAPIBotUserID] = destination
 		if _, err := LoadConfig(env(copy)); err == nil {
 			t.Fatalf("durable config accepted malformed LINE destination %q", destination)
 		}
 	}
 	workerEnv := make(map[string]string, len(withToken))
 	for key, value := range withToken {
-		if key != KeyChannelSecret {
+		if key != KeyMessagingAPIChannelSecret {
 			workerEnv[key] = value
 		}
 	}
@@ -154,9 +154,9 @@ func TestMiniAppEntryURLValidation(t *testing.T) {
 	}
 
 	production := map[string]string{
-		KeyAppEnv: "production", KeyEventMode: "durable", KeyChannelSecret: "secret",
-		KeyMiniAppLIFFURL: "http://127.0.0.1:8080/miniapp/",
-		KeyBotDestination: "U0123456789abcdef0123456789abcdef", KeyProjectID: "test-project",
+		KeyAppEnv: "production", KeyEventMode: "durable", KeyMessagingAPIChannelSecret: "secret",
+		KeyMiniAppLIFFURL:        "http://127.0.0.1:8080/miniapp/",
+		KeyMessagingAPIBotUserID: "U0123456789abcdef0123456789abcdef", KeyProjectID: "test-project",
 		KeyQueueName:    "projects/test-project/locations/asia-east1/queues/line-queue",
 		KeyWorkerURL:    "https://worker.example.test/tasks/v2/line-reply",
 		KeyOIDCAudience: "https://worker.example.test", KeyInvokerEmail: "invoker@test-project.iam.gserviceaccount.com",

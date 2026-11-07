@@ -79,7 +79,7 @@ func runCampaign(parent context.Context, args []string, getenv func(string) stri
 	if deps.BulkMessagingRuntime == nil {
 		return errors.New("bulk messaging runtime is not configured")
 	}
-	rt, err := deps.BulkMessagingRuntime(getenv(channelTokenEnv))
+	rt, err := deps.BulkMessagingRuntime(getenv(messagingAPIChannelAccessTokenEnv))
 	if err != nil {
 		return err
 	}

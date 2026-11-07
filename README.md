@@ -52,13 +52,13 @@ make dev                   # 強制清空 LINE Secret/Token 的安全本機 Heal
 curl http://localhost:8080/healthz
 ```
 
-未設定本機 `sync` 的 LINE 憑證時只開放 `/healthz`，`/webhook/line` 回 503。只有本機 sync 模式需要同時設定 `LINE_CHANNEL_SECRET` 與 `LINE_CHANNEL_ACCESS_TOKEN`；正式環境公開 Webhook 禁止配置發送 Token。設定契約與環境驗證請看 [設定文件](docs/operations/configuration.md)，不要把真實憑證寫進 GitHub。
+未設定本機 `sync` 的 LINE 憑證時只開放 `/healthz`，`/webhook/line` 回 503。只有本機 sync 模式需要同時設定 `LINE_MESSAGING_API_CHANNEL_SECRET` 與 `LINE_MESSAGING_API_CHANNEL_ACCESS_TOKEN`；正式環境公開 Webhook 禁止配置發送 Token。設定契約與環境驗證請看 [設定文件](docs/operations/configuration.md)，不要把真實憑證寫進 GitHub。
 
 此服務沒有公開的 Push HTTP endpoint；Push 僅透過需明確指定 `--send` 的 CLI：
 
 ```sh
 go run ./cmd/ops push --to "<LINE_USER_ID>" --text "測試通知"
-# 上方故意不會送出；需要明確加上 --send 並設定 LINE_CHANNEL_ACCESS_TOKEN。
+# 上方故意不會送出；需要明確加上 --send 並設定 LINE_MESSAGING_API_CHANNEL_ACCESS_TOKEN。
 ```
 
 CLI 發送會先輸出可重用的 UUID retry key。若發生 timeout 或結果未知，使用完全相同訊息內容及 `--retry-key` 重新執行，避免因新 key 重複送出；請勿將 key 和收件者資訊貼到公開 issue。
@@ -93,7 +93,7 @@ go run ./cmd/ops inspect --kind delivery-push --date 20261101 --read
 ```
 其他支援的 kind 參閱 `internal/adapter/inbound/cli/inspect.go` 與 `internal/application/usecases/provider-configuration`；沒有登入保護的公開查詢 HTTP 路由。這些命令需要具授權的測試 Channel Token，未經帳號授權不可呼叫正式服務。
 
-Profile 查詢只供具授權的操作人員手動執行，不會由公開 Webhook 自動讀取使用者資料。先在安全環境提供 `LINE_CHANNEL_ACCESS_TOKEN`，再明確指定使用者及 `--lookup`：
+Profile 查詢只供具授權的操作人員手動執行，不會由公開 Webhook 自動讀取使用者資料。先在安全環境提供 `LINE_MESSAGING_API_CHANNEL_ACCESS_TOKEN`，再明確指定使用者及 `--lookup`：
 ```sh
 go run ./cmd/ops profile --user "<LINE_USER_ID>" --lookup
 ```
@@ -111,7 +111,7 @@ Profile 回應包含個人資料，請勿將 stdout、Shell 紀錄或查詢結�
 - `internal/bootstrap/`：設定、組裝、啟動與 shutdown。
 - `cmd/webhook`、`cmd/worker`、`cmd/ops`：已具可編譯入口；Worker 尚未部署。
 
-**重要：預設 `LINE_EVENT_MODE=sync` 僅供本地開發，不持久化事件。Cloud Run 拒絕 sync；公開 Webhook 的 durable 模式只持有 `LINE_CHANNEL_SECRET`，發送 Token 僅交由私有 Worker 持有。** Durable 模式目前僅有程式碼與離線測試，缺少真實 Staging、unsend／edit、正式 IAM 與人工故障修復驗證；不能宣稱 production-ready 或端到端 exactly-once。
+**重要：預設 `LINE_EVENT_MODE=sync` 僅供本地開發，不持久化事件。Cloud Run 拒絕 sync；公開 Webhook 的 durable 模式只持有 `LINE_MESSAGING_API_CHANNEL_SECRET`，發送 Token 僅交由私有 Worker 持有。** Durable 模式目前僅有程式碼與離線測試，缺少真實 Staging、unsend／edit、正式 IAM 與人工故障修復驗證；不能宣稱 production-ready 或端到端 exactly-once。
 
 ## Codex SDK 自動辨識（開發基礎）
 

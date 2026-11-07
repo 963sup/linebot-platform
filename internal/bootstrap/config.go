@@ -116,8 +116,8 @@ func loadRuntimeConfig(role RuntimeRole, getenv func(string) string) (Config, er
 		Role: role, Environment: environment, Port: port,
 		LINEAPITimeout: timeout, Log: logging, Telemetry: telemetry,
 		Secrets: SecretConfig{
-			ChannelSecret: readSetting(getenv, KeyChannelSecret),
-			ChannelToken:  readSetting(getenv, KeyChannelToken),
+			ChannelSecret: readSetting(getenv, KeyMessagingAPIChannelSecret),
+			ChannelToken:  readSetting(getenv, KeyMessagingAPIChannelAccessToken),
 		},
 	}
 	if role == RoleWebhook {
@@ -134,10 +134,10 @@ func loadRuntimeConfig(role RuntimeRole, getenv func(string) string) (Config, er
 		}
 		cfg.EventMode = "durable"
 		if cfg.Secrets.ChannelSecret != "" {
-			return Config{}, errors.New("worker must not hold LINE_CHANNEL_SECRET")
+			return Config{}, errors.New("worker must not hold LINE_MESSAGING_API_CHANNEL_SECRET")
 		}
 		if cfg.Secrets.ChannelToken == "" {
-			return Config{}, errors.New("worker requires LINE_CHANNEL_ACCESS_TOKEN")
+			return Config{}, errors.New("worker requires LINE_MESSAGING_API_CHANNEL_ACCESS_TOKEN")
 		}
 		cfg.Durable, err = loadDurable(getenv)
 		if err != nil {
@@ -154,10 +154,10 @@ func loadRuntimeConfig(role RuntimeRole, getenv func(string) string) (Config, er
 	}
 	if cfg.EventMode == "durable" {
 		if cfg.Secrets.ChannelSecret == "" {
-			return Config{}, errors.New("durable webhook requires LINE_CHANNEL_SECRET")
+			return Config{}, errors.New("durable webhook requires LINE_MESSAGING_API_CHANNEL_SECRET")
 		}
 		if cfg.Secrets.ChannelToken != "" {
-			return Config{}, errors.New("public durable webhook must not hold LINE_CHANNEL_ACCESS_TOKEN")
+			return Config{}, errors.New("public durable webhook must not hold LINE_MESSAGING_API_CHANNEL_ACCESS_TOKEN")
 		}
 		cfg.Durable, err = loadDurable(getenv)
 		if err != nil {

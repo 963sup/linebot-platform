@@ -30,7 +30,7 @@ func runValidate(parent context.Context, args []string, getenv func(string) stri
 	if deps.ValidationRuntime == nil {
 		return errors.New("validation runtime is not configured")
 	}
-	rt, err := deps.ValidationRuntime(getenv(channelTokenEnv))
+	rt, err := deps.ValidationRuntime(getenv(messagingAPIChannelAccessTokenEnv))
 	if err != nil {
 		return err
 	}

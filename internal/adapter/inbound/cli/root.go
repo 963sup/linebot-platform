@@ -15,8 +15,8 @@ import (
 )
 
 const (
-	channelTokenEnv    = "LINE_CHANNEL_ACCESS_TOKEN"
-	pushCommandTimeout = 12 * time.Second
+	messagingAPIChannelAccessTokenEnv = "LINE_MESSAGING_API_CHANNEL_ACCESS_TOKEN"
+	pushCommandTimeout                = 12 * time.Second
 )
 
 func uuidv4() (string, error) {
@@ -160,7 +160,7 @@ func runWithContext(ctx context.Context, args []string, getenv func(string) stri
 	if deps.PushRuntime == nil {
 		return errors.New("push runtime is not configured")
 	}
-	runtime, err := deps.PushRuntime(getenv(channelTokenEnv))
+	runtime, err := deps.PushRuntime(getenv(messagingAPIChannelAccessTokenEnv))
 	if err != nil {
 		return err
 	}

@@ -35,7 +35,7 @@ func runInsights(parent context.Context, args []string, getenv func(string) stri
 	if deps.InsightsRuntime == nil {
 		return errors.New("insights runtime is not configured")
 	}
-	rt, err := deps.InsightsRuntime(getenv(channelTokenEnv))
+	rt, err := deps.InsightsRuntime(getenv(messagingAPIChannelAccessTokenEnv))
 	if err != nil {
 		return err
 	}

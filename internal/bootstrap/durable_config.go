@@ -16,12 +16,12 @@ var lineDestinationPattern = regexp.MustCompile(`^U[0-9a-f]{32}$`)
 // DurableConfig is only used when LINE_EVENT_MODE=durable. Configuration is
 // explicit and independently validated before any GCP clients are created.
 type DurableConfig struct {
-	ProjectID      string
-	BotDestination string
-	QueueName      string
-	WorkerURL      string
-	OIDCAudience   string
-	InvokerEmail   string
+	ProjectID    string
+	BotUserID    string
+	QueueName    string
+	WorkerURL    string
+	OIDCAudience string
+	InvokerEmail string
 }
 
 func loadPort(getenv func(string) string) (string, error) {
@@ -50,19 +50,19 @@ func loadLINETimeout(getenv func(string) string) (time.Duration, error) {
 
 func loadDurable(getenv func(string) string) (DurableConfig, error) {
 	d := DurableConfig{
-		ProjectID:      readSetting(getenv, KeyProjectID),
-		BotDestination: readSetting(getenv, KeyBotDestination),
-		QueueName:      readSetting(getenv, KeyQueueName),
-		WorkerURL:      readSetting(getenv, KeyWorkerURL),
-		OIDCAudience:   readSetting(getenv, KeyOIDCAudience),
-		InvokerEmail:   readSetting(getenv, KeyInvokerEmail),
+		ProjectID:    readSetting(getenv, KeyProjectID),
+		BotUserID:    readSetting(getenv, KeyMessagingAPIBotUserID),
+		QueueName:    readSetting(getenv, KeyQueueName),
+		WorkerURL:    readSetting(getenv, KeyWorkerURL),
+		OIDCAudience: readSetting(getenv, KeyOIDCAudience),
+		InvokerEmail: readSetting(getenv, KeyInvokerEmail),
 	}
-	if d.ProjectID == "" || d.BotDestination == "" || d.QueueName == "" || d.WorkerURL == "" ||
+	if d.ProjectID == "" || d.BotUserID == "" || d.QueueName == "" || d.WorkerURL == "" ||
 		d.OIDCAudience == "" || d.InvokerEmail == "" {
 		return DurableConfig{}, errors.New("durable event mode requires GCP project, LINE bot destination, queue, worker URL and OIDC identity")
 	}
-	if !lineDestinationPattern.MatchString(d.BotDestination) {
-		return DurableConfig{}, errors.New("LINE_BOT_DESTINATION must be U followed by 32 lowercase hexadecimal characters")
+	if !lineDestinationPattern.MatchString(d.BotUserID) {
+		return DurableConfig{}, errors.New("LINE_MESSAGING_API_BOT_USER_ID must be U followed by 32 lowercase hexadecimal characters")
 	}
 	// The preflight must reject the same malformed names as the Cloud Tasks
 	// adapter, before creating Firestore or Cloud Tasks SDK clients.

@@ -4,7 +4,7 @@
 
 ## Processes and mode
 
-- **Public webhook**: existing `cmd/webhook`, with raw LINE signature validation. `LINE_EVENT_MODE=sync` is local-development-only; Cloud Run fails closed unless `LINE_EVENT_MODE=durable`. The public durable webhook holds `LINE_CHANNEL_SECRET` but **must not be provided `LINE_CHANNEL_ACCESS_TOKEN`**. Enable durable only after Firestore, queue, worker authentication and dispatcher are validated.
+- **Public webhook**: existing `cmd/webhook`, with raw LINE signature validation. `LINE_EVENT_MODE=sync` is local-development-only; Cloud Run fails closed unless `LINE_EVENT_MODE=durable`. The public durable webhook holds `LINE_MESSAGING_API_CHANNEL_SECRET` but **must not be provided `LINE_MESSAGING_API_CHANNEL_ACCESS_TOKEN`**. Enable durable only after Firestore, queue, worker authentication and dispatcher are validated.
 - **Private worker**: `cmd/worker`, packaged with the shared `Dockerfile` by `cloudbuild.yaml`. Both the public webhook and private worker need least-privilege GCP identities; do not share a broad service account.
 - **Scheduled reconciliation**: Cloud Scheduler invokes POST `/tasks/v2/dispatch` using Google-signed OIDC. The worker independently checks the token Audience and the configured service account Email, in addition to Cloud Run IAM. This is best-effort pending-work recovery, **not** a guarantee to meet the 45-second LINE Reply window.
 
@@ -15,9 +15,9 @@
 | `APP_ENV` | `staging` or `production` on Cloud Run | same | Explicit runtime profile; local is rejected when `K_SERVICE` is present |
 | `PORT` | optional | optional | HTTP listener port, default 8080 |
 | `LINE_EVENT_MODE` | `durable` | optional `durable` only | Worker always runs in durable mode; explicit `sync` or unknown values fail startup |
-| `LINE_CHANNEL_SECRET` | required | n/a | Verify LINE raw-body signature |
-| `LINE_CHANNEL_ACCESS_TOKEN` | **forbidden** | required | Only the private worker is permitted to send LINE messages |
-| `LINE_BOT_DESTINATION` | required | required | Bot destination ID for event isolation and event-key derivation |
+| `LINE_MESSAGING_API_CHANNEL_SECRET` | required | n/a | Verify LINE raw-body signature |
+| `LINE_MESSAGING_API_CHANNEL_ACCESS_TOKEN` | **forbidden** | required | Only the private worker is permitted to send LINE messages |
+| `LINE_MESSAGING_API_BOT_USER_ID` | required | required | Bot destination ID for event isolation and event-key derivation |
 | `GCP_PROJECT_ID` | required | required | Dedicated staging project |
 | `TASK_QUEUE_NAME` | required | required | Exactly projects/PROJECT/locations/REGION/queues/NAME; PROJECT must equal GCP_PROJECT_ID, QUEUE ID must be 1–100 ASCII letters/digits/hyphens |
 | `TASK_WORKER_URL` | required | required | HTTPS worker URL ending in /tasks/v2/line-reply |

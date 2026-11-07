@@ -22,7 +22,7 @@ func runMenuImage(parent context.Context, args []string, getenv func(string) str
 	if deps.MenuImageRuntime == nil {
 		return errors.New("menu image runtime is not configured")
 	}
-	r, err := deps.MenuImageRuntime(getenv(channelTokenEnv))
+	r, err := deps.MenuImageRuntime(getenv(messagingAPIChannelAccessTokenEnv))
 	if err != nil {
 		return err
 	}

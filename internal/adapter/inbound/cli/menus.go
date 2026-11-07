@@ -28,7 +28,7 @@ func runMenus(parent context.Context, args []string, getenv func(string) string,
 	if deps.MenusRuntime == nil {
 		return errors.New("menus runtime is not configured")
 	}
-	rt, err := deps.MenusRuntime(getenv(channelTokenEnv))
+	rt, err := deps.MenusRuntime(getenv(messagingAPIChannelAccessTokenEnv))
 	if err != nil {
 		return err
 	}

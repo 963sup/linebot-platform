@@ -24,7 +24,7 @@ grep -Fq 'evidence_miniapp_channel_id' "${script}"
 grep -Fq 'MINI App deployment configuration does not match approved staging evidence' "${script}"
 grep -Fq 'require_project_role "${MINIAPP_SERVICE_ACCOUNT}" roles/datastore.user' "${script}"
 grep -Fq 'miniapp_identity' "${script}"
-grep -Fq 'reject_secret_role line-bot-channel-secret "${MINIAPP_SERVICE_ACCOUNT}"' "${script}"
+grep -Fq 'reject_secret_role line-messaging-api-channel-secret "${MINIAPP_SERVICE_ACCOUNT}"' "${script}"
 
 grep -Fq 'TARGET_PERCENT must be one of 10, 50, 100' "${promotion}"
 grep -Fq '.smoke_passed == true' "${promotion}"

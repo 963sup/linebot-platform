@@ -31,7 +31,7 @@ func runContent(parent context.Context, args []string, getenv func(string) strin
 	if deps.ContentRuntime == nil {
 		return errors.New("content runtime is not configured")
 	}
-	r, err := deps.ContentRuntime(getenv(channelTokenEnv))
+	r, err := deps.ContentRuntime(getenv(messagingAPIChannelAccessTokenEnv))
 	if err != nil {
 		return err
 	}

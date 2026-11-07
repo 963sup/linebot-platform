@@ -17,7 +17,7 @@ make dev
 
 ## LINE 憑證
 
-本機 `LINE_EVENT_MODE=sync` 使用 `APP_ENV=local`，需要同時透過安全環境提供 `LINE_CHANNEL_SECRET` 與 `LINE_CHANNEL_ACCESS_TOKEN`；未設定時只開放 health，webhook 回 503。設定清單以 [設定契約](configuration.md) 為準；`make dev` **不會讀取任何 .env 檔案**。**Cloud Run 公開服務必須使用 `LINE_EVENT_MODE=durable`，只提供簽章用的 `LINE_CHANNEL_SECRET`，不得注入發送 Token；僅私有 Worker 持有 Token**。不要把值寫進 git、PR、公共 log 或公開 issue。
+本機 `LINE_EVENT_MODE=sync` 使用 `APP_ENV=local`，需要同時透過安全環境提供 `LINE_MESSAGING_API_CHANNEL_SECRET` 與 `LINE_MESSAGING_API_CHANNEL_ACCESS_TOKEN`；未設定時只開放 health，webhook 回 503。設定清單以 [設定契約](configuration.md) 為準；`make dev` **不會讀取任何 .env 檔案**。**Cloud Run 公開服務必須使用 `LINE_EVENT_MODE=durable`，只提供簽章用的 `LINE_MESSAGING_API_CHANNEL_SECRET`，不得注入發送 Token；僅私有 Worker 持有 Token**。不要把值寫進 git、PR、公共 log 或公開 issue。
 
 對外 webhook 在本機測試時須透過 HTTPS 端點，並以測試 LINE Channel 驗證。這個專案**沒有自動建立 LINE Channel 或 GCP 資源**。
 
@@ -39,7 +39,7 @@ make dev
 make config-check
 ```
 
-`APP_ENV` 預設 local；只有明確設定 staging 或 production 且滿足 durable 所有條件時可使用部署模式。Cloud Run 的 `K_SERVICE` 若存在，明確拒絕 local。正式環境的 `LINE_CHANNEL_SECRET` 與發送 Token 以 Secret Manager references 注入不同 Service，不能將真實值放到可提交的 YAML 或 `.env.example`。
+`APP_ENV` 預設 local；只有明確設定 staging 或 production 且滿足 durable 所有條件時可使用部署模式。Cloud Run 的 `K_SERVICE` 若存在，明確拒絕 local。正式環境的 `LINE_MESSAGING_API_CHANNEL_SECRET` 與發送 Token 以 Secret Manager references 注入不同 Service，不能將真實值放到可提交的 YAML 或 `.env.example`。
 
 ## LINE SDK Runtime 與 Timeout
 
@@ -57,7 +57,7 @@ make run-webhook
 ```bash
 # 缺 --send 時不會對外發送。
 go run ./cmd/ops push --to "<recipient>" --text "hello"
-# 經明確授權，且已有 LINE_CHANNEL_ACCESS_TOKEN 時可加 --send。
+# 經明確授權，且已有 LINE_MESSAGING_API_CHANNEL_ACCESS_TOKEN 時可加 --send。
 ```
 
 若發送結果不確定，後續重試務必提供同一 `--retry-key`、同一接收者與相同 payload。CLI 會在第一次發送前輸出 UUID；務必妥善保存，不要放在公開日誌或 issue。

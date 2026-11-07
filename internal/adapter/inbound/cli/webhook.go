@@ -35,7 +35,7 @@ func runWebhookAdmin(parent context.Context, args []string, getenv func(string) 
 	if deps.WebhookRuntime == nil {
 		return errors.New("webhook runtime is not configured")
 	}
-	rt, err := deps.WebhookRuntime(getenv(channelTokenEnv))
+	rt, err := deps.WebhookRuntime(getenv(messagingAPIChannelAccessTokenEnv))
 	if err != nil {
 		return err
 	}

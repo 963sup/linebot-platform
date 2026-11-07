@@ -55,7 +55,7 @@ func runAudienceAdmin(parent context.Context, args []string, getenv func(string)
 	if deps.AudienceManagementRuntime == nil {
 		return errors.New("audience management runtime is not configured")
 	}
-	runtime, err := deps.AudienceManagementRuntime(getenv(channelTokenEnv))
+	runtime, err := deps.AudienceManagementRuntime(getenv(messagingAPIChannelAccessTokenEnv))
 	if err != nil {
 		return err
 	}

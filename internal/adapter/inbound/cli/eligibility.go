@@ -49,7 +49,7 @@ func runEligibility(parent context.Context, args []string, getenv func(string) s
 	if deps.EligibilityRuntime == nil {
 		return errors.New("eligibility runtime is not configured")
 	}
-	runtime, err := deps.EligibilityRuntime(getenv(channelTokenEnv))
+	runtime, err := deps.EligibilityRuntime(getenv(messagingAPIChannelAccessTokenEnv))
 	if err != nil {
 		return err
 	}

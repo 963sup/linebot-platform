@@ -31,8 +31,8 @@ func TestGeneratedDocumentationAndExamples(t *testing.T) {
 func TestTemplateRequiresOnlyKnownSettingsAndNoSecrets(t *testing.T) {
 	for _, example := range []string{
 		"UNEXPECTED=1\n",
-		"LINE_CHANNEL_ACCESS_TOKEN=private-token\n",
-		"LINE_CHANNEL_SECRET=private-secret\n",
+		"LINE_MESSAGING_API_CHANNEL_ACCESS_TOKEN=private-token\n",
+		"LINE_MESSAGING_API_CHANNEL_SECRET=private-secret\n",
 		"APP_ENV=local\nPORT=8080\n",
 	} {
 		if err := checkExample([]byte(example)); err == nil {

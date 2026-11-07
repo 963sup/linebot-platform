@@ -8,14 +8,14 @@ import (
 
 func durableSettings() map[string]string {
 	return map[string]string{
-		KeyEventMode:      "durable",
-		KeyChannelSecret:  "test-secret",
-		KeyBotDestination: "U0123456789abcdef0123456789abcdef",
-		KeyProjectID:      "test-project",
-		KeyQueueName:      "projects/test-project/locations/asia-east1/queues/line-queue",
-		KeyWorkerURL:      "https://worker.example.test/tasks/v2/line-reply",
-		KeyOIDCAudience:   "https://worker.example.test",
-		KeyInvokerEmail:   "invoker@test-project.iam.gserviceaccount.com",
+		KeyEventMode:                 "durable",
+		KeyMessagingAPIChannelSecret: "test-secret",
+		KeyMessagingAPIBotUserID:     "U0123456789abcdef0123456789abcdef",
+		KeyProjectID:                 "test-project",
+		KeyQueueName:                 "projects/test-project/locations/asia-east1/queues/line-queue",
+		KeyWorkerURL:                 "https://worker.example.test/tasks/v2/line-reply",
+		KeyOIDCAudience:              "https://worker.example.test",
+		KeyInvokerEmail:              "invoker@test-project.iam.gserviceaccount.com",
 	}
 }
 
@@ -36,9 +36,9 @@ func TestEnvironmentProfilesAndRoleSecretIsolation(t *testing.T) {
 		t.Fatalf("invalid tokenless cloud webhook: config=%#v err=%v", webhook, err)
 	}
 	workerEnv := durableSettings()
-	delete(workerEnv, KeyChannelSecret)
+	delete(workerEnv, KeyMessagingAPIChannelSecret)
 	workerEnv[KeyAppEnv] = "production"
-	workerEnv[KeyChannelToken] = "private-send-token"
+	workerEnv[KeyMessagingAPIChannelAccessToken] = "private-send-token"
 	workerEnv[KeyCloudRunService] = "linebot-worker"
 	worker, err := LoadWorkerConfig(env(workerEnv))
 	if err != nil || worker.Secrets.ChannelToken == "" ||
@@ -64,12 +64,12 @@ func TestEnvironmentFailsClosedWithoutSecretDisclosure(t *testing.T) {
 		{"worker missing token", durableSettings(), true},
 		{"durable webhook send token", func() map[string]string {
 			v := durableSettings()
-			v[KeyChannelToken] = "do-not-leak-secret"
+			v[KeyMessagingAPIChannelAccessToken] = "do-not-leak-secret"
 			return v
 		}(), false},
 		{"worker with signing secret", func() map[string]string {
 			v := durableSettings()
-			v[KeyChannelToken] = "worker-token"
+			v[KeyMessagingAPIChannelAccessToken] = "worker-token"
 			return v
 		}(), true},
 	} {
@@ -83,7 +83,7 @@ func TestEnvironmentFailsClosedWithoutSecretDisclosure(t *testing.T) {
 			if err == nil {
 				t.Fatal("expected unsafe configuration to be rejected")
 			}
-			if tt.config[KeyChannelToken] != "" && tt.config[KeyChannelToken] == err.Error() {
+			if tt.config[KeyMessagingAPIChannelAccessToken] != "" && tt.config[KeyMessagingAPIChannelAccessToken] == err.Error() {
 				t.Fatal("credential appeared in error")
 			}
 		})
@@ -105,7 +105,7 @@ func TestSettingContractUniqueAndSecretClassified(t *testing.T) {
 		}
 		seen[spec.Key] = true
 	}
-	for _, secret := range []string{KeyChannelSecret, KeyChannelToken} {
+	for _, secret := range []string{KeyMessagingAPIChannelSecret, KeyMessagingAPIChannelAccessToken} {
 		found := false
 		for _, spec := range SettingsContract() {
 			if spec.Key == secret {
@@ -120,8 +120,8 @@ func TestSettingContractUniqueAndSecretClassified(t *testing.T) {
 
 func TestWorkerRejectsIncompatibleWebhookMode(t *testing.T) {
 	values := durableSettings()
-	delete(values, KeyChannelSecret)
-	values[KeyChannelToken] = "private-worker-token"
+	delete(values, KeyMessagingAPIChannelSecret)
+	values[KeyMessagingAPIChannelAccessToken] = "private-worker-token"
 	values[KeyEventMode] = "sync"
 	if _, err := LoadWorkerConfig(env(values)); err == nil {
 		t.Fatal("worker accepted explicit sync mode instead of failing closed")
@@ -159,8 +159,8 @@ func TestDurableConfigPreflightRejectsMalformedQueueName(t *testing.T) {
 				t.Fatal("webhook preflight accepted an invalid or cross-project queue")
 			}
 			worker := durableSettings()
-			delete(worker, KeyChannelSecret)
-			worker[KeyChannelToken] = "test-token"
+			delete(worker, KeyMessagingAPIChannelSecret)
+			worker[KeyMessagingAPIChannelAccessToken] = "test-token"
 			worker[KeyQueueName] = queue
 			if _, err := LoadWorkerConfig(env(worker)); err == nil {
 				t.Fatal("worker preflight accepted an invalid or cross-project queue")

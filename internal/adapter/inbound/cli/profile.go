@@ -34,13 +34,13 @@ func runProfile(parent context.Context, args []string, getenv func(string) strin
 	if getenv == nil || output == nil {
 		return errors.New("profile runtime is not configured")
 	}
-	if getenv(channelTokenEnv) == "" {
+	if getenv(messagingAPIChannelAccessTokenEnv) == "" {
 		return errors.New("access token is required")
 	}
 	if deps.ProfileRuntime == nil {
 		return errors.New("profile runtime is not configured")
 	}
-	runtime, err := deps.ProfileRuntime(getenv(channelTokenEnv))
+	runtime, err := deps.ProfileRuntime(getenv(messagingAPIChannelAccessTokenEnv))
 	if err != nil {
 		return err
 	}

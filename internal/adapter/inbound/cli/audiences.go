@@ -30,7 +30,7 @@ func runAudiences(parent context.Context, args []string, getenv func(string) str
 	if deps.AudienceRuntime == nil {
 		return errors.New("audience runtime is not configured")
 	}
-	rt, err := deps.AudienceRuntime(getenv(channelTokenEnv))
+	rt, err := deps.AudienceRuntime(getenv(messagingAPIChannelAccessTokenEnv))
 	if err != nil {
 		return err
 	}

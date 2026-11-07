@@ -79,8 +79,8 @@ resource "google_service_account_iam_member" "deployer_uses_runtime" {
   member             = "serviceAccount:${google_service_account.runtime["deployer"].email}"
 }
 
-data "google_secret_manager_secret" "channel_secret" { secret_id = "line-bot-channel-secret" }
-data "google_secret_manager_secret" "access_token" { secret_id = "line-bot-channel-access-token" }
+data "google_secret_manager_secret" "channel_secret" { secret_id = "line-messaging-api-channel-secret" }
+data "google_secret_manager_secret" "access_token" { secret_id = "line-messaging-api-channel-access-token" }
 
 resource "google_secret_manager_secret_iam_member" "public_channel_secret" {
   secret_id = data.google_secret_manager_secret.channel_secret.id

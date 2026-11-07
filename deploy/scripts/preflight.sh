@@ -110,7 +110,7 @@ fi
 for account in "${PUBLIC_SERVICE_ACCOUNT}" "${WORKER_SERVICE_ACCOUNT}" "${MINIAPP_SERVICE_ACCOUNT}" "${INVOKER_SERVICE_ACCOUNT}"; do
   gcloud iam service-accounts describe "${account}" --project="${PROJECT_ID}" --quiet >/dev/null
 done
-for secret in line-bot-channel-secret line-bot-channel-access-token; do
+for secret in line-messaging-api-channel-secret line-messaging-api-channel-access-token; do
   gcloud secrets describe "${secret}" --project="${PROJECT_ID}" --quiet >/dev/null
 done
 
@@ -154,16 +154,16 @@ require_project_role "${PUBLIC_SERVICE_ACCOUNT}" roles/cloudtasks.enqueuer
 require_project_role "${WORKER_SERVICE_ACCOUNT}" roles/datastore.user
 require_project_role "${WORKER_SERVICE_ACCOUNT}" roles/cloudtasks.enqueuer
 require_project_role "${MINIAPP_SERVICE_ACCOUNT}" roles/datastore.user
-require_secret_role line-bot-channel-secret "${PUBLIC_SERVICE_ACCOUNT}"
-require_secret_role line-bot-channel-access-token "${WORKER_SERVICE_ACCOUNT}"
+require_secret_role line-messaging-api-channel-secret "${PUBLIC_SERVICE_ACCOUNT}"
+require_secret_role line-messaging-api-channel-access-token "${WORKER_SERVICE_ACCOUNT}"
 reject_project_role "${PUBLIC_SERVICE_ACCOUNT}" roles/secretmanager.secretAccessor
 reject_project_role "${WORKER_SERVICE_ACCOUNT}" roles/secretmanager.secretAccessor
 reject_project_role "${MINIAPP_SERVICE_ACCOUNT}" roles/secretmanager.secretAccessor
 reject_project_role "${MINIAPP_SERVICE_ACCOUNT}" roles/cloudtasks.enqueuer
-reject_secret_role line-bot-channel-access-token "${PUBLIC_SERVICE_ACCOUNT}"
-reject_secret_role line-bot-channel-secret "${WORKER_SERVICE_ACCOUNT}"
-reject_secret_role line-bot-channel-secret "${MINIAPP_SERVICE_ACCOUNT}"
-reject_secret_role line-bot-channel-access-token "${MINIAPP_SERVICE_ACCOUNT}"
+reject_secret_role line-messaging-api-channel-access-token "${PUBLIC_SERVICE_ACCOUNT}"
+reject_secret_role line-messaging-api-channel-secret "${WORKER_SERVICE_ACCOUNT}"
+reject_secret_role line-messaging-api-channel-secret "${MINIAPP_SERVICE_ACCOUNT}"
+reject_secret_role line-messaging-api-channel-access-token "${MINIAPP_SERVICE_ACCOUNT}"
 
 # Listing is read-only. The signed staging evidence is the authoritative record
 # that the required definitions are Ready, not merely declared by the API.

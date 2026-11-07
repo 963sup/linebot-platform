@@ -54,7 +54,7 @@ func runManageMenu(parent context.Context, args []string, getenv func(string) st
 		if deps.MenuImageUploadRuntime == nil {
 			return errors.New("menu image upload runtime is not configured")
 		}
-		runtime, runtimeErr := deps.MenuImageUploadRuntime(getenv(channelTokenEnv))
+		runtime, runtimeErr := deps.MenuImageUploadRuntime(getenv(messagingAPIChannelAccessTokenEnv))
 		if runtimeErr != nil {
 			return runtimeErr
 		}
@@ -67,7 +67,7 @@ func runManageMenu(parent context.Context, args []string, getenv func(string) st
 	if deps.MenuManagementRuntime == nil {
 		return errors.New("menu management runtime is not configured")
 	}
-	runtime, err := deps.MenuManagementRuntime(getenv(channelTokenEnv))
+	runtime, err := deps.MenuManagementRuntime(getenv(messagingAPIChannelAccessTokenEnv))
 	if err != nil {
 		return err
 	}

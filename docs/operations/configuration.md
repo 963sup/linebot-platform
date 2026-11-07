@@ -13,9 +13,9 @@
 | `TELEMETRY_MODE` | webhook,worker,miniapp | 否 | off | 選用 | off 或 gcp-otlp；gcp-otlp 固定送往 127.0.0.1:4317 collector |
 | `OTEL_TRACE_SAMPLE_RATIO` | webhook,worker,miniapp | 否 | 0.05 | TELEMETRY_MODE=gcp-otlp 時套用 | parent-based trace sample ratio，0–1 |
 | `OTEL_METRIC_INTERVAL` | webhook,worker,miniapp | 否 | 60s | TELEMETRY_MODE=gcp-otlp 時套用 | metrics 匯出週期，10s–5m |
-| `LINE_CHANNEL_SECRET` | webhook | 是 | — | durable 必需；sync 與 Token 成對 | 僅驗證原始 Webhook 簽章，不應傳給 Worker |
-| `LINE_CHANNEL_ACCESS_TOKEN` | worker,local-sync,ops-push,ops-profile | 是 | — | worker 必需；本機 sync 成對 | durable 公開 Webhook 禁止持有 |
-| `LINE_BOT_DESTINATION` | webhook-durable,worker | 否 | — | durable 必需 | LINE Bot Info API 的 userId；不是 Console 的 Your user ID |
+| `LINE_MESSAGING_API_CHANNEL_SECRET` | webhook | 是 | — | durable 必需；sync 與 Token 成對 | 僅驗證原始 Webhook 簽章，不應傳給 Worker |
+| `LINE_MESSAGING_API_CHANNEL_ACCESS_TOKEN` | worker,local-sync,ops-push,ops-profile | 是 | — | worker 必需；本機 sync 成對 | durable 公開 Webhook 禁止持有 |
+| `LINE_MESSAGING_API_BOT_USER_ID` | webhook-durable,worker | 否 | — | durable 必需 | LINE Bot Info API 的 userId；不是 Console 的 Your user ID |
 | `GCP_PROJECT_ID` | webhook-durable,worker | 否 | — | durable 必需 | 最小 IAM 的指定 Google Cloud Project；Mini App 由 ADC 自動偵測 |
 | `TASK_QUEUE_NAME` | webhook-durable,worker | 否 | — | durable 必需 | 六段 Queue 資源名稱；Project 必須等於 GCP_PROJECT_ID；Queue ID 僅限 1–100 字元英數或連字號 |
 | `TASK_WORKER_URL` | webhook-durable,worker | 否 | — | durable 必需 | HTTPS Worker /tasks/v2/line-reply |

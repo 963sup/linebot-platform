@@ -43,9 +43,9 @@ func TestCloudBuildConfigurationTargetsLineBotProduction(t *testing.T) {
 		"line-bot-private",
 		"line-miniapp",
 		"line-bot-events",
-		"_LINE_BOT_DESTINATION",
-		"LINE_CHANNEL_SECRET=line-bot-channel-secret:latest",
-		"LINE_CHANNEL_ACCESS_TOKEN=line-bot-channel-access-token:latest",
+		"_LINE_MESSAGING_API_BOT_USER_ID",
+		"LINE_MESSAGING_API_CHANNEL_SECRET=line-messaging-api-channel-secret:latest",
+		"LINE_MESSAGING_API_CHANNEL_ACCESS_TOKEN=line-messaging-api-channel-access-token:latest",
 		"--remove-env-vars",
 		"--remove-secrets",
 		"--concurrency=16",
@@ -81,7 +81,7 @@ func TestCloudBuildConfigurationTargetsLineBotProduction(t *testing.T) {
 			t.Errorf("MINI App deployment missing %q", want)
 		}
 	}
-	for _, forbidden := range []string{"LINE_CHANNEL_SECRET=line-bot-channel-secret", "LINE_CHANNEL_ACCESS_TOKEN=line-bot-channel-access-token", "--concurrency=16"} {
+	for _, forbidden := range []string{"LINE_MESSAGING_API_CHANNEL_SECRET=line-messaging-api-channel-secret", "LINE_MESSAGING_API_CHANNEL_ACCESS_TOKEN=line-messaging-api-channel-access-token", "--concurrency=16"} {
 		if strings.Contains(miniappStep, forbidden) {
 			t.Errorf("MINI App deployment contains forbidden setting %q", forbidden)
 		}

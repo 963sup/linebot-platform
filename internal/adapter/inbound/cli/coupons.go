@@ -33,13 +33,13 @@ func inspectCoupon(parent context.Context, kind string, id promotion.CouponID, p
 	if getenv == nil || output == nil {
 		return errors.New("missing CLI configuration")
 	}
-	if getenv(channelTokenEnv) == "" {
+	if getenv(messagingAPIChannelAccessTokenEnv) == "" {
 		return errors.New("access token is required")
 	}
 	if deps.CouponsRuntime == nil {
 		return errors.New("coupons runtime is not configured")
 	}
-	rt, err := deps.CouponsRuntime(getenv(channelTokenEnv))
+	rt, err := deps.CouponsRuntime(getenv(messagingAPIChannelAccessTokenEnv))
 	if err != nil {
 		return err
 	}

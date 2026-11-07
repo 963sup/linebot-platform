@@ -6,9 +6,9 @@
 
 - 由擁有者指定單獨計費預算／IAM 的 Staging GCP Project、區域、Firestore database、Cloud Tasks Queue 與 LINE **測試** Channel。不得複用 Production token 或 Secret。
 - 使用已核准的 image digest，僅部署到明確 Staging Service；在實際索引/TTL/IAM 完成前保持入口停用。
-- Webhook 公開 HTTPS 路由僅接收 `/webhook/line`，使用 `LINE_EVENT_MODE=durable`、`LINE_CHANNEL_SECRET`；**不得**給它 `LINE_CHANNEL_ACCESS_TOKEN`、Cloud Tasks 批量管理權或 Worker 的憑證。
+- Webhook 公開 HTTPS 路由僅接收 `/webhook/line`，使用 `LINE_EVENT_MODE=durable`、`LINE_MESSAGING_API_CHANNEL_SECRET`；**不得**給它 `LINE_MESSAGING_API_CHANNEL_ACCESS_TOKEN`、Cloud Tasks 批量管理權或 Worker 的憑證。
 - Worker 為 private IAM-authenticated Cloud Run Service，持有 LINE Channel Access Token、Firestore 最小權限、必要的 Cloud Tasks 發派權限。Cloud Tasks 和 Scheduler 若使用同一 Worker handler 的驗證器，需使用設定中同一受信任 Invoker Email 和正確 Audience，分離時應先更新雙 Actor 授權模型。
-- MINI App 為獨立公開 Cloud Run Service；它不得持有 `LINE_CHANNEL_SECRET`、`LINE_CHANNEL_ACCESS_TOKEN`、Secret Manager 或 Cloud Tasks 權限。Developing、Review 與 Published internal channel 各自使用對應的 LIFF ID；本輪只能使用 Staging／Developing 設定。
+- MINI App 為獨立公開 Cloud Run Service；它不得持有 `LINE_MESSAGING_API_CHANNEL_SECRET`、`LINE_MESSAGING_API_CHANNEL_ACCESS_TOKEN`、Secret Manager 或 Cloud Tasks 權限。Developing、Review 與 Published internal channel 各自使用對應的 LIFF ID；本輪只能使用 Staging／Developing 設定。
 - Cloud Tasks enqueue 身分、Cloud Run Invoker、Secret Manager 存取身分各有最小權限；不可使用常駐 JSON service-account key。
 - Firestore 必須先建立 LINE `line_outbox_v1` 的 `(state,reply_until)`、`(state,lease_until)`、`(state,next_dispatch_at)`、`(state,created_at)`、`(state,updated_at)` 複合索引，以及 Identity `identity_outbox_v1` 的 `(state,lease_until)`、`(state,next_dispatch_at)` 複合索引。為 `line_inbox_v1`、`line_outbox_v1` 與 `identity_outbox_v1` 建立經 retention/privacy 核准的 `expires_at` TTL，並確認所有 Index 為 Ready。
 - **資料遷移**：既有 Pending 文件若缺 `next_dispatch_at`，以可重啟且不覆蓋更新的方式回填；以權威來源數據驗證總量與缺欄位數都正確後，才能切換新 Reconcile。不要在毫無 backfill 的現有資料庫直接切換。
@@ -18,7 +18,7 @@
 | Gate | 測試與失敗注入 | 成功證據（附 staging 資源與時間） |
 |---|---|---|
 | A IAM | 匿名呼叫 `/tasks/v2/line-reply`、`/tasks/v2/dispatch`；無授權 OIDC audience／email；合法 OIDC | 前三種拒絕，合法身分才通過，Cloud Run IAM 狀態與審核紀錄 |
-| B 憑證隔離 | 檢查兩服務實際 Revision runtime env/Secret references（安全遮蔽）；以錯誤 `LINE_CHANNEL_ACCESS_TOKEN` 注入 Public dry-deploy | Webhook **無**發送 Token；錯誤配置 fail closed；Private Worker 能使用 Staging Token |
+| B 憑證隔離 | 檢查兩服務實際 Revision runtime env/Secret references（安全遮蔽）；以錯誤 `LINE_MESSAGING_API_CHANNEL_ACCESS_TOKEN` 注入 Public dry-deploy | Webhook **無**發送 Token；錯誤配置 fail closed；Private Worker 能使用 Staging Token |
 | C Firestore | 對 12+ Workers 競爭同 EventKey；插入斷線及交錯 Transaction | 一個 Inbox、一個 Outbox、最多一個 Sending Claim；拒絕重開 Sent／Unknown |
 | C2 Worker capacity | 對 private Worker 發出至少 17 個同步阻塞請求，保持前 16 個 handler in-flight，再送第 17 個；其後釋放阻塞並啟動受控 shutdown | 最多 16 個進入 handler；第 17 個立即收到 `503 Service Unavailable` 與有效 `Retry-After`；Cloud Tasks 依該回應稍後重試而非程序內排隊；shutdown 停止新 admission 並等待既有 handler drain |
 | D Redelivery | 同一 webhookEventId 的簽章合法重送（LINE 測試 Channel）；首次模擬入庫後 CreateTask 失敗 | Pending 可恢復且不覆寫原本的 Message；Sending/Sent/Unknown 不會第二次 LINE Reply |

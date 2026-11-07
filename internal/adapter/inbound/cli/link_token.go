@@ -28,7 +28,7 @@ func runLinkToken(parent context.Context, args []string, getenv func(string) str
 		if deps.LinkTokenRuntime == nil {
 			return nil, errors.New("link-token runtime is not configured")
 		}
-		r, err := deps.LinkTokenRuntime(getenv(channelTokenEnv))
+		r, err := deps.LinkTokenRuntime(getenv(messagingAPIChannelAccessTokenEnv))
 		if err != nil {
 			return nil, err
 		}

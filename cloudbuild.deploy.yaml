@@ -12,7 +12,7 @@ substitutions:
   _PRIVATE_IMAGE_URI: ''
   _MINIAPP_IMAGE_URI: ''
   _QUEUE_ID: 'line-bot-events'
-  _LINE_BOT_DESTINATION: ''
+  _LINE_MESSAGING_API_BOT_USER_ID: ''
   _TASK_INVOKER_EMAIL: 'line-bot-invoker@bubbly-area-513305-s0.iam.gserviceaccount.com'
   _TASK_WORKER_ORIGIN: ''
   _DEPLOYER_SERVICE_ACCOUNT: 'line-bot-deployer@bubbly-area-513305-s0.iam.gserviceaccount.com'
@@ -42,8 +42,8 @@ steps:
           echo 'This deployment configuration only targets bubbly-area-513305-s0.' >&2
           exit 2
         fi
-        if ! printf '%s' '${_LINE_BOT_DESTINATION}' | grep -Eq '^U[0-9a-f]{32}$'; then
-          echo 'Specify _LINE_BOT_DESTINATION as a LINE user ID.' >&2
+        if ! printf '%s' '${_LINE_MESSAGING_API_BOT_USER_ID}' | grep -Eq '^U[0-9a-f]{32}$'; then
+          echo 'Specify _LINE_MESSAGING_API_BOT_USER_ID as a LINE user ID.' >&2
           exit 2
         fi
         case '${_STAGING_EVIDENCE_URI}' in gs://*) ;; *) echo 'Specify an immutable gs:// staging evidence object.' >&2; exit 2;; esac
@@ -72,10 +72,10 @@ steps:
       - '--no-invoker-iam-check'
       - '--no-traffic'
       - '--tag=candidate'
-      - '--update-env-vars=APP_ENV=production,LINE_EVENT_MODE=durable,LINE_API_TIMEOUT=8s,LOG_LEVEL=info,LOG_FORMAT=json,LINE_MINI_APP_LIFF_URL=${_LINE_MINI_APP_LIFF_URL},LINE_BOT_DESTINATION=${_LINE_BOT_DESTINATION},GCP_PROJECT_ID=$PROJECT_ID,TASK_QUEUE_NAME=projects/$PROJECT_ID/locations/${_REGION}/queues/${_QUEUE_ID},TASK_WORKER_URL=${_TASK_WORKER_ORIGIN}/tasks/v2/line-reply,TASK_OIDC_AUDIENCE=${_TASK_WORKER_ORIGIN},TASK_INVOKER_EMAIL=${_TASK_INVOKER_EMAIL}'
-      - '--update-secrets=LINE_CHANNEL_SECRET=line-bot-channel-secret:latest'
-      - '--remove-env-vars=GOOGLE_CLOUD_PROJECT,FIRESTORE_DATABASE,OPENAI_MODEL,AUTO_TASKS,AUTO_CALENDAR,CALENDAR_SERVICE_ACCOUNT'
-      - '--remove-secrets=LINE_CHANNEL_ACCESS_TOKEN,OPENAI_API_KEY'
+      - '--update-env-vars=APP_ENV=production,LINE_EVENT_MODE=durable,LINE_API_TIMEOUT=8s,LOG_LEVEL=info,LOG_FORMAT=json,LINE_MINI_APP_LIFF_URL=${_LINE_MINI_APP_LIFF_URL},LINE_MESSAGING_API_BOT_USER_ID=${_LINE_MESSAGING_API_BOT_USER_ID},GCP_PROJECT_ID=$PROJECT_ID,TASK_QUEUE_NAME=projects/$PROJECT_ID/locations/${_REGION}/queues/${_QUEUE_ID},TASK_WORKER_URL=${_TASK_WORKER_ORIGIN}/tasks/v2/line-reply,TASK_OIDC_AUDIENCE=${_TASK_WORKER_ORIGIN},TASK_INVOKER_EMAIL=${_TASK_INVOKER_EMAIL}'
+      - '--update-secrets=LINE_MESSAGING_API_CHANNEL_SECRET=line-messaging-api-channel-secret:latest'
+      - '--remove-env-vars=LINE_BOT_DESTINATION,GOOGLE_CLOUD_PROJECT,FIRESTORE_DATABASE,OPENAI_MODEL,AUTO_TASKS,AUTO_CALENDAR,CALENDAR_SERVICE_ACCOUNT'
+      - '--remove-secrets=LINE_CHANNEL_SECRET,LINE_CHANNEL_ACCESS_TOKEN,LINE_MESSAGING_API_CHANNEL_ACCESS_TOKEN,OPENAI_API_KEY'
       - '--quiet'
       - '--format=value(status.latestCreatedRevisionName)'
 
@@ -96,10 +96,10 @@ steps:
       - '--concurrency=16'
       - '--no-traffic'
       - '--tag=candidate'
-      - '--update-env-vars=APP_ENV=production,LINE_EVENT_MODE=durable,LINE_API_TIMEOUT=8s,LOG_LEVEL=info,LOG_FORMAT=json,LINE_BOT_DESTINATION=${_LINE_BOT_DESTINATION},GCP_PROJECT_ID=$PROJECT_ID,TASK_QUEUE_NAME=projects/$PROJECT_ID/locations/${_REGION}/queues/${_QUEUE_ID},TASK_WORKER_URL=${_TASK_WORKER_ORIGIN}/tasks/v2/line-reply,TASK_OIDC_AUDIENCE=${_TASK_WORKER_ORIGIN},TASK_INVOKER_EMAIL=${_TASK_INVOKER_EMAIL}'
-      - '--update-secrets=LINE_CHANNEL_ACCESS_TOKEN=line-bot-channel-access-token:latest'
-      - '--remove-env-vars=WORKER_MODE,LINE_MINI_APP_LIFF_URL,GOOGLE_CLOUD_PROJECT,FIRESTORE_DATABASE,AUTO_TASKS,AUTO_CALENDAR,CALENDAR_SERVICE_ACCOUNT'
-      - '--remove-secrets=LINE_CHANNEL_SECRET,OPENAI_API_KEY'
+      - '--update-env-vars=APP_ENV=production,LINE_EVENT_MODE=durable,LINE_API_TIMEOUT=8s,LOG_LEVEL=info,LOG_FORMAT=json,LINE_MESSAGING_API_BOT_USER_ID=${_LINE_MESSAGING_API_BOT_USER_ID},GCP_PROJECT_ID=$PROJECT_ID,TASK_QUEUE_NAME=projects/$PROJECT_ID/locations/${_REGION}/queues/${_QUEUE_ID},TASK_WORKER_URL=${_TASK_WORKER_ORIGIN}/tasks/v2/line-reply,TASK_OIDC_AUDIENCE=${_TASK_WORKER_ORIGIN},TASK_INVOKER_EMAIL=${_TASK_INVOKER_EMAIL}'
+      - '--update-secrets=LINE_MESSAGING_API_CHANNEL_ACCESS_TOKEN=line-messaging-api-channel-access-token:latest'
+      - '--remove-env-vars=LINE_BOT_DESTINATION,WORKER_MODE,LINE_MINI_APP_LIFF_URL,GOOGLE_CLOUD_PROJECT,FIRESTORE_DATABASE,AUTO_TASKS,AUTO_CALENDAR,CALENDAR_SERVICE_ACCOUNT'
+      - '--remove-secrets=LINE_CHANNEL_SECRET,LINE_CHANNEL_ACCESS_TOKEN,LINE_MESSAGING_API_CHANNEL_SECRET,OPENAI_API_KEY'
       - '--quiet'
       - '--format=value(status.latestCreatedRevisionName)'
 
@@ -119,8 +119,8 @@ steps:
       - '--no-traffic'
       - '--tag=candidate'
       - '--update-env-vars=^@^APP_ENV=production@LINE_API_TIMEOUT=8s@LOG_LEVEL=info@LOG_FORMAT=json@LINE_MINI_APP_CHANNEL_ID=${_LINE_MINI_APP_CHANNEL_ID}@LINE_MINI_APP_LIFF_URL=${_LINE_MINI_APP_LIFF_URL}@LINE_MINI_APP_ENDPOINT_URL=${_LINE_MINI_APP_ENDPOINT_URL}@FIRESTORE_DATABASE=(default)'
-      - '--remove-env-vars=LINE_LIFF_ID,MINIAPP_PUBLIC_ORIGIN,GCP_PROJECT_ID,LINE_EVENT_MODE,LINE_BOT_DESTINATION,TASK_QUEUE_NAME,TASK_WORKER_URL,TASK_OIDC_AUDIENCE,TASK_INVOKER_EMAIL,GOOGLE_CLOUD_PROJECT,OPENAI_MODEL,AUTO_TASKS,AUTO_CALENDAR,CALENDAR_SERVICE_ACCOUNT,WORKER_MODE'
-      - '--remove-secrets=LINE_CHANNEL_SECRET,LINE_CHANNEL_ACCESS_TOKEN,OPENAI_API_KEY'
+      - '--remove-env-vars=LINE_LIFF_ID,MINIAPP_PUBLIC_ORIGIN,LINE_BOT_DESTINATION,GCP_PROJECT_ID,LINE_EVENT_MODE,LINE_MESSAGING_API_BOT_USER_ID,TASK_QUEUE_NAME,TASK_WORKER_URL,TASK_OIDC_AUDIENCE,TASK_INVOKER_EMAIL,GOOGLE_CLOUD_PROJECT,OPENAI_MODEL,AUTO_TASKS,AUTO_CALENDAR,CALENDAR_SERVICE_ACCOUNT,WORKER_MODE'
+      - '--remove-secrets=LINE_CHANNEL_SECRET,LINE_CHANNEL_ACCESS_TOKEN,LINE_MESSAGING_API_CHANNEL_SECRET,LINE_MESSAGING_API_CHANNEL_ACCESS_TOKEN,OPENAI_API_KEY'
       - '--quiet'
       - '--format=value(status.latestCreatedRevisionName)'
 

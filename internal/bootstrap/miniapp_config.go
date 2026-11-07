@@ -48,7 +48,7 @@ func LoadMiniAppConfig(getenv func(string) string) (MiniAppConfig, error) {
 	if readSetting(getenv, KeyCloudRunService) != "" && environment == EnvLocal {
 		return MiniAppConfig{}, errors.New("Cloud Run requires explicit APP_ENV=staging or production")
 	}
-	for _, key := range []string{KeyChannelSecret, KeyChannelToken, KeyBotDestination, KeyQueueName, KeyWorkerURL, KeyOIDCAudience, KeyInvokerEmail} {
+	for _, key := range []string{KeyMessagingAPIChannelSecret, KeyMessagingAPIChannelAccessToken, KeyMessagingAPIBotUserID, KeyQueueName, KeyWorkerURL, KeyOIDCAudience, KeyInvokerEmail} {
 		if readSetting(getenv, key) != "" {
 			return MiniAppConfig{}, errors.New("miniapp contains a forbidden delivery setting")
 		}
