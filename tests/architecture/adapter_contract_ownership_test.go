@@ -12,8 +12,6 @@ import (
 	"testing"
 )
 
-const sharedGoogleAPICodec = "internal/adapter/outbound/google/api/codec"
-
 func TestOutboundAdapterPackagesDeclareOwnedContracts(t *testing.T) {
 	root := filepath.Join("..", "..", "internal", "adapter", "outbound")
 	packages := make(map[string][]*ast.File)
@@ -38,9 +36,6 @@ func TestOutboundAdapterPackagesDeclareOwnedContracts(t *testing.T) {
 		rel, err := filepath.Rel(filepath.Join("..", ".."), dir)
 		if err != nil {
 			t.Error(err)
-			continue
-		}
-		if filepath.ToSlash(rel) == sharedGoogleAPICodec {
 			continue
 		}
 		if !hasOwnedContractAssertion(files) {
@@ -122,76 +117,4 @@ func isOwnedContractPackage(path string) bool {
 	}
 	parts := strings.Split(strings.TrimPrefix(path, domainPrefix), "/")
 	return len(parts) == 2 && parts[0] != "" && parts[1] == "repositories"
-}
-
-func TestSharedGoogleAPICodecRemainsPureMapping(t *testing.T) {
-	root := filepath.Join("..", "..", filepath.FromSlash(sharedGoogleAPICodec))
-	violations := []string{}
-	walkProductionGoFiles(t, root, func(path string, file *ast.File) {
-		violations = append(violations, codecPurityViolations(file)...)
-	})
-	for _, violation := range violations {
-		t.Error(violation)
-	}
-}
-
-func TestCodecPurityClassification(t *testing.T) {
-	tests := map[string]struct {
-		source string
-		clean  bool
-	}{
-		"pure mapper":         {`package p; import "encoding/json"; func Map(v any) ([]byte, error) { return json.Marshal(v) }`, true},
-		"adapter import":      {`package p; import _ "github.com/963sup/linebot-platform/internal/adapter/outbound/peer"`, false},
-		"infrastructure":      {`package p; import _ "github.com/963sup/linebot-platform/internal/infrastructure/httpclient"`, false},
-		"network client":      {`package p; import _ "net/http"`, false},
-		"goroutine":           {`package p; func Map() { go func(){}() }`, false},
-		"package state":       {`package p; var cache = map[string]string{}`, false},
-		"initialization hook": {`package p; func init() {}`, false},
-	}
-	for name, test := range tests {
-		t.Run(name, func(t *testing.T) {
-			file, err := parser.ParseFile(token.NewFileSet(), name+".go", test.source, 0)
-			if err != nil {
-				t.Fatal(err)
-			}
-			if got := len(codecPurityViolations(file)) == 0; got != test.clean {
-				t.Fatalf("codec clean = %v, want %v", got, test.clean)
-			}
-		})
-	}
-}
-
-func codecPurityViolations(file *ast.File) []string {
-	violations := []string{}
-	for _, imp := range file.Imports {
-		path, err := strconv.Unquote(imp.Path.Value)
-		if err != nil {
-			violations = append(violations, "invalid codec import")
-			continue
-		}
-		if isPackageWithin(path, internalPath+"adapter") || isPackageWithin(path, internalPath+"infrastructure") ||
-			isPackageWithin(path, internalPath+"bootstrap") || path == "net" || strings.HasPrefix(path, "net/") ||
-			path == "os" || strings.HasPrefix(path, "os/") {
-			violations = append(violations, "codec imports effect or peer package "+path)
-		}
-	}
-	for _, declaration := range file.Decls {
-		switch value := declaration.(type) {
-		case *ast.GenDecl:
-			if value.Tok == token.VAR {
-				violations = append(violations, "codec declares package mutable state")
-			}
-		case *ast.FuncDecl:
-			if value.Recv == nil && value.Name.Name == "init" {
-				violations = append(violations, "codec declares init hook")
-			}
-		}
-	}
-	ast.Inspect(file, func(node ast.Node) bool {
-		if _, ok := node.(*ast.GoStmt); ok {
-			violations = append(violations, "codec starts goroutine")
-		}
-		return true
-	})
-	return violations
 }

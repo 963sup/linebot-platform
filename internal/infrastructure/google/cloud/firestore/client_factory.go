@@ -13,12 +13,6 @@ import (
 
 const DefaultDatabase = "(default)"
 
-// NewDetectedClientWithDatabase creates a client using Application Default
-// Credentials to discover the Google Cloud project. The caller owns Close().
-func NewDetectedClientWithDatabase(ctx context.Context, databaseID string, opts ...option.ClientOption) (*sdk.Client, error) {
-	return NewClientWithDatabase(ctx, sdk.DetectProjectID, databaseID, opts...)
-}
-
 // NewClient returns the native default-database Firestore client. The caller
 // owns Close(). Use a dedicated GCP project and least-privilege workload
 // identity.

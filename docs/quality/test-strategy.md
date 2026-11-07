@@ -30,9 +30,8 @@ These are **offline contract tests** against the pinned Go SDK and local HTTP se
 
 ## Provider Client Factories (Stage 3)
 
-- **Google Workspace**: local HTTP fake exercises the Google Tasks `Tasklists.List` and Calendar `Events.List` native API, a simulated OAuth Bearer transport, and native Sheets/Drive construction. Factories reject nil/cancelled inputs. No real user account or consent is involved.
 - **OpenAI / Gemini**: verify explicit API Key requirements, backend differences (Gemini Developer API vs Vertex AI), and native SDK access without paid API calls.
-- **Google Cloud**: type-checked Firestore, Cloud Tasks, Secret Manager and Storage constructors reject nil/cancelled contexts and missing Firestore project. GCP IAM and external services are not tested.
+- **Google Cloud**: type-checked Firestore, Cloud Tasks, Secret Manager constructors reject nil/cancelled contexts and missing Firestore project. GCP IAM and external services are not tested.
 - Google Tasks, Google Calendar and Google Cloud Tasks are distinct products with different credentials, scopes and API models.
 - Catalog `client_ready` requires actual native Factory source but does not mean a service is enabled, an Adapter exists or a live API permission was verified.
 
@@ -61,4 +60,4 @@ make check
 
 ## Integration / E2E
 
-GitHub Actions 執行 `make check`、Codex 設定驗證，以及獨立的 Firestore Emulator integration job。實際 Firestore、複合索引、TTL、Cloud Tasks、Cloud Run OIDC、LINE Sandbox 與 Workspace 驗收仍由已授權的雲端部署流程負責。
+GitHub Actions 執行 `make check`、Codex 設定驗證，以及獨立的 Firestore Emulator integration job。實際 Firestore、複合索引、TTL、Cloud Tasks、Cloud Run OIDC、LINE Sandbox 驗收仍由已授權的雲端部署流程負責。

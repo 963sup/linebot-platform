@@ -26,14 +26,6 @@ modules:
     contexts: []
     evidence: [internal/infrastructure/google/cloud/secretmanager]
     assumption: Provides credential storage without owning authorization semantics.
-  - module: cloud.google.com/go/storage
-    version: v1.70.0
-    catalog_status: client_ready
-    classification: generic-infrastructure
-    capabilities: [object-upload, object-download]
-    contexts: []
-    evidence: [internal/infrastructure/google/cloud/storage]
-    assumption: Stores blobs referenced by context-owned metadata.
   - module: github.com/BurntSushi/toml
     version: v1.6.0
     catalog_status: integrated
@@ -146,22 +138,14 @@ modules:
     contexts: []
     evidence: [internal/governance/domainmodel]
     assumption: Supports governance tooling and provides no business capability.
-  - module: golang.org/x/oauth2
-    version: v0.37.0
-    catalog_status: integrated
-    classification: supporting-capability
-    capabilities: [authorization-code-pkce, token-source]
-    contexts: [identity, workspace-automation]
-    evidence: [internal/infrastructure/google/api/oauth]
-    assumption: Implements authorization mechanisms while Identity owns eligibility language.
   - module: google.golang.org/api
     version: v0.310.0
-    catalog_status: client_ready
-    classification: supporting-capability
-    capabilities: [drive, sheets, calendar, tasks, forms]
-    contexts: [workspace-automation]
-    evidence: [internal/adapter/outbound/google/api]
-    assumption: Usually composes Workspace Automation actions but Google resource names remain behind an ACL.
+    catalog_status: integrated
+    classification: generic-infrastructure
+    capabilities: [google-idtoken-verification, google-api-client-options]
+    contexts: []
+    evidence: [internal/infrastructure/google/cloud/firestore]
+    assumption: Supplies workload authentication and native Cloud client options.
   - module: google.golang.org/genai
     version: v1.77.0
     catalog_status: client_ready

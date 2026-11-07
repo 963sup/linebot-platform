@@ -8,7 +8,6 @@ import (
 	cloudtasks "github.com/963sup/linebot-platform/internal/infrastructure/google/cloud/cloudtasks"
 	firestore "github.com/963sup/linebot-platform/internal/infrastructure/google/cloud/firestore"
 	secretmanager "github.com/963sup/linebot-platform/internal/infrastructure/google/cloud/secretmanager"
-	storage "github.com/963sup/linebot-platform/internal/infrastructure/google/cloud/storage"
 )
 
 func TestGoogleCloudFactoriesRejectInvalidContext(t *testing.T) {
@@ -25,9 +24,6 @@ func TestGoogleCloudFactoriesRejectInvalidContext(t *testing.T) {
 	if _, err := secretmanager.NewClient(nilContext); err == nil {
 		t.Fatal("Secret Manager must reject nil context")
 	}
-	if _, err := storage.NewClient(nilContext); err == nil {
-		t.Fatal("Storage must reject nil context")
-	}
 
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
@@ -42,10 +38,6 @@ func TestGoogleCloudFactoriesRejectInvalidContext(t *testing.T) {
 		},
 		"secretmanager": func() error {
 			_, err := secretmanager.NewClient(ctx)
-			return err
-		},
-		"storage": func() error {
-			_, err := storage.NewClient(ctx)
 			return err
 		},
 	} {

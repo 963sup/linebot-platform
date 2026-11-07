@@ -4,6 +4,8 @@
 - Date: 2026-11-04
 - Supersedes: ADR 0001 and ADR 0002 only where they otherwise prohibit the tactical packages authorized below
 
+> Historical Workspace / Google account-link scope below is retired by [ADR 0006](0006-retire-unused-workspace-boundaries.md). Current capabilities are defined by the Domain manifest.
+
 ## Context
 
 The dependency-informed context map identifies several useful business-boundary hypotheses. Code is now needed to make their proposed invariants executable, but an implementation artifact alone cannot prove that a Bounded Context, Subdomain classification, owner, or Ubiquitous Language matches the business.

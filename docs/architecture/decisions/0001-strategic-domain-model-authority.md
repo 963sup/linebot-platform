@@ -4,6 +4,8 @@
 - Date: 2026-11-04
 - Superseded in part by: ADR 0003, only for explicitly authorized candidate tactical model packages
 
+> Historical Workspace / Google account-link scope below is retired by [ADR 0006](0006-retire-unused-workspace-boundaries.md). Current capabilities are defined by the Domain manifest.
+
 ## Context
 
 The repository contains 102 LINE operations, multiple application capability packages, SDK catalog entries, and `go.mod` dependencies. These are useful implementation evidence, but their taxonomies describe providers and technical integration rather than business language, consistency boundaries, or data ownership.

@@ -28,7 +28,6 @@ The retained factory exceptions have these concrete owners and acceptance eviden
 
 | Infrastructure owner / factory | Compatibility reason | Acceptance evidence |
 | --- | --- | --- |
-| `internal/infrastructure/google/cloud/storage.NewClient` | Preserve the catalog's Cloud Storage client-ready integration boundary. | `tests/contract/google_cloud_clients_test.go` and SDK catalog/retention checks. |
 | `internal/infrastructure/google/genai.NewGeminiClient`, `NewVertexClient` | Preserve explicitly configured Gemini/Vertex backends. | `client_factory_test.go`: `TestNewGeminiClientValidatesAndKeepsBackendExplicit`, `TestNewVertexClientRequiresProjectAndLocation`; SDK catalog checks. |
 | `internal/infrastructure/openai.NewClient` | Preserve the configured OpenAI client-ready integration boundary. | `client_factory_test.go`: `TestNewClientValidatesConfigurationWithoutNetwork`; SDK catalog checks. |
 | `internal/infrastructure/mcp.NewClient` | Preserve the catalog's native MCP client integration boundary. | `cmd/codexcheck`: `TestClientReadyRequiresFactorySourceNotAdapter`, `TestReservedSDKInventoryMatchesRepository`, `TestReservedSDKModulesCannotBeSilentlyPruned`; package compilation. No MCP runtime/lifecycle integration test is claimed. |

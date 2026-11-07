@@ -6,8 +6,6 @@
 
 | Subdomain | Classification | Purpose |
 |---|---|---|
-| account-identity-and-authorization | supporting | Maintain verified account-link identity and authorization eligibility without owning credentials. |
-| business-automation | supporting | Execute user-authorized business outcomes against replaceable workspace providers. |
 | content-intelligence-subdomain | supporting | Produce reviewable content drafts through replaceable AI providers. |
 | customer-experience | supporting | Coordinate presentation promotion and membership without merging their lifecycles. |
 | customer-knowledge | supporting | Provide recipient references and derived insight without owning provider profiles or delivery decisions. |
@@ -24,13 +22,11 @@
 | contact-directory | customer-knowledge | candidate | hypothesis | medium | read-model | supporting | unassigned | Not Verified |
 | content-intelligence | content-intelligence-subdomain | candidate | hypothesis | low | process-model | supporting | unassigned | Not Verified |
 | experience-presentation | customer-experience | candidate | hypothesis | low | domain-model | supporting | unassigned | internal/domain/experience-presentation |
-| identity | account-identity-and-authorization | implemented | implemented | high | domain-model | supporting | linebot-platform | internal/domain/identity |
 | insights-reporting | customer-knowledge | candidate | hypothesis | medium | read-model | supporting | unassigned | Not Verified |
 | membership | customer-experience | candidate | hypothesis | low | read-model | supporting | unassigned | Not Verified |
 | messaging-delivery | reliable-customer-communication | candidate | hypothesis | medium | domain-model | core | linebot-platform | internal/domain/messaging-delivery |
 | promotion | customer-experience | candidate | hypothesis | low | domain-model | supporting | unassigned | internal/domain/promotion |
 | tenant-administration | tenant-channel-administration | candidate | hypothesis | medium | domain-model | supporting | linebot-platform | internal/domain/tenant-administration |
-| workspace-automation | business-automation | candidate | hypothesis | medium | domain-model | supporting | linebot-platform | internal/domain/workspace-automation |
 
 ## Aggregates and Data Ownership
 
@@ -46,9 +42,6 @@
 | experience-presentation | InteractionSurface | aggregate | A surface version and its regions publish together. | unassigned |
 | experience-presentation | desired-presentation | data | local-authoritative | experience-presentation |
 | experience-presentation | deployed-provider-presentation | data | provider-authoritative | line-provider |
-| identity | AccountLink | aggregate | Link connection status scopes and new events change atomically. | linebot-platform |
-| identity | account-link-state | data | local-authoritative | identity |
-| identity | oauth-credential-value | data | provider-authoritative | google-oauth |
 | insights-reporting | delivery-facts | data | local-authoritative | messaging-delivery |
 | insights-reporting | reporting-projection | data | derived-projection | insights-reporting |
 | membership | membership-source-state | data | provider-authoritative | line-provider |
@@ -62,9 +55,6 @@
 | tenant-administration | ChannelConnection | aggregate | A messaging destination belongs to one tenant channel connection. | linebot-platform |
 | tenant-administration | channel-connection-state | data | local-authoritative | tenant-administration |
 | tenant-administration | provider-channel-secret | data | provider-authoritative | line-provider |
-| workspace-automation | AutomationRequest | aggregate | Intent approval and admission state change atomically. | linebot-platform |
-| workspace-automation | automation-audit | data | local-authoritative | workspace-automation |
-| workspace-automation | workspace-resource | data | provider-authoritative | google-workspace |
 
 ## Invariants
 
@@ -74,16 +64,12 @@
 | contact-directory | CON-001 | A snapshot records observation time and never overwrites provider authority. |
 | content-intelligence | CNT-001 | Generated output remains a draft until accepted by its consumer. |
 | experience-presentation | EXP-001 | A published surface references a complete immutable presentation version. |
-| identity | IDN-001 | A link requires valid LINE user Google subject and non-empty normalized scopes. |
-| identity | IDN-002 | Google account identity is the stable subject claim and never an email. |
-| identity | IDN-003 | Disconnect is idempotent and only its first transition raises AccountUnlinked. |
 | insights-reporting | INS-001 | A metric snapshot identifies its period and source facts. |
 | membership | MEM-001 | A projection cannot grant an entitlement absent from source facts. |
 | messaging-delivery | MSG-001 | A delivery can be claimed for network send only once within its active lease. |
 | messaging-delivery | MSG-002 | Transport ambiguity becomes unknown-outcome rather than known failure. |
 | promotion | PRO-001 | A closed promotion cannot issue a new delivery intent. |
 | tenant-administration | TEN-001 | One valid LINE messaging destination resolves to one tenant channel connection. |
-| workspace-automation | WSA-001 | No action executes without an eligible account and required scope. |
 
 ## Relationships
 
@@ -94,11 +80,9 @@
 | content-intelligence | experience-presentation | ContentDraft | synchronous | customer-supplier | hypothesis | low |
 | content-intelligence | messaging-delivery | ContentDraft | synchronous | customer-supplier | hypothesis | low |
 | experience-presentation | messaging-delivery | InteractionMessage | asynchronous | published-language | hypothesis | low |
-| identity | workspace-automation | AuthorizedWorkspaceAccount | synchronous | anti-corruption-layer | hypothesis | high |
 | membership | promotion | EligibilityDecision | synchronous | published-language | hypothesis | low |
 | messaging-delivery | insights-reporting | DeliveryFact | asynchronous | published-language | hypothesis | medium |
 | promotion | messaging-delivery | PromotionDeliveryIntent | asynchronous | published-language | hypothesis | low |
-| workspace-automation | messaging-delivery | NotificationIntent | asynchronous | published-language | hypothesis | low |
 
 ```mermaid
 flowchart LR
@@ -106,23 +90,19 @@ flowchart LR
     ctx_contact_directory["contact-directory\ncandidate"]
     ctx_content_intelligence["content-intelligence\ncandidate"]
     ctx_experience_presentation["experience-presentation\ncandidate"]
-    ctx_identity["identity\nimplemented"]
     ctx_insights_reporting["insights-reporting\ncandidate"]
     ctx_membership["membership\ncandidate"]
     ctx_messaging_delivery["messaging-delivery\ncandidate"]
     ctx_promotion["promotion\ncandidate"]
     ctx_tenant_administration["tenant-administration\ncandidate"]
-    ctx_workspace_automation["workspace-automation\ncandidate"]
     ctx_audience -->|RecipientSelection / synchronous / published-language / hypothesis / medium| ctx_messaging_delivery
     ctx_contact_directory -->|RecipientReference / synchronous / published-language / hypothesis / medium| ctx_messaging_delivery
     ctx_content_intelligence -->|ContentDraft / synchronous / customer-supplier / hypothesis / low| ctx_experience_presentation
     ctx_content_intelligence -->|ContentDraft / synchronous / customer-supplier / hypothesis / low| ctx_messaging_delivery
     ctx_experience_presentation -->|InteractionMessage / asynchronous / published-language / hypothesis / low| ctx_messaging_delivery
-    ctx_identity -->|AuthorizedWorkspaceAccount / synchronous / anti-corruption-layer / hypothesis / high| ctx_workspace_automation
     ctx_membership -->|EligibilityDecision / synchronous / published-language / hypothesis / low| ctx_promotion
     ctx_messaging_delivery -->|DeliveryFact / asynchronous / published-language / hypothesis / medium| ctx_insights_reporting
     ctx_promotion -->|PromotionDeliveryIntent / asynchronous / published-language / hypothesis / low| ctx_messaging_delivery
-    ctx_workspace_automation -->|NotificationIntent / asynchronous / published-language / hypothesis / low| ctx_messaging_delivery
 ```
 
 ## Ubiquitous Language
@@ -139,11 +119,6 @@ flowchart LR
 | experience-presentation | interaction-surface | Versioned desired interactive presentation. |
 | experience-presentation | presentation-asset | Referenced media used by a surface. |
 | experience-presentation | surface-assignment | Intent to expose a surface to selected recipients. |
-| identity | account-link | Relationship between one validated LINE user and one verified Google subject. |
-| identity | account-linked | Fact raised when a verified account relationship is created. |
-| identity | account-unlinked | Fact raised only for the first successful disconnect. |
-| identity | connection | Authorization relationship with scopes and lifecycle status. |
-| identity | google-account | Google identity represented by its verified stable subject claim. |
 | insights-reporting | delivery-fact | Proposed immutable fact from Messaging Delivery; publication is not implemented. |
 | insights-reporting | metric-snapshot | Derived metric for a defined reporting period. |
 | membership | entitlement-view | Derived benefits visible to a consumer. |
@@ -157,9 +132,6 @@ flowchart LR
 | promotion | promotion-delivery-intent | Approved promotion content prepared for delivery. |
 | tenant-administration | channel-connection | Tenant-owned association to one external provider channel identity. |
 | tenant-administration | tenant | Isolation boundary for customer data channel connections and authorization. |
-| workspace-automation | automation-request | User-authorized intent to produce a business outcome. |
-| workspace-automation | execution-outcome | Recorded result including unknown remote outcome. |
-| workspace-automation | workspace-action | Provider-independent action within an approved request. |
 
 ## Endpoint Capabilities
 
@@ -275,7 +247,6 @@ flowchart LR
 | cloud.google.com/go/cloudtasks | v1.21.1 | integrated | generic-infrastructure | durable-background-work, oidc-worker, bounded-task-deduplication | Not Verified |
 | cloud.google.com/go/firestore | v1.29.2 | integrated | generic-infrastructure | transactions, durable-inbox-outbox, persistence | Not Verified |
 | cloud.google.com/go/secretmanager | v1.23.1 | client_ready | generic-infrastructure | secret-access | Not Verified |
-| cloud.google.com/go/storage | v1.70.0 | client_ready | generic-infrastructure | object-upload, object-download | Not Verified |
 | github.com/BurntSushi/toml | v1.6.0 | integrated | tooling | toml-parse, configuration-validation | Not Verified |
 | github.com/google/uuid | v1.6.0 | integrated | generic-infrastructure | uuid-v4, retry-key-generation | Not Verified |
 | github.com/line/line-bot-sdk-go/v8 | v8.23.0 | integrated | domain-signal | webhook, messaging, audiences, presentation, promotion, membership, analytics | messaging-delivery, audience, experience-presentation, promotion, membership, contact-directory, insights-reporting |
@@ -290,7 +261,6 @@ flowchart LR
 | go.opentelemetry.io/otel/sdk/metric | v1.47.0 | integrated | generic-infrastructure | meter-provider, periodic-metric-reader | Not Verified |
 | go.opentelemetry.io/otel/trace | v1.47.0 | integrated | generic-infrastructure | span-instrumentation | Not Verified |
 | go.yaml.in/yaml/v3 | v3.0.5 | integrated | tooling | strict-yaml-validation, governance-manifests | Not Verified |
-| golang.org/x/oauth2 | v0.37.0 | integrated | supporting-capability | authorization-code-pkce, token-source | identity, workspace-automation |
-| google.golang.org/api | v0.310.0 | client_ready | supporting-capability | drive, sheets, calendar, tasks, forms | workspace-automation |
+| google.golang.org/api | v0.310.0 | integrated | generic-infrastructure | google-idtoken-verification, google-api-client-options | Not Verified |
 | google.golang.org/genai | v1.77.0 | client_ready | supporting-capability | gemini, vertex-ai, ai-text-generation | content-intelligence |
 | google.golang.org/grpc | v1.84.0 | integrated | generic-infrastructure | cloud-api-status, error-translation | Not Verified |

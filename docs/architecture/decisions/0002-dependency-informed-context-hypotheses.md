@@ -4,6 +4,8 @@
 - Date: 2026-11-04
 - Superseded in part by: ADR 0003, only for explicitly authorized candidate tactical model packages
 
+> Historical Workspace / Google account-link scope below is retired by [ADR 0006](0006-retire-unused-workspace-boundaries.md). Current capabilities are defined by the Domain manifest.
+
 ## Context
 
 The first strategic model used the LINE endpoint inventory conservatively and left every Context except Identity unclassified. That avoided false certainty but omitted useful evidence already present in `go.mod`, the SDK catalog, Application use cases, persistence workflows, and tests.

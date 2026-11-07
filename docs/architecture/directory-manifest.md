@@ -16,7 +16,6 @@
 
 - Value Object 目錄使用 `<context>/value-objects/`，Go package 名稱使用 `valueobjects`。
 - Adapter 使用 `internal/adapter` 單數；測試集合使用 `tests` 複數。
-- `identity/` 的 `aggregates`、`entities`、`events`、`factories`、`policies`、`repositories`、`specifications`、`value-objects` 是已實作結構，不是全域 scaffold 範本。
 
 ## 依賴保留
 

@@ -19,14 +19,3 @@ type Identity struct {
 type Verifier interface {
 	Verify(context.Context, string) (Identity, error)
 }
-type Service struct{ verifier Verifier }
-
-func New(verifier Verifier) (*Service, error) {
-	if verifier == nil {
-		return nil, errors.New("LINE session verifier is required")
-	}
-	return &Service{verifier: verifier}, nil
-}
-func (s *Service) Verify(ctx context.Context, token string) (Identity, error) {
-	return s.verifier.Verify(ctx, token)
-}

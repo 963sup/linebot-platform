@@ -16,8 +16,6 @@ import (
 	messagingdelivery "github.com/963sup/linebot-platform/internal/application/usecases/messaging-delivery"
 	"github.com/963sup/linebot-platform/internal/application/usecases/promotion"
 	providerconfiguration "github.com/963sup/linebot-platform/internal/application/usecases/provider-configuration"
-	workspaceautomation "github.com/963sup/linebot-platform/internal/application/usecases/workspace-automation"
-	"golang.org/x/oauth2"
 )
 
 // The Runtime interfaces below are narrow effect dependencies consumed by
@@ -45,10 +43,6 @@ type ValidationRuntime interface {
 type StatusRuntime interface {
 	Inspect(ctx context.Context, state messagingdelivery.EventState, limit int, now time.Time) (messagingdelivery.EventStatusReport, error)
 	Close() error
-}
-
-type WorkspaceRuntime interface {
-	Execute(context.Context, workspaceautomation.API, workspaceautomation.OperationCommand, workspaceautomation.OperationApproval) (workspaceautomation.OperationResult, error)
 }
 
 type LinkTokenRuntime interface {
@@ -264,24 +258,6 @@ type PromotionsRuntime interface {
 	Close() error
 }
 
-type AutomationRequestSummary struct {
-	ID         string `json:"id"`
-	Action     string `json:"action"`
-	ScopeCount int    `json:"scope_count"`
-	Approved   bool   `json:"approved"`
-	HasOutput  bool   `json:"has_output"`
-	Revision   uint64 `json:"revision"`
-	Status     string `json:"status"`
-}
-
-type AutomationRequestsRuntime interface {
-	GetAutomationRequest(context.Context, string) (AutomationRequestSummary, error)
-	RequestAutomation(context.Context, string, string, []string) (AutomationRequestSummary, error)
-	ApproveAutomation(context.Context, string, string) (AutomationRequestSummary, error)
-	ExecuteAutomation(context.Context, string) (AutomationRequestSummary, error)
-	Close() error
-}
-
 type ChannelConnectionSummary struct {
 	TenantID             string `json:"tenant_id"`
 	ConnectionID         string `json:"connection_id"`
@@ -300,7 +276,6 @@ type Dependencies struct {
 	ProfileRuntime            func(string) (ProfileRuntime, error)
 	ValidationRuntime         func(string) (ValidationRuntime, error)
 	StatusRuntime             func(context.Context, string) (StatusRuntime, error)
-	WorkspaceRuntime          func(context.Context, oauth2.TokenSource) (WorkspaceRuntime, error)
 	LinkTokenRuntime          func(string) (LinkTokenRuntime, error)
 	ActionsRuntime            func(string) (ActionsRuntime, error)
 	EligibilityRuntime        func(string) (EligibilityRuntime, error)
@@ -322,7 +297,6 @@ type Dependencies struct {
 	AudienceDefinitions       func(context.Context, string) (AudienceDefinitionsRuntime, error)
 	InteractionSurfaces       func(context.Context, string) (InteractionSurfacesRuntime, error)
 	Promotions                func(context.Context, string) (PromotionsRuntime, error)
-	AutomationRequests        func(context.Context, string) (AutomationRequestsRuntime, error)
 	ChannelConnections        func(context.Context, string) (ChannelConnectionsRuntime, error)
 }
 

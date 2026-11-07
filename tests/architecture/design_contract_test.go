@@ -35,7 +35,6 @@ func TestDesignContract(t *testing.T) {
 		"classDiagram",
 		"stateDiagram-v2",
 		"Event Aggregate 狀態圖",
-		"AccountLink Aggregate 狀態圖",
 		"Interface implementation",
 		"Domain Event 與 Integration Event",
 		"Production baseline implemented; Staging/Production not verified.",

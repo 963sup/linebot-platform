@@ -7,7 +7,7 @@ Go module 已加入，`go.mod`／`go.sum` 由 Go 工具鏈與 CI 管理；此表
 - OpenAI Go SDK：`github.com/openai/openai-go/v3`，其 README 要求 Go 1.26+，並特別列出 HTTP/2 安全修補的最低 patch。
 - Google Gen AI Go SDK（Gemini 等）：`google.golang.org/genai`；目前只有 `internal/infrastructure/google/genai/` client factory，Hexagonal outbound adapter 尚未實作。
 - Google Cloud：依服務採 `cloud.google.com/go/<service>`。
-- Google Workspace／Discovery：`google.golang.org/api`。
+- Google Cloud client options／OIDC：`google.golang.org/api`。
 
 正式採用前需固定實際版本、CI Go 工具鏈、建置映像與 Actions SHA；不得以浮動 `latest` 作為可重現 build 依據。
 
@@ -27,11 +27,9 @@ Go module 已加入，`go.mod`／`go.sum` 由 Go 工具鏈與 CI 管理；此表
 | `github.com/openai/openai-go/v3` | v3.91.1 | 原生 Client Factory 已建，尚未接入業務 |
 | `google.golang.org/genai` | v1.77.0 | Gemini／Vertex 分別建立 Factory，未授權啟用 |
 | `cloud.google.com/go/firestore` | v1.29.2 | 原生 Client Factory 與 Durable Inbox/Outbox Adapter 已接線；僅在明確啟用持久模式後使用，尚未 Staging 驗收 |
-| `cloud.google.com/go/storage` | v1.70.0 | Client Factory 已建，業務 Adapter 未接線 |
 | `cloud.google.com/go/cloudtasks` | v1.21.1 | 原生 Client Factory、背景任務 Queue Adapter、OIDC Worker 與 Reconcile 程式碼已實作；尚未正式部署 |
 | `cloud.google.com/go/secretmanager` | v1.23.1 | Client Factory 已建，尚未使用正式憑證 |
-| `google.golang.org/api` | v0.310.0 | Drive、Sheets Factory 保留；Calendar 38、Tasks 14 與 Forms 10 項操作已有離線 Adapter／CLI 契約；真實使用者 OAuth Consent 與 Staging 驗收仍為 `Not Verified` |
-| `golang.org/x/oauth2` | v0.37.0 | 直接依賴；供 Authorization Code + PKCE、Workspace User TokenSource 與離線 Token Repository 接線使用；可信 LINE principal、公開路由與真實 OAuth 驗收仍為 `Not Verified` |
+| `google.golang.org/api` | v0.310.0 | Cloud client options、iterator 與 Worker OIDC 驗證；不包含 Workspace API 接線 |
 | `google.golang.org/grpc` | v1.84.0 | Firestore／Cloud Tasks 狀態碼與 gRPC 錯誤處理的直接依賴（原間接依賴升級分類，未新增下載） |
 
 Google Tasks API 使用現有模組的 `google.golang.org/api/tasks/v1`，**沒有新增 Go Module**；Google Cloud Tasks 則使用獨立的 `cloud.google.com/go/cloudtasks`。

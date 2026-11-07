@@ -10,55 +10,73 @@ import (
 	"github.com/963sup/linebot-platform/internal/application/usecases/audience"
 	experiencepresentation "github.com/963sup/linebot-platform/internal/application/usecases/experience-presentation"
 	"github.com/963sup/linebot-platform/internal/application/usecases/promotion"
-	workspaceautomation "github.com/963sup/linebot-platform/internal/application/usecases/workspace-automation"
 	storeinfra "github.com/963sup/linebot-platform/internal/infrastructure/google/cloud/firestore"
 )
 
-func newOperatorDomainRuntime(ctx context.Context, project string) (cli.OperatorRuntime, error) {
+func newAudienceDomainRuntime(ctx context.Context, project string) (cli.AudienceDefinitionsRuntime, error) {
 	if ctx == nil || strings.TrimSpace(project) == "" {
-		return nil, errors.New("operator domain runtime requires context and staging project")
-	}
-	if err := ctx.Err(); err != nil {
-		return nil, err
+		return nil, errors.New("operator runtime requires context and project")
 	}
 	client, err := storeinfra.NewClient(ctx, project)
 	if err != nil {
 		return nil, err
 	}
-	fail := func(err error) (cli.OperatorRuntime, error) { _ = client.Close(); return nil, err }
-	audienceRepository, err := storeout.NewAudienceRepository(client)
+	fail := func(err error) (cli.AudienceDefinitionsRuntime, error) { return nil, errors.Join(err, client.Close()) }
+	repo, err := storeout.NewAudienceRepository(client)
 	if err != nil {
 		return fail(err)
 	}
-	surfaceRepository, err := storeout.NewInteractionSurfaceRepository(client)
+	op, err := audience.NewOperator(repo, nil)
 	if err != nil {
 		return fail(err)
 	}
-	promotionRepository, err := storeout.NewPromotionRepository(client)
+	runtime, err := cli.NewAudienceDomainRuntime(op, client.Close)
 	if err != nil {
 		return fail(err)
 	}
-	automationRepository, err := storeout.NewAutomationRequestRepository(client)
+	return runtime, nil
+}
+func newSurfaceDomainRuntime(ctx context.Context, project string) (cli.InteractionSurfacesRuntime, error) {
+	if ctx == nil || strings.TrimSpace(project) == "" {
+		return nil, errors.New("operator runtime requires context and project")
+	}
+	client, err := storeinfra.NewClient(ctx, project)
+	if err != nil {
+		return nil, err
+	}
+	fail := func(err error) (cli.InteractionSurfacesRuntime, error) { return nil, errors.Join(err, client.Close()) }
+	repo, err := storeout.NewInteractionSurfaceRepository(client)
 	if err != nil {
 		return fail(err)
 	}
-	audiences, err := audience.NewOperator(audienceRepository, nil)
+	op, err := experiencepresentation.NewOperator(repo, nil)
 	if err != nil {
 		return fail(err)
 	}
-	surfaces, err := experiencepresentation.NewOperator(surfaceRepository, nil)
+	runtime, err := cli.NewSurfaceDomainRuntime(op, client.Close)
 	if err != nil {
 		return fail(err)
 	}
-	promotions, err := promotion.NewOperator(promotionRepository)
+	return runtime, nil
+}
+func newPromotionDomainRuntime(ctx context.Context, project string) (cli.PromotionsRuntime, error) {
+	if ctx == nil || strings.TrimSpace(project) == "" {
+		return nil, errors.New("operator runtime requires context and project")
+	}
+	client, err := storeinfra.NewClient(ctx, project)
+	if err != nil {
+		return nil, err
+	}
+	fail := func(err error) (cli.PromotionsRuntime, error) { return nil, errors.Join(err, client.Close()) }
+	repo, err := storeout.NewPromotionRepository(client)
 	if err != nil {
 		return fail(err)
 	}
-	automations, err := workspaceautomation.NewOperator(automationRepository, nil)
+	op, err := promotion.NewOperator(repo)
 	if err != nil {
 		return fail(err)
 	}
-	runtime, err := cli.NewOperatorDomainRuntime(audiences, surfaces, promotions, automations, client.Close)
+	runtime, err := cli.NewPromotionDomainRuntime(op, client.Close)
 	if err != nil {
 		return fail(err)
 	}

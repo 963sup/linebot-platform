@@ -16,19 +16,17 @@
 | Firestore | `integrated` | 原生 Factory、Inbox/Outbox 原子 Transaction、單次 Claim、Recover | 真實專案 IAM、TTL、擴容測試 |
 | Google Cloud Tasks | `integrated` | 原生 Factory、Queue／OIDC Task、私有 Worker、排程恢復入口 | 真實 Queue、Cloud Run OIDC、Scheduler |
 | Google Secret Manager | `client_ready` | 原生 Factory | 憑證／Secret Access 業務接線 |
-| Google Cloud Storage | `client_ready` | 原生 Factory；尚無 Outbound Adapter | 物件存取業務接線 |
 | OpenAI Go SDK v3 | `client_ready` | 原生 Factory；Responses API 型別可查證 | 業務 Adapter、憑證與授權測試 |
 | Google Gen AI SDK | `client_ready` | Gemini API 與 Vertex AI 原生 Factory | 業務 Adapter、ADC／API Key 驗證 |
-| Google API Client | `client_ready` | Tasks、Calendar、Sheets、Drive 原生 Factory | 使用者 OAuth Consent、Token 管理、業務 Adapter |
+| Google API Client | `integrated` | Cloud client options、iterator、Worker OIDC | 不包含 Workspace 功能 |
 | UUID | `integrated` | CLI Push Retry Key（UUID v4） | 已有離線測試 |
 | TOML | `integrated` | `cmd/codexcheck` 解析 Codex／Catalog 設定 | 已有 CI 檢查 |
 | gRPC | `integrated` | Firestore／Cloud Tasks 狀態碼與錯誤判斷 | 已有 Go 型別及測試 |
 
-注意：**Google Tasks 是使用者待辦清單；Google Cloud Tasks 是背景任務佇列**，與 Google Sheets 工作表不同。Workspace 四項服務使用同一 `google.golang.org/api` Go Module。已核准的依賴由 `go.mod`、SDK Catalog 與 build-tag dependency manifest 保留；空目錄不屬保留契約。
 
 ## 基礎設施交付證據
 
-- `internal/infrastructure`：LINE、OpenAI、GenAI、Google Cloud、Google Workspace 的 Typed Client Factory；`httpclient`、`resilience`、`observability`。
+- `internal/infrastructure`：LINE、OpenAI、GenAI、MCP、Google Cloud 的 Typed Client Factory；`httpclient`、`resilience`、`observability`。
 - `internal/adapter/outbound/google/cloud`：Firestore EventStore、Cloud Tasks Queue；`internal/application/usecases/messaging-delivery` 與 `cmd/worker`：持久化流程與私有 Worker。
 - `go run ./cmd/codexcheck`：SDK Catalog、Codex Agents、保留 SDK 模組與 build-tag manifest 驗證；不驗證空 scaffold。合併後 `main` 的 [CI #41568775857](https://github.com/963sup/linebot-platform/actions/runs/41568775857) 通過模組鎖定、格式、Vet、Race Test、Build。
 - Firestore Emulator 的交易／併發整合測試最初在 [PR #8 的 CI #41555545761](https://github.com/963sup/linebot-platform/actions/runs/41555545761) 通過；現行 `main` CI 已恢復獨立 Emulator job，使用 Java 25 啟動 Emulator 並執行 `make integration-test`。這是本機交易回歸證據，仍不能替代真實專案的 IAM、TTL、索引、OIDC 或 Staging 驗收。
@@ -57,6 +55,6 @@
 
 ## 尚待完成，但不能以刪除 TODO／文件掩蓋
 
-真實 Staging IAM／OIDC／Cloud Tasks／Firestore TTL／Cloud Scheduler／LINE 測試帳號；Google Workspace 使用者 OAuth；必要時恢復持久性整合回歸測試；高吞吐的 Recover 游標／索引與 Unknown 告警；尚未建立的進階 LINE／AI 業務 Adapter。這些是功能及營運驗收工作，不是已完成的正式部署。
+真實 Staging IAM／OIDC／Cloud Tasks／Firestore TTL／Cloud Scheduler／LINE 測試帳號；必要時恢復持久性整合回歸測試；高吞吐的 Recover 游標／索引與 Unknown 告警；尚未建立的進階 LINE／AI 業務 Adapter。這些是功能及營運驗收工作，不是已完成的正式部署。
 
 相關來源：[SDK Catalog](../sdk/catalog.toml) · [版本與依賴](../versions.md) · [事件流程](event-processing.md) · [部署要求](../operations/durable-worker.md) · [Roadmap](../roadmap.md)。

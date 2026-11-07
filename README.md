@@ -1,6 +1,6 @@
 # linebot-platform
 
-使用 Go、DDD（Domain-Driven Design）與 Hexagonal Architecture 的 LINE Messaging API 平台；規劃部署在 Google Cloud Run，並保留 Google Cloud、Workspace、OpenAI 與 Google Gen AI 整合介面。
+使用 Go、DDD（Domain-Driven Design）與 Hexagonal Architecture 的 LINE Messaging API 平台；規劃部署在 Google Cloud Run，並保留 Firestore、OpenAI、Google GenAI 與 MCP client 整合介面。
 
 > **狀態：SDK 與事件處理基礎設施已合併至 `main`（PR #8），目前仍是未正式部署的開發用 MVP。** 預設為同步 LINE Webhook／Reply／Push；另有明確啟用才使用的 Firestore Inbox/Outbox、Cloud Tasks OIDC Worker 與 Reconcile。**尚無具授權的實際 GCP／LINE Staging、IAM／OAuth／TTL／排程部署驗收，因此不是 production-ready。**
 
@@ -16,8 +16,7 @@
 | Push Text／Flex | `cmd/ops` | 僅 CLI `push --send` 會實際呼叫 API，且需要接收者與 retry key |
 | Profile（明確查詢） | `cmd/ops`、`internal/application/usecases/contact-directory`、LINE adapter | `profile --lookup` 只在 CLI 查詢；已有離線契約測試，未完成真實 Channel 驗收 |
 | Firestore、Cloud Tasks（背景佇列） | `internal/adapter/outbound/google/cloud/` | 具備選用 Durable Inbox/Outbox 與派送 Adapter，尚未部署 |
-| Storage、Secret Manager | `internal/infrastructure/google/cloud/` | 原生 Client Factory，未接入業務 |
-| Sheets、Drive、Calendar、Google Tasks（待辦） | `internal/infrastructure/google/api/` | 原生 Client Factory 已建立；個人資料仍需使用者 OAuth 授權 |
+| Secret Manager | `internal/infrastructure/google/cloud/` | 原生 Client Factory，未接入業務 |
 | OpenAI、Google Gen AI | `internal/infrastructure/openai/`、`internal/infrastructure/google/genai/` | 原生 Client Factory 已建立；尚未接入業務／啟用 |
 | LINE 官方文件來源 | [line-developers-docs-source](https://github.com/line/line-developers-docs-source) | 僅供查閱，不是 SDK |
 
@@ -102,7 +101,6 @@ Profile 回應包含個人資料，請勿將 stdout、Shell 紀錄或查詢結�
 
 ## 架構與限制
 
-- `internal/domain/identity/`：PR #28 的變更已合併至 `main`，包含 `AccountLink` Aggregate、`GoogleConnection` Entity、`value-objects/`（Go package `valueobjects`）、Policy、Specification、Factory、Domain-owned Repository 讀取契約及 Domain Events。OAuth 憑證仍保存在 Adapter 的加密持久化機制，並非 Domain 狀態；其他 Bounded Context 須依真實業務不變量逐步建模。
 - `internal/application/`：consumer-owned capability ports、Reply／Push、文字回覆，以及持久 Ingestion／Worker Use Case。
 - `internal/application/usecases/line-session/`：提供 provider-neutral 的已驗證 LINE identity contract，不擁有任何業務資料。
 - `internal/adapter/`：同步與持久 Webhook、具 OIDC 驗證的 Worker，以及實作 Application capability port 或 Domain repository contract 的 Firestore、Cloud Tasks、LINE adapter。
@@ -127,12 +125,10 @@ Profile 回應包含個人資料，請勿將 stdout、Shell 紀錄或查詢結�
 
 ## Provider Client Factories（階段 3）
 
-- **Google Workspace**：Google Tasks、Calendar、Sheets、Drive 已有原生 `*Service` Factory，無須新增 Go Module。Google Tasks 是待辦清單，不是 Sheets 工作表，也不是 Google Cloud Tasks 佇列。
-- **Google Cloud**：Firestore、Cloud Tasks（背景佇列）、Secret Manager、Storage 已有原生 Client Factory；啟用時需提供適當 ADC／Workload Identity、Project、IAM，並關閉擁有的 Client。
+- **Google Cloud**：Firestore、Cloud Tasks（背景佇列）、Secret Manager 已有原生 Client Factory；啟用時需提供適當 ADC／Workload Identity、Project、IAM，並關閉擁有的 Client。
 - **AI**：OpenAI、Gemini Developer API、Vertex AI 已建立分別驗證認證模式的原生 Client Factory；建構時不自動發送付費 API 請求。
 - SDK Catalog 新增 `client_ready`，意為原生 Factory 存在但**不代表**已接入業務 Adapter、取得使用者 OAuth 或完成 Staging／Production 驗證。
 
-Google Tasks、Calendar 的授權詳見 [Workspace OAuth 與 API](docs/sdk/workspace-oauth.md)。
 
 ## 持久 Webhook 與私有 Worker（階段 4）
 

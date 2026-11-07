@@ -47,14 +47,8 @@ func runWithContext(ctx context.Context, args []string, getenv func(string) stri
 	if len(args) > 0 && args[0] == "promotions" {
 		return runPromotions(ctx, args[1:], getenv, os.Stdout, deps)
 	}
-	if len(args) > 0 && args[0] == "automation-requests" {
-		return runAutomationRequests(ctx, args[1:], getenv, os.Stdout, deps)
-	}
 	if len(args) > 0 && args[0] == "channel-connections" {
 		return runChannelConnections(ctx, args[1:], os.Stdout, deps)
-	}
-	if len(args) > 0 && args[0] == "workspace" {
-		return runWorkspace(ctx, args[1:], getenv, deps)
 	}
 	if len(args) > 0 && args[0] == "actions" {
 		return runActions(ctx, args[1:], getenv, deps)

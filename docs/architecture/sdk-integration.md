@@ -53,12 +53,11 @@ The webhook entrypoint now calls `bootstrap.NewWebhookRuntime` to compose only t
 
 ## Phase 3: native provider Client Factories (merged via PR #8)
 
-- `internal/infrastructure/google/api` exports `NewTasks`, `NewCalendar`, `NewSheets`, `NewDrive`, returning official `*Service` types. Each requires a caller-provided **user-authorized HTTP client**, rather than silently impersonating a user via Cloud Run ADC. OAuth consent, token storage/rotation and per-user identity isolation are future work; see [Google Workspace OAuth](../sdk/workspace-oauth.md).
 - `internal/infrastructure/openai` requires explicit API Key and caller-owned HTTP client, and returns `openai.Client` with the native SDK Responses API and retry behavior.
 - `internal/infrastructure/google/genai` separates Gemini Developer API key authentication from Vertex AI ADC/workload identity. Vertex does not inject an unauthenticated custom HTTP client.
-- `internal/infrastructure/google/cloud/{firestore,cloudtasks,secretmanager,storage}` returns native clients accepting ADC/client options and caller-owned `Close()`. No resources are provisioned by construction.
+- `internal/infrastructure/google/cloud/{firestore,cloudtasks,secretmanager}` returns native clients accepting ADC/client options and caller-owned `Close()`. No resources are provisioned by construction.
 - Google Tasks is `google.golang.org/api/tasks/v1`, included in the existing `google.golang.org/api`; Google Cloud Tasks is the separately pinned background queue SDK.
-- Workspace, OpenAI, Gemini, Storage and Secret Manager remain `client_ready`. Firestore and Cloud Tasks now have explicit outbound Adapters for the optional Stage-4 event pipeline and are listed `integrated` in the Catalog, **not** deployed or staging-verified. OAuth user integrations remain pending.
+- OpenAI, Gemini, MCP and Secret Manager remain `client_ready`. Firestore and Cloud Tasks now have explicit outbound Adapters for the optional Stage-4 event pipeline and are listed `integrated` in the Catalog, **not** deployed or staging-verified.
 
 ## Phase 4: gated durable LINE webhook and private worker (merged via PR #8)
 
@@ -82,9 +81,9 @@ The webhook entrypoint now calls `bootstrap.NewWebhookRuntime` to compose only t
 
 1. **Discovery foundation (PR #8, completed slice)**: catalog, one shared skill, automated catalog validation, architecture guard, synchronized docs. No new live SDK calls.
 2. **Typed client infrastructure (PR #8, completed LINE slice)**: typed factory injection, owned transport, configuration, logging metadata, safe error semantics and request-context isolation; reusable base for future providers. Verify CI and authorized staging separately.
-3. **Native provider factories (merged via PR #8)**: Google Cloud, Google Workspace (including Tasks and Calendar), OpenAI and Gemini native Client Factories have offline tests. Firestore and Cloud Tasks also have opt-in runtime adapters; remaining business adapters and authorized live integrations are pending.
+3. **Native provider factories (merged via PR #8)**: Google Cloud, OpenAI, Gemini and MCP native Client Factories have offline tests. Firestore and Cloud Tasks also have opt-in runtime adapters; remaining business adapters and authorized live integrations are pending.
 4. **Durable event handling (merged via PR #8, code implemented)**: Firestore inbox/outbox, Cloud Tasks worker, single-use Claim, unknown outcomes and bounded reconciliation. Authorized IAM/OIDC/TTL/scheduler setup and staging proof remain pending.
-5. **Authorized staging & production hardening (pending)**: verify IAM/OIDC, TTL, Cloud Scheduler, LINE Sandbox, OAuth user flows and Codex fresh-session behavior in an independently authorized environment. Prior offline validation is not deployment authorization.
+5. **Authorized staging & production hardening (pending)**: verify IAM/OIDC, TTL, Cloud Scheduler, LINE Sandbox, Codex fresh-session behavior in an independently authorized environment. Prior offline validation is not deployment authorization.
 
 For the current module-by-module code readiness versus deployment readiness, see [main infrastructure status](infrastructure-status.md). Historical references to PR #8 document the merged changes, not a pending pull request.
 

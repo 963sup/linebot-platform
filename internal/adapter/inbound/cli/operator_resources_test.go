@@ -21,7 +21,6 @@ func TestOperatorMutationsDryRunWithoutOpeningRuntime(t *testing.T) {
 		{"audience", runAudienceDefinitions, []string{"--action", "activate", "--id", "aud-1"}},
 		{"surface", runInteractionSurfaces, []string{"--action", "publish", "--id", "surface-1"}},
 		{"promotion", runPromotions, []string{"--action", "close", "--id", "promo-1"}},
-		{"automation", runAutomationRequests, []string{"--action", "execute", "--id", "auto-1"}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

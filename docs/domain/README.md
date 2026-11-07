@@ -45,6 +45,6 @@ Changing a status from `candidate` requires an ADR. Creating an empty directory,
 
 ## Current confidence
 
-Identity is the strategically implemented bounded context. Messaging Delivery is a medium-confidence Core hypothesis because the repository contains explicit claim, unknown-outcome, Inbox/Outbox, and reconciliation behavior. ADR 0003 authorizes provider-independent tactical models for Messaging Delivery, Audience, Experience Presentation, Promotion, and Workspace Automation without promoting those candidate Contexts. A hypothesis never creates a package or persistence migration by itself; either requires explicit decision evidence and separate delivery work.
+Messaging Delivery is a medium-confidence Core hypothesis because the repository contains explicit claim, unknown-outcome, Inbox/Outbox, and reconciliation behavior. ADR 0003 authorizes provider-independent tactical models for Messaging Delivery, Audience, Experience Presentation and Promotion without promoting those candidate Contexts. A hypothesis never creates a package or persistence migration by itself; either requires explicit decision evidence and separate delivery work.
 
 Browser Geolocation remains an Adapter mechanism and is not physical-presence proof. No current Domain owns or persists its readings; a future use case must define that responsibility explicitly.

@@ -69,34 +69,6 @@
           "order": "ASCENDING"
         }
       ]
-    },
-    {
-      "collectionGroup": "identity_outbox_v1",
-      "queryScope": "COLLECTION",
-      "fields": [
-        {
-          "fieldPath": "state",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "lease_until",
-          "order": "ASCENDING"
-        }
-      ]
-    },
-    {
-      "collectionGroup": "identity_outbox_v1",
-      "queryScope": "COLLECTION",
-      "fields": [
-        {
-          "fieldPath": "state",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "next_dispatch_at",
-          "order": "ASCENDING"
-        }
-      ]
     }
   ],
   "fieldOverrides": [
@@ -108,12 +80,6 @@
     },
     {
       "collectionGroup": "line_outbox_v1",
-      "fieldPath": "expires_at",
-      "ttl": true,
-      "indexes": []
-    },
-    {
-      "collectionGroup": "identity_outbox_v1",
       "fieldPath": "expires_at",
       "ttl": true,
       "indexes": []

@@ -141,9 +141,13 @@ func TestValidateRepositoryFailures(t *testing.T) {
 		{"missing data ownership evidence", "data_ownership[0].evidence[0]", func(m *DomainModel, _ *CapabilityMap) {
 			m.Contexts[0].DataOwnership[0].Evidence = []string{"internal/missing-data-ownership-evidence"}
 		}},
-		{"implemented context missing ADR", "ADR evidence", func(m *DomainModel, _ *CapabilityMap) { m.Contexts[0].ADRs = nil }},
-		{"implemented context wrong package", "must equal", func(m *DomainModel, _ *CapabilityMap) { m.Contexts[0].Package = "internal/domain" }},
+		{"implemented context missing ADR", "ADR evidence", func(m *DomainModel, _ *CapabilityMap) { m.Contexts[0].Status = "implemented"; m.Contexts[0].ADRs = nil }},
+		{"implemented context wrong package", "must equal", func(m *DomainModel, _ *CapabilityMap) {
+			m.Contexts[0].Status = "implemented"
+			m.Contexts[0].Package = "internal/domain"
+		}},
 		{"implemented evidence outside package", "behavior test under", func(m *DomainModel, _ *CapabilityMap) {
+			m.Contexts[0].Status = "implemented"
 			m.Contexts[0].Evidence = []string{"tests/architecture/dependencies_test.go"}
 		}},
 		{"missing code symbol", "does not exist", func(m *DomainModel, _ *CapabilityMap) { m.Contexts[0].Language[0].CodeSymbols[0] += "Missing" }},
@@ -280,7 +284,7 @@ func TestRenderContextMapDeterministic(t *testing.T) {
 	if !bytes.Equal(first, second) {
 		t.Errorf("RenderContextMap(reordered) differs from original")
 	}
-	for _, want := range []string{"```mermaid", "Subdomains", "Aggregates and Data Ownership", "IDN-001", "identity", "Endpoint Capabilities", "Go Module Capability Evidence", "| Decision | Confidence |", "RecipientSelection / synchronous / published-language / hypothesis / medium"} {
+	for _, want := range []string{"```mermaid", "Subdomains", "Aggregates and Data Ownership", "TEN-001", "tenant-administration", "Endpoint Capabilities", "Go Module Capability Evidence", "| Decision | Confidence |", "RecipientSelection / synchronous / published-language / hypothesis / medium"} {
 		if !bytes.Contains(first, []byte(want)) {
 			t.Errorf("RenderContextMap output missing %q", want)
 		}

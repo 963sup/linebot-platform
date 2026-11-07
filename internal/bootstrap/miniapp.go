@@ -103,11 +103,7 @@ func composeMiniApp(ctx context.Context, cfg MiniAppConfig, logger *slog.Logger)
 	if err != nil {
 		return fail(err)
 	}
-	service, err := linesession.New(verifier)
-	if err != nil {
-		return fail(err)
-	}
-	result.verifier = service
+	result.verifier = verifier
 	return result, nil
 }
 

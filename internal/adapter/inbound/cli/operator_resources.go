@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -403,96 +402,6 @@ func withPromotionRuntime(parent context.Context, flags operatorFlags, deps Depe
 	ctx, cancel := context.WithTimeout(parent, operatorCommandTimeout)
 	defer cancel()
 	runtime, err := deps.Promotions(ctx, *flags.project)
-	if err != nil {
-		return err
-	}
-	defer func() { err = errors.Join(err, runtime.Close()) }()
-	return operation(ctx, runtime)
-}
-
-func runAutomationRequests(parent context.Context, args []string, getenv func(string) string, out io.Writer, deps Dependencies) error {
-	fs := flag.NewFlagSet("automation-requests", flag.ContinueOnError)
-	common := bindOperatorFlags(fs)
-	actionName := fs.String("automation-action", "", "provider-independent automation action")
-	scopesRaw := fs.String("scopes", "", "comma-separated required OAuth scopes")
-	approvedBy := fs.String("approved-by", "", "approval principal")
-	if err := fs.Parse(args); err != nil {
-		return err
-	}
-	if err := common.validate(fs.Args()); err != nil {
-		return err
-	}
-	action := *common.action
-	if action == "get" {
-		if err := common.authorizeGet(getenv); err != nil {
-			return err
-		}
-		return withAutomationRuntime(parent, common, deps, func(ctx context.Context, runtime AutomationRequestsRuntime) error {
-			value, err := runtime.GetAutomationRequest(ctx, *common.id)
-			if err != nil {
-				return err
-			}
-			return writeOperatorJSON(out, value)
-		})
-	}
-	allowed := map[string]bool{"request": true, "approve": true, "execute": true}
-	if !allowed[action] {
-		return errors.New("automation-requests --action must be get|request|approve|execute")
-	}
-	var scopes []string
-	input := map[string]any{}
-	switch action {
-	case "request":
-		if strings.TrimSpace(*actionName) == "" || strings.TrimSpace(*scopesRaw) == "" {
-			return errors.New("request requires --automation-action and --scopes")
-		}
-		for _, scope := range strings.Split(*scopesRaw, ",") {
-			scope = strings.TrimSpace(scope)
-			if scope == "" {
-				return errors.New("--scopes must contain nonempty comma-separated values")
-			}
-			scopes = append(scopes, scope)
-		}
-		sort.Strings(scopes)
-		input = map[string]any{"automation_action": *actionName, "scope_count": len(scopes)}
-	case "approve":
-		if strings.TrimSpace(*approvedBy) == "" {
-			return errors.New("approve requires --approved-by")
-		}
-		input["approved_by_sha256"] = hashOperatorValue(*approvedBy)
-	}
-	authorized, err := common.authorizeMutation(out, "automation-requests", input)
-	if err != nil || !authorized {
-		return err
-	}
-	if err := validateOperatorProject(*common.project, getenv); err != nil {
-		return err
-	}
-	return withAutomationRuntime(parent, common, deps, func(ctx context.Context, runtime AutomationRequestsRuntime) error {
-		var value AutomationRequestSummary
-		var err error
-		switch action {
-		case "request":
-			value, err = runtime.RequestAutomation(ctx, *common.id, *actionName, scopes)
-		case "approve":
-			value, err = runtime.ApproveAutomation(ctx, *common.id, *approvedBy)
-		case "execute":
-			value, err = runtime.ExecuteAutomation(ctx, *common.id)
-		}
-		if err != nil {
-			return err
-		}
-		return writeOperatorJSON(out, value)
-	})
-}
-
-func withAutomationRuntime(parent context.Context, flags operatorFlags, deps Dependencies, operation func(context.Context, AutomationRequestsRuntime) error) (err error) {
-	if deps.AutomationRequests == nil {
-		return errors.New("automation requests runtime is not configured")
-	}
-	ctx, cancel := context.WithTimeout(parent, operatorCommandTimeout)
-	defer cancel()
-	runtime, err := deps.AutomationRequests(ctx, *flags.project)
 	if err != nil {
 		return err
 	}

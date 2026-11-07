@@ -34,7 +34,7 @@ func TestMarkdownArchitectureContractsStayAligned(t *testing.T) {
 		},
 		{
 			path:     "../../internal/domain/AGENTS.md",
-			required: []string{"`identity/` 是 strategically implemented Bounded Context", "ADR 0003 授權的 `candidate/hypothesis` tactical models", "不得因已有程式碼、Adapter 或測試而宣稱 strategic promotion"},
+			required: []string{"ADR 0003 授權的 `candidate/hypothesis` tactical models", "不得因已有程式碼、Adapter 或測試而宣稱 strategic promotion"},
 		},
 		{
 			path:     "../../internal/infrastructure/AGENTS.md",
@@ -47,7 +47,7 @@ func TestMarkdownArchitectureContractsStayAligned(t *testing.T) {
 		},
 		{
 			path:     "../../internal/domain/README.md",
-			required: []string{"`identity/`", "strategically implemented", "`candidate/hypothesis` tactical models"},
+			required: []string{"`candidate/hypothesis` tactical models"},
 		},
 		{
 			path:     "../../docs/domain/context-map.md",
@@ -66,11 +66,6 @@ func TestMarkdownArchitectureContractsStayAligned(t *testing.T) {
 			path:     "../../docs/sources.md",
 			required: []string{"目前只有 `internal/infrastructure/google/genai/` client factory", "尚未建立業務 outbound adapter", "`liff.getIDToken()`", "目前 MINI App 只在本機顯示讀值", "不會提交或持久化座標"},
 			forbid:   []string{"`internal/adapter/outbound/genai/`"},
-		},
-		{
-			path:     "../../docs/sdk/workspace-oauth.md",
-			required: []string{"`internal/bootstrap/` 只有組裝與啟動責任"},
-			forbid:   []string{"`bootstrap/` 只有組裝與啟動責任"},
 		},
 		{
 			path:     "../../docs/operations/durable-worker.md",

@@ -17,10 +17,6 @@ import (
 // does not strategically promote a candidate Context.
 func TestValueObjectsDirectoryContract(t *testing.T) {
 	domain := filepath.Join("..", "..", "internal", "domain")
-	identityValueDir := filepath.Join(domain, "identity", "value-objects")
-	if info, err := os.Stat(identityValueDir); err != nil || !info.IsDir() {
-		t.Fatalf("identity value objects must exist at %s: %v", identityValueDir, err)
-	}
 	err := filepath.WalkDir(domain, func(path string, entry fs.DirEntry, walkErr error) error {
 		if walkErr != nil {
 			return walkErr

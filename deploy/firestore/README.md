@@ -37,52 +37,8 @@ for oldest Pending age, and `(state,updated_at)` for bounded samples.
 **never** loads any LINE user text or token. This is a snapshot from several
 queries, not a globally consistent read transaction.
 
-Deploying these indexes or the three `expires_at` TTL policies is a separate
+Deploying these indexes or the two `expires_at` TTL policies is a separate
 reviewed staging operation. The emulator can accept queries without enforcing
 cloud index availability; **CI passing cannot establish production index or
 TTL readiness**. TTL deletion is asynchronous and must not replace a domain
 unsend/erasure tombstone.
-
-## Identity integration-event outbox (local declaration only)
-
-`identity_outbox_v1` stores credential-free, versioned Identity integration
-event envelopes after an AccountLink transition. The records use opaque event,
-aggregate and correlation identifiers; they do not persist OAuth access tokens,
-refresh tokens, raw LINE owner IDs or Google subjects. The dispatcher claims
-due `pending` rows and recovers expired `publishing` leases through conditional
-transactions.
-
-[indexes.json](indexes.json) therefore also declares these required composite
-indexes for `identity_outbox_v1`:
-
-- `(state, lease_until)` for expired-lease recovery.
-- `(state, next_dispatch_at)` for bounded due-event dispatch.
-
-The local `fieldOverrides` entry declares `expires_at` as the intended TTL
-field for `identity_outbox_v1`; applying it is allowed only in an explicitly
-authorized staging operation after retention and privacy review. The declaration
-in this repository does **not** create an index, enable TTL, write Firestore
-data or grant IAM. Before enabling the Identity dispatcher,
-verify both composite indexes report `Ready`, verify the TTL policy targets
-`expires_at`, execute both queries against isolated staging, and retain the
-resource names and observation time as acceptance evidence. The Firestore
-emulator does not prove managed index or TTL readiness.
-
-
-## Google OAuth State / Token Collections (planned staging verification)
-
-The OAuth code path uses **separate** collections from LINE inbox/outbox:
-
-| Collection | Document ID | Persisted fields | TTL |
-|---|---|---|---|
-| `google_oauth_states_v1` | SHA-256 digest of 32-byte random state | AES-GCM encrypted owner / PKCE verifier / nonce / requested scopes, key version and expires_at | 10 minutes |
-| `google_oauth_connections_v1` | SHA-256 digest of owner + Google subject | AES-GCM encrypted OAuth credentials / identity / scopes; active, version and updated_at | 30-day inactive tombstone via expires_at |
-| `identity_outbox_v1` | Opaque deterministic event ID | Credential-free versioned integration-event envelope, dispatch state and lease metadata | `expires_at`; retention requires explicit privacy approval |
-
-Records are bound to their Firestore document ID as AES-GCM authenticated associated data. The first callback to atomically consume a state deletes it in a Firestore transaction; further callbacks cannot use that state. Connection updates use versioned transactional CAS and revoked accounts clear their ciphertext so a stale token refresh cannot reactivate them.
-
-**Before authorized staging use:** Configure every `expires_at` TTL declared in `indexes.json`, validate runtime `APP_ENV` / OAuth callback URL, and test concurrent consumes, refresh CAS, disconnect and Identity outbox lease recovery using Firestore Emulator and then isolated staging. TTL is asynchronous and never substitutes for checking expiry and active flags in code.
-
-Future SaaS business repositories must place owned documents below `tenants/{tenantId}` and require an explicitly validated tenant ID on every operation. The infrastructure package provides only this root boundary and the native client; it does not create business collections or authorize browser writes.
-
-No Google OAuth keys, user OAuth tokens, or persistent app credentials are shipped in repository or CI. The new OAuth libraries are opt-in and are not mounted on the public LINE webhook by default.

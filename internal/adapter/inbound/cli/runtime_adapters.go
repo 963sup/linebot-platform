@@ -16,7 +16,6 @@ import (
 	messagingdelivery "github.com/963sup/linebot-platform/internal/application/usecases/messaging-delivery"
 	"github.com/963sup/linebot-platform/internal/application/usecases/promotion"
 	providerconfiguration "github.com/963sup/linebot-platform/internal/application/usecases/provider-configuration"
-	workspaceautomation "github.com/963sup/linebot-platform/internal/application/usecases/workspace-automation"
 )
 
 // RuntimeAdapters owns the presentation-facing method adaptation required by
@@ -52,20 +51,6 @@ type RuntimeAdapters struct {
 type runtimeCloser struct{ close func() error }
 
 func (r runtimeCloser) Close() error { return r.close() }
-
-type workspaceExecutor func(context.Context, workspaceautomation.API, workspaceautomation.OperationCommand, workspaceautomation.OperationApproval) (workspaceautomation.OperationResult, error)
-
-func (execute workspaceExecutor) Execute(ctx context.Context, api workspaceautomation.API, request workspaceautomation.OperationCommand, approval workspaceautomation.OperationApproval) (workspaceautomation.OperationResult, error) {
-	result, err := execute(ctx, api, request, approval)
-	if err != nil {
-		return workspaceautomation.OperationResult{}, err
-	}
-	return result, nil
-}
-
-func NewWorkspaceRuntime(execute func(context.Context, workspaceautomation.API, workspaceautomation.OperationCommand, workspaceautomation.OperationApproval) (workspaceautomation.OperationResult, error)) WorkspaceRuntime {
-	return workspaceExecutor(execute)
-}
 
 type pushRuntime struct {
 	runtimeCloser

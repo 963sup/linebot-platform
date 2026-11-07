@@ -79,14 +79,14 @@ func TestBootstrapDoesNotOwnInboundPresentationMapping(t *testing.T) {
 }
 
 func TestBootstrapRuntimeContractDetectionIsNameIndependent(t *testing.T) {
-	contract := cliRuntimeContracts(t)["WorkspaceRuntime"]
-	if !implementsSemanticMethods(map[string]bool{"Execute": true}, contract) {
-		t.Fatal("a bootstrap type named arbitrarily must still be detected when it implements WorkspaceRuntime")
+	contract := cliRuntimeContracts(t)["StatusRuntime"]
+	if !implementsSemanticMethods(map[string]bool{"Inspect": true}, contract) {
+		t.Fatal("a bootstrap type named arbitrarily must still be detected when it implements StatusRuntime")
 	}
 }
 
 func TestBootstrapAnonymousEmbeddingAllowsOnlyLifecycle(t *testing.T) {
-	for _, embedded := range []string{"cli.WorkspaceRuntime", "workspaceautomation.ProviderGateway", "*LINEOpsRuntime"} {
+	for _, embedded := range []string{"cli.StatusRuntime", "messagingdelivery.EventStatusReader", "*LINEOpsRuntime"} {
 		if bootstrapAnonymousEmbeddingAllowed(embedded) {
 			t.Errorf("non-lifecycle embedding %s must not be allowed in bootstrap", embedded)
 		}

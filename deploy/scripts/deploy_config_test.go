@@ -228,9 +228,8 @@ func TestTerraformConsumesAuthoritativeFirestoreContract(t *testing.T) {
 		t.Fatalf("unexpected authoritative Firestore contract: indexes=%d overrides=%+v", len(contract.Indexes), contract.FieldOverrides)
 	}
 	wantTTL := map[string]bool{
-		"line_inbox_v1.expires_at":      true,
-		"line_outbox_v1.expires_at":     true,
-		"identity_outbox_v1.expires_at": true,
+		"line_inbox_v1.expires_at":  true,
+		"line_outbox_v1.expires_at": true,
 	}
 	for _, override := range contract.FieldOverrides {
 		if override.TTL {

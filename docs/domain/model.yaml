@@ -2,47 +2,14 @@ schema_version: 2
 
 subdomains:
   - {id: reliable-customer-communication, classification: core, decision_status: hypothesis, confidence: medium, purpose: "Make customer communication reliable despite duplicate input and uncertain provider outcomes.", evidence: [internal/application/usecases/messaging-delivery/service.go]}
-  - {id: account-identity-and-authorization, classification: supporting, decision_status: implemented, confidence: high, purpose: "Maintain verified account-link identity and authorization eligibility without owning credentials.", evidence: [internal/domain/identity/aggregates/account_link.go]}
   - {id: tenant-channel-administration, classification: supporting, decision_status: hypothesis, confidence: medium, purpose: "Keep each LINE channel connection inside one tenant data and authorization boundary.", evidence: [internal/domain/tenant-administration/aggregates/channel_connection.go]}
   - {id: customer-segmentation, classification: supporting, decision_status: hypothesis, confidence: medium, purpose: "Define recipients independently from provider audience resources.", evidence: [internal/domain/audience/aggregates/audience_definition.go, internal/application/usecases/audience/service.go]}
   - {id: customer-experience, classification: supporting, decision_status: hypothesis, confidence: low, purpose: "Coordinate presentation promotion and membership without merging their lifecycles.", evidence: [internal/application/usecases/experience-presentation, internal/application/usecases/promotion, internal/application/usecases/membership]}
-  - {id: business-automation, classification: supporting, decision_status: hypothesis, confidence: medium, purpose: "Execute user-authorized business outcomes against replaceable workspace providers.", evidence: [internal/application/usecases/workspace-automation]}
   - {id: customer-knowledge, classification: supporting, decision_status: hypothesis, confidence: medium, purpose: "Provide recipient references and derived insight without owning provider profiles or delivery decisions.", evidence: [internal/application/usecases/contact-directory, internal/application/usecases/insights-reporting]}
   - {id: content-intelligence-subdomain, classification: supporting, decision_status: hypothesis, confidence: low, purpose: "Produce reviewable content drafts through replaceable AI providers.", evidence: [internal/infrastructure/openai, internal/infrastructure/google/genai]}
   - {id: platform-commodities, classification: generic, decision_status: validated, confidence: high, purpose: "Supply replaceable persistence scheduling secrets storage transport identifiers and governance tooling without creating business Contexts.", evidence: [docs/domain/dependency-capabilities.yaml]}
 
 contexts:
-  - id: identity
-    subdomain: account-identity-and-authorization
-    status: implemented
-    decision_status: implemented
-    confidence: high
-    model_kind: domain-model
-    classification: supporting
-    owner: linebot-platform
-    purpose: Own the verified relationship between one LINE user and one Google subject including authorization eligibility and unlink lifecycle.
-    non_responsibilities: [Authenticate inbound callers., Store OAuth credentials or provider persistence metadata., Call Google APIs.]
-    package: internal/domain/identity
-    language:
-      - {term: account-link, definition: "Relationship between one validated LINE user and one verified Google subject.", forbidden_aliases: [oauth-record, firestore-document], code_symbols: [internal/domain/identity/aggregates.AccountLink]}
-      - {term: google-account, definition: "Google identity represented by its verified stable subject claim.", forbidden_aliases: [google-email], code_symbols: [internal/domain/identity/value-objects.GoogleAccountID]}
-      - {term: connection, definition: "Authorization relationship with scopes and lifecycle status.", forbidden_aliases: [token, credential], code_symbols: [internal/domain/identity/entities.GoogleConnection]}
-      - {term: account-linked, definition: "Fact raised when a verified account relationship is created.", forbidden_aliases: [oauth-callback-completed], code_symbols: [internal/domain/identity/events.AccountLinked]}
-      - {term: account-unlinked, definition: "Fact raised only for the first successful disconnect.", forbidden_aliases: [token-deleted], code_symbols: [internal/domain/identity/events.AccountUnlinked]}
-    owns: [account-link, connection-status, granted-scope-set, account-link-domain-events]
-    aggregates:
-      - {name: AccountLink, root: account-link, consistency_boundary: "Link connection status scopes and new events change atomically.", owns: [connection-status, granted-scope-set, account-link-domain-events], repository: internal/domain/identity/repositories.ConnectionReader, confidence: high, evidence: [internal/domain/identity/aggregates/account_link.go, internal/domain/identity/repositories/connection_repository.go]}
-    data_ownership:
-      - {resource: account-link-state, authority: local-authoritative, owner: identity, write_policy: "Only AccountLink transitions may change link state.", evidence: [internal/domain/identity/aggregates/account_link.go]}
-      - {resource: oauth-credential-value, authority: provider-authoritative, owner: google-oauth, write_policy: "Identity stores no credential value.", evidence: [internal/infrastructure/google/api/oauth/flow.go]}
-    invariants:
-      - {id: IDN-001, statement: "A link requires valid LINE user Google subject and non-empty normalized scopes.", evidence: [internal/domain/identity/aggregates/account_link.go]}
-      - {id: IDN-002, statement: "Google account identity is the stable subject claim and never an email.", evidence: [internal/domain/identity/value-objects/google_account_id.go]}
-      - {id: IDN-003, statement: "Disconnect is idempotent and only its first transition raises AccountUnlinked.", evidence: [internal/domain/identity/aggregates/account_link.go]}
-    capabilities: [authorize-workspace-account, disconnect-account-link, evaluate-google-api-eligibility]
-    adrs: [docs/architecture/decisions/0001-strategic-domain-model-authority.md]
-    evidence: [internal/domain/identity/aggregates/account_link_test.go, internal/domain/identity/entities/google_connection_test.go]
-
   - id: tenant-administration
     subdomain: tenant-channel-administration
     status: candidate
@@ -197,31 +164,6 @@ contexts:
     open_questions: [Promote only after local enrollment or entitlement commands exist.]
     evidence: [internal/application/usecases/membership/membership_test.go]
 
-  - id: workspace-automation
-    subdomain: business-automation
-    status: candidate
-    decision_status: hypothesis
-    confidence: medium
-    model_kind: domain-model
-    classification: supporting
-    owner: linebot-platform
-    package: internal/domain/workspace-automation
-    purpose: Own user-approved automation requests and outcomes independently from Google vocabulary.
-    non_responsibilities: [Own account links or credentials., Own Google resources., Expose Google SDK types.]
-    language:
-      - {term: automation-request, definition: "User-authorized intent to produce a business outcome.", forbidden_aliases: [google-api-call], code_symbols: [internal/domain/workspace-automation/aggregates.AutomationRequest]}
-      - {term: workspace-action, definition: "Provider-independent action within an approved request.", forbidden_aliases: [calendar-method], code_symbols: []}
-      - {term: execution-outcome, definition: "Recorded result including unknown remote outcome.", forbidden_aliases: [http-response], code_symbols: []}
-    owns: [automation-request, approval, execution-outcome]
-    aggregates: [{name: AutomationRequest, root: automation-request, consistency_boundary: "Intent approval and admission state change atomically.", owns: [approval, requested-actions, admission-state], repository: internal/domain/workspace-automation/repositories.AutomationRequestRepository, confidence: medium, evidence: [internal/domain/workspace-automation/aggregates/automation_request_test.go]}]
-    data_ownership:
-      - {resource: automation-audit, authority: local-authoritative, owner: workspace-automation, write_policy: "Append outcomes through the workflow.", evidence: [internal/application/usecases/workspace-automation/service.go]}
-      - {resource: workspace-resource, authority: provider-authoritative, owner: google-workspace, write_policy: "Mutated only by an authorized ACL call.", evidence: [internal/adapter/outbound/google/api]}
-    invariants: [{id: WSA-001, statement: "No action executes without an eligible account and required scope.", evidence: [internal/domain/workspace-automation/aggregates/automation_request_test.go]}]
-    capabilities: [authorize-automation, execute-workspace-action, record-execution-outcome]
-    open_questions: [Validate which multi-action outcomes require compensation.]
-    evidence: [internal/domain/workspace-automation/aggregates/automation_request_test.go, internal/application/usecases/workspace-automation/service_test.go]
-
   - id: contact-directory
     subdomain: customer-knowledge
     status: candidate
@@ -287,7 +229,6 @@ contexts:
     evidence: [docs/architecture/decisions/0003-tactical-models-without-strategic-promotion.md]
 
 relationships:
-  - {upstream: identity, downstream: workspace-automation, pattern: anti-corruption-layer, contract: AuthorizedWorkspaceAccount, interaction: synchronous, decision_status: hypothesis, confidence: high, consumer_owned_by: workspace-automation}
   - {upstream: audience, downstream: messaging-delivery, pattern: published-language, contract: RecipientSelection, interaction: synchronous, decision_status: hypothesis, confidence: medium, consumer_owned_by: messaging-delivery}
   - {upstream: contact-directory, downstream: messaging-delivery, pattern: published-language, contract: RecipientReference, interaction: synchronous, decision_status: hypothesis, confidence: medium, consumer_owned_by: messaging-delivery}
   - {upstream: membership, downstream: promotion, pattern: published-language, contract: EligibilityDecision, interaction: synchronous, decision_status: hypothesis, confidence: low, consumer_owned_by: promotion}
@@ -295,5 +236,4 @@ relationships:
   - {upstream: experience-presentation, downstream: messaging-delivery, pattern: published-language, contract: InteractionMessage, interaction: asynchronous, decision_status: hypothesis, confidence: low, consumer_owned_by: messaging-delivery}
   - {upstream: content-intelligence, downstream: experience-presentation, pattern: customer-supplier, contract: ContentDraft, interaction: synchronous, decision_status: hypothesis, confidence: low, consumer_owned_by: experience-presentation}
   - {upstream: content-intelligence, downstream: messaging-delivery, pattern: customer-supplier, contract: ContentDraft, interaction: synchronous, decision_status: hypothesis, confidence: low, consumer_owned_by: messaging-delivery}
-  - {upstream: workspace-automation, downstream: messaging-delivery, pattern: published-language, contract: NotificationIntent, interaction: asynchronous, decision_status: hypothesis, confidence: low, consumer_owned_by: messaging-delivery}
   - {upstream: messaging-delivery, downstream: insights-reporting, pattern: published-language, contract: DeliveryFact, interaction: asynchronous, decision_status: hypothesis, confidence: medium, consumer_owned_by: insights-reporting}

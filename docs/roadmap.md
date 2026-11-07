@@ -28,12 +28,12 @@
 ## SDK Runtime — 分階段實施
 
 - [x] LINE Typed Client Factory 接受受管理 HTTP Client，加入 Timeout、獨立 Transport、生命週期關閉、出站安全 Telemetry、錯誤分類、Context 隔離及離線契約測試。
-- [x] 依實際 SDK 特性建立原生 Typed Client Factory，區分 HTTP／gRPC、API Key／Vertex ADC／Workspace 使用者 OAuth。
-- [x] Firestore、Cloud Tasks（背景工作）、Secret Manager、Storage 的 Typed Client Factory 與配置驗證。
+- [x] 依實際 SDK 特性建立原生 Typed Client Factory，區分 HTTP／gRPC、API Key／Vertex ADC。
+- [x] Firestore、Cloud Tasks（背景工作）、Secret Manager 的 Typed Client Factory 與配置驗證。
 - [x] Firestore Inbox/Outbox 交易 Adapter、Cloud Tasks OIDC 派送 Adapter、可選 Durable Webhook、私有 Worker／定期 Reconcile 程式碼。
-- [ ] Google Cloud Staging IAM／Firestore TTL／Cloud Scheduler／高吞吐與實際 LINE 回覆驗證，Storage 業務 Adapter 另行實作。
+- [ ] Google Cloud Staging IAM／Firestore TTL／Cloud Scheduler／高吞吐與實際 LINE 回覆驗證。
 - [x] OpenAI、Gemini／Vertex、Drive、Sheets、Calendar、Google Tasks（待辦）的原生 Client Factory 與離線契約測試。
-- [ ] 其他 Provider（AI／Workspace／Storage／Secret Manager）業務 Adapter、使用者 OAuth 同意與 Token 隔離；**LINE 已接入預設 Webhook／CLI，Firestore 與 Cloud Tasks 已接入可選 Durable Workflow**。
+- [ ] 其他 Provider（AI／MCP／Secret Manager）業務 Adapter；**LINE 已接入預設 Webhook／CLI，Firestore 與 Cloud Tasks 已接入可選 Durable Workflow**。
 - [x] 原子 Inbox/Outbox、事件 Key 去重、Worker 單次 Claim、unknown/expired 終態和 Reconcile 程式碼。
 - [ ] 實際部署、定期 Cloud Scheduler 與獨立 Staging 的故障恢復驗收。
 - [ ] 經授權的真實 Staging SDK／IAM／OIDC／OAuth 測試與六個全新 Codex 工作階段零先驗驗收（CI 與已清理的一次性 Emulator 測試不能取代）。
@@ -50,7 +50,7 @@
 ## 近期實作順序與不可退化條件
 
 1. **命名與架構 Gate（PR #28 已合併）**：所有已登記的 tactical Domain model directory 都使用 `value-objects/`，Go package 為 `valueobjects`；架構測試禁止同義異名目錄。Identity 已建立八類具體元件並逐步接入 OAuth／Firestore；後續變更仍需按最新 commit 驗證。
-2. **DDD 不退化**：Identity 是唯一 strategically implemented Bounded Context；其 Aggregate、Entity、VO、Policy、Specification、Factory、Repository Reader、Domain Events 與測試已存在。`identity_outbox_v1` 的原子持久化、reserve／resolve 與 `IdentityEventDispatcher` 已達 `implemented_offline`，但 production publisher adapter、bootstrap sink 與 Staging／Production publication 仍未實作或驗證。Audience、Experience Presentation、Promotion、Workspace Automation 與 Messaging Delivery 只是 ADR 0003 授權的 `candidate/hypothesis` tactical models；程式碼、測試與 Adapter 不構成 strategic promotion。Conversation／Message 仍須先確認真實不變量，不把 LINE SDK DTO 當成領域模型。
+2. **DDD 不退化**：保留有實際用途的模型；移除 Workspace 與 Google 帳號連結，不因套用架構而建立空抽象。
 3. **Hexagonal Architecture 不退化（同一功能 PR 的 Gate）**：擴充 AST import boundary 檢查，驗證 Domain 不依賴外層、Application 不 import Adapter/Infrastructure/SDK；新增 usecase 只能透過 Port 呼叫外部效果，Bootstrap 負責 DI。
 4. **GPT／Codex 零先驗不退化（獨立可重現驗收）**：全新、無過往聊天上下文的 Codex session 從 `AGENTS.md` → `README.md` → `docs/architecture/overview.md` → `docs/sdk/catalog.toml`，只讀必要 skill 與 SDK symbol，完成 sandbox-only 微小 Domain 修改；能定位正確的 `value-objects/`，並以 `go.mod`、Catalog、build-tag manifest 保留核准依賴而不建立空 scaffold。將指令、測試結果、失敗與修正紀錄於 PR。
 5. **Production Safety 不退化（Staging 前 Gate）**：以模擬事件驗證簽章、Inbox/Outbox 原子性、重送／亂序、unsend/edit tombstone、Reply token 過期、unknown 發送與 Cloud Tasks OIDC 拒絕未授權請求；建立受控 Staging IAM、Firestore TTL、Scheduler 與 rollback 方案，部署必須經明確批准。不可用 CI 綠燈代表真正 Cloud Run／LINE Production 安全。
@@ -59,7 +59,7 @@
 
 ### Tactical model baseline
 
-- [x] `implemented_offline`：Audience、Experience Presentation、Promotion 與 Workspace Automation 具備 provider-independent Aggregate、Value Object、modeled Domain facts、Domain-owned Repository contract 與行為測試。
+- [x] `implemented_offline`：Audience、Experience Presentation、Promotion 具備 provider-independent Aggregate、Value Object、modeled Domain facts、Domain-owned Repository contract 與行為測試。
 - [x] `implemented_offline`：Messaging Delivery 具備 provider-independent Aggregate、Value Object、modeled Domain facts 與行為測試；完整 transaction persistence boundary 是 Application-owned `DeliveryWorkflowStore`，刻意不建立重複的 Domain Repository contract。
 - [x] `implemented_offline`：Membership、Contact Directory、Insights Reporting 與 Content Intelligence 明確建模為 Application-owned read/process model，未虛構 Aggregate。
 - [x] `implemented_offline`：架構測試禁止 Domain model directory 互相匯入，Application 禁止 provider SDK type，並要求 manifest 登記的 tactical Domain model directory 同時存在行為與測試。
@@ -89,5 +89,5 @@
 - [ ] `operation_verified`：目前 Gate 不證明每個 operation 都有專屬 symbol 與 contract test；逐項接線證據需另以可解析 symbol/test manifest 補齊，不能由 YAML 自我宣告推論。
 - [ ] `staging_verified`：逐項核對真實 Channel 權限、地區資格、速率限制與帳號能力；離線 accounting 不代表外部授權成功。
 - [ ] 全訊息型別、全 Webhook 業務事件等後續能力目前暫緩；本輪僅以固定 102 項 API 為目標。
-- [ ] OpenAI／Gemini 業務能力與 Workspace automation 的 Domain 語言；既有 client factory 或 provider operation 不等同業務 Context。
+- [ ] OpenAI／GenAI 與 MCP client 的業務接線；既有 client factory 或 provider operation 不等同業務 Context。
 - [ ] 批准後部署 staging，驗證後再考慮 production。

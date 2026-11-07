@@ -49,11 +49,8 @@ func TestDependencyDirection(t *testing.T) {
 			}
 			return nil
 		}},
-		{"outbound adapters only import ports, domain, infrastructure, and approved shared codec", "../../internal/adapter/outbound", func(p string) error {
+		{"outbound adapters only import ports, domain and infrastructure", "../../internal/adapter/outbound", func(p string) error {
 			if !isPackageWithin(p, strings.TrimSuffix(internalPath, "/")) {
-				return nil
-			}
-			if p == internalPath+"adapter/outbound/google/api/codec" {
 				return nil
 			}
 			for _, allowed := range []string{"application", "domain", "infrastructure"} {
@@ -100,16 +97,9 @@ func TestDependencyDirection(t *testing.T) {
 	}
 }
 
-func TestOutboundAdapterPeerImportsStayWithinApprovedSharedCodec(t *testing.T) {
+func TestOutboundAdaptersDoNotImportPeers(t *testing.T) {
 	const outboundPrefix = internalPath + "adapter/outbound/"
-	const sharedCodec = outboundPrefix + "google/api/codec"
 	walkProductionGoFiles(t, "../../internal/adapter/outbound", func(path string, file *ast.File) {
-		rel, err := filepath.Rel(filepath.Join("..", ".."), path)
-		if err != nil {
-			t.Errorf("%s: resolve repository-relative source package: %v", path, err)
-			return
-		}
-		sourcePackage := modulePath + "/" + filepath.ToSlash(filepath.Dir(rel))
 		for _, imp := range file.Imports {
 			value, err := strconv.Unquote(imp.Path.Value)
 			if err != nil {
@@ -119,9 +109,7 @@ func TestOutboundAdapterPeerImportsStayWithinApprovedSharedCodec(t *testing.T) {
 			if !isPackageWithin(value, strings.TrimSuffix(outboundPrefix, "/")) {
 				continue
 			}
-			if value != sharedCodec || !isPackageWithin(sourcePackage, outboundPrefix+"google/api") {
-				t.Errorf("%s: outbound adapters must not couple to peer adapter %q", path, value)
-			}
+			t.Errorf("%s: outbound adapters must not couple to peer adapter %q", path, value)
 		}
 	})
 }

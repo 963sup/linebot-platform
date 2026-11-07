@@ -4,16 +4,7 @@ import (
 	"context"
 
 	"github.com/963sup/linebot-platform/internal/adapter/inbound/cli"
-	"golang.org/x/oauth2"
 )
-
-func newWorkspaceRuntime(ctx context.Context, source oauth2.TokenSource) (cli.WorkspaceRuntime, error) {
-	operations, err := NewWorkspaceOperations(ctx, source)
-	if err != nil {
-		return nil, err
-	}
-	return cli.NewWorkspaceRuntime(operations.Execute), nil
-}
 
 func lineRuntimeAdapters(runtime *LINEOpsRuntime) cli.RuntimeAdapters {
 	return cli.RuntimeAdapters{
@@ -55,16 +46,13 @@ func BuildOpsCLI() cli.Dependencies {
 func buildOpsCLI(lineRuntimes lineRuntimeFactories) cli.Dependencies {
 	return cli.Dependencies{
 		AudienceDefinitions: func(ctx context.Context, project string) (cli.AudienceDefinitionsRuntime, error) {
-			return newOperatorDomainRuntime(ctx, project)
+			return newAudienceDomainRuntime(ctx, project)
 		},
 		InteractionSurfaces: func(ctx context.Context, project string) (cli.InteractionSurfacesRuntime, error) {
-			return newOperatorDomainRuntime(ctx, project)
+			return newSurfaceDomainRuntime(ctx, project)
 		},
 		Promotions: func(ctx context.Context, project string) (cli.PromotionsRuntime, error) {
-			return newOperatorDomainRuntime(ctx, project)
-		},
-		AutomationRequests: func(ctx context.Context, project string) (cli.AutomationRequestsRuntime, error) {
-			return newOperatorDomainRuntime(ctx, project)
+			return newPromotionDomainRuntime(ctx, project)
 		},
 		ChannelConnections: func(ctx context.Context, project string) (cli.ChannelConnectionsRuntime, error) {
 			return newChannelConnectionsRuntime(ctx, project)
@@ -96,9 +84,6 @@ func buildOpsCLI(lineRuntimes lineRuntimeFactories) cli.Dependencies {
 				return nil, err
 			}
 			return cli.NewStatusRuntime(runtime.Reader, runtime.Close), nil
-		},
-		WorkspaceRuntime: func(ctx context.Context, source oauth2.TokenSource) (cli.WorkspaceRuntime, error) {
-			return newWorkspaceRuntime(ctx, source)
 		},
 		LinkTokenRuntime: func(token string) (cli.LinkTokenRuntime, error) {
 			runtime, err := lineRuntimes.messaging(token)

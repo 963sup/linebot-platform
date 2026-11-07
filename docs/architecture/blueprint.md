@@ -23,11 +23,10 @@ Overview PNG 是 SVG 的 2400px 寬渲染投影；提交與 CI 以 `make archite
 - 圖中的 repository 結構必須維持 layer-first modular monolith，不得改成 `internal/context` 或 `internal/platform`。
 - Aggregate、Factory、Repository、Policy、Specification 等只在存在真實行為、production consumer 與測試時建立，不預建空 package。
 - 圖中的 Quality Targets 是待驗證的品質目標，不能宣稱本 repository 已通過正式環境驗收。正確狀態是「Production baseline implemented; Staging/Production not verified.」
-- `identity` 以外的 candidate／hypothesis contexts 不因圖片而 promoted。
-- Firestore、Cloud Tasks、Google Calendar、LINE 等圖示只表示 adapter boundary，不代表已部署、授權或通過 Staging 驗收。
+- Firestore、Cloud Tasks、LINE 等圖示只表示 adapter boundary，不代表已部署、授權或通過 Staging 驗收。
 - 若圖片與本文件、domain manifests 或 architecture tests 不一致，以可執行的文字契約與 tests 為準。
 
-本設計以 `go.mod` 宣告的 Go 1.27.3 為基準，優先追求簡潔、明確、低 allocation 與可觀測性。Firestore、Cloud Tasks、Storage、Secret Manager、Google APIs/GenAI、LINE、OpenAI、MCP、HTTP、gRPC 與 OpenTelemetry 都是外部技術，必須隔離在 adapter/infrastructure。
+本設計以 `go.mod` 宣告的 Go 1.27.3 為基準，優先追求簡潔、明確、低 allocation 與可觀測性。Firestore、Cloud Tasks、Secret Manager、GenAI、LINE、OpenAI、MCP、HTTP、gRPC 與 OpenTelemetry 都是外部技術，必須隔離在 adapter/infrastructure。
 
 本文件只定義架構與依賴規則。可演進的 Subdomain、Bounded Context、通用語言與不變條件以 `docs/domain/model.yaml` 為唯一機器來源；LINE operation 到 Application capability 的追溯以 `docs/domain/capability-map.yaml` 為準；`go.mod` 與 SDK 能力的推論以 `docs/domain/dependency-capabilities.yaml` 為準。`docs/domain/context-map.md` 是自動生成的閱讀投影，不得手工維護。Dependency、provider 與 endpoint 可以作為有信心等級的假設證據，但不能單獨把技術名稱提升為已驗證的 Domain Context。
 
@@ -64,8 +63,8 @@ project/
 │   ├── adapter/
 │   │   ├── inbound/{http,grpc,webhook,cli,messaging}/
 │   │   └── outbound/
-│   │       ├── {firestore,cloud_tasks,cloud_storage,secret_manager}/
-│   │       ├── {google_api,google_genai,line,openai,mcp}/
+│   │       ├── {firestore,cloud_tasks,secret_manager}/
+│   │       ├── {google_genai,line,openai,mcp}/
 │   │       ├── messaging/
 │   │       └── in_memory/                  # tests and local development
 │   ├── infrastructure/
@@ -84,7 +83,6 @@ project/
 
 此目錄樹是抽象藍圖，不代表每個 Bounded Context 必須建立全部分類目錄。分類目錄是責任邊界，不是預建 Scaffold；只有存在 production code、真實 consumer 與可驗收行為時才新增 Package。禁止只有 `.gitkeep`、type alias、空 interface 或轉呼叫 wrapper 的分類 Package。
 
-`identity/` 是標準結構的實際範例：它依需求使用 `aggregates/`、`entities/`、`value-objects/`、`events/`、`factories/`、`policies/`、`specifications/` 與 `repositories/`。其他 Bounded Context 只能建立自身真正需要的分類，不得為了外觀完整複製整棵目錄樹。
 
 ### Package 成長閘門
 
@@ -255,7 +253,6 @@ Domain Event 是 Bounded Context 內已發生的業務事實；Integration Event
 - 外部發布只能在 aggregate 與 outbox 的 transaction commit 成功後發生。
 - 跨 Context event 必須有穩定 event ID、type、schema version、occurred-at 與 idempotency key。
 - Firestore transaction 只能保證本地 state/outbox 原子性；Cloud Tasks、LINE 或其他 provider 不具端到端 exactly-once 保證。
-- Identity 已有版本化 Integration Event 與 transactional outbox evidence，但未指定 sink 時保持不發布。
 - 其他 candidate contexts 的事件若沒有 persistence/publication evidence，只能標為 modeled-only，不得宣稱已發布。
 
 ### DDD Tactical Building Blocks
@@ -309,17 +306,17 @@ Aggregate 是 transaction consistency boundary；Entity 不能脫離其 Aggregat
 
 | 對象 | 命名規則 | 範例 |
 | --- | --- | --- |
-| Package | 小寫、簡短、無底線，以責任而非技術流行語命名 | `ingestion`, `workspace`, `firestore` |
-| 檔案 | `snake_case.go`，以主要行為或能力命名 | `authorize_account.go` |
-| Aggregate／Entity／Value Object | 使用 Ubiquitous Language 的業務名詞 | `AccountLink`, `GoogleConnection` |
-| Use Case | 動詞＋受詞 | `AuthorizeLinkedGoogleAccount` |
-| Command／Query | 寫入與讀取語意明確，不用萬用 `Request` | `DisconnectAccount`, `InspectChannel` |
+| Package | 小寫、簡短、無底線，以責任而非技術流行語命名 | `ingestion`, `audience`, `firestore` |
+| 檔案 | `snake_case.go`，以主要行為或能力命名 | `delivery.go` |
+| Aggregate／Entity／Value Object | 使用 Ubiquitous Language 的業務名詞 | `AudienceDefinition`, `Promotion` |
+| Use Case | 動詞＋受詞 | `CreateDeliveryIntent` |
+| Command／Query | 寫入與讀取語意明確，不用萬用 `Request` | `DefineAudience`, `InspectChannel` |
 | Port | 以消費者需要的能力命名 | `EventStore`, `EventQueue`, `Messaging` |
 | Adapter | Provider＋能力，由 package path 表達 provider | `firestore.Store`, `cloudtasks.Queue` |
-| Constructor | 新建使用 `NewX`；持久化還原使用 `RestoreX` | `NewAccountLink`, `RestoreAccountLink` |
-| Domain Event | 使用已發生的過去式 | `AccountLinked`, `AccountUnlinked` |
+| Constructor | 新建使用 `NewX`；持久化還原使用 `RestoreX` | `NewAudienceDefinition`, `RestoreAudienceDefinition` |
+| Domain Event | 使用已發生的過去式 | `Activated`, `Archived` |
 | Error | 使用穩定語意，不暴露 provider 細節 | `ErrEventTooOld` |
-| Boolean | 使用 `Is`、`Has`、`Can`、`Should` | `IsActive`, `CanUseGoogleAPI` |
+| Boolean | 使用 `Is`、`Has`、`Can`、`Should` | `IsActive`, `CanPublish` |
 
 縮寫遵循 Go 慣例，統一使用 `ID`、`URL`、`HTTP`、`API`、`OAuth`。禁止同一概念交替使用 `Manager`、`Service`、`Provider`、`Client`；`Client` 僅指外部 SDK／transport client，`Service` 僅用於有獨立 Domain 或 Application 行為的元件。
 
@@ -420,23 +417,11 @@ stateDiagram-v2
 
 `sending` 與 `unknown` 禁止自動回到 `pending`，因為 timeout 可能代表 LINE 已接收訊息。狀態以 Domain 的 `messaging-delivery/value-objects.Status` 為唯一來源；Application 的 `EventState` 只是 read-model 相容 alias。
 
-### AccountLink Aggregate 狀態圖
-
-```mermaid
-stateDiagram-v2
-    [*] --> active: verified link / AccountLinked
-    active --> disconnected: Disconnect / AccountUnlinked
-    disconnected --> disconnected: idempotent Disconnect
-    disconnected --> [*]
-```
-
-`RestoreAccountLink` 只還原既有狀態，不產生新 Domain Event。OAuth credential、Firestore version 與 encryption metadata 不屬於 Aggregate。重新連結必須建立經驗證的新連結流程，不得直接把 disconnected instance 改回 active。
-
 ## 7. 技術 adapter 與效能契約
 
 ### Client lifecycle
 
-- Firestore、Storage、Secret Manager、Cloud Tasks、Google API、GenAI、LINE、OpenAI 與 MCP client 在啟動期建立並重用；request handler 不重建 client。
+- Firestore、Secret Manager、Cloud Tasks、GenAI、LINE、OpenAI 與 MCP client 在啟動期建立並重用；request handler 不重建 client。
 - gRPC 重用 `ClientConn`，依服務設定 deadline、keepalive、interceptor 與 stream cancellation；每個 stream 必須由 context 取消或正常讀完以避免資源洩漏。
 - 同一個 client 是否可共享，必須以 SDK thread-safety 與認證 scope 判定；帶使用者 OAuth 狀態的 TokenSource/HTTP client 不得跨使用者共享。
 
@@ -481,7 +466,7 @@ stateDiagram-v2
 | Application use case／Port | Fake-based use-case tests、interface implementation check |
 | HTTP／Webhook／CLI | Handler tests、contract tests、錯誤與大小限制 |
 | Firestore／Cloud Tasks | Contract tests、race、integration compile；真實交易需 Emulator／staging 證據 |
-| OAuth／Identity | replay、expiry、PKCE、nonce、ownership、scope、encryption/CAS tests |
+| LINE identity | server-side ID-token verification、expiry、audience、失敗與取消處理 |
 | Worker／Concurrency | cancellation、retry、idempotency、graceful shutdown、race tests |
 | SDK upgrade | module source／Context7 查證、adapter contract tests、client lifecycle revalidation |
 | Performance claim | 可重現 benchmark/profile 與變更前後基準 |

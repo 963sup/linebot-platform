@@ -22,7 +22,7 @@ LINE MINI App browser
   -> request one Web Geolocation reading after an explicit user gesture
   -> keep the reading client-side until a future business use case owns it
 
-尚未接入公用 LINE Webhook 業務：OpenAI、Gemini、Google Workspace 操作、Storage、Secret Manager；個別 SDK 與 OAuth Runtime 模組已存在，但未取得正式環境授權。
+OpenAI、GenAI、MCP client 保留原生 factory，但尚未接入 LINE 訊息業務。Workspace 與 Cloud Storage factory 已移除，日後依實際需求整合。
 Cloud Run／Firestore／Cloud Tasks 實際資源與 IAM 均未由儲存庫自動建立。
 ```
 
