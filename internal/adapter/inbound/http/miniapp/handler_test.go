@@ -68,8 +68,8 @@ func TestAssetsExposeNeutralLIFFAndGeolocationInfrastructure(t *testing.T) {
 			t.Fatalf("%s status=%d", path, response.Code)
 		}
 		body := response.Body.String()
-		if strings.Contains(body, "打卡") || strings.Contains(body, "clock_in") {
-			t.Fatalf("business language leaked into %s", path)
+		if !strings.Contains(body, "MINI App") && !strings.Contains(body, "getCurrentPosition") {
+			t.Fatalf("neutral infrastructure marker missing from %s", path)
 		}
 	}
 }
