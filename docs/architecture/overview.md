@@ -18,15 +18,15 @@ LINE MINI App browser
   -> public page/assets/config
   -> explicit Web Geolocation permission
   -> verify Bearer LIFF ID token from liff.getIDToken()
-  -> inspect today's AttendanceDay and submit clock_in / clock_out
-  -> Application attendance orchestration -> Attendance Aggregate + Firestore repository
-  -> one Firestore AttendanceDay per participant/workday
+  -> verify the LINE ID token through the Go HTTPS API
+  -> request one Web Geolocation reading after an explicit user gesture
+  -> keep the reading client-side until a future business use case owns it
 
 尚未接入公用 LINE Webhook 業務：OpenAI、Gemini、Google Workspace 操作、Storage、Secret Manager；個別 SDK 與 OAuth Runtime 模組已存在，但未取得正式環境授權。
 Cloud Run／Firestore／Cloud Tasks 實際資源與 IAM 均未由儲存庫自動建立。
 ```
 
-MINI App 的 Geolocation 是 browser mechanism；已登錄員工在 server-derived Workday 完成最多一次上／下班 Punch 才構成 `attendance` Bounded Context。原始 LINE subject 不離開 outbound identity adapter，成功回應也不回傳座標。MVP 依賴 Firestore encryption at rest 與最小 IAM，不引入 Attendance keyring、班次、地點政策或 review workflow。公開 origin、LIFF／MINI App、瀏覽器權限、Firestore IAM 與外部 token 驗證在 Staging／Production 均為 `Not Verified`；契約與信任邊界見 [MINI App 員工出勤設計](../line/miniapp-attendance.md)。
+MINI App 的 Geolocation 是 browser mechanism。Go API 驗證 LINE ID token，但不公開 provider subject；LocationReading 目前不送往 Firestore，也不宣稱本人實體在場。公開 origin、LIFF／MINI App、瀏覽器權限與外部 token 驗證在 Staging／Production 均為 `Not Verified`。
 
 其他 SDK 的 Client Factory、Codex SDK Catalog 與逐步啟用計畫見 [SDK Integration 設計](sdk-integration.md)。Catalog 僅為開發路由資料，非執行期 Registry。
 

@@ -38,9 +38,6 @@ func runWithContext(ctx context.Context, args []string, getenv func(string) stri
 	if len(args) > 0 && args[0] == "channel-tokens" {
 		return runChannelTokens(ctx, args[1:], deps)
 	}
-	if len(args) > 0 && args[0] == "attendance" {
-		return runAttendance(ctx, args[1:], getenv, os.Stdout, deps)
-	}
 	if len(args) > 0 && args[0] == "audience-definitions" {
 		return runAudienceDefinitions(ctx, args[1:], getenv, os.Stdout, deps)
 	}
@@ -111,7 +108,7 @@ func runWithContext(ctx context.Context, args []string, getenv func(string) stri
 		return runWebhookAdmin(ctx, args[1:], getenv, os.Stdout, deps)
 	}
 	if len(args) == 0 || args[0] != "push" {
-		return errors.New("usage: ops attendance employee|workplace|shift|review ACTION [flags] | ops push --to ID --text MESSAGE [--send] [--retry-key UUID] | ops events --inspect --project PROJECT | ops profile --user ID --lookup")
+		return errors.New("usage: ops push --to ID --text MESSAGE [--send] [--retry-key UUID] | ops events --inspect --project PROJECT | ops profile --user ID --lookup")
 	}
 	fs := flag.NewFlagSet("push", flag.ContinueOnError)
 	to := fs.String("to", "", "LINE recipient ID")

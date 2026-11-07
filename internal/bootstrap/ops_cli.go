@@ -54,7 +54,6 @@ func BuildOpsCLI() cli.Dependencies {
 
 func buildOpsCLI(lineRuntimes lineRuntimeFactories) cli.Dependencies {
 	return cli.Dependencies{
-		Attendance: newAttendanceOpsRuntime,
 		AudienceDefinitions: func(ctx context.Context, project string) (cli.AudienceDefinitionsRuntime, error) {
 			return newOperatorDomainRuntime(ctx, project)
 		},

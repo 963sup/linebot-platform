@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/963sup/linebot-platform/internal/application/usecases/attendance"
+	linesession "github.com/963sup/linebot-platform/internal/application/usecases/line-session"
 )
 
 func testIDTokenVerifier(t *testing.T, handler http.HandlerFunc) (*IDTokenVerifier, func()) {
@@ -24,7 +24,7 @@ func testIDTokenVerifier(t *testing.T, handler http.HandlerFunc) (*IDTokenVerifi
 	return verifier, server.Close
 }
 
-func TestIDTokenVerifierPostsFormAndReturnsProofWithoutSubject(t *testing.T) {
+func TestIDTokenVerifierPostsFormAndReturnsVerifiedSubject(t *testing.T) {
 	now := time.Date(2026, 11, 5, 12, 0, 0, 0, time.UTC)
 	verifier, closeServer := testIDTokenVerifier(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost || r.URL.Path != "/oauth2/v2.1/verify" {
@@ -38,11 +38,8 @@ func TestIDTokenVerifierPostsFormAndReturnsProofWithoutSubject(t *testing.T) {
 	defer closeServer()
 	verifier.now = func() time.Time { return now }
 	principal, err := verifier.Verify(context.Background(), "token")
-	if err != nil || principal.ValidatedAt != now || !principal.ParticipantID.Valid() || strings.Contains(string(principal.ParticipantID), "U-secret") || !strings.HasPrefix(string(principal.ParticipantID), "line:v1:") {
+	if err != nil || principal.ValidatedAt != now || principal.Subject != "U-secret" {
 		t.Fatalf("Verify() = (%+v, %v)", principal, err)
-	}
-	if principal.ParticipantID != participantID("channel", "U-secret") || principal.ParticipantID == participantID("other-channel", "U-secret") {
-		t.Fatal("participant identity is not stable and client-scoped")
 	}
 }
 
@@ -53,15 +50,15 @@ func TestIDTokenVerifierRejectsClaimsAndClassifiesFailures(t *testing.T) {
 		status     int
 		want       error
 	}{
-		{"issuer", `{"iss":"wrong","aud":"channel","exp":9999999999,"sub":"U"}`, 200, attendance.ErrUnauthenticated},
-		{"audience", `{"iss":"https://access.line.me","aud":"wrong","exp":9999999999,"sub":"U"}`, 200, attendance.ErrUnauthenticated},
-		{"expired", fmt.Sprintf(`{"iss":"https://access.line.me","aud":"channel","exp":%d,"sub":"U"}`, now.Unix()), 200, attendance.ErrUnauthenticated},
-		{"subject", `{"iss":"https://access.line.me","aud":"channel","exp":9999999999,"sub":""}`, 200, attendance.ErrUnauthenticated},
-		{"invalid token", `{}`, 400, attendance.ErrUnauthenticated},
-		{"outage", `{}`, 503, attendance.ErrIdentityUnavailable},
-		{"rate limit", `{}`, 429, attendance.ErrIdentityUnavailable},
-		{"bounded", strings.Repeat("x", maxIDTokenResponseBytes+1), 200, attendance.ErrIdentityUnavailable},
-		{"trailing", `{"iss":"https://access.line.me","aud":"channel","exp":9999999999,"sub":"U"}{}`, 200, attendance.ErrIdentityUnavailable},
+		{"issuer", `{"iss":"wrong","aud":"channel","exp":9999999999,"sub":"U"}`, 200, linesession.ErrUnauthenticated},
+		{"audience", `{"iss":"https://access.line.me","aud":"wrong","exp":9999999999,"sub":"U"}`, 200, linesession.ErrUnauthenticated},
+		{"expired", fmt.Sprintf(`{"iss":"https://access.line.me","aud":"channel","exp":%d,"sub":"U"}`, now.Unix()), 200, linesession.ErrUnauthenticated},
+		{"subject", `{"iss":"https://access.line.me","aud":"channel","exp":9999999999,"sub":""}`, 200, linesession.ErrUnauthenticated},
+		{"invalid token", `{}`, 400, linesession.ErrUnauthenticated},
+		{"outage", `{}`, 503, linesession.ErrUnavailable},
+		{"rate limit", `{}`, 429, linesession.ErrUnavailable},
+		{"bounded", strings.Repeat("x", maxIDTokenResponseBytes+1), 200, linesession.ErrUnavailable},
+		{"trailing", `{"iss":"https://access.line.me","aud":"channel","exp":9999999999,"sub":"U"}{}`, 200, linesession.ErrUnavailable},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {

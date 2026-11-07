@@ -6,7 +6,7 @@
 - Value Object 目錄在每個 strategically implemented Context 或 ADR-authorized candidate tactical model 內一律使用 `value-objects/`（例如 `internal/domain/identity/value-objects/`）。Go package 名稱仍為 `valueobjects`。Import path 可含 `-`，例如 `import valueobjects "github.com/963sup/linebot-platform/internal/domain/identity/value-objects"`。禁止新增名為 `valueobjects/` 或 `value_objects/` 的替代目錄；新增前檢查 `tests/architecture/value_objects_directory_test.go`。
 - 先寫業務測試再實作；沒有真實不變量、owner 與 consumer 時，不建立分類 Package 或空目錄。
 
-- `identity/` 與 ADR 0004 核准的 `attendance/` 是 strategically implemented Bounded Context。`messaging-delivery/`、`audience/`、`experience-presentation/`、`promotion/`、`workspace-automation/` 是 ADR 0003 授權的 `candidate/hypothesis` tactical models；不得因已有程式碼、Adapter 或測試而宣稱 strategic promotion。
+- `identity/` 是 strategically implemented Bounded Context。`messaging-delivery/`、`audience/`、`experience-presentation/`、`promotion/`、`workspace-automation/` 是 ADR 0003 授權的 `candidate/hypothesis` tactical models；不得因已有程式碼、Adapter 或測試而宣稱 strategic promotion。
 
-- Implemented Bounded Context 只建立實際需要的分類 Package。Identity 使用完整建模元件；Attendance 使用 Aggregate、Entity、Value Object 與 Domain repository contract，不為填滿圖而增加空 Policy、Factory、Specification 或 Event。
+- Implemented Bounded Context 只建立實際需要的分類 Package；不為填滿圖而增加空 Policy、Factory、Specification 或 Event。
 - 禁止以新 Domain 包裝既有 DTO 卻仍在 Application 重複判斷 Scope、綁定狀態與授權規則。必須在每次重構檢查重複模型與舊呼叫點，並明確記錄尚待退役的技術契約。

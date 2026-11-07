@@ -64,7 +64,7 @@ jq -e '
   (.miniapp_config.liff_url | type == "string" and length > 0) and
   (.miniapp_config.channel_id | type == "string" and length > 0) and
   .miniapp_config.firestore_database == "(default)" and
-  (["iam","credentials","firestore","worker_capacity","redelivery","reply_deadline","reconcile","indexes_ttl","monitoring","rollback","miniapp_identity","attendance_enrollment","attendance_concurrency","attendance_workday","miniapp_privacy"] - (.passed_gates // [] | unique) | length == 0)
+  (["iam","credentials","firestore","worker_capacity","redelivery","reply_deadline","reconcile","indexes_ttl","monitoring","rollback","miniapp_identity","miniapp_geolocation","miniapp_privacy"] - (.passed_gates // [] | unique) | length == 0)
 ' "${STAGING_EVIDENCE_FILE}" >/dev/null
 
 evidence_public="$(jq -r '.image_digests.public' "${STAGING_EVIDENCE_FILE}")"

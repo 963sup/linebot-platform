@@ -1,174 +1,48 @@
 openapi: 3.1.0
 info:
-  title: linebot-platform Attendance MINI App API
-  version: 2.0.0
-  description: LIFF assets and authenticated enrollment, today's attendance state, and clock-in/out submission.
-tags: [{name: Mini App}, {name: Attendance}]
+  title: linebot-platform LINE MINI App Infrastructure API
+  version: 1.0.0
+  description: LIFF assets and server-verified LINE Login session infrastructure. No business data is written.
 paths:
-  /miniapp:
-    get:
-      tags: [Mini App]
-      operationId: redirectMiniApp
-      responses:
-        '308': {description: Permanent redirect to `/miniapp/`.}
-        '405': {$ref: '#/components/responses/MethodNotAllowed'}
   /miniapp/:
     get:
       tags: [Mini App]
-      operationId: getMiniApp
       responses:
-        '200': {description: Attendance MINI App HTML., content: {text/html: {schema: {type: string}}}}
-        '405': {$ref: '#/components/responses/MethodNotAllowed'}
-  /miniapp/assets/app.css:
-    get:
-      tags: [Mini App]
-      operationId: getMiniAppStylesheet
-      responses:
-        '200': {description: Static CSS., content: {text/css: {schema: {type: string}}}}
-        '405': {$ref: '#/components/responses/MethodNotAllowed'}
-  /miniapp/assets/app.js:
-    get:
-      tags: [Mini App]
-      operationId: getMiniAppScript
-      responses:
-        '200': {description: Static JavaScript., content: {text/javascript: {schema: {type: string}}}}
-        '405': {$ref: '#/components/responses/MethodNotAllowed'}
+        '200': {description: LINE MINI App HTML}
   /miniapp/config.json:
     get:
       tags: [Mini App]
-      operationId: getMiniAppConfig
       responses:
-        '200': {description: Public LIFF configuration., content: {application/json: {schema: {$ref: '#/components/schemas/MiniAppConfig'}}}}
-        '405': {$ref: '#/components/responses/MethodNotAllowed'}
-  /miniapp/api/v1/attendance/enrollments:
-    post:
-      tags: [Attendance]
-      operationId: enrollAttendanceParticipant
-      security: [{lineIDToken: []}]
-      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/EnrollmentRequest'}}}}
-      responses:
-        '200': {description: Already enrolled., content: {application/json: {schema: {$ref: '#/components/schemas/EnrollmentResult'}}}}
-        '201': {description: Enrollment created., content: {application/json: {schema: {$ref: '#/components/schemas/EnrollmentResult'}}}}
-        '400': {$ref: '#/components/responses/InvalidRequest'}
-        '401': {$ref: '#/components/responses/Unauthenticated'}
-        '403': {$ref: '#/components/responses/Forbidden'}
-        '404': {$ref: '#/components/responses/NotFound'}
-        '405': {$ref: '#/components/responses/MethodNotAllowed'}
-        '409': {$ref: '#/components/responses/Conflict'}
-        '413': {$ref: '#/components/responses/RequestTooLarge'}
-        '415': {$ref: '#/components/responses/UnsupportedMediaType'}
-        '500': {$ref: '#/components/responses/InternalError'}
-        '503': {$ref: '#/components/responses/CapabilityUnavailable'}
-  /miniapp/api/v1/attendance/today:
+        '200':
+          description: Public LIFF configuration
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [liffId]
+                properties: {liffId: {type: string}}
+  /miniapp/api/v1/session:
     get:
-      tags: [Attendance]
-      operationId: getTodayAttendance
-      summary: Read the verified participant's server-resolved workday state
+      tags: [Mini App]
       security: [{lineIDToken: []}]
       responses:
-        '200': {description: Enrollment and current workday state., content: {application/json: {schema: {$ref: '#/components/schemas/AttendanceToday'}}}}
-        '401': {$ref: '#/components/responses/Unauthenticated'}
-        '403': {$ref: '#/components/responses/Forbidden'}
-        '405': {$ref: '#/components/responses/MethodNotAllowed'}
-        '409': {$ref: '#/components/responses/Conflict'}
-        '500': {$ref: '#/components/responses/InternalError'}
-        '503': {$ref: '#/components/responses/CapabilityUnavailable'}
-  /miniapp/api/v1/attendance/punches:
-    post:
-      tags: [Attendance]
-      operationId: createAttendancePunch
-      summary: Record clock-in or clock-out for the server-resolved workday
-      security: [{lineIDToken: []}]
-      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/PunchRequest'}}}}
-      responses:
-        '200': {description: Idempotent replay., content: {application/json: {schema: {$ref: '#/components/schemas/PunchResult'}}}}
-        '201': {description: Punch recorded., content: {application/json: {schema: {$ref: '#/components/schemas/PunchResult'}}}}
-        '400': {$ref: '#/components/responses/InvalidRequest'}
-        '401': {$ref: '#/components/responses/Unauthenticated'}
-        '403': {$ref: '#/components/responses/Forbidden'}
-        '404': {$ref: '#/components/responses/NotFound'}
-        '405': {$ref: '#/components/responses/MethodNotAllowed'}
-        '409': {$ref: '#/components/responses/Conflict'}
-        '413': {$ref: '#/components/responses/RequestTooLarge'}
-        '415': {$ref: '#/components/responses/UnsupportedMediaType'}
-        '500': {$ref: '#/components/responses/InternalError'}
-        '503': {$ref: '#/components/responses/CapabilityUnavailable'}
+        '200':
+          description: Server-verified LINE session
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [authenticated, validatedAt]
+                properties:
+                  authenticated: {type: boolean, const: true}
+                  validatedAt: {type: string, format: date-time}
+        '401': {description: Invalid or missing LINE ID token}
+        '403': {description: Disallowed browser origin}
+        '405': {description: Method not allowed}
+        '503': {description: LINE identity verification unavailable}
 components:
   securitySchemes:
     lineIDToken:
       type: http
       scheme: bearer
-      bearerFormat: LINE LIFF ID token
-      description: The `liff.getIDToken()` value.
-  schemas:
-    MiniAppConfig:
-      type: object
-      additionalProperties: false
-      required: [liffId]
-      properties: {liffId: {type: string, minLength: 1}}
-    EnrollmentRequest:
-      type: object
-      additionalProperties: false
-      required: [enrollmentCode]
-      properties: {enrollmentCode: {type: string, minLength: 1, maxLength: 256}}
-    EnrollmentResult:
-      type: object
-      additionalProperties: false
-      required: [status]
-      properties: {status: {type: string, enum: [enrolled, already_enrolled]}}
-    PunchView:
-      type: object
-      additionalProperties: false
-      required: [kind, recordedAt]
-      properties:
-        kind: {type: string, enum: [clock_in, clock_out]}
-        recordedAt: {type: string, format: date-time}
-    AttendanceToday:
-      type: object
-      additionalProperties: false
-      required: [enrollmentRequired, workday, clockIn, clockOut, allowedKinds]
-      properties:
-        enrollmentRequired: {type: boolean}
-        workday: {type: string, description: Server-resolved attendance date.}
-        clockIn: {oneOf: [{$ref: '#/components/schemas/PunchView'}, {type: 'null'}]}
-        clockOut: {oneOf: [{$ref: '#/components/schemas/PunchView'}, {type: 'null'}]}
-        allowedKinds: {type: array, uniqueItems: true, items: {type: string, enum: [clock_in, clock_out]}}
-    PunchRequest:
-      type: object
-      additionalProperties: false
-      required: [kind, latitude, longitude, accuracyMeters]
-      properties:
-        kind: {type: string, enum: [clock_in, clock_out]}
-        latitude: {type: number, format: double, minimum: -90, maximum: 90}
-        longitude: {type: number, format: double, minimum: -180, maximum: 180}
-        accuracyMeters: {type: number, format: double, exclusiveMinimum: 0}
-    PunchResult:
-      type: object
-      additionalProperties: false
-      required: [workday, kind, recordedAt, status]
-      properties:
-        workday: {type: string}
-        kind: {type: string, enum: [clock_in, clock_out]}
-        recordedAt: {type: string, format: date-time}
-        status: {type: string, enum: [recorded, already_recorded]}
-    Error:
-      type: object
-      additionalProperties: false
-      required: [error]
-      properties: {error: {$ref: '#/components/schemas/ErrorDetail'}}
-    ErrorDetail:
-      type: object
-      additionalProperties: false
-      required: [code, message]
-      properties: {code: {type: string}, message: {type: string}}
-  responses:
-    InvalidRequest: {description: Strict JSON or field validation failed., content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}}
-    Unauthenticated: {description: LINE ID token authentication failed., content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}}
-    Forbidden: {description: Origin validation or enrollment failed., content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}}
-    NotFound: {description: Enrollment code was not found., content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}}
-    Conflict: {description: Punch conflicts with current workday state., content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}}
-    MethodNotAllowed: {description: Method not supported., content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}}
-    RequestTooLarge: {description: Body exceeds 4096 bytes., content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}}
-    UnsupportedMediaType: {description: Content-Type is not JSON., content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}}
-    InternalError: {description: Unexpected internal failure., content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}}
-    CapabilityUnavailable: {description: Identity or Attendance persistence is unavailable., content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}}
+      bearerFormat: LINE ID token

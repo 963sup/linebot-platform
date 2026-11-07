@@ -1,136 +1,35 @@
 "use strict";
 
-const enrollmentForm = document.querySelector("#enrollment");
-const enrollmentCode = document.querySelector("#enrollment-code");
-const attendancePanel = document.querySelector("#attendance-panel");
-const workdayLine = document.querySelector("#workday");
-const clockInLine = document.querySelector("#clock-in-time");
-const clockOutLine = document.querySelector("#clock-out-time");
-const clockIn = document.querySelector("#clock-in");
-const clockOut = document.querySelector("#clock-out");
 const statusLine = document.querySelector("#status");
-let idToken = "";
-let today = null;
+const locateButton = document.querySelector("#locate");
+const locationLine = document.querySelector("#location");
 
-function showStatus(message) { statusLine.textContent = message; }
-
-function errorCode(error) {
-  if (error && error.code === 1) return "permission_denied";
-  if (error && error.code === 2) return "position_unavailable";
-  if (error && error.code === 3) return "timeout";
-  return error && error.code ? error.code : "unknown_error";
+function status(message) { statusLine.textContent = message; }
+export function validateLocationReading(coords, capturedAt = new Date().toISOString()) {
+  const latitude = Number(coords?.latitude), longitude = Number(coords?.longitude), accuracyM = Number(coords?.accuracy);
+  if (!Number.isFinite(latitude) || latitude < -90 || latitude > 90 || !Number.isFinite(longitude) || longitude < -180 || longitude > 180 || !Number.isFinite(accuracyM) || accuracyM < 0) throw Object.assign(new Error("invalid location reading"), {code: "invalid_reading"});
+  return {latitude, longitude, accuracyM, capturedAt};
 }
-
-function errorMessage(error) {
-  const messages = {
-    unauthorized: "LINE 登入已失效，請重新開啟。",
-    enrollment_required: "請先完成員工登錄。",
-    permission_denied: "未取得定位權限。",
-    position_unavailable: "無法取得目前位置。",
-    timeout: "取得位置逾時，請重試。",
-    attendance_conflict: "今日打卡狀態已更新。",
-    attendance_unavailable: "出勤服務暫時無法使用。"
-  };
-  return messages[errorCode(error)] || "操作失敗，請稍後重試。";
+export function currentLocation(options = {}) {
+  if (!window.isSecureContext || !navigator.geolocation) return Promise.reject(Object.assign(new Error("geolocation unsupported"), {code: "unsupported"}));
+  return new Promise((resolve, reject) => navigator.geolocation.getCurrentPosition(
+    position => { try { resolve(validateLocationReading(position.coords, new Date(position.timestamp).toISOString())); } catch (error) { reject(error); } },
+    error => reject(Object.assign(new Error("geolocation failed"), {code: ({1: "permission_denied", 2: "position_unavailable", 3: "timeout"})[error.code] || "unknown"})),
+    {enableHighAccuracy: options.enableHighAccuracy ?? true, timeout: options.timeout ?? 10000, maximumAge: options.maximumAge ?? 0}
+  ));
 }
-
-async function request(path, options = {}) {
-  const response = await fetch(path, {
-    ...options,
-    headers: {
-      "Authorization": `Bearer ${idToken}`,
-      ...(options.body ? { "Content-Type": "application/json" } : {})
-    }
-  });
-  const contentType = response.headers.get("content-type") || "";
-  const payload = contentType.includes("application/json") ? await response.json() : null;
-  if (!response.ok) {
-    const error = new Error("request_failed");
-    error.code = payload?.error?.code || `http_${response.status}`;
-    throw error;
-  }
-  if (!payload) {
-    const error = new Error("invalid_response");
-    error.code = "invalid_response";
-    throw error;
-  }
-  return payload;
-}
-
-function formatTime(value) {
-  return value ? new Date(value).toLocaleTimeString("zh-TW", {hour: "2-digit", minute: "2-digit"}) : "尚未打卡";
-}
-
-function renderToday(payload) {
-  today = payload;
-  enrollmentForm.hidden = !payload.enrollmentRequired;
-  attendancePanel.hidden = payload.enrollmentRequired;
-  if (payload.enrollmentRequired) return;
-  workdayLine.textContent = `日期：${payload.workday}`;
-  clockInLine.textContent = `上班：${formatTime(payload.clockIn?.recordedAt)}`;
-  clockOutLine.textContent = `下班：${formatTime(payload.clockOut?.recordedAt)}`;
-  const allowed = payload.allowedKinds || [];
-  clockIn.hidden = !allowed.includes("clock_in");
-  clockOut.hidden = !allowed.includes("clock_out");
-  if (allowed.length === 0) showStatus("今日打卡已完成。");
-}
-
-async function loadToday() { renderToday(await request("/miniapp/api/v1/attendance/today")); }
-
 async function initialize() {
-  const response = await fetch("/miniapp/config.json");
-  if (!response.ok) throw Object.assign(new Error("config_unavailable"), {code: "config_unavailable"});
-  const config = await response.json();
-  await liff.init({ liffId: config.liffId });
-  if (!liff.isLoggedIn()) {
-    liff.login({ redirectUri: window.location.origin + "/miniapp/" });
-    return;
-  }
-  idToken = liff.getIDToken();
-  if (!idToken) throw Object.assign(new Error("line_login_required"), {code: "unauthorized"});
-  await loadToday();
+  const configResponse = await fetch("/miniapp/config.json"); if (!configResponse.ok) throw new Error("configuration unavailable");
+  const config = await configResponse.json(); await liff.init({liffId: config.liffId});
+  if (!liff.isLoggedIn()) { liff.login({redirectUri: window.location.origin + "/miniapp/"}); return; }
+  const idToken = liff.getIDToken(); if (!idToken) throw new Error("LINE login is required");
+  const response = await fetch("/miniapp/api/v1/session", {headers: {Authorization: `Bearer ${idToken}`}}); if (!response.ok) throw new Error("LINE session verification failed");
+  locateButton.disabled = false; status("LINE 身分驗證成功。");
 }
-
-enrollmentForm.addEventListener("submit", async (event) => {
-  event.preventDefault();
-  showStatus("正在登錄…");
-  try {
-    const result = await request("/miniapp/api/v1/attendance/enrollments", {
-      method: "POST", body: JSON.stringify({ enrollmentCode: enrollmentCode.value })
-    });
-    showStatus(result.status === "already_enrolled" ? "已完成登錄。" : "登錄成功。");
-    enrollmentCode.value = "";
-    await loadToday();
-  } catch (error) { showStatus(errorMessage(error)); }
+locateButton.addEventListener("click", async () => {
+  locateButton.disabled = true; status("正在取得位置…");
+  try { const reading = await currentLocation(); locationLine.textContent = `緯度 ${reading.latitude.toFixed(6)}，經度 ${reading.longitude.toFixed(6)}，精度約 ${Math.round(reading.accuracyM)} 公尺`; status("位置讀值有效；尚未送往任何業務功能。"); }
+  catch (error) { status(({unsupported: "此環境不支援安全定位。", permission_denied: "未取得定位權限。", position_unavailable: "無法取得目前位置。", timeout: "取得位置逾時。", invalid_reading: "裝置回傳的位置無效。"})[error.code] || "取得位置失敗。"); }
+  finally { locateButton.disabled = false; }
 });
-
-async function punch(kind) {
-  if (!navigator.geolocation) throw Object.assign(new Error("geolocation_unavailable"), {code: "position_unavailable"});
-  if (!today || !(today.allowedKinds || []).includes(kind)) throw Object.assign(new Error("punch_not_available"), {code: "attendance_conflict"});
-  const position = await new Promise((resolve, reject) => {
-    navigator.geolocation.getCurrentPosition(resolve, reject, {enableHighAccuracy: false, maximumAge: 0, timeout: 10000});
-  });
-  return request("/miniapp/api/v1/attendance/punches", {
-    method: "POST",
-    body: JSON.stringify({kind, latitude: position.coords.latitude, longitude: position.coords.longitude, accuracyMeters: position.coords.accuracy})
-  });
-}
-
-for (const [button, kind] of [[clockIn, "clock_in"], [clockOut, "clock_out"]]) {
-  button.addEventListener("click", async () => {
-    clockIn.disabled = true;
-    clockOut.disabled = true;
-    showStatus("正在打卡…");
-    try {
-      const result = await punch(kind);
-      showStatus(`${kind === "clock_in" ? "上班" : "下班"}打卡成功（${formatTime(result.recordedAt)}）`);
-    } catch (error) { showStatus(errorMessage(error)); }
-    finally {
-      try { await loadToday(); } catch (_) { /* retain the last safe status */ }
-      clockIn.disabled = false;
-      clockOut.disabled = false;
-    }
-  });
-}
-
-initialize().catch((error) => showStatus(errorMessage(error)));
+initialize().catch(error => status(error.message));

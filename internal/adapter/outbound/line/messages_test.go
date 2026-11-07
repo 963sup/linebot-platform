@@ -12,7 +12,7 @@ func TestConvertMessages(t *testing.T) {
 		{Kind: messagingdelivery.KindText, Text: "hi"},
 		{Kind: messagingdelivery.KindFlex, Flex: messagingdelivery.FlexCard{
 			AltText: "alt", Title: "Title", Body: "Body",
-			Action: &messagingdelivery.URIAction{Label: "開啟打卡", URI: "https://liff.line.me/2000000000-attendance"},
+			Action: &messagingdelivery.URIAction{Label: "開啟 MINI App", URI: "https://miniapp.line.me/2000000000-example"},
 		}},
 	})
 	if err != nil {
@@ -37,7 +37,7 @@ func TestConvertMessages(t *testing.T) {
 		t.Fatalf("footer component = %T", bubble.Footer.Contents[0])
 	}
 	action, ok := button.Action.(*messaging_api.UriAction)
-	if !ok || action.Label != "開啟打卡" || action.Uri != "https://liff.line.me/2000000000-attendance" {
+	if !ok || action.Label != "開啟 MINI App" || action.Uri != "https://miniapp.line.me/2000000000-example" {
 		t.Fatalf("button action = %#v", button.Action)
 	}
 }

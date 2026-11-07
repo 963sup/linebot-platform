@@ -34,7 +34,7 @@ func TestMarkdownArchitectureContractsStayAligned(t *testing.T) {
 		},
 		{
 			path:     "../../internal/domain/AGENTS.md",
-			required: []string{"`attendance/` 是 strategically implemented Bounded Context", "ADR 0003 授權的 `candidate/hypothesis` tactical models", "不得因已有程式碼、Adapter 或測試而宣稱 strategic promotion"},
+			required: []string{"`identity/` 是 strategically implemented Bounded Context", "ADR 0003 授權的 `candidate/hypothesis` tactical models", "不得因已有程式碼、Adapter 或測試而宣稱 strategic promotion"},
 		},
 		{
 			path:     "../../internal/infrastructure/AGENTS.md",
@@ -47,7 +47,7 @@ func TestMarkdownArchitectureContractsStayAligned(t *testing.T) {
 		},
 		{
 			path:     "../../internal/domain/README.md",
-			required: []string{"`attendance/`", "strategically implemented", "`candidate/hypothesis` tactical models"},
+			required: []string{"`identity/`", "strategically implemented", "`candidate/hypothesis` tactical models"},
 		},
 		{
 			path:     "../../docs/domain/context-map.md",
@@ -66,15 +66,6 @@ func TestMarkdownArchitectureContractsStayAligned(t *testing.T) {
 			path:     "../../docs/sources.md",
 			required: []string{"目前只有 `internal/infrastructure/google/genai/` client factory", "尚未建立業務 outbound adapter", "`liff.getIDToken()`", "AES-GCM", "90 天 TTL"},
 			forbid:   []string{"`internal/adapter/outbound/genai/`"},
-		},
-		{
-			path:     "../../docs/line/miniapp-attendance.md",
-			required: []string{"Attendance owns", "AttendanceDay", "server-derived `Workday`", "`liff.getIDToken()`", "do not expose coordinates", "Not Verified"},
-			forbid:   []string{"LIFF access token>", "shift instances"},
-		},
-		{
-			path:     "../../docs/architecture/decisions/0004-attendance-bounded-context.md",
-			required: []string{"Attendance", "Implemented", "physical presence", "90 days", "five years"},
 		},
 		{
 			path:     "../../docs/sdk/workspace-oauth.md",

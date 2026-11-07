@@ -51,9 +51,9 @@ func TestDurableWebhookSignatureDestinationDedupAndEnqueueFailure(t *testing.T) 
 	store := &persisted{seen: map[string]messagingdelivery.DeliveryWorkItem{}}
 	queue := &workQueue{}
 	ingestor, _ := messagingdelivery.NewIngestor(store, queue)
-	policy, _ := messagingdelivery.NewReplyPolicy("https://liff.line.me/2000000000-attendance")
+	policy, _ := messagingdelivery.NewReplyPolicy("https://miniapp.line.me/2000000000-example")
 	h := NewDurableHandler(secret, destination, ingestor, policy, nil)
-	body := fmt.Sprintf(`{"destination":"Uxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx","events":[{"type":"message","mode":"active","timestamp":%d,"webhookEventId":"01H00ABCDEF0123456789ABCDE","deliveryContext":{"isRedelivery":false},"source":{"type":"group","groupId":"Cxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx","userId":"Uxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"},"replyToken":"reply-token","message":{"id":"1234567890123","type":"text","text":"打卡"}}]}`, time.Now().UnixMilli())
+	body := fmt.Sprintf(`{"destination":"Uxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx","events":[{"type":"message","mode":"active","timestamp":%d,"webhookEventId":"01H00ABCDEF0123456789ABCDE","deliveryContext":{"isRedelivery":false},"source":{"type":"group","groupId":"Cxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx","userId":"Uxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"},"replyToken":"reply-token","message":{"id":"1234567890123","type":"text","text":"MINI App"}}]}`, time.Now().UnixMilli())
 	for n := 0; n < 2; n++ {
 		w := httptest.NewRecorder()
 		h.ServeHTTP(w, signedRequest(secret, body))
@@ -65,7 +65,7 @@ func TestDurableWebhookSignatureDestinationDedupAndEnqueueFailure(t *testing.T) 
 		t.Fatalf("durable dedup failed: inbox=%d dispatched=%d", len(store.seen), len(queue.keys))
 	}
 	for _, record := range store.seen {
-		if record.Message.Kind != messagingdelivery.KindFlex || record.Message.Flex.Action == nil || record.Message.Flex.Action.URI != "https://liff.line.me/2000000000-attendance" {
+		if record.Message.Kind != messagingdelivery.KindFlex || record.Message.Flex.Action == nil || record.Message.Flex.Action.URI != "https://miniapp.line.me/2000000000-example" {
 			t.Fatalf("unexpected persisted reply: %#v", record.Message)
 		}
 	}

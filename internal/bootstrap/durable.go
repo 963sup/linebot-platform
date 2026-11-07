@@ -42,7 +42,7 @@ func configureDurableWebhook(cfg Config, logger *slog.Logger, mux *http.ServeMux
 	if err != nil {
 		return err
 	}
-	policy, err := ingestion.NewReplyPolicy(cfg.AttendanceEntryURL)
+	policy, err := ingestion.NewReplyPolicy(cfg.MiniAppEntryURL)
 	if err != nil {
 		return err
 	}

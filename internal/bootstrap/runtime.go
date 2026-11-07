@@ -47,7 +47,7 @@ func NewWebhookRuntime(cfg Config, logger *slog.Logger) (*WebhookRuntime, error)
 	if cfg.EventMode == "durable" && cfg.Secrets.ChannelToken != "" {
 		return nil, errors.New("durable webhook cannot contain LINE send token")
 	}
-	replyPolicy, err := messagingdelivery.NewReplyPolicy(cfg.AttendanceEntryURL)
+	replyPolicy, err := messagingdelivery.NewReplyPolicy(cfg.MiniAppEntryURL)
 	if err != nil {
 		return nil, err
 	}

@@ -49,7 +49,7 @@ func TestCloudBuildDeploymentSafetyContract(t *testing.T) {
 		t.Error("public and worker must not share the legacy runtime identity")
 	}
 	if strings.Count(text, "LINE_MINI_APP_LIFF_URL=${_LINE_MINI_APP_LIFF_URL}") != 2 {
-		t.Error("Attendance entry must be derived once for the public webhook only")
+		t.Error("MINI App entry must be derived once for the public webhook only")
 	}
 	if strings.Contains(text, "update-traffic") || strings.Contains(text, "latestReadyRevisionName") {
 		t.Error("candidate deployment must not promote or infer a revision")
@@ -219,7 +219,7 @@ func TestTerraformConsumesAuthoritativeFirestoreContract(t *testing.T) {
 	}
 }
 
-func TestTerraformGrantsMiniAppOnlyAttendancePersistence(t *testing.T) {
+func TestTerraformGrantsMiniAppOnlyFirestorePersistence(t *testing.T) {
 	raw, err := os.ReadFile("../terraform/main.tf")
 	if err != nil {
 		t.Fatal(err)
@@ -230,11 +230,11 @@ func TestTerraformGrantsMiniAppOnlyAttendancePersistence(t *testing.T) {
 		`member  = "serviceAccount:${google_service_account.runtime["miniapp"].email}"`,
 	} {
 		if !strings.Contains(text, required) {
-			t.Errorf("Terraform MINI App Attendance contract missing %q", required)
+			t.Errorf("Terraform MINI App Firestore contract missing %q", required)
 		}
 	}
 	for _, forbidden := range []string{
-		`miniapp_channel_secret`, `miniapp_access_token`, `miniapp_tasks`, `attendance_location_key`,
+		`miniapp_channel_secret`, `miniapp_access_token`, `miniapp_tasks`,
 	} {
 		if strings.Contains(text, forbidden) {
 			t.Errorf("Terraform grants forbidden MINI App capability %q", forbidden)

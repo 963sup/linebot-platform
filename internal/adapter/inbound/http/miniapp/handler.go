@@ -1,5 +1,4 @@
-// Package miniapp serves the LIFF Attendance client and maps its HTTP API to
-// the consumer-owned Attendance Application contract.
+// Package miniapp serves the provider UI and its authenticated session API.
 package miniapp
 
 import (
@@ -7,45 +6,36 @@ import (
 	"embed"
 	"encoding/json"
 	"errors"
-	"io"
-	"math"
-	"mime"
 	"net/http"
 	"net/url"
-	"strconv"
 	"strings"
 	"time"
 
-	"github.com/963sup/linebot-platform/internal/application/usecases/attendance"
+	linesession "github.com/963sup/linebot-platform/internal/application/usecases/line-session"
 )
-
-const maxRequestBytes = 4 << 10
 
 //go:embed assets/*
 var assets embed.FS
 
-type Config struct {
-	LIFFID        string
-	AllowedOrigin string
+type Config struct{ LIFFID, AllowedOrigin string }
+type SessionVerifier interface {
+	Verify(context.Context, string) (linesession.Identity, error)
 }
-
 type Handler struct {
-	actions       attendance.Actions
-	liffID        string
-	allowedOrigin string
+	verifier              SessionVerifier
+	liffID, allowedOrigin string
 }
 
-func New(config Config, actions attendance.Actions) (*Handler, error) {
-	if actions == nil || strings.TrimSpace(config.LIFFID) == "" || config.LIFFID != strings.TrimSpace(config.LIFFID) {
-		return nil, errors.New("miniapp requires a LIFF ID and Attendance actions")
+func New(config Config, verifier SessionVerifier) (*Handler, error) {
+	if verifier == nil || strings.TrimSpace(config.LIFFID) == "" || config.LIFFID != strings.TrimSpace(config.LIFFID) {
+		return nil, errors.New("miniapp requires a LIFF ID and session verifier")
 	}
 	origin, err := url.Parse(config.AllowedOrigin)
 	localHTTP := origin != nil && origin.Scheme == "http" && (origin.Hostname() == "localhost" || origin.Hostname() == "127.0.0.1")
-	if err != nil || origin == nil || (origin.Scheme != "https" && !localHTTP) || origin.Host == "" || origin.User != nil ||
-		config.AllowedOrigin != origin.Scheme+"://"+origin.Host {
+	if err != nil || origin == nil || (origin.Scheme != "https" && !localHTTP) || origin.Host == "" || origin.User != nil || config.AllowedOrigin != origin.Scheme+"://"+origin.Host {
 		return nil, errors.New("miniapp allowed origin must be exact HTTPS or loopback HTTP")
 	}
-	return &Handler{actions: actions, liffID: config.LIFFID, allowedOrigin: origin.String()}, nil
+	return &Handler{verifier: verifier, liffID: config.LIFFID, allowedOrigin: origin.String()}, nil
 }
 
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -53,26 +43,28 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.URL.Path {
 	case "/miniapp":
 		if r.Method != http.MethodGet {
-			writeError(w, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed")
+			writeError(w, 405, "method_not_allowed", "method not allowed")
 			return
 		}
 		http.Redirect(w, r, "/miniapp/", http.StatusPermanentRedirect)
 	case "/miniapp/":
-		h.serveAsset(w, r, "assets/index.html", "text/html; charset=utf-8")
+		h.asset(w, r, "assets/index.html", "text/html; charset=utf-8")
 	case "/miniapp/config.json":
-		h.serveConfig(w, r)
+		if r.Method != http.MethodGet {
+			writeError(w, 405, "method_not_allowed", "method not allowed")
+			return
+		}
+		writeJSON(w, 200, struct {
+			LIFFID string `json:"liffId"`
+		}{h.liffID})
 	case "/miniapp/assets/app.css":
-		h.serveAsset(w, r, "assets/app.css", "text/css; charset=utf-8")
+		h.asset(w, r, "assets/app.css", "text/css; charset=utf-8")
 	case "/miniapp/assets/app.js":
-		h.serveAsset(w, r, "assets/app.js", "text/javascript; charset=utf-8")
-	case "/miniapp/api/v1/attendance/enrollments":
-		h.enroll(w, r)
-	case "/miniapp/api/v1/attendance/today":
-		h.today(w, r)
-	case "/miniapp/api/v1/attendance/punches":
-		h.punch(w, r)
+		h.asset(w, r, "assets/app.js", "text/javascript; charset=utf-8")
+	case "/miniapp/api/v1/session":
+		h.session(w, r)
 	default:
-		writeError(w, http.StatusNotFound, "not_found", "resource not found")
+		writeError(w, 404, "not_found", "resource not found")
 	}
 }
 
@@ -84,275 +76,66 @@ func secureHeaders(w http.ResponseWriter) {
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 	w.Header().Set("X-Frame-Options", "DENY")
 }
-
-func (h *Handler) serveAsset(w http.ResponseWriter, r *http.Request, name, contentType string) {
+func (h *Handler) asset(w http.ResponseWriter, r *http.Request, name, contentType string) {
 	if r.Method != http.MethodGet {
-		writeError(w, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed")
+		writeError(w, 405, "method_not_allowed", "method not allowed")
 		return
 	}
 	data, err := assets.ReadFile(name)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, "internal_error", "request could not be completed")
+		writeError(w, 500, "internal_error", "request could not be completed")
 		return
 	}
 	w.Header().Set("Content-Type", contentType)
-	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write(data)
 }
-
-func (h *Handler) serveConfig(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) session(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		writeError(w, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed")
+		writeError(w, 405, "method_not_allowed", "method not allowed")
 		return
 	}
-	writeJSON(w, http.StatusOK, struct {
-		LIFFID string `json:"liffId"`
-	}{h.liffID})
-}
-
-type enrollmentRequest struct {
-	EnrollmentCode string `json:"enrollmentCode"`
-}
-
-func (h *Handler) enroll(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		writeError(w, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed")
+	if !h.originAllowed(r) {
+		writeError(w, 403, "forbidden", "request origin is not allowed")
 		return
-	}
-	token, ok := h.authorize(w, r)
-	if !ok {
-		return
-	}
-	var input enrollmentRequest
-	if !decodeStrictJSON(w, r, &input) {
-		return
-	}
-	result, err := h.actions.Enroll(r.Context(), attendance.EnrollCommand{IDToken: token, Code: input.EnrollmentCode})
-	if err != nil {
-		writeApplicationError(w, err)
-		return
-	}
-	var httpStatus int
-	switch result.Status {
-	case attendance.EnrollCreated:
-		httpStatus = http.StatusCreated
-	case attendance.EnrollAlreadyCompleted:
-		httpStatus = http.StatusOK
-	default:
-		writeError(w, http.StatusInternalServerError, "internal_error", "request could not be completed")
-		return
-	}
-	writeJSON(w, httpStatus, struct {
-		Status string `json:"status"`
-	}{string(result.Status)})
-}
-
-func (h *Handler) today(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		writeError(w, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed")
-		return
-	}
-	token, ok := h.authorize(w, r)
-	if !ok {
-		return
-	}
-	result, err := h.actions.GetToday(r.Context(), attendance.TodayQuery{IDToken: token})
-	if err != nil {
-		if errors.Is(err, attendance.ErrNotEnrolled) {
-			writeJSON(w, http.StatusOK, todayResponse{EnrollmentRequired: true, AllowedKinds: []string{}})
-			return
-		}
-		writeApplicationError(w, err)
-		return
-	}
-	kinds := make([]string, len(result.AllowedKinds))
-	for i, kind := range result.AllowedKinds {
-		kinds[i] = string(kind)
-	}
-	writeJSON(w, http.StatusOK, todayResponse{Workday: result.Workday, ClockIn: newPunchViewResponse(result.ClockIn), ClockOut: newPunchViewResponse(result.ClockOut), AllowedKinds: kinds})
-}
-
-type todayResponse struct {
-	EnrollmentRequired bool               `json:"enrollmentRequired"`
-	Workday            string             `json:"workday"`
-	ClockIn            *punchViewResponse `json:"clockIn"`
-	ClockOut           *punchViewResponse `json:"clockOut"`
-	AllowedKinds       []string           `json:"allowedKinds"`
-}
-
-type punchViewResponse struct {
-	Kind       string `json:"kind"`
-	RecordedAt string `json:"recordedAt"`
-}
-
-func newPunchViewResponse(view *attendance.PunchView) *punchViewResponse {
-	if view == nil {
-		return nil
-	}
-	return &punchViewResponse{Kind: string(view.Kind), RecordedAt: view.RecordedAt.UTC().Format(time.RFC3339Nano)}
-}
-
-type punchRequest struct {
-	Kind           string      `json:"kind"`
-	Latitude       json.Number `json:"latitude"`
-	Longitude      json.Number `json:"longitude"`
-	AccuracyMeters json.Number `json:"accuracyMeters"`
-}
-
-func (h *Handler) punch(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		writeError(w, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed")
-		return
-	}
-	token, ok := h.authorize(w, r)
-	if !ok {
-		return
-	}
-	var input punchRequest
-	if !decodeStrictJSON(w, r, &input) {
-		return
-	}
-	latitude, latErr := finiteFloat(input.Latitude)
-	longitude, lonErr := finiteFloat(input.Longitude)
-	accuracy, accuracyErr := finiteFloat(input.AccuracyMeters)
-	if latErr != nil || lonErr != nil || accuracyErr != nil {
-		writeError(w, http.StatusBadRequest, "invalid_request", "request body is invalid")
-		return
-	}
-	result, err := h.actions.Punch(r.Context(), attendance.PunchCommand{
-		IDToken: token, Kind: attendance.PunchKind(input.Kind),
-		Location: attendance.LocationFix{Latitude: latitude, Longitude: longitude, AccuracyMeters: accuracy},
-	})
-	if err != nil {
-		writeApplicationError(w, err)
-		return
-	}
-	var httpStatus int
-	switch result.Status {
-	case attendance.PunchRecorded:
-		httpStatus = http.StatusCreated
-	case attendance.PunchAlreadyRecorded:
-		httpStatus = http.StatusOK
-	default:
-		writeError(w, http.StatusInternalServerError, "internal_error", "request could not be completed")
-		return
-	}
-	writeJSON(w, httpStatus, struct {
-		Workday    string `json:"workday"`
-		Kind       string `json:"kind"`
-		RecordedAt string `json:"recordedAt"`
-		Status     string `json:"status"`
-	}{result.Workday, string(result.Punch.Kind), result.Punch.RecordedAt.UTC().Format(time.RFC3339Nano), string(result.Status)})
-}
-
-func (h *Handler) authorize(w http.ResponseWriter, r *http.Request) (string, bool) {
-	origins := r.Header.Values("Origin")
-	originAllowed := exactHeader(origins, h.allowedOrigin)
-	// Browsers may omit Origin on a same-origin GET. In that case Fetch
-	// Metadata is mandatory; mutations still require the exact Origin header.
-	if len(origins) == 0 && r.Method == http.MethodGet {
-		originAllowed = exactHeader(r.Header.Values("Sec-Fetch-Site"), "same-origin")
-	}
-	if !originAllowed || !sameOriginFetch(r.Header.Values("Sec-Fetch-Site")) {
-		writeError(w, http.StatusForbidden, "forbidden", "request origin is not allowed")
-		return "", false
 	}
 	token, ok := bearerToken(r.Header.Values("Authorization"))
 	if !ok {
-		writeError(w, http.StatusUnauthorized, "unauthorized", "authentication is required")
-		return "", false
+		writeError(w, 401, "unauthorized", "authentication is required")
+		return
 	}
-	return token, true
+	identity, err := h.verifier.Verify(r.Context(), token)
+	if err != nil {
+		switch {
+		case errors.Is(err, linesession.ErrUnauthenticated):
+			writeError(w, 401, "unauthorized", "authentication is required")
+		case errors.Is(err, context.Canceled):
+			writeError(w, 408, "request_cancelled", "request was cancelled")
+		case errors.Is(err, context.DeadlineExceeded):
+			writeError(w, 504, "deadline_exceeded", "request deadline exceeded")
+		default:
+			writeError(w, 503, "identity_unavailable", "identity verification is unavailable")
+		}
+		return
+	}
+	writeJSON(w, 200, struct {
+		Authenticated bool   `json:"authenticated"`
+		ValidatedAt   string `json:"validatedAt"`
+	}{true, identity.ValidatedAt.UTC().Format(time.RFC3339Nano)})
 }
-
-func decodeStrictJSON(w http.ResponseWriter, r *http.Request, target any) bool {
-	contentTypes := r.Header.Values("Content-Type")
-	mediaType, _, err := mime.ParseMediaType(r.Header.Get("Content-Type"))
-	if len(contentTypes) != 1 || err != nil || mediaType != "application/json" {
-		writeError(w, http.StatusUnsupportedMediaType, "unsupported_media_type", "content type must be application/json")
-		return false
+func (h *Handler) originAllowed(r *http.Request) bool {
+	origins := r.Header.Values("Origin")
+	allowed := len(origins) == 1 && origins[0] == h.allowedOrigin
+	if len(origins) == 0 {
+		allowed = len(r.Header.Values("Sec-Fetch-Site")) == 1 && r.Header.Get("Sec-Fetch-Site") == "same-origin"
 	}
-	r.Body = http.MaxBytesReader(w, r.Body, maxRequestBytes)
-	decoder := json.NewDecoder(r.Body)
-	decoder.DisallowUnknownFields()
-	decoder.UseNumber()
-	if err := decoder.Decode(target); err != nil {
-		writeDecodeError(w, err)
-		return false
-	}
-	if err := rejectTrailingJSON(decoder); err != nil {
-		writeDecodeError(w, err)
-		return false
-	}
-	return true
+	return allowed && (len(r.Header.Values("Sec-Fetch-Site")) == 0 || r.Header.Get("Sec-Fetch-Site") == "same-origin")
 }
-
 func bearerToken(values []string) (string, bool) {
 	if len(values) != 1 || !strings.HasPrefix(values[0], "Bearer ") {
 		return "", false
 	}
 	token := strings.TrimPrefix(values[0], "Bearer ")
 	return token, token != "" && token == strings.TrimSpace(token) && !strings.ContainsAny(token, "\t ,") && len(token) <= 4096
-}
-
-func exactHeader(values []string, want string) bool { return len(values) == 1 && values[0] == want }
-func sameOriginFetch(values []string) bool {
-	return len(values) == 0 || exactHeader(values, "same-origin")
-}
-
-func finiteFloat(number json.Number) (float64, error) {
-	if number == "" {
-		return 0, errors.New("missing number")
-	}
-	value, err := strconv.ParseFloat(number.String(), 64)
-	if err != nil || math.IsNaN(value) || math.IsInf(value, 0) {
-		return 0, errors.New("invalid number")
-	}
-	return value, nil
-}
-
-func rejectTrailingJSON(decoder *json.Decoder) error {
-	var extra any
-	err := decoder.Decode(&extra)
-	if errors.Is(err, io.EOF) {
-		return nil
-	}
-	if err == nil {
-		return errors.New("multiple JSON values")
-	}
-	return err
-}
-
-func writeDecodeError(w http.ResponseWriter, err error) {
-	var tooLarge *http.MaxBytesError
-	if errors.As(err, &tooLarge) {
-		writeError(w, http.StatusRequestEntityTooLarge, "request_too_large", "request body exceeds 4096 bytes")
-		return
-	}
-	writeError(w, http.StatusBadRequest, "invalid_request", "request body is invalid")
-}
-
-func writeApplicationError(w http.ResponseWriter, err error) {
-	switch {
-	case errors.Is(err, attendance.ErrInvalidInput):
-		writeError(w, http.StatusBadRequest, "invalid_request", "request is invalid")
-	case errors.Is(err, attendance.ErrUnauthenticated):
-		writeError(w, http.StatusUnauthorized, "unauthorized", "authentication is required")
-	case errors.Is(err, attendance.ErrEnrollmentInvalid):
-		writeError(w, http.StatusNotFound, "enrollment_invalid", "enrollment code is invalid")
-	case errors.Is(err, attendance.ErrNotEnrolled):
-		writeError(w, http.StatusForbidden, "enrollment_required", "attendance enrollment is required")
-	case errors.Is(err, attendance.ErrConflict):
-		writeError(w, http.StatusConflict, "attendance_conflict", "attendance state has changed")
-	case errors.Is(err, attendance.ErrIdentityUnavailable), errors.Is(err, attendance.ErrRepositoryUnavailable):
-		writeError(w, http.StatusServiceUnavailable, "attendance_unavailable", "attendance service is unavailable")
-	case errors.Is(err, context.Canceled):
-		writeError(w, http.StatusRequestTimeout, "request_cancelled", "request was cancelled")
-	case errors.Is(err, context.DeadlineExceeded):
-		writeError(w, http.StatusGatewayTimeout, "deadline_exceeded", "request deadline exceeded")
-	default:
-		writeError(w, http.StatusInternalServerError, "internal_error", "request could not be completed")
-	}
 }
 
 type errorEnvelope struct {
@@ -363,11 +146,10 @@ type errorEnvelope struct {
 }
 
 func writeError(w http.ResponseWriter, status int, code, message string) {
-	var envelope errorEnvelope
-	envelope.Error.Code, envelope.Error.Message = code, message
-	writeJSON(w, status, envelope)
+	var value errorEnvelope
+	value.Error.Code, value.Error.Message = code, message
+	writeJSON(w, status, value)
 }
-
 func writeJSON(w http.ResponseWriter, status int, value any) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(status)

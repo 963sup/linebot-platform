@@ -8,7 +8,7 @@
 - 使用已核准的 image digest，僅部署到明確 Staging Service；在實際索引/TTL/IAM 完成前保持入口停用。
 - Webhook 公開 HTTPS 路由僅接收 `/webhook/line`，使用 `LINE_EVENT_MODE=durable`、`LINE_CHANNEL_SECRET`；**不得**給它 `LINE_CHANNEL_ACCESS_TOKEN`、Cloud Tasks 批量管理權或 Worker 的憑證。
 - Worker 為 private IAM-authenticated Cloud Run Service，持有 LINE Channel Access Token、Firestore 最小權限、必要的 Cloud Tasks 發派權限。Cloud Tasks 和 Scheduler 若使用同一 Worker handler 的驗證器，需使用設定中同一受信任 Invoker Email 和正確 Audience，分離時應先更新雙 Actor 授權模型。
-- MINI App 為獨立公開 Cloud Run Service；它不得持有 `LINE_CHANNEL_SECRET`、`LINE_CHANNEL_ACCESS_TOKEN`、Secret Manager 或 Cloud Tasks 權限，只取得 Attendance Firestore 存取。Developing、Review 與 Published internal channel 各自使用對應的 LIFF ID；本輪只能使用 Staging／Developing 設定。
+- MINI App 為獨立公開 Cloud Run Service；它不得持有 `LINE_CHANNEL_SECRET`、`LINE_CHANNEL_ACCESS_TOKEN`、Secret Manager 或 Cloud Tasks 權限。Developing、Review 與 Published internal channel 各自使用對應的 LIFF ID；本輪只能使用 Staging／Developing 設定。
 - Cloud Tasks enqueue 身分、Cloud Run Invoker、Secret Manager 存取身分各有最小權限；不可使用常駐 JSON service-account key。
 - Firestore 必須先建立 LINE `line_outbox_v1` 的 `(state,reply_until)`、`(state,lease_until)`、`(state,next_dispatch_at)`、`(state,created_at)`、`(state,updated_at)` 複合索引，以及 Identity `identity_outbox_v1` 的 `(state,lease_until)`、`(state,next_dispatch_at)` 複合索引。為 `line_inbox_v1`、`line_outbox_v1` 與 `identity_outbox_v1` 建立經 retention/privacy 核准的 `expires_at` TTL，並確認所有 Index 為 Ready。
 - **資料遷移**：既有 Pending 文件若缺 `next_dispatch_at`，以可重啟且不覆蓋更新的方式回填；以權威來源數據驗證總量與缺欄位數都正確後，才能切換新 Reconcile。不要在毫無 backfill 的現有資料庫直接切換。
@@ -28,10 +28,8 @@
 | G2 Identity Outbox | 查詢 `identity_outbox_v1` due pending 與 expired publishing lease；競爭 claim、完成 publish 與 lease recovery | 兩個 Identity 複合索引均為 Ready；`expires_at` TTL policy 可定位；published 不會被 recovery 降級，單一 lease 不會重複派送 |
 | H 觀測／告警 | 隔離 Staging 執行 `ops events --check`、Inject Unknown 或長 Pending；停用一次 Scheduler | Job 非零 exit；Cloud Monitoring 分辨失敗和「未執行」，告警收件者收到並確認 |
 | I Rollback | 在隔離測試環境以固定 image digest 回退已核准版本，保留資料結構向前相容 | 混合新舊 Worker 無重複發送，回復遺漏/延遲工作可解釋，簽核紀錄 |
-| M1 MINI App identity/enrollment | 從 LINE 內建瀏覽器與外部瀏覽器開啟；測試有效、過期、wrong-audience與竄改 ID token；同一註冊碼重放與不同 subject 競爭 | 只有官方驗證成功且 audience 正確的 token 可建立 opaque ParticipantID；註冊碼單次消耗；token、subject與註冊碼不出現在 Logging |
-| M2 Attendance concurrency | 對同 participant/workday/kind 並發與 response-lost retry；先 clock-out | 只建立一筆 Punch；重送回同結果；clock-out 必須晚於 clock-in，Firestore 暫時失敗不宣稱成功 |
-| M3 Geolocation/privacy | iOS／Android、Safari／Chrome測試允許、拒絕、撤銷、position unavailable與timeout；確認 Attendance 專用 database／等效 IAM boundary 與 GPS retention policy | 只在明確 gesture 後單次定位；座標不回應、不進 URL/log/trace/analytics/map；專用存取邊界與 retention/deletion evidence 完整，否則 Production 維持 `BLOCKED` |
-| M4 Workday boundary | 在 Asia/Taipei 日期邊界前後打卡並嘗試由 client 指定時間/日期 | Workday 與 recorded time 僅由 server time 決定，client 無法覆寫 |
+| M1 MINI App identity | 從 LINE 內建瀏覽器與外部瀏覽器開啟；測試有效、過期、wrong-audience 與竄改 ID token | 只有官方驗證成功且 audience 正確的 token 可建立 session；token 與 subject 不出現在 response 或 Logging |
+| M2 Geolocation/privacy | iOS／Android、Safari／Chrome 測試允許、拒絕、撤銷、position unavailable 與 timeout | 只在明確 gesture 後單次定位；讀值不送往業務 API、不進 URL/log/trace/analytics/map |
 
 **C2 目前為 `BLOCKED`。** Repository 只有單元測試用 blocking fake，沒有可部署的 staging-only blocking handler 或 fault-injection image，因此目前不能確定性地保持及釋放 16 個真實 handler。執行 C2 前必須另行審核一個與 production route/image 分離、固定 digest、只允許隔離 Staging IAM 呼叫的測試 fixture；證據還必須包含實際 Cloud Run Revision 的 `containerConcurrency=16`。不得把測試 blocking route 編入 production image，也不得用真實 LINE 傳送來模擬阻塞。
 
@@ -65,7 +63,7 @@ Evidence schema version: 1
 Public / private immutable image digests:
 MINI App immutable image digest / authoritative HTTPS origin:
 LIFF internal channel class, LIFF ID and Login Channel ID (Developing only; no token):
-MINI App enrollment / attendance concurrency / geolocation / workday gate evidence:
+MINI App identity / geolocation gate evidence:
 Reviewer identity and approval record:
 Promotion approval expires at (UTC):
 Evidence object URI and SHA-256:

@@ -3,29 +3,17 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>出勤打卡</title>
+  <title>LINE MINI App</title>
   <link rel="stylesheet" href="/miniapp/assets/app.css">
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js" defer></script>
-  <script src="/miniapp/assets/app.js" defer></script>
+  <script type="module" src="/miniapp/assets/app.js"></script>
 </head>
 <body>
   <main>
-    <h1>出勤打卡</h1>
-    <form id="enrollment" hidden>
-      <label for="enrollment-code">請輸入登錄碼</label>
-      <input id="enrollment-code" name="enrollmentCode" autocomplete="off" required>
-      <button type="submit">登錄</button>
-    </form>
-    <section id="attendance-panel" hidden>
-      <p id="workday"></p>
-      <p id="clock-in-time"></p>
-      <p id="clock-out-time"></p>
-      <div class="actions">
-        <button id="clock-in" type="button">上班打卡</button>
-        <button id="clock-out" type="button">下班打卡</button>
-      </div>
-      <p>只有按下打卡按鈕後，瀏覽器才會請求一次目前位置。</p>
-    </section>
+    <h1>LINE MINI App 基礎設施</h1>
+    <p>登入驗證完成後，可測試一次 Web Geolocation 讀值；目前不會建立任何業務資料。</p>
+    <button id="locate" type="button" disabled>取得目前位置</button>
+    <p id="location"></p>
     <p id="status" role="status" aria-live="polite"></p>
   </main>
 </body>

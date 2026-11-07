@@ -41,7 +41,7 @@ func handler(t *testing.T, secret string) (*Handler, *fakeMessaging) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	policy, err := messagingdelivery.NewReplyPolicy("https://liff.line.me/2000000000-attendance")
+	policy, err := messagingdelivery.NewReplyPolicy("https://miniapp.line.me/2000000000-example")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -96,7 +96,7 @@ func TestSignedTextAndFlex(t *testing.T) {
 	}
 }
 
-func TestAttendanceEntryWorksAcrossConversationSources(t *testing.T) {
+func TestMiniAppEntryWorksAcrossConversationSources(t *testing.T) {
 	sources := []string{
 		`{"type":"user","userId":"Uxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"}`,
 		`{"type":"group","groupId":"Cxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx","userId":"Uxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"}`,
@@ -104,15 +104,15 @@ func TestAttendanceEntryWorksAcrossConversationSources(t *testing.T) {
 	}
 	for _, source := range sources {
 		h, mock := handler(t, "test-secret")
-		body := `{"destination":"Uxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx","events":[{"type":"message","mode":"active","timestamp":1690000000000,"webhookEventId":"01H00ABCDEF0123456789ABCDE","deliveryContext":{"isRedelivery":false},"source":` + source + `,"replyToken":"test-reply-token","message":{"id":"1234567890123","type":"text","text":"  打卡  "}}]}`
+		body := `{"destination":"Uxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx","events":[{"type":"message","mode":"active","timestamp":1690000000000,"webhookEventId":"01H00ABCDEF0123456789ABCDE","deliveryContext":{"isRedelivery":false},"source":` + source + `,"replyToken":"test-reply-token","message":{"id":"1234567890123","type":"text","text":"  MINI App  "}}]}`
 		w := httptest.NewRecorder()
 		h.ServeHTTP(w, signedRequest("test-secret", body))
 		if w.Code != http.StatusOK || len(mock.replies) != 1 {
 			t.Fatalf("source=%s status=%d replies=%d", source, w.Code, len(mock.replies))
 		}
 		reply := mock.replies[0]
-		if reply.Kind != messagingdelivery.KindFlex || reply.Flex.Action == nil || reply.Flex.Action.URI != "https://liff.line.me/2000000000-attendance" {
-			t.Fatalf("source=%s attendance reply=%#v", source, reply)
+		if reply.Kind != messagingdelivery.KindFlex || reply.Flex.Action == nil || reply.Flex.Action.URI != "https://miniapp.line.me/2000000000-example" {
+			t.Fatalf("source=%s MINI App reply=%#v", source, reply)
 		}
 	}
 }

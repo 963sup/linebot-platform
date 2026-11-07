@@ -81,32 +81,8 @@ The OAuth code path uses **separate** collections from LINE inbox/outbox:
 
 Records are bound to their Firestore document ID as AES-GCM authenticated associated data. The first callback to atomically consume a state deletes it in a Firestore transaction; further callbacks cannot use that state. Connection updates use versioned transactional CAS and revoked accounts clear their ciphertext so a stale token refresh cannot reactivate them.
 
-**Before authorized staging use:** Configure every `expires_at` TTL declared in `indexes.json`, validate runtime `APP_ENV` / OAuth callback URL, and test concurrent consumes, refresh CAS, disconnect, Identity outbox lease recovery and AttendanceDay CAS using Firestore Emulator and then isolated staging. TTL is asynchronous and never substitutes for checking expiry and active flags in code. Attendance has no application-level encryption key or approved GPS retention policy; Production remains blocked until retention/deletion and an isolated database or equivalent IAM boundary are implemented.
+**Before authorized staging use:** Configure every `expires_at` TTL declared in `indexes.json`, validate runtime `APP_ENV` / OAuth callback URL, and test concurrent consumes, refresh CAS, disconnect and Identity outbox lease recovery using Firestore Emulator and then isolated staging. TTL is asynchronous and never substitutes for checking expiry and active flags in code.
 
-## Attendance collections
-
-Attendance MVP uses a participant projection, single-use enrollment tokens and
-one workday aggregate. GPS values are private fields protected by Firestore
-encryption at rest and a dedicated runtime identity; the current project-scoped
-`roles/datastore.user` grant is not collection-level least privilege. They are not a physical-presence
-proof and are never returned by the MINI App API:
-
-| Collection | Purpose | Retention |
-|---|---|---|
-| `attendance_participants_v1` | Employee projection and optional opaque LINE-derived Participant ID | Active records have no TTL; deactivation sets five-year `expires_at` |
-| `attendance_participant_bindings_v1` | Deterministic uniqueness guard from opaque Participant ID to Employee ID | Deactivation sets the same five-year `expires_at`; no raw provider subject |
-| `attendance_enrollment_tokens_v1` | SHA-256 enrollment-code hash and atomic single-use binding state | 24-hour `expires_at` |
-| `attendance_days_v2` | Participant/workday aggregate with server-recorded clock-in/out and submitted GPS fix | Product retention policy pending; no TTL is declared by this repository |
-
-The workday document ID is deterministic from ParticipantID and Workday. A
-transactional revision check admits the first clock-in and then one clock-out;
-retries return the committed state instead of creating another document.
-
-The legacy v1 workplace, shift, review and encrypted-evidence collections are
-not read or written by the MVP. Their TTL declarations remain temporarily in
-`indexes.json` so already-stored legacy documents continue aging out; they must
-not be bulk-deleted or have TTL disabled as part of this code rollout. Retiring
-those declarations is a separate authorized data-lifecycle operation after the
-longest legacy retention period.
+Future SaaS business repositories must place owned documents below `tenants/{tenantId}` and require an explicitly validated tenant ID on every operation. The infrastructure package provides only this root boundary and the native client; it does not create business collections or authorize browser writes.
 
 No Google OAuth keys, user OAuth tokens, or persistent app credentials are shipped in repository or CI. The new OAuth libraries are opt-in and are not mounted on the public LINE webhook by default.

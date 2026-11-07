@@ -68,7 +68,7 @@ var settingContract = []SettingSpec{
 	{Key: KeyMiniAppChannelID, Roles: "miniapp", Secret: false, Default: "—", Required: "必需", Description: "LINE MINI App Channel ID；ID token audience"},
 	{Key: KeyMiniAppLIFFURL, Roles: "webhook,miniapp", Secret: false, Default: "—", Required: "正式 LINE MINI App 必需", Description: "Console Web app settings 提供的完整 LIFF URL；Bot 入口與前端 LIFF ID 的單一來源"},
 	{Key: KeyMiniAppEndpointURL, Roles: "miniapp", Secret: false, Default: "—", Required: "必需", Description: "Console Web app settings 的完整 Endpoint URL；同源驗證的單一來源"},
-	{Key: KeyFirestoreDatabase, Roles: "miniapp,ops-attendance", Secret: false, Default: "(default)", Required: "選用", Description: "Attendance 使用的明確 Firestore database ID"},
+	{Key: KeyFirestoreDatabase, Roles: "infrastructure", Secret: false, Default: "(default)", Required: "選用", Description: "Firestore client 使用的明確 database ID"},
 }
 
 // SettingsContract returns a copy so callers cannot mutate global metadata.
@@ -83,7 +83,7 @@ func readSetting(getenv func(string) string, key string) string {
 // ConfigurationMarkdown generates the canonical public, secret-free docs.
 func ConfigurationMarkdown() string {
 	var b strings.Builder
-	b.WriteString("# 執行期設定契約（自動產生）\n\n本文件由 `internal/bootstrap/config_contract.go` 產生，**禁止直接編輯表格**。請修改 Go 設定契約後執行 `go run ./cmd/configcheck --write-doc`，再以 `make config-check` 驗證。這份清單涵蓋現有 webhook、worker、miniapp、ops-events 與 ops-attendance 使用的專案設定；Google SDK / ADC 自身的環境變數不在此表。\n\n| 環境變數 | 使用者 | Secret | 預設 | 條件 | 說明 |\n|---|---|---|---|---|---|\n")
+	b.WriteString("# 執行期設定契約（自動產生）\n\n本文件由 `internal/bootstrap/config_contract.go` 產生，**禁止直接編輯表格**。請修改 Go 設定契約後執行 `go run ./cmd/configcheck --write-doc`，再以 `make config-check` 驗證。這份清單涵蓋現有 webhook、worker、miniapp 與 operator tools 使用的專案設定；Google SDK / ADC 自身的環境變數不在此表。\n\n| 環境變數 | 使用者 | Secret | 預設 | 條件 | 說明 |\n|---|---|---|---|---|---|\n")
 	for _, spec := range settingContract {
 		secret := "否"
 		if spec.Secret {

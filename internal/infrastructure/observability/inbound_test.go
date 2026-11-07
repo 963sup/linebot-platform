@@ -18,9 +18,7 @@ func TestMiniAppDimensionsAreBounded(t *testing.T) {
 		t.Fatalf("route=%q", got)
 	}
 	for path, want := range map[string]string{
-		"/miniapp/api/v1/attendance/enrollments": "miniapp_attendance_enrollment",
-		"/miniapp/api/v1/attendance/today":       "miniapp_attendance_today",
-		"/miniapp/api/v1/attendance/punches":     "miniapp_attendance_punch",
+		"/miniapp/api/v1/session": "miniapp_session",
 	} {
 		if got := boundedRoute(path); got != want {
 			t.Fatalf("route %q=%q, want %q", path, got, want)

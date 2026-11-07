@@ -11,13 +11,10 @@ import (
 
 	"github.com/963sup/linebot-platform/internal/adapter/inbound/http/health"
 	miniappin "github.com/963sup/linebot-platform/internal/adapter/inbound/http/miniapp"
-	firestoreout "github.com/963sup/linebot-platform/internal/adapter/outbound/google/cloud/firestore"
 	lineout "github.com/963sup/linebot-platform/internal/adapter/outbound/line"
-	attendanceapp "github.com/963sup/linebot-platform/internal/application/usecases/attendance"
-	firestoreinfra "github.com/963sup/linebot-platform/internal/infrastructure/google/cloud/firestore"
+	linesession "github.com/963sup/linebot-platform/internal/application/usecases/line-session"
 	"github.com/963sup/linebot-platform/internal/infrastructure/httpclient"
 	"github.com/963sup/linebot-platform/internal/infrastructure/observability"
-	"golang.org/x/oauth2/google"
 )
 
 type MiniAppRuntime struct {
@@ -29,22 +26,20 @@ type MiniAppRuntime struct {
 }
 
 type miniAppComposition struct {
-	actions attendanceapp.Actions
-	wrap    func(http.Handler) http.Handler
-	closers []runtimeCloser
+	verifier linesession.Verifier
+	wrap     func(http.Handler) http.Handler
+	closers  []runtimeCloser
 }
 
 type miniAppComposer func(context.Context, MiniAppConfig, *slog.Logger) (miniAppComposition, error)
 
-// NewMiniAppRuntime composes the production Attendance Mini App. Cloud clients
-// are initialized before readiness is published and are owned by the runtime.
+// NewMiniAppRuntime composes provider-neutral LINE MINI App infrastructure.
 func NewMiniAppRuntime(cfg MiniAppConfig, logger *slog.Logger) (*MiniAppRuntime, error) {
 	return newMiniAppRuntime(cfg, logger, composeMiniApp)
 }
 
 func newMiniAppRuntime(cfg MiniAppConfig, logger *slog.Logger, compose miniAppComposer) (*MiniAppRuntime, error) {
-	if cfg.Role != RoleMiniApp || cfg.LIFFID == "" || cfg.ChannelID == "" || cfg.LIFFURL == "" || cfg.EndpointURL == "" || cfg.PublicOrigin == "" ||
-		cfg.FirestoreDatabase == "" {
+	if cfg.Role != RoleMiniApp || cfg.LIFFID == "" || cfg.ChannelID == "" || cfg.LIFFURL == "" || cfg.EndpointURL == "" || cfg.PublicOrigin == "" {
 		return nil, errors.New("validated miniapp configuration is required")
 	}
 	if compose == nil {
@@ -57,7 +52,7 @@ func newMiniAppRuntime(cfg MiniAppConfig, logger *slog.Logger, compose miniAppCo
 		return nil, err
 	}
 	runtime := &MiniAppRuntime{closers: composition.closers}
-	miniappHandler, err := miniappin.New(miniappin.Config{LIFFID: cfg.LIFFID, AllowedOrigin: cfg.PublicOrigin}, composition.actions)
+	miniappHandler, err := miniappin.New(miniappin.Config{LIFFID: cfg.LIFFID, AllowedOrigin: cfg.PublicOrigin}, composition.verifier)
 	if err != nil {
 		return nil, errors.Join(err, runtime.Close())
 	}
@@ -108,33 +103,13 @@ func composeMiniApp(ctx context.Context, cfg MiniAppConfig, logger *slog.Logger)
 	if err != nil {
 		return fail(err)
 	}
-	credentials, err := google.FindDefaultCredentials(ctx, "https://www.googleapis.com/auth/cloud-platform")
-	if err != nil || !projectIDPattern.MatchString(credentials.ProjectID) {
-		return fail(errors.New("detect Google Cloud project from application default credentials"))
-	}
-	firestoreClient, err := firestoreinfra.NewClientWithDatabase(ctx, credentials.ProjectID, cfg.FirestoreDatabase)
+	service, err := linesession.New(verifier)
 	if err != nil {
 		return fail(err)
 	}
-	result.closers = append(result.closers, runtimeCloser{name: "Firestore", close: firestoreClient.Close})
-	store, err := firestoreout.NewAttendanceStore(firestoreClient)
-	if err != nil {
-		return fail(err)
-	}
-	service, err := attendanceapp.NewService(attendanceapp.Dependencies{
-		Verifier: verifier, Participants: store, Enrollment: store,
-		Attendance: store, Clock: systemClock{},
-	})
-	if err != nil {
-		return fail(err)
-	}
-	result.actions = service
+	result.verifier = service
 	return result, nil
 }
-
-type systemClock struct{}
-
-func (systemClock) Now() time.Time { return time.Now().UTC() }
 
 func (r *MiniAppRuntime) Close() error {
 	if r == nil {

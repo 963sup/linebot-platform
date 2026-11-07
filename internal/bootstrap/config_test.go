@@ -119,7 +119,7 @@ func TestInvalidEventModeRejected(t *testing.T) {
 	}
 }
 
-func TestAttendanceEntryURLValidation(t *testing.T) {
+func TestMiniAppEntryURLValidation(t *testing.T) {
 	valid := []struct {
 		name string
 		env  string
@@ -127,12 +127,12 @@ func TestAttendanceEntryURLValidation(t *testing.T) {
 	}{
 		{"local loopback", "local", "http://127.0.0.1:8080/miniapp/"},
 		{"local hostname", "local", "http://localhost:8080/miniapp/"},
-		{"local HTTPS", "local", "https://liff.line.me/2000000000-attendance"},
+		{"local HTTPS", "local", "https://miniapp.line.me/2000000000-example"},
 	}
 	for _, test := range valid {
 		t.Run(test.name, func(t *testing.T) {
 			cfg, err := LoadConfig(env(map[string]string{KeyAppEnv: test.env, KeyMiniAppLIFFURL: test.url}))
-			if err != nil || cfg.AttendanceEntryURL != test.url {
+			if err != nil || cfg.MiniAppEntryURL != test.url {
 				t.Fatalf("config=%#v err=%v", cfg, err)
 			}
 		})
@@ -148,7 +148,7 @@ func TestAttendanceEntryURLValidation(t *testing.T) {
 	for _, value := range invalid {
 		t.Run(value, func(t *testing.T) {
 			if _, err := LoadConfig(env(map[string]string{KeyMiniAppLIFFURL: value})); err == nil {
-				t.Fatalf("invalid Attendance entry URL accepted: %q", value)
+				t.Fatalf("invalid MINI App entry URL accepted: %q", value)
 			}
 		})
 	}
@@ -162,6 +162,6 @@ func TestAttendanceEntryURLValidation(t *testing.T) {
 		KeyOIDCAudience: "https://worker.example.test", KeyInvokerEmail: "invoker@test-project.iam.gserviceaccount.com",
 	}
 	if _, err := LoadConfig(env(production)); err == nil {
-		t.Fatal("production accepted loopback HTTP Attendance entry URL")
+		t.Fatal("production accepted loopback HTTP MINI App entry URL")
 	}
 }

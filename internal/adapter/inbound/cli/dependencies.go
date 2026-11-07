@@ -5,7 +5,6 @@ import (
 	"time"
 
 	accountlinktoken "github.com/963sup/linebot-platform/internal/application/usecases/account-link-token"
-	"github.com/963sup/linebot-platform/internal/application/usecases/attendance"
 	"github.com/963sup/linebot-platform/internal/application/usecases/audience"
 	contactdirectory "github.com/963sup/linebot-platform/internal/application/usecases/contact-directory"
 	conversationoperations "github.com/963sup/linebot-platform/internal/application/usecases/conversation-operations"
@@ -283,24 +282,6 @@ type AutomationRequestsRuntime interface {
 	Close() error
 }
 
-// AttendanceRuntime is the narrow operator dependency used by Attendance
-// administration commands. The Application service owns all lifecycle and
-// review policy; this driving adapter only validates operator intent and I/O.
-type AttendanceRuntime interface {
-	InviteEmployee(context.Context, attendance.InviteEmployeeCommand) (attendance.InviteEmployeeResult, error)
-	DeactivateEmployee(context.Context, attendance.DeactivateEmployeeCommand) error
-	Close() error
-}
-
-// AttendanceRuntimeConfig carries explicit operator-selected environment and
-// cloud resource settings into the composition root. Project and environment
-// are never inferred from ambient credentials.
-type AttendanceRuntimeConfig struct {
-	ProjectID         string
-	Environment       string
-	FirestoreDatabase string
-}
-
 // Dependencies is the immutable set of runtime factories supplied by the
 // composition root for one CLI invocation.
 type Dependencies struct {
@@ -331,7 +312,6 @@ type Dependencies struct {
 	InteractionSurfaces       func(context.Context, string) (InteractionSurfacesRuntime, error)
 	Promotions                func(context.Context, string) (PromotionsRuntime, error)
 	AutomationRequests        func(context.Context, string) (AutomationRequestsRuntime, error)
-	Attendance                func(context.Context, AttendanceRuntimeConfig) (AttendanceRuntime, error)
 }
 
 func dependency(values []Dependencies) Dependencies {

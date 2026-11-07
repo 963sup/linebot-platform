@@ -1,6 +1,6 @@
 # 執行期設定契約（自動產生）
 
-本文件由 `internal/bootstrap/config_contract.go` 產生，**禁止直接編輯表格**。請修改 Go 設定契約後執行 `go run ./cmd/configcheck --write-doc`，再以 `make config-check` 驗證。這份清單涵蓋現有 webhook、worker、miniapp、ops-events 與 ops-attendance 使用的專案設定；Google SDK / ADC 自身的環境變數不在此表。
+本文件由 `internal/bootstrap/config_contract.go` 產生，**禁止直接編輯表格**。請修改 Go 設定契約後執行 `go run ./cmd/configcheck --write-doc`，再以 `make config-check` 驗證。這份清單涵蓋現有 webhook、worker、miniapp 與 operator tools 使用的專案設定；Google SDK / ADC 自身的環境變數不在此表。
 
 | 環境變數 | 使用者 | Secret | 預設 | 條件 | 說明 |
 |---|---|---|---|---|---|
@@ -26,7 +26,7 @@
 | `LINE_MINI_APP_CHANNEL_ID` | miniapp | 否 | — | 必需 | LINE MINI App Channel ID；ID token audience |
 | `LINE_MINI_APP_LIFF_URL` | webhook,miniapp | 否 | — | 正式 LINE MINI App 必需 | Console Web app settings 提供的完整 LIFF URL；Bot 入口與前端 LIFF ID 的單一來源 |
 | `LINE_MINI_APP_ENDPOINT_URL` | miniapp | 否 | — | 必需 | Console Web app settings 的完整 Endpoint URL；同源驗證的單一來源 |
-| `FIRESTORE_DATABASE` | miniapp,ops-attendance | 否 | (default) | 選用 | Attendance 使用的明確 Firestore database ID |
+| `FIRESTORE_DATABASE` | infrastructure | 否 | (default) | 選用 | Firestore client 使用的明確 database ID |
 
 ## 使用規則
 

@@ -5,7 +5,7 @@ and `terraform apply` are never run by repository CI. It creates five distinct
 service accounts, a bounded Cloud Tasks queue, Firestore composite indexes and
 TTL field policies, least-privilege IAM bindings and optional monitoring
 resources. The MINI App account receives `roles/datastore.user` and access only
-to Attendance Firestore; it receives no Secret Manager, Messaging or
+to its explicit Firestore infrastructure boundary; it receives no Secret Manager, Messaging or
 Cloud Tasks role. Existing Messaging secrets, the default Firestore database and
 Cloud Run service names are referenced rather than created.
 
