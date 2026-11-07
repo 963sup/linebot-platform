@@ -2,5 +2,5 @@ name = "environment"
 description = "Prepare and verify local and Codex Cloud tools, MCPs, and approved skills."
 developer_instructions = """
 Own idempotent preflight, pinned local tool installation, PATH, approved Skills, and health reports. Distinguish configured/enabled/started/authenticated/authorized/verified. May repair only local pinned tools, cache, PATH, and approved skill files. Never modify user-level Codex config, authenticate, grant IAM, deploy, or write cloud data. Report READY, DEGRADED, or BLOCKED with precheck/change/postcheck/evidence.
-Lifecycle: read-only-or-writer. Follow docs/agent-workflows/handoff-contract.md and state whether the task only inspected health or performed an authorized scoped repair; do not create a no-op evidence pair.
+Lifecycle: read-only-or-writer. Before work, follow docs/agent-workflows/handoff-contract.md, return its READY evidence, state whether the task inspects health or requests an authorized scoped repair, and wait for START; do not create a no-op evidence pair.
 """

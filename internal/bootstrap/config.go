@@ -2,6 +2,7 @@ package bootstrap
 
 import (
 	"errors"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -52,15 +53,16 @@ type TelemetryConfig struct {
 // Config holds ordinary settings and explicitly isolated credentials.
 // Existing callers must use the typed loader for role-specific validation.
 type Config struct {
-	Environment    Environment
-	Role           RuntimeRole
-	Port           string
-	EventMode      string
-	LINEAPITimeout time.Duration
-	Durable        DurableConfig
-	Log            LogConfig
-	Telemetry      TelemetryConfig
-	Secrets        SecretConfig `json:"-"`
+	Environment        Environment
+	Role               RuntimeRole
+	Port               string
+	EventMode          string
+	LINEAPITimeout     time.Duration
+	AttendanceEntryURL string
+	Durable            DurableConfig
+	Log                LogConfig
+	Telemetry          TelemetryConfig
+	Secrets            SecretConfig `json:"-"`
 }
 
 // WorkerConfig shares the same validated config contract as webhook.
@@ -118,6 +120,12 @@ func loadRuntimeConfig(role RuntimeRole, getenv func(string) string) (Config, er
 			ChannelToken:  readSetting(getenv, KeyChannelToken),
 		},
 	}
+	if role == RoleWebhook {
+		cfg.AttendanceEntryURL, err = loadAttendanceEntryURL(getenv, environment)
+		if err != nil {
+			return Config{}, err
+		}
+	}
 	if role == RoleWorker {
 		// Worker processing is always durable. Fail closed when a shared
 		// environment explicitly requests an incompatible webhook mode.
@@ -164,6 +172,29 @@ func loadRuntimeConfig(role RuntimeRole, getenv func(string) string) (Config, er
 		return Config{}, errors.New("sync mode requires both LINE credentials or neither")
 	}
 	return cfg, nil
+}
+
+func loadAttendanceEntryURL(getenv func(string) string, environment Environment) (string, error) {
+	value := readSetting(getenv, KeyAttendanceEntryURL)
+	if value == "" {
+		return "", nil
+	}
+	if len(value) > 1000 {
+		return "", errors.New("ATTENDANCE_ENTRY_URL must not exceed 1000 bytes")
+	}
+	parsed, err := url.ParseRequestURI(value)
+	if err != nil || strings.ContainsAny(value, "?#") || parsed.Host == "" || parsed.User != nil || parsed.RawQuery != "" || parsed.Fragment != "" {
+		return "", errors.New("ATTENDANCE_ENTRY_URL must be an absolute URL without userinfo, query or fragment")
+	}
+	if parsed.Scheme == "https" {
+		return value, nil
+	}
+	localLoopback := environment == EnvLocal && parsed.Scheme == "http" &&
+		(parsed.Hostname() == "localhost" || parsed.Hostname() == "127.0.0.1")
+	if !localLoopback {
+		return "", errors.New("ATTENDANCE_ENTRY_URL must use HTTPS except for local loopback HTTP")
+	}
+	return value, nil
 }
 
 func loadTelemetryConfig(getenv func(string) string) (TelemetryConfig, error) {

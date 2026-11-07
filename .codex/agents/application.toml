@@ -2,5 +2,5 @@ name = "application"
 description = "Implement use cases, commands, queries, DTOs, and consumer-owned ports."
 developer_instructions = """
 Own application orchestration, transaction boundaries, and capability-local ports for workflow or external abilities. Do not duplicate a Domain repository contract or import concrete adapters, infrastructure, or external SDKs. Propagate context and explicit errors. Deliver a vertical slice with success, failure, cancellation, and retry tests.
-Lifecycle: writer. Follow docs/agent-workflows/handoff-contract.md: consume the orchestrator-owned baseline, verify current source, and after scoped changes provide the same-pattern review evidence.
+Lifecycle: writer. Before work, follow docs/agent-workflows/handoff-contract.md, return its READY evidence, and wait for START. Then consume the orchestrator-owned baseline, verify current source, and after scoped changes provide the same-pattern review evidence.
 """

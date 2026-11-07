@@ -36,6 +36,7 @@ const (
 	KeyInvokerEmail        = "TASK_INVOKER_EMAIL"
 	KeyCloudRunService     = "K_SERVICE"
 	KeyOpsStagingProject   = "LINEBOT_STAGING_PROJECT"
+	KeyAttendanceEntryURL  = "ATTENDANCE_ENTRY_URL"
 	KeyLIFFID              = "LINE_LIFF_ID"
 	KeyLoginChannelID      = "LINE_LOGIN_CHANNEL_ID"
 	KeyMiniAppPublicOrigin = "MINIAPP_PUBLIC_ORIGIN"
@@ -67,6 +68,7 @@ var settingContract = []SettingSpec{
 	{Key: KeyInvokerEmail, Roles: "webhook-durable,worker", Secret: false, Default: "—", Required: "durable 必需", Description: "允許呼叫 Worker 的 Service Account Email"},
 	{Key: KeyCloudRunService, Roles: "webhook,worker,miniapp", Secret: false, Default: "平台提供", Required: "Cloud Run 自動提供", Description: "防止在 Cloud Run 以 local profile 啟動"},
 	{Key: KeyOpsStagingProject, Roles: "ops-events", Secret: false, Default: "—", Required: "events inspect/check 必需", Description: "明確指定只讀操作允許的 Staging Project"},
+	{Key: KeyAttendanceEntryURL, Roles: "webhook", Secret: false, Default: "—", Required: "選用；設定後啟用聊天打卡入口", Description: "LIFF 或 MINI App 絕對 URL；正式環境必須 HTTPS"},
 	{Key: KeyLIFFID, Roles: "miniapp", Secret: false, Default: "—", Required: "必需", Description: "公開 LIFF ID，不是 Messaging API secret"},
 	{Key: KeyLoginChannelID, Roles: "miniapp", Secret: false, Default: "—", Required: "必需", Description: "LINE Login Channel ID"},
 	{Key: KeyMiniAppPublicOrigin, Roles: "miniapp", Secret: false, Default: "—", Required: "必需；production 必須 HTTPS", Description: "無 path/query/fragment 的精確 public origin"},

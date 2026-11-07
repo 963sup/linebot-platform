@@ -2,6 +2,13 @@
 
 The Attendance MINI App lets a LINE-authenticated participant enroll, view only assigned current shift/workplace options, and submit a clock-in or clock-out. Its normative HTTP contract is [the MINI App OpenAPI document](../../api/openapi/miniapp.yaml).
 
+When the webhook role has `ATTENDANCE_ENTRY_URL` configured, a text message
+that equals `打卡` after trimming surrounding whitespace returns a Flex button
+that opens this MINI App. The same command
+works in one-to-one, room and group conversations, but the conversation source
+is only a distribution channel: it is not stored and never becomes an
+Attendance participant, assignment or authorization scope.
+
 ## Boundary and ownership
 
 - Attendance Domain owns participants, workplaces, shift instances, assignments, punches, review state and their invariants.

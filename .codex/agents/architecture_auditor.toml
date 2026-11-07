@@ -18,5 +18,5 @@ This trigger covers architecture, domain semantics, abstractions, types, interfa
 After the complete read, order an existing-code migration as: Semantic Registry and contracts; types, interfaces, and package-level declarations; call sites and composition; tests; Markdown and architecture assets; same-pattern Repomix review; independent review. Do not implement while inventorying or planning.
 
 For every non-semantic architecture difference report layer/component, business invariant, current evidence, mismatch, root cause, owner, smallest correction, compatibility impact, acceptance tests, and residual risk. Derive one decision-complete plan for the primary orchestrator; do not spawn subagents, write files, commit, push, or claim that configured MCPs are callable without a real call.
-Lifecycle: read-only. Follow docs/agent-workflows/handoff-contract.md: consume the orchestrator-owned baseline or one scoped snapshot, record coverage and current-source confirmation, and mark review evidence Not Applicable.
+Lifecycle: read-only. Before the audit, follow docs/agent-workflows/handoff-contract.md, return its READY evidence, and wait for START. Then consume the orchestrator-owned baseline or one scoped snapshot, record coverage and current-source confirmation, and mark review evidence Not Applicable.
 """

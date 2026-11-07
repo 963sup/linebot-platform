@@ -16,11 +16,12 @@ const maxBodyBytes = 1024 * 1024
 type Handler struct {
 	secret   string
 	delivery *messagingdelivery.DeliveryService
+	policy   messagingdelivery.ReplyPolicy
 	logger   *slog.Logger
 }
 
-func NewHandler(secret string, delivery *messagingdelivery.DeliveryService, logger *slog.Logger) *Handler {
-	return &Handler{secret: secret, delivery: delivery, logger: logger}
+func NewHandler(secret string, delivery *messagingdelivery.DeliveryService, policy messagingdelivery.ReplyPolicy, logger *slog.Logger) *Handler {
+	return &Handler{secret: secret, delivery: delivery, policy: policy, logger: logger}
 }
 
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -57,7 +58,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		if !ok {
 			continue
 		}
-		if err := h.delivery.Reply(r.Context(), e.ReplyToken, []messagingdelivery.Message{messagingdelivery.ResponseForText(message.Text)}); err != nil {
+		if err := h.delivery.Reply(r.Context(), e.ReplyToken, []messagingdelivery.Message{h.policy.ResponseForText(message.Text)}); err != nil {
 			// Do not log request bodies, reply tokens, user IDs or SDK error messages.
 			if h.logger != nil {
 				h.logger.Error("LINE reply failed", "operation", "reply")

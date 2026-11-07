@@ -42,6 +42,10 @@ func configureDurableWebhook(cfg Config, logger *slog.Logger, mux *http.ServeMux
 	if err != nil {
 		return err
 	}
-	mux.Handle("/webhook/line", linein.NewDurableHandler(cfg.Secrets.ChannelSecret, cfg.Durable.BotDestination, ingestor, logger))
+	policy, err := ingestion.NewReplyPolicy(cfg.AttendanceEntryURL)
+	if err != nil {
+		return err
+	}
+	mux.Handle("/webhook/line", linein.NewDurableHandler(cfg.Secrets.ChannelSecret, cfg.Durable.BotDestination, ingestor, policy, logger))
 	return nil
 }

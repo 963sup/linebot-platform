@@ -10,7 +10,10 @@ import (
 func TestConvertMessages(t *testing.T) {
 	result, err := convert([]messagingdelivery.Message{
 		{Kind: messagingdelivery.KindText, Text: "hi"},
-		{Kind: messagingdelivery.KindFlex, Flex: messagingdelivery.FlexCard{AltText: "alt", Title: "Title", Body: "Body"}},
+		{Kind: messagingdelivery.KindFlex, Flex: messagingdelivery.FlexCard{
+			AltText: "alt", Title: "Title", Body: "Body",
+			Action: &messagingdelivery.URIAction{Label: "開啟打卡", URI: "https://liff.line.me/2000000000-attendance"},
+		}},
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -21,7 +24,20 @@ func TestConvertMessages(t *testing.T) {
 	if _, ok := result[0].(messaging_api.TextMessage); !ok {
 		t.Fatalf("got %T, want TextMessage", result[0])
 	}
-	if _, ok := result[1].(*messaging_api.FlexMessage); !ok {
+	flex, ok := result[1].(*messaging_api.FlexMessage)
+	if !ok {
 		t.Fatalf("got %T, want FlexMessage", result[1])
+	}
+	bubble, ok := flex.Contents.(messaging_api.FlexBubble)
+	if !ok || bubble.Footer == nil || len(bubble.Footer.Contents) != 1 {
+		t.Fatalf("Flex contents = %#v", flex.Contents)
+	}
+	button, ok := bubble.Footer.Contents[0].(*messaging_api.FlexButton)
+	if !ok {
+		t.Fatalf("footer component = %T", bubble.Footer.Contents[0])
+	}
+	action, ok := button.Action.(*messaging_api.UriAction)
+	if !ok || action.Label != "開啟打卡" || action.Uri != "https://liff.line.me/2000000000-attendance" {
+		t.Fatalf("button action = %#v", button.Action)
 	}
 }

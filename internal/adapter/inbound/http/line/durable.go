@@ -17,11 +17,12 @@ type DurableHandler struct {
 	secret      string
 	destination string
 	ingestor    *messagingdelivery.Ingestor
+	policy      messagingdelivery.ReplyPolicy
 	logger      *slog.Logger
 }
 
-func NewDurableHandler(secret, destination string, ingestor *messagingdelivery.Ingestor, logger *slog.Logger) http.Handler {
-	return &DurableHandler{secret: secret, destination: destination, ingestor: ingestor, logger: logger}
+func NewDurableHandler(secret, destination string, ingestor *messagingdelivery.Ingestor, policy messagingdelivery.ReplyPolicy, logger *slog.Logger) http.Handler {
+	return &DurableHandler{secret: secret, destination: destination, ingestor: ingestor, policy: policy, logger: logger}
 }
 
 func (h *DurableHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -82,7 +83,7 @@ func (h *DurableHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "missing webhook event ID", http.StatusBadRequest)
 			return
 		}
-		reply := messagingdelivery.ResponseForText(m.Text)
+		reply := h.policy.ResponseForText(m.Text)
 		if err := h.ingestor.Ingest(r.Context(), h.destination, e.WebhookEventId, e.ReplyToken, time.UnixMilli(e.Timestamp), reply); err != nil {
 			if errors.Is(err, messagingdelivery.ErrEventTooOld) {
 				// ACK stale redelivery instead of inviting endless retries.

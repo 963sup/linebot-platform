@@ -23,6 +23,7 @@
 | `TASK_INVOKER_EMAIL` | webhook-durable,worker | 否 | — | durable 必需 | 允許呼叫 Worker 的 Service Account Email |
 | `K_SERVICE` | webhook,worker,miniapp | 否 | 平台提供 | Cloud Run 自動提供 | 防止在 Cloud Run 以 local profile 啟動 |
 | `LINEBOT_STAGING_PROJECT` | ops-events | 否 | — | events inspect/check 必需 | 明確指定只讀操作允許的 Staging Project |
+| `ATTENDANCE_ENTRY_URL` | webhook | 否 | — | 選用；設定後啟用聊天打卡入口 | LIFF 或 MINI App 絕對 URL；正式環境必須 HTTPS |
 | `LINE_LIFF_ID` | miniapp | 否 | — | 必需 | 公開 LIFF ID，不是 Messaging API secret |
 | `LINE_LOGIN_CHANNEL_ID` | miniapp | 否 | — | 必需 | LINE Login Channel ID |
 | `MINIAPP_PUBLIC_ORIGIN` | miniapp | 否 | — | 必需；production 必須 HTTPS | 無 path/query/fragment 的精確 public origin |

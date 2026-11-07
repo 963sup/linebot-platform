@@ -8,6 +8,21 @@ import (
 
 type DeliveryService struct{ gateway DeliveryGateway }
 
+// ReplyPolicy maps inbound text to deterministic, provider-independent
+// replies. Attendance remains behind its MINI App; this policy only publishes
+// the configured entry point.
+type ReplyPolicy struct{ attendanceEntryURL string }
+
+func NewReplyPolicy(attendanceEntryURL string) (ReplyPolicy, error) {
+	policy := ReplyPolicy{attendanceEntryURL: attendanceEntryURL}
+	if attendanceEntryURL != "" {
+		if err := (URIAction{Label: "開啟打卡", URI: attendanceEntryURL}).Validate(); err != nil {
+			return ReplyPolicy{}, err
+		}
+	}
+	return policy, nil
+}
+
 func NewDeliveryService(gateway DeliveryGateway) (*DeliveryService, error) {
 	if gateway == nil {
 		return nil, errors.New("delivery gateway is required")
@@ -89,10 +104,17 @@ func (s *DeliveryService) SendNarrowcast(ctx context.Context, request Narrowcast
 	return gateway.SendNarrowcast(ctx, request, retryKey)
 }
 
-// ResponseForText is the application-owned deterministic reply policy used by
-// both synchronous and durable inbound adapters.
-func ResponseForText(text string) Message {
-	switch strings.ToLower(strings.TrimSpace(text)) {
+// ResponseForText is used by both synchronous and durable inbound adapters.
+func (p ReplyPolicy) ResponseForText(text string) Message {
+	normalized := strings.ToLower(strings.TrimSpace(text))
+	if normalized == "打卡" && p.attendanceEntryURL != "" {
+		return Message{Kind: KindFlex, Flex: FlexCard{
+			AltText: "開啟出勤打卡", Title: "出勤打卡",
+			Body:   "開啟 MINI App 完成上班或下班打卡。",
+			Action: &URIAction{Label: "開啟打卡", URI: p.attendanceEntryURL},
+		}}
+	}
+	switch normalized {
 	case "flex", "卡片":
 		return Message{Kind: KindFlex, Flex: FlexCard{
 			AltText: "LINE Bot 功能卡片", Title: "linebot-platform",

@@ -34,17 +34,29 @@ func convert(messages []messagingdelivery.Message) ([]messaging_api.MessageInter
 		case messagingdelivery.KindText:
 			result = append(result, messaging_api.TextMessage{Text: message.Text})
 		case messagingdelivery.KindFlex:
-			result = append(result, &messaging_api.FlexMessage{
-				AltText: message.Flex.AltText,
-				Contents: messaging_api.FlexBubble{
-					Body: &messaging_api.FlexBox{
-						Layout: messaging_api.FlexBoxLAYOUT_VERTICAL,
-						Contents: []messaging_api.FlexComponentInterface{
-							&messaging_api.FlexText{Text: message.Flex.Title},
-							&messaging_api.FlexText{Text: message.Flex.Body},
-						},
-					},
+			contents := []messaging_api.FlexComponentInterface{
+				&messaging_api.FlexText{Text: message.Flex.Title},
+				&messaging_api.FlexText{Text: message.Flex.Body},
+			}
+			bubble := messaging_api.FlexBubble{
+				Body: &messaging_api.FlexBox{
+					Layout:   messaging_api.FlexBoxLAYOUT_VERTICAL,
+					Contents: contents,
 				},
+			}
+			if message.Flex.Action != nil {
+				bubble.Footer = &messaging_api.FlexBox{
+					Layout: messaging_api.FlexBoxLAYOUT_VERTICAL,
+					Contents: []messaging_api.FlexComponentInterface{&messaging_api.FlexButton{
+						Flex:   1,
+						Style:  messaging_api.FlexButtonSTYLE_PRIMARY,
+						Action: &messaging_api.UriAction{Label: message.Flex.Action.Label, Uri: message.Flex.Action.URI},
+					}},
+				}
+			}
+			result = append(result, &messaging_api.FlexMessage{
+				AltText:  message.Flex.AltText,
+				Contents: bubble,
 			})
 		default:
 			return nil, errors.New("unsupported LINE message kind")

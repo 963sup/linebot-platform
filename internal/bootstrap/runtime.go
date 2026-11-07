@@ -47,6 +47,10 @@ func NewWebhookRuntime(cfg Config, logger *slog.Logger) (*WebhookRuntime, error)
 	if cfg.EventMode == "durable" && cfg.Secrets.ChannelToken != "" {
 		return nil, errors.New("durable webhook cannot contain LINE send token")
 	}
+	replyPolicy, err := messagingdelivery.NewReplyPolicy(cfg.AttendanceEntryURL)
+	if err != nil {
+		return nil, err
+	}
 	startup, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	telemetry, err := newTelemetryRuntime(startup, cfg, logger, "linebot-webhook")
 	cancel()
@@ -103,7 +107,7 @@ func NewWebhookRuntime(cfg Config, logger *slog.Logger) (*WebhookRuntime, error)
 	if err != nil {
 		return nil, errors.Join(err, runtime.Close())
 	}
-	mux.Handle("/webhook/line", linein.NewHandler(cfg.Secrets.ChannelSecret, service, logger))
+	mux.Handle("/webhook/line", linein.NewHandler(cfg.Secrets.ChannelSecret, service, replyPolicy, logger))
 	runtime.ready.Store(true)
 	return runtime, nil
 }

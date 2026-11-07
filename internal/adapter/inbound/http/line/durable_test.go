@@ -51,8 +51,9 @@ func TestDurableWebhookSignatureDestinationDedupAndEnqueueFailure(t *testing.T) 
 	store := &persisted{seen: map[string]messagingdelivery.DeliveryWorkItem{}}
 	queue := &workQueue{}
 	ingestor, _ := messagingdelivery.NewIngestor(store, queue)
-	h := NewDurableHandler(secret, destination, ingestor, nil)
-	body := fmt.Sprintf(`{"destination":"Uxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx","events":[{"type":"message","mode":"active","timestamp":%d,"webhookEventId":"01H00ABCDEF0123456789ABCDE","deliveryContext":{"isRedelivery":false},"source":{"type":"user","userId":"Uxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"},"replyToken":"reply-token","message":{"id":"1234567890123","type":"text","text":"hello"}}]}`, time.Now().UnixMilli())
+	policy, _ := messagingdelivery.NewReplyPolicy("https://liff.line.me/2000000000-attendance")
+	h := NewDurableHandler(secret, destination, ingestor, policy, nil)
+	body := fmt.Sprintf(`{"destination":"Uxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx","events":[{"type":"message","mode":"active","timestamp":%d,"webhookEventId":"01H00ABCDEF0123456789ABCDE","deliveryContext":{"isRedelivery":false},"source":{"type":"group","groupId":"Cxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx","userId":"Uxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"},"replyToken":"reply-token","message":{"id":"1234567890123","type":"text","text":"打卡"}}]}`, time.Now().UnixMilli())
 	for n := 0; n < 2; n++ {
 		w := httptest.NewRecorder()
 		h.ServeHTTP(w, signedRequest(secret, body))
@@ -64,8 +65,8 @@ func TestDurableWebhookSignatureDestinationDedupAndEnqueueFailure(t *testing.T) 
 		t.Fatalf("durable dedup failed: inbox=%d dispatched=%d", len(store.seen), len(queue.keys))
 	}
 	for _, record := range store.seen {
-		if record.Message.Text == "hello" {
-			t.Fatal("incoming user message persisted")
+		if record.Message.Kind != messagingdelivery.KindFlex || record.Message.Flex.Action == nil || record.Message.Flex.Action.URI != "https://liff.line.me/2000000000-attendance" {
+			t.Fatalf("unexpected persisted reply: %#v", record.Message)
 		}
 	}
 	queue.fail = true
@@ -87,7 +88,8 @@ func TestDurableWebhookIgnoresStandbyAndRejectsMissingDeliveryContext(t *testing
 	store := &persisted{seen: map[string]messagingdelivery.DeliveryWorkItem{}}
 	queue := &workQueue{}
 	ingestor, _ := messagingdelivery.NewIngestor(store, queue)
-	handler := NewDurableHandler(secret, destination, ingestor, nil)
+	policy, _ := messagingdelivery.NewReplyPolicy("")
+	handler := NewDurableHandler(secret, destination, ingestor, policy, nil)
 	base := fmt.Sprintf(`{"destination":"%s","events":[{"type":"message","mode":"%%s","timestamp":%d,"webhookEventId":"01H00ABCDEF0123456789ABCDE",%%s"source":{"type":"user","userId":"%s"},"replyToken":"reply-token","message":{"id":"1234567890123","type":"text","text":"hello"}}]}`, destination, time.Now().UnixMilli(), destination)
 
 	standby := fmt.Sprintf(base, "standby", `"deliveryContext":{"isRedelivery":false},`)

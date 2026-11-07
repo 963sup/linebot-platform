@@ -375,6 +375,9 @@ func rejectPythonFiles(root string) error {
 }
 
 func validate(root string) error {
+	if err := validateHandoffRuntime(root); err != nil {
+		return fmt.Errorf("agent handoff runtime: %w", err)
+	}
 	if err := validateMCPRuntimeSupplyChain(root); err != nil {
 		return fmt.Errorf("MCP runtime supply chain: %w", err)
 	}

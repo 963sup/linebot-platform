@@ -118,3 +118,50 @@ func TestInvalidEventModeRejected(t *testing.T) {
 		t.Fatal("invalid event mode must fail")
 	}
 }
+
+func TestAttendanceEntryURLValidation(t *testing.T) {
+	valid := []struct {
+		name string
+		env  string
+		url  string
+	}{
+		{"local loopback", "local", "http://127.0.0.1:8080/miniapp/"},
+		{"local hostname", "local", "http://localhost:8080/miniapp/"},
+		{"local HTTPS", "local", "https://liff.line.me/2000000000-attendance"},
+	}
+	for _, test := range valid {
+		t.Run(test.name, func(t *testing.T) {
+			cfg, err := LoadConfig(env(map[string]string{KeyAppEnv: test.env, KeyAttendanceEntryURL: test.url}))
+			if err != nil || cfg.AttendanceEntryURL != test.url {
+				t.Fatalf("config=%#v err=%v", cfg, err)
+			}
+		})
+	}
+	invalid := []string{
+		"http://example.test/miniapp/",
+		"javascript:alert(1)",
+		"https://user@example.test/miniapp/",
+		"https://example.test/miniapp/?source=group",
+		"https://example.test/miniapp/#fragment",
+		"/miniapp/",
+	}
+	for _, value := range invalid {
+		t.Run(value, func(t *testing.T) {
+			if _, err := LoadConfig(env(map[string]string{KeyAttendanceEntryURL: value})); err == nil {
+				t.Fatalf("invalid Attendance entry URL accepted: %q", value)
+			}
+		})
+	}
+
+	production := map[string]string{
+		KeyAppEnv: "production", KeyEventMode: "durable", KeyChannelSecret: "secret",
+		KeyAttendanceEntryURL: "http://127.0.0.1:8080/miniapp/",
+		KeyBotDestination:     "U0123456789abcdef0123456789abcdef", KeyProjectID: "test-project",
+		KeyQueueName:    "projects/test-project/locations/asia-east1/queues/line-queue",
+		KeyWorkerURL:    "https://worker.example.test/tasks/v2/line-reply",
+		KeyOIDCAudience: "https://worker.example.test", KeyInvokerEmail: "invoker@test-project.iam.gserviceaccount.com",
+	}
+	if _, err := LoadConfig(env(production)); err == nil {
+		t.Fatal("production accepted loopback HTTP Attendance entry URL")
+	}
+}

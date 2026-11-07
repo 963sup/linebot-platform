@@ -16,7 +16,7 @@ func TestRuntimeEntrypointsOnlyEnterThroughBootstrap(t *testing.T) {
 		t.Fatal(err)
 	}
 	runtimeCommands := map[string]bool{"webhook": true, "worker": true, "ops": true, "miniapp": true}
-	toolCommands := map[string]bool{"codexcheck": true, "codexplugins": true, "configcheck": true, "domainmodel": true}
+	toolCommands := map[string]bool{"codexcheck": true, "codexhandoff": true, "codexplugins": true, "configcheck": true, "domainmodel": true}
 	for _, entry := range entries {
 		if !entry.IsDir() {
 			continue

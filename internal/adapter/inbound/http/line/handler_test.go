@@ -41,7 +41,11 @@ func handler(t *testing.T, secret string) (*Handler, *fakeMessaging) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	return NewHandler(secret, svc, nil), mock
+	policy, err := messagingdelivery.NewReplyPolicy("https://liff.line.me/2000000000-attendance")
+	if err != nil {
+		t.Fatal(err)
+	}
+	return NewHandler(secret, svc, policy, nil), mock
 }
 
 func signedRequest(secret, body string) *http.Request {
@@ -89,5 +93,26 @@ func TestSignedTextAndFlex(t *testing.T) {
 	}
 	if mock.replies[0].Kind != messagingdelivery.KindFlex || mock.replies[1].Kind != messagingdelivery.KindText {
 		t.Fatalf("incorrect message types %#v", mock.replies)
+	}
+}
+
+func TestAttendanceEntryWorksAcrossConversationSources(t *testing.T) {
+	sources := []string{
+		`{"type":"user","userId":"Uxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"}`,
+		`{"type":"group","groupId":"Cxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx","userId":"Uxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"}`,
+		`{"type":"room","roomId":"Rxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx","userId":"Uxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"}`,
+	}
+	for _, source := range sources {
+		h, mock := handler(t, "test-secret")
+		body := `{"destination":"Uxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx","events":[{"type":"message","mode":"active","timestamp":1690000000000,"webhookEventId":"01H00ABCDEF0123456789ABCDE","deliveryContext":{"isRedelivery":false},"source":` + source + `,"replyToken":"test-reply-token","message":{"id":"1234567890123","type":"text","text":"  打卡  "}}]}`
+		w := httptest.NewRecorder()
+		h.ServeHTTP(w, signedRequest("test-secret", body))
+		if w.Code != http.StatusOK || len(mock.replies) != 1 {
+			t.Fatalf("source=%s status=%d replies=%d", source, w.Code, len(mock.replies))
+		}
+		reply := mock.replies[0]
+		if reply.Kind != messagingdelivery.KindFlex || reply.Flex.Action == nil || reply.Flex.Action.URI != "https://liff.line.me/2000000000-attendance" {
+			t.Fatalf("source=%s attendance reply=%#v", source, reply)
+		}
 	}
 }

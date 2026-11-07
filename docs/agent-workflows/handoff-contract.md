@@ -1,28 +1,70 @@
 # Agent Handoff Contract
 
-Keep handoffs concise. The following fields may share one line; use `None` or `Not Applicable` instead of inventing work. Link existing evidence rather than copying logs or full snapshots. Every delegated result must contain:
+Use this protocol whenever work crosses an agent boundary. It is a four-state handshake: `PREPARE -> READY -> START -> RESULT`. A spawn is not permission to edit; write ownership begins only at `START`.
+
+Keep handoffs concise. Use `None`, `Not Applicable`, or `Not Verified` instead of inventing evidence, and link existing artifacts rather than copying logs or snapshots. The orchestrator assigns a stable `Handoff ID` and retains it through every state.
+
+## PREPARE — orchestrator to child
+
+Before spawning, record:
 
 ```text
-Task / Owner / Inputs / Scope / Files / Contract Changes / Evidence / Tests Run / Findings / Risks / Next Action
+Handoff ID / State=PREPARE / Task / Requested Role / Role Guidance Mode / Lifecycle / Acceptance Criteria / Inputs / Scope / File Ownership / Authority / Expected HEAD / Scoped Dirty State or Fingerprint / Snapshot Identity / Selected Skills and Fingerprints / Required Tool Capabilities / Output Contract
 ```
 
-For work that needs cross-file or cross-package relationship evidence and where Repomix MCP is available, `Evidence` must also contain:
+- `Role Guidance Mode` is `native-verified` only when the host role selector was observed; otherwise it is `explicit` and the selected `.codex/agents/<role>.toml` instructions are supplied in the task.
+- `Lifecycle` is `read-only`, `writer`, `reviewer`, or a bounded `read-only-or-writer` choice. `Authority` lists permitted mutations and external effects; it never exceeds user or host authorization.
+- `File Ownership` names the sole writer for every writable file. Shared files are sequenced, not concurrently owned.
+- `Snapshot Identity` records normalized include patterns, output ID, HEAD, scoped fingerprint and artifact hash when Repomix or another generated reference is used.
+- `Selected Skills and Fingerprints` records only relevant skills, their path/provenance, and content or source identity. Naming a skill is not proof it was read.
+- `Required Tool Capabilities` distinguishes `native-exposed`, `local-smoke`, `CLI-fallback`, `unavailable`, `authentication-blocked`, and `authorization-blocked`.
+
+## READY — child to orchestrator
+
+Before analysis, edits, installation, or artifact consumption, the child replies with observed state:
+
+```text
+Handoff ID / State=READY / Actual Role Guidance / Lifecycle / pwd / Resolved Checkout / HEAD / Scoped Dirty State or Fingerprint / Loaded Contracts and Skills / Tool Capability Matrix / Snapshot or Artifact Visibility / Ownership Accepted / Blockers
+```
+
+The child must read the supplied role guidance, this contract, and every selected skill before claiming them as loaded. `Loaded Contracts and Skills` includes paths and fingerprints or source identities. Configuration such as `enabled=true` is not capability evidence. The child reports mismatched HEAD, missing artifacts, overlapping ownership, unavailable required tools, or scope ambiguity as a blocker instead of silently adapting.
+
+The orchestrator compares `READY` with `PREPARE`. If identity or scope differs, it refreshes the baseline or issues a corrected `PREPARE`; it does not approve stale work.
+
+## START — orchestrator authorization
+
+After a matching `READY`, the orchestrator records:
+
+```text
+Handoff ID / State=START / Approved Scope / Approved File Ownership / Accepted Identity / Accepted Tool Fallbacks / Dependencies / Start Conditions
+```
+
+Only `START` grants writer ownership. Read-only investigation may proceed only after identity and inputs are accepted. Scope expansion, ownership changes, a new checkout/HEAD, or a changed reference source returns the handoff to `PREPARE` and `READY`. A degraded optional tool may use an accepted fallback; a missing required capability blocks the task.
+
+## RESULT — child to orchestrator
+
+Every delegated result contains:
+
+```text
+Handoff ID / State=RESULT / Outcome / Task / Owner / Inputs / Scope / Files / Contract Changes / Workspace Identity / Tool Evidence / Skill Evidence / Ownership / Evidence / Tests Run / Findings / Risks / Next Action
+```
+
+`Outcome` is `COMPLETED`, `PARTIAL`, or `BLOCKED`. Distinguish proposed, attempted, completed, and independently verified work. `Workspace Identity` reports final pwd, checkout, HEAD and scoped dirty state/fingerprint. `Ownership` confirms that only approved files were written. Parent and child verify material artifacts exist in the consuming workspace before relying on them.
+
+Use `Not Verified` when a command, MCP, credential, deployment, host integration, or external API was not actually verified. Reviewers remain independent and read-only.
+
+## Repomix and generated references
+
+For cross-file or cross-package relationship evidence where Repomix MCP is available, `Evidence` also contains:
 
 ```text
 Repomix Lifecycle / Repomix Status / Include Patterns / Baseline Output ID / Review Output ID or Not Applicable / Pattern Match or Not Applicable / HEAD / Scoped Fingerprint / Artifact Hash / Stale
 ```
 
-The orchestrator owns the baseline identity. Writers consume it and, after scoped source changes, create or request a review pack using exactly the same normalized `includePatterns`. If scope expands, the orchestrator records a new baseline before additional edits. Reviewers validate the pair without replacing it. Read-only work with no change lifecycle records one scoped baseline and marks review output and pattern comparison `Not Applicable`; it does not create a no-op pair. Roles that can operate in either mode state which lifecycle applied. A finding still requires confirmation against current source or gopls.
+The orchestrator owns baseline identity. Writers consume it and, after scoped source changes, create or request a review pack using exactly the same normalized `includePatterns`. If scope expands, return to `PREPARE` with a new baseline before further edits. Reviewers validate the pair without replacing it. Read-only work records one scoped baseline and marks review output and pattern comparison `Not Applicable`; it does not manufacture a no-op pair. Findings still require confirmation against current source or gopls.
 
-Use `Not Verified` when a command, MCP, credential, deployment or external API was not actually verified. One write owner per file; reviewer roles remain independent and read-only.
+For cross-boundary orientation, use [architecture-context](architecture-context.md) inside the existing role assignment. A known local edit needs no extra architecture document or agent.
 
+When a reference skill is relevant, `Inputs` records its path, provenance/source fingerprint, freshness result and only the needed sections. The orchestrator evaluates the [reference lifecycle](../../.agents/skills/repomix-reference/SKILL.md) once for the shared immutable snapshot; children verify that identity, explicitly read the selected skill and confirm live symbols before edits. Do not paste the whole pack or make every child regenerate it.
 
-Before spawning, the orchestrator records the selected role file, native or explicitly supplied role guidance, bounded scope and acceptance criteria. After spawning, record the actual child ID and verify its executor/checkout identity, HEAD and relevant dirty-state before granting write ownership or consuming artifacts; never infer role loading from a task name or shared files from a path string. Parent and child must verify artifacts exist in the consuming workspace. Final outcomes distinguish proposed, attempted, completed and independently verified work.
-
-## Shared architecture context and reference skills
-
-For a task needing cross-boundary orientation, use the [architecture-context prompt](architecture-context.md) to identify owners, interactions, data flow, design evidence and constraints. Keep this inside the existing role assignment when possible; a known local edit needs no architecture document.
-
-When a reference skill is relevant, include in `Inputs` its path, provenance/source fingerprint, freshness result and only the needed sections. The orchestrator evaluates the [reference lifecycle](../../.agents/skills/repomix-reference/SKILL.md) once for the shared immutable snapshot; children verify that identity in their own workspace, explicitly read the selected skill and confirm live symbols before edits. Mentioning a skill name is not proof that it was loaded. Do not paste the whole pack or make each child regenerate it.
-
-Writers report in `Evidence` whether their changes affect reference sources, selected membership or governing contracts: unchanged, refreshed (with new identity), or stale/deferred with reason. A stale reference must not be passed onward as current. The orchestrator assigns one refresh owner after relevant changes/tests settle and updates dependent handoffs. Independent reviewers check freshness and source claims read-only. When no reference is used, these details are `Not Applicable` within existing fields; no separate handoff form or extra agents are required.
+Writers report whether changes leave reference sources and governing contracts `unchanged`, `refreshed` with new identity, or `stale/deferred` with reason. A stale reference cannot be handed onward as current. The orchestrator assigns one refresh owner after relevant changes and tests settle. When no reference is used, record `Not Applicable`; no separate form or extra agent is required.

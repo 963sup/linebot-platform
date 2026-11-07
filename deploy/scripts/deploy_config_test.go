@@ -34,6 +34,7 @@ func TestCloudBuildDeploymentSafetyContract(t *testing.T) {
 		"_MINIAPP_IMAGE_URI: ''",
 		"_MINIAPP_PUBLIC_ORIGIN: ''",
 		"_LINE_LIFF_ID: ''",
+		"ATTENDANCE_ENTRY_URL=https://liff.line.me/${_LINE_LIFF_ID}",
 		"_LINE_LOGIN_CHANNEL_ID: ''",
 		"_ATTENDANCE_LOCATION_ACTIVE_KEY_ID: ''",
 		"_ATTENDANCE_LOCATION_KEY_VERSIONS: ''",
@@ -48,6 +49,9 @@ func TestCloudBuildDeploymentSafetyContract(t *testing.T) {
 	}
 	if strings.Contains(text, "--service-account=line-bot-runtime@") {
 		t.Error("public and worker must not share the legacy runtime identity")
+	}
+	if strings.Count(text, "ATTENDANCE_ENTRY_URL=https://liff.line.me/${_LINE_LIFF_ID}") != 1 {
+		t.Error("Attendance entry must be derived once for the public webhook only")
 	}
 	if strings.Contains(text, "update-traffic") || strings.Contains(text, "latestReadyRevisionName") {
 		t.Error("candidate deployment must not promote or infer a revision")
