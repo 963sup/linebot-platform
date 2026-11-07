@@ -69,7 +69,7 @@ func TestArchitectureAuthorityAndRelativeLinks(t *testing.T) {
 			// by the production build. Their files are intentionally excluded from
 			// Cloud Build uploads, so do not make this runtime-source test depend
 			// on a local agent installation.
-			if strings.HasPrefix(target, ".agents/") {
+			if strings.Contains(target, ".agents/") {
 				continue
 			}
 			resolved := filepath.Clean(filepath.Join(filepath.Dir(path), filepath.FromSlash(target)))
