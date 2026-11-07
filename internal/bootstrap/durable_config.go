@@ -11,7 +11,7 @@ import (
 	"github.com/963sup/linebot-platform/internal/infrastructure/httpclient"
 )
 
-var lineDestinationPattern = regexp.MustCompile(`^U[0-9a-f]{32}$`)
+var messagingAPIBotUserIDPattern = regexp.MustCompile(`^U[0-9a-f]{32}$`)
 
 // DurableConfig is only used when LINE_EVENT_MODE=durable. Configuration is
 // explicit and independently validated before any GCP clients are created.
@@ -61,7 +61,7 @@ func loadDurable(getenv func(string) string) (DurableConfig, error) {
 		d.OIDCAudience == "" || d.InvokerEmail == "" {
 		return DurableConfig{}, errors.New("durable event mode requires GCP project, LINE bot destination, queue, worker URL and OIDC identity")
 	}
-	if !lineDestinationPattern.MatchString(d.BotUserID) {
+	if !messagingAPIBotUserIDPattern.MatchString(d.BotUserID) {
 		return DurableConfig{}, errors.New("LINE_MESSAGING_API_BOT_USER_ID must be U followed by 32 lowercase hexadecimal characters")
 	}
 	// The preflight must reject the same malformed names as the Cloud Tasks

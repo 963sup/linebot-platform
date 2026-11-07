@@ -49,6 +49,26 @@ func TestLoadConfigNilEnv(t *testing.T) {
 	}
 }
 
+func TestLegacyLINECredentialNamesAreNotRuntimeInputs(t *testing.T) {
+	cfg, err := LoadConfig(env(map[string]string{
+		"LINE_CHANNEL_SECRET":       "legacy-secret",
+		"LINE_CHANNEL_ACCESS_TOKEN": "legacy-token",
+		"LINE_BOT_DESTINATION":      "U0123456789abcdef0123456789abcdef",
+	}))
+	if err != nil {
+		t.Fatalf("legacy names should be ignored, not parsed: %v", err)
+	}
+	if cfg.LiveLINE() {
+		t.Fatal("legacy LINE environment names enabled a live client")
+	}
+	for _, spec := range SettingsContract() {
+		switch spec.Key {
+		case "LINE_CHANNEL_SECRET", "LINE_CHANNEL_ACCESS_TOKEN", "LINE_BOT_DESTINATION":
+			t.Fatalf("legacy LINE environment name remains in the runtime contract: %s", spec.Key)
+		}
+	}
+}
+
 func TestDurableConfigRequiresAllCredentialsAndEndpoints(t *testing.T) {
 	fields := map[string]string{
 		"LINE_EVENT_MODE":                   "durable",
@@ -64,7 +84,7 @@ func TestDurableConfigRequiresAllCredentialsAndEndpoints(t *testing.T) {
 	if err != nil || cfg.EventMode != "durable" || cfg.Durable.ProjectID != "test-project" {
 		t.Fatalf("valid durable configuration rejected: %#v %v", cfg, err)
 	}
-	if !cfg.LiveLINE() || cfg.Secrets.ChannelToken != "" {
+	if !cfg.LiveLINE() || cfg.Secrets.MessagingAPIChannelAccessToken != "" {
 		t.Fatal("durable webhook must not use a send token")
 	}
 	withToken := make(map[string]string, len(fields)+1)
@@ -105,7 +125,7 @@ func TestDurableConfigRequiresAllCredentialsAndEndpoints(t *testing.T) {
 		}
 	}
 	worker, err := LoadWorkerConfig(env(workerEnv))
-	if err != nil || worker.Secrets.ChannelToken != "token" || worker.Durable.ProjectID != "test-project" {
+	if err != nil || worker.Secrets.MessagingAPIChannelAccessToken != "token" || worker.Durable.ProjectID != "test-project" {
 		t.Fatalf("worker config rejected: %#v %v", worker, err)
 	}
 	if _, err := LoadWorkerConfig(env(map[string]string{})); err == nil {

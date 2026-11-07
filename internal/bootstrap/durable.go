@@ -55,6 +55,6 @@ func configureDurableWebhook(cfg Config, logger *slog.Logger, mux *http.ServeMux
 	if err != nil {
 		return err
 	}
-	mux.Handle("/webhook/line", linein.NewDurableHandler(cfg.Secrets.ChannelSecret, cfg.Durable.BotUserID, ingestor, policy, scopes, logger))
+	mux.Handle("/webhook/line", linein.NewDurableHandler(cfg.Secrets.MessagingAPIChannelSecret, cfg.Durable.BotUserID, ingestor, policy, scopes, logger))
 	return nil
 }

@@ -107,7 +107,7 @@ func NewWorkerRuntime(ctx context.Context, cfg WorkerConfig, logger *slog.Logger
 		return cleanup(err)
 	}
 	rt.outbound = out
-	client, err := lineinfra.NewMessagingClientWithHTTPClient(cfg.Secrets.ChannelToken, out.Client)
+	client, err := lineinfra.NewMessagingClientWithHTTPClient(cfg.Secrets.MessagingAPIChannelAccessToken, out.Client)
 	if err != nil {
 		return cleanup(err)
 	}

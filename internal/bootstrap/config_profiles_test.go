@@ -32,7 +32,7 @@ func TestEnvironmentProfilesAndRoleSecretIsolation(t *testing.T) {
 	cloud[KeyCloudRunService] = "linebot-webhook"
 	webhook, err := LoadConfig(env(cloud))
 	if err != nil || webhook.Environment != EnvStaging || webhook.Log.Format != "json" ||
-		webhook.Secrets.ChannelToken != "" || !webhook.LiveLINE() {
+		webhook.Secrets.MessagingAPIChannelAccessToken != "" || !webhook.LiveLINE() {
 		t.Fatalf("invalid tokenless cloud webhook: config=%#v err=%v", webhook, err)
 	}
 	workerEnv := durableSettings()
@@ -41,8 +41,8 @@ func TestEnvironmentProfilesAndRoleSecretIsolation(t *testing.T) {
 	workerEnv[KeyMessagingAPIChannelAccessToken] = "private-send-token"
 	workerEnv[KeyCloudRunService] = "linebot-worker"
 	worker, err := LoadWorkerConfig(env(workerEnv))
-	if err != nil || worker.Secrets.ChannelToken == "" ||
-		worker.Secrets.ChannelSecret != "" || worker.EventMode != "durable" {
+	if err != nil || worker.Secrets.MessagingAPIChannelAccessToken == "" ||
+		worker.Secrets.MessagingAPIChannelSecret != "" || worker.EventMode != "durable" {
 		t.Fatalf("invalid private worker: config=%#v err=%v", worker, err)
 	}
 }

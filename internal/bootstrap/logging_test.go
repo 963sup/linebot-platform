@@ -22,7 +22,7 @@ func TestLoggerRespectsProfileAndSecretRedaction(t *testing.T) {
 	if !strings.Contains(buf.String(), "\"safe event\"") {
 		t.Fatal("configured debug level was ignored")
 	}
-	secrets := SecretConfig{ChannelSecret: "hidden-secret", ChannelToken: "hidden-token"}
+	secrets := SecretConfig{MessagingAPIChannelSecret: "hidden-secret", MessagingAPIChannelAccessToken: "hidden-token"}
 	for _, printed := range []string{fmt.Sprintf("%v", secrets), fmt.Sprintf("%#v", secrets)} {
 		for _, value := range []string{"hidden-secret", "hidden-token"} {
 			if strings.Contains(printed, value) {
@@ -36,8 +36,8 @@ func TestFullConfigDoesNotExposeSecretsInFormattingOrLogging(t *testing.T) {
 	cfg := Config{
 		Environment: EnvProduction,
 		Secrets: SecretConfig{
-			ChannelSecret: "test-private-secret",
-			ChannelToken:  "test-private-token",
+			MessagingAPIChannelSecret:      "test-private-secret",
+			MessagingAPIChannelAccessToken: "test-private-token",
 		},
 	}
 	encoded, err := json.Marshal(cfg)

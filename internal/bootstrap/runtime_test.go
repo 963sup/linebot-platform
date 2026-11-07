@@ -26,7 +26,7 @@ func TestRuntimeWithoutLINE(t *testing.T) {
 
 func TestRuntimeWithLINEAndShutdown(t *testing.T) {
 	r, err := NewWebhookRuntime(Config{
-		Port: "8080", Secrets: SecretConfig{ChannelSecret: "test-secret", ChannelToken: "test-token"},
+		Port: "8080", Secrets: SecretConfig{MessagingAPIChannelSecret: "test-secret", MessagingAPIChannelAccessToken: "test-token"},
 		LINEAPITimeout: 5 * time.Second,
 	}, nil)
 	if err != nil {
@@ -53,7 +53,7 @@ func TestRuntimeWithLINEAndShutdown(t *testing.T) {
 
 func TestRuntimeInvalidTimeout(t *testing.T) {
 	_, err := NewWebhookRuntime(Config{
-		Secrets:        SecretConfig{ChannelSecret: "secret", ChannelToken: "token"},
+		Secrets:        SecretConfig{MessagingAPIChannelSecret: "secret", MessagingAPIChannelAccessToken: "token"},
 		LINEAPITimeout: -time.Second,
 	}, nil)
 	if err == nil {

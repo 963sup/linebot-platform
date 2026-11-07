@@ -28,8 +28,8 @@ const (
 // SecretConfig is deliberately separate from ordinary runtime settings.
 // Both fmt printing and %#v redact its values; never log or marshal this type.
 type SecretConfig struct {
-	ChannelSecret string
-	ChannelToken  string
+	MessagingAPIChannelSecret      string
+	MessagingAPIChannelAccessToken string
 }
 
 func (SecretConfig) String() string   { return "[redacted secrets]" }
@@ -116,8 +116,8 @@ func loadRuntimeConfig(role RuntimeRole, getenv func(string) string) (Config, er
 		Role: role, Environment: environment, Port: port,
 		LINEAPITimeout: timeout, Log: logging, Telemetry: telemetry,
 		Secrets: SecretConfig{
-			ChannelSecret: readSetting(getenv, KeyMessagingAPIChannelSecret),
-			ChannelToken:  readSetting(getenv, KeyMessagingAPIChannelAccessToken),
+			MessagingAPIChannelSecret:      readSetting(getenv, KeyMessagingAPIChannelSecret),
+			MessagingAPIChannelAccessToken: readSetting(getenv, KeyMessagingAPIChannelAccessToken),
 		},
 	}
 	if role == RoleWebhook {
@@ -133,10 +133,10 @@ func loadRuntimeConfig(role RuntimeRole, getenv func(string) string) (Config, er
 			return Config{}, errors.New("worker LINE_EVENT_MODE must be durable when provided")
 		}
 		cfg.EventMode = "durable"
-		if cfg.Secrets.ChannelSecret != "" {
+		if cfg.Secrets.MessagingAPIChannelSecret != "" {
 			return Config{}, errors.New("worker must not hold LINE_MESSAGING_API_CHANNEL_SECRET")
 		}
-		if cfg.Secrets.ChannelToken == "" {
+		if cfg.Secrets.MessagingAPIChannelAccessToken == "" {
 			return Config{}, errors.New("worker requires LINE_MESSAGING_API_CHANNEL_ACCESS_TOKEN")
 		}
 		cfg.Durable, err = loadDurable(getenv)
@@ -153,10 +153,10 @@ func loadRuntimeConfig(role RuntimeRole, getenv func(string) string) (Config, er
 		return Config{}, errors.New("LINE_EVENT_MODE must be sync or durable")
 	}
 	if cfg.EventMode == "durable" {
-		if cfg.Secrets.ChannelSecret == "" {
+		if cfg.Secrets.MessagingAPIChannelSecret == "" {
 			return Config{}, errors.New("durable webhook requires LINE_MESSAGING_API_CHANNEL_SECRET")
 		}
-		if cfg.Secrets.ChannelToken != "" {
+		if cfg.Secrets.MessagingAPIChannelAccessToken != "" {
 			return Config{}, errors.New("public durable webhook must not hold LINE_MESSAGING_API_CHANNEL_ACCESS_TOKEN")
 		}
 		cfg.Durable, err = loadDurable(getenv)
@@ -168,7 +168,7 @@ func loadRuntimeConfig(role RuntimeRole, getenv func(string) string) (Config, er
 	if environment != EnvLocal {
 		return Config{}, errors.New("staging/production webhook must use durable mode")
 	}
-	if (cfg.Secrets.ChannelSecret == "") != (cfg.Secrets.ChannelToken == "") {
+	if (cfg.Secrets.MessagingAPIChannelSecret == "") != (cfg.Secrets.MessagingAPIChannelAccessToken == "") {
 		return Config{}, errors.New("sync mode requires both LINE credentials or neither")
 	}
 	return cfg, nil
@@ -251,6 +251,6 @@ func loadLoggingConfig(getenv func(string) string, environment Environment) (Log
 }
 
 func (c Config) LiveLINE() bool {
-	return c.Secrets.ChannelSecret != "" &&
-		(c.EventMode == "durable" || c.Secrets.ChannelToken != "")
+	return c.Secrets.MessagingAPIChannelSecret != "" &&
+		(c.EventMode == "durable" || c.Secrets.MessagingAPIChannelAccessToken != "")
 }

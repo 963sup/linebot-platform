@@ -44,7 +44,7 @@ func closeRuntimeClosers(closers []runtimeCloser) error {
 
 // NewWebhookRuntime constructs only the clients needed by the webhook process.
 func NewWebhookRuntime(cfg Config, logger *slog.Logger) (*WebhookRuntime, error) {
-	if cfg.EventMode == "durable" && cfg.Secrets.ChannelToken != "" {
+	if cfg.EventMode == "durable" && cfg.Secrets.MessagingAPIChannelAccessToken != "" {
 		return nil, errors.New("durable webhook cannot contain LINE send token")
 	}
 	replyPolicy, err := messagingdelivery.NewReplyPolicy(cfg.MiniAppEntryURL)
@@ -95,7 +95,7 @@ func NewWebhookRuntime(cfg Config, logger *slog.Logger) (*WebhookRuntime, error)
 	runtime.outbound = outboundHTTP
 	// The factory accepts a managed native HTTP client; its SDK client does not
 	// own the transport. The composition root closes it after HTTP shutdown.
-	client, err := lineinfra.NewMessagingClientWithHTTPClient(cfg.Secrets.ChannelToken, outboundHTTP.Client)
+	client, err := lineinfra.NewMessagingClientWithHTTPClient(cfg.Secrets.MessagingAPIChannelAccessToken, outboundHTTP.Client)
 	if err != nil {
 		return nil, errors.Join(err, runtime.Close())
 	}
@@ -107,7 +107,7 @@ func NewWebhookRuntime(cfg Config, logger *slog.Logger) (*WebhookRuntime, error)
 	if err != nil {
 		return nil, errors.Join(err, runtime.Close())
 	}
-	mux.Handle("/webhook/line", linein.NewHandler(cfg.Secrets.ChannelSecret, service, replyPolicy, logger))
+	mux.Handle("/webhook/line", linein.NewHandler(cfg.Secrets.MessagingAPIChannelSecret, service, replyPolicy, logger))
 	runtime.ready.Store(true)
 	return runtime, nil
 }
