@@ -27,15 +27,10 @@ func TestCloudBuildDeploymentSafetyContract(t *testing.T) {
 	for _, required := range []string{
 		"_APPROVE_DEPLOYMENT: 'false'",
 		"_STAGING_EVIDENCE_SHA256: ''",
-		"_TASK_WORKER_ORIGIN: ''",
 		"--service-account=${_PUBLIC_SERVICE_ACCOUNT}",
 		"--service-account=${_WORKER_SERVICE_ACCOUNT}",
 		"--service-account=${_MINIAPP_SERVICE_ACCOUNT}",
-		"_MINIAPP_IMAGE_URI: ''",
-		"_LINE_MINI_APP_CHANNEL_ID: ''",
-		"_LINE_MINI_APP_LIFF_URL: ''",
 		"LINE_MINI_APP_LIFF_URL=${_LINE_MINI_APP_LIFF_URL}",
-		"_LINE_MINI_APP_ENDPOINT_URL: ''",
 		"--ingress=internal",
 		"--ingress=all",
 		"--concurrency=16",
@@ -48,6 +43,30 @@ func TestCloudBuildDeploymentSafetyContract(t *testing.T) {
 	} {
 		if !strings.Contains(text, required) {
 			t.Errorf("deployment contract missing %q", required)
+		}
+	}
+	substitutions, ok := document["substitutions"].(map[string]any)
+	if !ok {
+		t.Fatal("cloudbuild.deploy.yaml substitutions must be a mapping")
+	}
+	for _, key := range []string{
+		"_TASK_WORKER_ORIGIN",
+		"_PUBLIC_IMAGE_URI",
+		"_PRIVATE_IMAGE_URI",
+		"_MINIAPP_IMAGE_URI",
+		"_LINE_MINI_APP_CHANNEL_ID",
+		"_LINE_MINI_APP_LIFF_URL",
+		"_LINE_MINI_APP_ENDPOINT_URL",
+	} {
+		value, ok := substitutions[key].(string)
+		if !ok || strings.TrimSpace(value) == "" {
+			t.Errorf("deployment substitution %s must be configured", key)
+		}
+	}
+	for _, key := range []string{"_PUBLIC_IMAGE_URI", "_PRIVATE_IMAGE_URI", "_MINIAPP_IMAGE_URI"} {
+		value, ok := substitutions[key].(string)
+		if !ok || !strings.Contains(value, "@sha256:") {
+			t.Errorf("deployment substitution %s must use an immutable image digest", key)
 		}
 	}
 	if strings.Contains(text, "--service-account=line-bot-runtime@") {
