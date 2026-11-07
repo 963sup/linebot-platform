@@ -5,7 +5,7 @@ Only two explicit bootstrap roots exist: `BOOTSTRAP_WORKSPACE=/workspace` is the
 The normal workflow has three files:
 
 - `mise.toml` owns tool versions and tasks.
-- `bootstrap.sh` installs checksum-pinned mise, then runs mise. All mutable tool state stays under `/workspace`.
+- `bootstrap.sh` installs checksum-pinned mise, then runs mise. Managed tool data and caches stay under `/workspace`; host credentials and Codex user configuration are preserved.
 - `.codex/config.toml` declares MCP commands and tool permissions for a host that loads trusted project configuration.
 
 Run once during environment setup, from the checkout:
@@ -15,6 +15,21 @@ bash /workspace/linebot-platform/bootstrap.sh setup
 ```
 
 This installs Go, Node, gopls and Repomix, then downloads and verifies Go modules.
+It also installs the other pinned tools in `[tools]`, but does not install Codex
+marketplaces or build the repository graph. Prepare repository skills and the
+Graphify index explicitly when needed:
+
+```bash
+bash /workspace/linebot-platform/bootstrap.sh run setup-agents
+```
+
+Every task shell must invoke tools through `bash bootstrap.sh exec -- <tool>`
+or `bash bootstrap.sh run <task>`. Setup exports do not persist into later shells.
+Bootstrap sets XDG, Go, npm-cache and uv/Python writable paths on every invocation;
+it does not change `HOME` or `CODEX_HOME`. Go paths are deliberately normalized
+even when the host supplies paths under a read-only home. An explicitly supplied
+`CLOUDSDK_CONFIG` is preserved because it may contain host authentication.
+
 MCP startup uses `bootstrap.sh exec -- …` with automatic installation disabled;
 startup therefore fails clearly if setup was not completed. It does not download
 tools, change Git branches, clean files, or modify user-level Codex settings.
@@ -63,19 +78,19 @@ and mise tasks directly. No startup entrypoint resets or cleans the checkout.
 Run explicitly on a host with Codex CLI and writable plugin configuration/cache:
 
 ```bash
-bash bootstrap.sh run plugins-install
+bash bootstrap.sh run plugins-install-standard
 ```
 
-This registers `addyosmani/agent-skills`, installs
-`agent-skills@agent-skills`, and registers `google/skills`. Google registration
-does not install any Google plugin. Choose a specific plugin separately.
-The task uses the upstream default revisions; it is not a pinned, reproducible
-Skills snapshot. Review the upstream content before executing it.
+This registers the pinned Matt Pocock, Addy Osmani and Google marketplaces and
+installs the Matt Pocock and Addy Osmani plugins. Google registration does not
+install any Google plugin. This task writes to the host's Codex user directory;
+do not run it in a Cloud environment where that directory is read-only.
 
 `.agents/plugins/marketplace.json` describes a marketplace offered by this
 repository; it is not an installation list. This task does not use that placeholder.
-Matt Pocock's Claude marketplace compatibility remains unverified for this host;
-the samber sources retain the existing pinned `.codex/plugins.lock.json` workflow.
-Neither is installed by this task. Plugin installation is separate from ordinary
+Marketplace compatibility remains unverified for this host. For repository-local
+skills use `bash bootstrap.sh run plugins-install`, which uses the pinned
+`.codex/plugins.lock.json` workflow and installs under the checkout's `.agents`.
+Plugin installation is separate from ordinary
 bootstrap setup and MCP startup. Confirm plugin and skill discovery in a fresh
 Codex session after installation.

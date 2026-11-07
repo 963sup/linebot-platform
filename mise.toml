@@ -40,7 +40,12 @@ exec_auto_install = false
 
 
 [tasks.setup]
-run = ["go mod download", "go mod verify", "mise run plugins-install", "mise run plugins-install-standard", "mise run graphify-update", "mise run agent-preflight"]
+description = "Prepare core dependencies; optional skills, plugins and graph indexing run separately"
+run = ["go mod download", "go mod verify"]
+
+[tasks.setup-agents]
+description = "Install approved repository skills, build the graph and check agent configuration"
+run = ["mise run plugins-install", "mise run graphify-update", "mise run agent-preflight"]
 
 [tasks.graphify-update]
 description = "Rebuild the local code graph after checkout or source changes; no LLM calls"
@@ -84,7 +89,7 @@ description = "Explicitly install pinned Skills and register the pinned Google m
 run = "go run ./cmd/codexplugins --install --register-google-marketplace"
 
 [tasks.plugins-install-standard]
-description = "Install standard Codex skill plugins from pinned marketplace revisions"
+description = "Optional: install pinned marketplace plugins on a host with writable Codex user configuration"
 run = [
   "codex plugin marketplace add https://github.com/mattpocock/skills.git --ref 4ae2317ddb22b046e26455e4f9c9b3aaaf62212d",
   "codex plugin add mattpocock-skills --marketplace mattpocock",
