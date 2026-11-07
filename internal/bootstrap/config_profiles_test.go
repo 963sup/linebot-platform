@@ -21,7 +21,7 @@ func durableSettings() map[string]string {
 
 func TestEnvironmentProfilesAndRoleSecretIsolation(t *testing.T) {
 	local, err := LoadConfig(env(nil))
-	if err != nil || local.Environment != EnvLocal || local.EventMode != "sync" ||
+	if err != nil || local.Environment != EnvLocal || local.EventMode != "durable" ||
 		local.Log.Level != "info" || local.Log.Format != "text" ||
 		local.Telemetry.Mode != "off" || local.Telemetry.TraceSampleRatio != 0.05 ||
 		local.Telemetry.MetricInterval != time.Minute {
@@ -100,7 +100,7 @@ func TestSettingContractUniqueAndSecretClassified(t *testing.T) {
 			t.Fatal("incomplete setting contract")
 		}
 		if spec.Key == KeyEventMode &&
-			(spec.Roles != "webhook,worker" || spec.Default != "webhook=sync; worker=durable") {
+			(spec.Roles != "webhook,worker" || spec.Default != "durable") {
 			t.Fatal("event mode metadata must document both runtime roles")
 		}
 		seen[spec.Key] = true

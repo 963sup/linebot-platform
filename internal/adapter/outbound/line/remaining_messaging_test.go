@@ -41,9 +41,6 @@ func TestRemainingMessagingAPIEndpointsAreWired(t *testing.T) {
 		{"leave-group", "POST /v2/bot/group/group-1/leave", func() error {
 			return s.Leave(ctx, conversationoperations.Conversation{Kind: conversationoperations.Group, ID: "group-1"})
 		}},
-		{"leave-room", "POST /v2/bot/room/room-1/leave", func() error {
-			return s.Leave(ctx, conversationoperations.Conversation{Kind: conversationoperations.Room, ID: "room-1"})
-		}},
 		{"loading", "POST /v2/bot/chat/loading/start", func() error {
 			return s.ShowLoading(ctx, conversationoperations.LoadingIndicator{ChatID: "U123", Duration: 5 * time.Second})
 		}},

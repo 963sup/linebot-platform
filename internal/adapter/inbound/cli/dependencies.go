@@ -181,17 +181,6 @@ type BulkMessagingRuntime interface {
 	Close() error
 }
 
-type ChannelConnectionSummary struct {
-	TenantID             string `json:"tenant_id"`
-	ConnectionID         string `json:"connection_id"`
-	MessagingDestination string `json:"messaging_destination"`
-}
-
-type ChannelConnectionsRuntime interface {
-	Register(context.Context, string, string, string) (ChannelConnectionSummary, error)
-	Close() error
-}
-
 // Dependencies is the immutable set of runtime factories supplied by the
 // composition root for one CLI invocation.
 type Dependencies struct {
@@ -217,7 +206,6 @@ type Dependencies struct {
 	TokenRuntime              func() (TokenRuntime, error)
 	AudienceManagementRuntime func(string) (AudienceManagementRuntime, error)
 	BulkMessagingRuntime      func(string) (BulkMessagingRuntime, error)
-	ChannelConnections        func(context.Context, string) (ChannelConnectionsRuntime, error)
 }
 
 func dependency(values []Dependencies) Dependencies {

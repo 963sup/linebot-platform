@@ -144,13 +144,17 @@ func TestValidateRepositoryFailures(t *testing.T) {
 		{"implemented context missing ADR", "ADR evidence", func(m *DomainModel, _ *CapabilityMap) { m.Contexts[0].Status = "implemented"; m.Contexts[0].ADRs = nil }},
 		{"implemented context wrong package", "must equal", func(m *DomainModel, _ *CapabilityMap) {
 			m.Contexts[0].Status = "implemented"
+			m.Contexts[0].ADRs = []string{"docs/architecture/decisions/0003-tactical-models-without-strategic-promotion.md"}
 			m.Contexts[0].Package = "internal/domain"
 		}},
 		{"implemented evidence outside package", "behavior test under", func(m *DomainModel, _ *CapabilityMap) {
 			m.Contexts[0].Status = "implemented"
+			m.Contexts[0].ADRs = []string{"docs/architecture/decisions/0003-tactical-models-without-strategic-promotion.md"}
 			m.Contexts[0].Evidence = []string{"tests/architecture/dependencies_test.go"}
 		}},
-		{"missing code symbol", "does not exist", func(m *DomainModel, _ *CapabilityMap) { m.Contexts[0].Language[0].CodeSymbols[0] += "Missing" }},
+		{"missing code symbol", "does not exist", func(m *DomainModel, _ *CapabilityMap) {
+			m.Contexts[0].Language[0].CodeSymbols = []string{"internal/domain/messaging-delivery/aggregates.Missing"}
+		}},
 		{"incomplete accounting", "covers 101 of 102", func(_ *DomainModel, c *CapabilityMap) { c.Operations = c.Operations[:101] }},
 	}
 	for _, tt := range tests {
@@ -164,6 +168,21 @@ func TestValidateRepositoryFailures(t *testing.T) {
 				t.Errorf("ValidateRepository(%s) error = %v, want containing %q", tt.name, err, tt.want)
 			}
 		})
+	}
+}
+
+func TestUnsupportedEndpointCannotClaimIntegration(t *testing.T) {
+	root := repositoryRoot(t)
+	inventory, model, capabilities, dependencies := loadActual(t, root)
+	for i := range inventory.Endpoints {
+		if inventory.Endpoints[i].Operation == "leaveRoom" {
+			inventory.Endpoints[i].Integration = "integrated_offline"
+			inventory.Endpoints[i].Test = "contract"
+		}
+	}
+	err := ValidateRepository(root, inventory, model, capabilities, dependencies)
+	if err == nil || !strings.Contains(err.Error(), "integrated endpoint requires an implementation") {
+		t.Fatalf("unsupported operation claimed implementation: %v", err)
 	}
 }
 
@@ -284,7 +303,7 @@ func TestRenderContextMapDeterministic(t *testing.T) {
 	if !bytes.Equal(first, second) {
 		t.Errorf("RenderContextMap(reordered) differs from original")
 	}
-	for _, want := range []string{"```mermaid", "Subdomains", "Aggregates and Data Ownership", "TEN-001", "tenant-administration", "Endpoint Capabilities", "Go Module Capability Evidence", "| Decision | Confidence |", "RecipientSelection / synchronous / published-language / hypothesis / medium"} {
+	for _, want := range []string{"```mermaid", "Subdomains", "Aggregates and Data Ownership", "MSG-001", "messaging-delivery", "Endpoint Capabilities", "Go Module Capability Evidence", "| Decision | Confidence |", "RecipientSelection / synchronous / published-language / hypothesis / medium"} {
 		if !bytes.Contains(first, []byte(want)) {
 			t.Errorf("RenderContextMap output missing %q", want)
 		}

@@ -22,7 +22,6 @@ import (
 
 func TestRedeliveryCannotChangeConversationScope(t *testing.T) {
 	ctx := messagingdelivery.DeliveryContext{
-		TenantID: "legacy-tenant", ConnectionID: "shared-channel",
 		ConversationKind:            messagingdelivery.ConversationGroup,
 		ConversationReferenceSHA256: strings.Repeat("a", 64), ActorSHA256: strings.Repeat("b", 64),
 	}
@@ -33,9 +32,7 @@ func TestRedeliveryCannotChangeConversationScope(t *testing.T) {
 	for _, mutate := range []func(*messagingdelivery.DeliveryContext){
 		func(c *messagingdelivery.DeliveryContext) { c.ConversationReferenceSHA256 = strings.Repeat("c", 64) },
 		func(c *messagingdelivery.DeliveryContext) { c.ActorSHA256 = strings.Repeat("c", 64) },
-		func(c *messagingdelivery.DeliveryContext) { c.ConversationKind = messagingdelivery.ConversationRoom },
-		func(c *messagingdelivery.DeliveryContext) { c.TenantID = "other" },
-		func(c *messagingdelivery.DeliveryContext) { c.ConnectionID = "other" },
+		func(c *messagingdelivery.DeliveryContext) { c.ConversationKind = messagingdelivery.ConversationDirect },
 	} {
 		other := ctx
 		mutate(&other)
@@ -157,7 +154,7 @@ func TestRestoreDeliveryNormalizesLegacyTerminalLease(t *testing.T) {
 func TestRestoreDeliveryRejectsUnknownSchema(t *testing.T) {
 	t.Parallel()
 	key := "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-	_, err := restoreDelivery(key, storedJob{SchemaVersion: 4, State: string(valueobjects.StatusPending), ReplyUntil: time.Now().Add(time.Minute), Version: 1})
+	_, err := restoreDelivery(key, storedJob{SchemaVersion: 99, State: string(valueobjects.StatusPending), ReplyUntil: time.Now().Add(time.Minute), Version: 1})
 	if err == nil {
 		t.Fatal("restoreDelivery(unknown schema) error = nil")
 	}
@@ -182,9 +179,31 @@ func TestRestoreDeliveryRejectsMissingVersionInCurrentSchema(t *testing.T) {
 }
 
 func TestPersistedSchemaVersionDoesNotPromoteLegacyDocument(t *testing.T) {
-	for input, want := range map[int]int{0: 2, 2: 2, 3: 3} {
+	for input, want := range map[int]int{0: 2, 2: 2, 3: 3, 4: 4} {
 		if got := persistedSchemaVersion(input); got != want {
 			t.Fatalf("persistedSchemaVersion(%d)=%d want %d", input, got, want)
 		}
+	}
+}
+
+func TestScopeSchemasAndLegacyRoomRestore(t *testing.T) {
+	ctx := messagingdelivery.DeliveryContext{
+		ConversationKind:            messagingdelivery.ConversationGroup,
+		ConversationReferenceSHA256: strings.Repeat("a", 64),
+	}
+	for _, schema := range []int{3, 4} {
+		saved := storedJob{SchemaVersion: schema, Context: ctx, Version: 1, State: "pending", ReplyUntil: time.Now().Add(time.Minute)}
+		if _, err := restoreDelivery(strings.Repeat("a", 64), saved); err != nil {
+			t.Fatalf("schema %d: %v", schema, err)
+		}
+		changed := ctx
+		changed.ConversationReferenceSHA256 = strings.Repeat("b", 64)
+		if err := validateRedeliveryContext(saved, changed); err == nil {
+			t.Fatalf("schema %d lost conversation isolation", schema)
+		}
+	}
+	oldRoom := storedJob{SchemaVersion: 3, Context: messagingdelivery.DeliveryContext{ConversationKind: "room"}, Version: 1, State: "pending", ReplyUntil: time.Now().Add(time.Minute)}
+	if _, err := restoreDelivery(strings.Repeat("a", 64), oldRoom); err != nil {
+		t.Fatalf("legacy Room cannot drain: %v", err)
 	}
 }

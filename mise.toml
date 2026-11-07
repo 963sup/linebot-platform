@@ -4,7 +4,7 @@ min_version = "2026.11.3"
 # Local development defaults; credentials are supplied by the host.
 APP_ENV = "local"
 PORT = "8080"
-LINE_EVENT_MODE = "sync"
+LINE_EVENT_MODE = "durable"
 LINE_API_TIMEOUT = "8s"
 LOG_LEVEL = "info"
 LOG_FORMAT = "text"

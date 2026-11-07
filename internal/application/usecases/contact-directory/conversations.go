@@ -100,8 +100,8 @@ func validateConversation(value RecipientReference) error {
 	if err := validateRecipient(value); err != nil {
 		return err
 	}
-	if value.Kind != RecipientGroup && value.Kind != RecipientRoom {
-		return errors.New("conversation must be a group or room")
+	if value.Kind != RecipientGroup {
+		return errors.New("conversation must be a group")
 	}
 	return nil
 }

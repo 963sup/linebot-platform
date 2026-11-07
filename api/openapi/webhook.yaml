@@ -2,7 +2,7 @@ openapi: 3.1.0
 info:
   title: linebot-platform bootstrap webhook
   version: 0.1.0
-  description: Minimal synchronous webhook for development; durable processing is planned.
+  description: Durable-only LINE ingress with signature and destination verification, Firestore inbox/outbox and asynchronous delivery.
 paths:
   /healthz:
     get:
@@ -12,8 +12,8 @@ paths:
           description: Healthy process
   /webhook/line:
     post:
-      summary: Verified LINE webhook (synchronous MVP)
-      description: Requires X-Line-Signature and configured LINE channel secrets.
+      summary: Verified durable LINE webhook
+      description: Requires X-Line-Signature and matching Bot destination. Direct/group text events are persisted and queued; unsupported Room events are acknowledged without writes.
       parameters:
         - name: X-Line-Signature
           in: header
@@ -28,14 +28,12 @@ paths:
               type: object
       responses:
         '200':
-          description: Request successfully handled
+          description: Accepted events durably recorded and queued, or unsupported/stale events safely ignored
         '400':
           description: Invalid webhook payload
         '401':
-          description: Invalid signature
+          description: Invalid signature or Bot destination mismatch
         '413':
           description: Body exceeds 1 MiB
         '503':
-          description: LINE channel not configured
-        '502':
-          description: Outbound LINE reply failed; redelivery may duplicate previous replies
+          description: Webhook not configured or persistence/queue temporarily unavailable; redelivery preserves event deduplication

@@ -2,16 +2,16 @@
 
 使用 Go、DDD（Domain-Driven Design）與 Hexagonal Architecture 的 LINE Messaging API 平台；規劃部署在 Google Cloud Run，並保留 Firestore、OpenAI、Google GenAI 與 MCP client 整合介面。
 
-> **狀態：SDK 與事件處理基礎設施已合併至 `main`（PR #8），目前仍是未正式部署的開發用 MVP。** 預設為同步 LINE Webhook／Reply／Push；另有明確啟用才使用的 Firestore Inbox/Outbox、Cloud Tasks OIDC Worker 與 Reconcile。**尚無具授權的實際 GCP／LINE Staging、IAM／OAuth／TTL／排程部署驗收，因此不是 production-ready。**
+> **狀態：SDK 與事件處理骨架已實作，正式環境驗收尚未確認。** Webhook 統一使用 Firestore Inbox/Outbox、Cloud Tasks OIDC Worker 與 Reconcile；不保留同步處理分支。**離線測試不代表 GCP／LINE Staging、IAM／TTL／排程部署驗收，因此不能宣稱 production-ready。**
 
 ## 已實作的功能
 
 | 能力 | 實作位置 | 狀態 |
 |---|---|---|
 | `GET /healthz` | `cmd/webhook`、`internal/adapter/inbound/http/health` | 可在沒有憑證下運行 |
-| `POST /webhook/line` | `internal/adapter/inbound/http/line` | 使用 LINE SDK `webhook.ParseRequest` 驗證簽章並同步處理文字訊息 |
+| `POST /webhook/line` | `internal/adapter/inbound/http/line` | 驗簽與 Bot destination 核對後，個人／群組文字走 durable；Room 安全略過 |
 | LINE MINI App 基礎設施 | `cmd/miniapp`、`internal/adapter/inbound/http/miniapp`、`internal/application/usecases/line-session` | 提供 LIFF 初始化、server-side ID token 驗證與一次性 Web Geolocation 讀值；尚未組裝任何業務 Domain |
-| Reply Text | `internal/application/usecases/conversation-operations` 與 LINE adapter | 使用 LINE Messaging API SDK |
+| Reply Text | `internal/application/usecases/messaging-delivery` 與 LINE adapter | 由 Worker 使用 LINE Messaging API SDK |
 | Reply Flex | 同上 | 傳入 `flex` 或 `卡片` 時回覆簡單 bubble |
 | Push Text／Flex | `cmd/ops` | 僅 CLI `push --send` 會實際呼叫 API，且需要接收者與 retry key |
 | Profile（明確查詢） | `cmd/ops`、`internal/application/usecases/contact-directory`、LINE adapter | `profile --lookup` 只在 CLI 查詢；已有離線契約測試，未完成真實 Channel 驗收 |
@@ -26,7 +26,7 @@
 ## 統一設定與本機開發
 
 - **唯一契約**：`internal/bootstrap/config_contract.go` 定義設定名稱、適用角色、Secret 分類與預設值，`internal/bootstrap/config.go` 與 `durable_config.go` 負責同一條解析／驗證路徑。
-- **Role 與 Profile**：`APP_ENV=local|staging|production`；Webhook／Worker 按角色驗證，Cloud Run 必須明確指定 staging 或 production。Local 預設 sync，只用於開發；staging/production 的 Webhook 必須 durable。
+- **Role 與 Profile**：`APP_ENV=local|staging|production`；Webhook／Worker 按角色驗證，Cloud Run 必須明確指定 staging 或 production。所有訊息處理固定 durable；本機無憑證僅提供 health/readiness。
 - **Secret 隔離**：公開 durable Webhook 只讀取 Channel Secret，私有 Worker 只取得 LINE 發送 Token。普通環境變數可隨部署傳入；正式機密應透過 Secret Manager reference／最小 IAM 注入。
 - **Logger**：`LOG_LEVEL`／`LOG_FORMAT` 在啟動時驗證；local 預設文字，staging/production 使用結構化 JSON。HTTP 觀測僅記錄固定 route label、status、duration，**不記錄原始路徑、查詢、body、token、LINE ID**。
 - **單指令啟動**：`make dev` 使用既有 shell 環境與安全預設；不自動載入 `.env`。必要時用 `go run ./cmd/configcheck --validate --role webhook` 預先檢查設定（無外部 I/O），`make config-check` 檢查生成文件與 `.env.example` 是否一致。
@@ -37,7 +37,7 @@
 
 - Go **1.27.3**（已包含 Go 1.27 的安全修補；依 LINE/OpenAI SDK 當前要求）。
 - `make`、Git。
-- 本機 `sync` 測試才同時需要 LINE Channel Secret 與 Channel Access Token；Cloud Run 公開 Webhook 的 `durable` 模式只需簽章 Secret，發送 Token 僅屬於私有 Worker。
+- Webhook 僅需要 LINE Channel Secret 與完整 durable 設定，發送 Token 僅屬於私有 Worker。
 - 外部 Go dependencies 需要網路下載；`go.sum` 已依 GitHub Actions 的 Go module resolution 產生並提交，不可手寫 checksum。
 
 ## 本機使用
@@ -49,7 +49,7 @@ make dev                   # 強制清空 LINE Secret/Token 的安全本機 Heal
 curl http://localhost:8080/healthz
 ```
 
-未設定本機 `sync` 的 LINE 憑證時只開放 `/healthz`，`/webhook/line` 回 503。只有本機 sync 模式需要同時設定 `LINE_MESSAGING_API_CHANNEL_SECRET` 與 `LINE_MESSAGING_API_CHANNEL_ACCESS_TOKEN`；正式環境公開 Webhook 禁止配置發送 Token。設定契約與環境驗證請看 [設定文件](docs/operations/configuration.md)，不要把真實憑證寫進 GitHub。
+未設定 LINE 憑證時本機只開放 health/readiness，`/webhook/line` 回 503。Webhook 禁止配置發送 Token；發送 Token 僅屬於 Worker。設定契約與環境驗證請看 [設定文件](docs/operations/configuration.md)，不要把真實憑證寫進 GitHub。
 
 此服務沒有公開的 Push HTTP endpoint；Push 僅透過需明確指定 `--send` 的 CLI：
 
@@ -70,7 +70,7 @@ Operator CLI 的實作位於 `internal/adapter/inbound/cli/`，`cmd/ops/main.go`
 
 Insights 唯讀查詢範例：`go run ./cmd/ops insights --kind followers --date 20261101 --read`。Insights SDK 另以相同受管理 HTTP Transport 建立 Client，但不會由公開 Webhook 自動建立。
 
-Contacts/Group/Room 唯讀查詢須明確指定 `--read`（結果可能含使用者資料），例如 `go run ./cmd/ops contacts --kind followers --limit 10 --read`。不得將其輸出存入公開記錄，需遵循 LINE 服務條款及資料保護規範。
+Contacts/Group 唯讀查詢須明確指定 `--read`（結果可能含使用者資料），例如 `go run ./cmd/ops contacts --kind followers --limit 10 --read`。不得將其輸出存入公開記錄，需遵循 LINE 服務條款及資料保護規範。
 
 Webhook 設定及測試管理 CLI 需要雙重明確確認：`go run ./cmd/ops webhook-admin --action test --endpoint "https://example.com/webhook" --apply --confirm test`。請勿在未授權環境修改已使用的正式 Callback URL；此指令不會自動從公開 Webhook 執行。
 
@@ -102,12 +102,12 @@ Profile 回應包含個人資料，請勿將 stdout、Shell 紀錄或查詢結�
 
 - `internal/application/`：consumer-owned capability ports、Reply／Push、文字回覆，以及持久 Ingestion／Worker Use Case。
 - `internal/application/usecases/line-session/`：提供 provider-neutral 的已驗證 LINE identity contract，不擁有任何業務資料。
-- `internal/adapter/`：同步與持久 Webhook、具 OIDC 驗證的 Worker，以及實作 Application capability port 或 Domain repository contract 的 Firestore、Cloud Tasks、LINE adapter。
-- `internal/infrastructure/`：LINE 受管理 HTTP Runtime、Firestore／Cloud Tasks 的可選 Durable 業務接線，以及其餘 Provider 的原生 Typed Client Factories（`client_ready`）；SDK 已可建構不代表其真實服務已獲授權。
+- `internal/adapter/`：持久 Webhook、具 OIDC 驗證的 Worker，以及實作 Application capability port 或 Domain repository contract 的 Firestore、Cloud Tasks、LINE adapter。
+- `internal/infrastructure/`：LINE 受管理 HTTP Runtime、Firestore／Cloud Tasks 的 Durable 業務接線，以及其餘 Provider 的原生 Typed Client Factories（`client_ready`）；SDK 已可建構不代表其真實服務已獲授權。
 - `internal/bootstrap/`：設定、組裝、啟動與 shutdown。
 - `cmd/webhook`、`cmd/worker`、`cmd/ops`：已具可編譯入口；Worker 尚未部署。
 
-**重要：預設 `LINE_EVENT_MODE=sync` 僅供本地開發，不持久化事件。Cloud Run 拒絕 sync；公開 Webhook 的 durable 模式只持有 `LINE_MESSAGING_API_CHANNEL_SECRET`，發送 Token 僅交由私有 Worker 持有。** Durable 模式目前僅有程式碼與離線測試，缺少真實 Staging、unsend／edit、正式 IAM 與人工故障修復驗證；不能宣稱 production-ready 或端到端 exactly-once。
+**重要：Webhook 僅支援 durable，sync 已移除；公開 Webhook 的 durable 模式只持有 `LINE_MESSAGING_API_CHANNEL_SECRET`，發送 Token 僅交由私有 Worker 持有。** Durable 模式目前僅有程式碼與離線測試，缺少真實 Staging、unsend／edit、正式 IAM 與人工故障修復驗證；不能宣稱 production-ready 或端到端 exactly-once。
 
 ## Codex SDK 自動辨識（開發基礎）
 
@@ -118,7 +118,7 @@ Profile 回應包含個人資料，請勿將 stdout、Shell 紀錄或查詢結�
 
 ## Managed LINE SDK Runtime（階段 2）
 
-- Webhook 透過 `bootstrap.NewWebhookRuntime` 組裝 LINE 原生 SDK Client，並管理專屬 HTTP Transport 的生命週期；CLI Push 也使用相同的受管理 HTTP 基礎。
+- Worker 透過 `bootstrap.NewWorkerRuntime` 組裝 LINE 原生 SDK Client，並管理專屬 HTTP Transport 的生命週期；CLI Push 也使用相同的受管理 HTTP 基礎。
 - `internal/infrastructure/httpclient` 採用獨立連線池與 Timeout 設定，`observability` 只記錄安全 HTTP metadata，`resilience` 分類失敗但**不做未經審核的自動重試**。
 - `LINE_API_TIMEOUT` 預設 `8s`，可調範圍 `1s` 到 `12s`。LINE v8.23.0 的 `WithContext` 會改動 Client，因此 Adapter 以每次呼叫的獨立副本帶入 Context，避免並行請求共用可變狀態。
 
@@ -131,7 +131,8 @@ Profile 回應包含個人資料，請勿將 stdout、Shell 紀錄或查詢結�
 
 ## 持久 Webhook 與私有 Worker（階段 4）
 
-- 預設 `LINE_EVENT_MODE=sync` 保留原開發模式。**只有**設定 `LINE_EVENT_MODE=durable` 並具備完整 GCP／LINE／OIDC 設定，才建立 Firestore 與 Cloud Tasks Client。
+- Webhook 固定使用 durable；`LINE_EVENT_MODE` 僅保留舊部署相容且只接受 `durable`。本機未提供憑證時僅有 health/readiness，Webhook 回 503。啟用訊息入口須提供完整 GCP／LINE／OIDC 設定。
+- 單一共用 Bot 直接以已驗簽的個人／群組來源隔離，無需 Tenant／ChannelConnection 註冊；Room 安全略過。舊事件去重相容與部署順序見 [cutover 決策](docs/architecture/decisions/0008-shared-bot-durable-skeleton.md)。
 - Webhook 驗章及 bot destination，Firestore Transaction 同時建立 Inbox/Outbox 並以 SHA-256 Event Key 去重；Cloud Tasks 以事件 Key＋10 秒時窗產生可恢復的 Task ID，透過 Google OIDC 將不敏感 Key 交給私有 Worker；真正的發送去重由 Firestore Claim 負責。
 - `cmd/worker` 的 `/tasks/v2/line-reply`、`/tasks/v2/dispatch` 必須通過 OIDC 驗證。Worker 執行單次 Claim（`pending -> sending -> sent/expired/unknown`），避免模糊發送結果後盲目重試。
 - 單一 `Dockerfile` 與 `cloudbuild.yaml` 同時產出 public webhook、private worker 映像，但不自動部署。仍需隔離 Staging 的 Firestore TTL、Cloud Scheduler、IAM、Cloud Tasks、私有 Cloud Run 實際驗證。

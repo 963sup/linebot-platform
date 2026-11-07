@@ -17,11 +17,11 @@ make dev
 
 ## LINE 憑證
 
-本機 `LINE_EVENT_MODE=sync` 使用 `APP_ENV=local`，需要同時透過安全環境提供 `LINE_MESSAGING_API_CHANNEL_SECRET` 與 `LINE_MESSAGING_API_CHANNEL_ACCESS_TOKEN`；未設定時只開放 health，webhook 回 503。設定清單以 [設定契約](configuration.md) 為準；`make dev` **不會讀取任何 .env 檔案**。**Cloud Run 公開服務必須使用 `LINE_EVENT_MODE=durable`，只提供簽章用的 `LINE_MESSAGING_API_CHANNEL_SECRET`，不得注入發送 Token；僅私有 Worker 持有 Token**。不要把值寫進 git、PR、公共 log 或公開 issue。
+Webhook 僅支援 durable；本機未提供憑證時只開放 health/readiness，webhook 回 503。啟用 LINE 時須提供簽章 Secret 與完整 Firestore／Cloud Tasks 設定；Access Token 只提供給獨立 Worker，不能放在 Webhook。設定清單見 [設定契約](configuration.md)。`make dev` 不讀取 .env 檔案；不要將憑證提交至 git 或日誌。
 
 對外 webhook 在本機測試時須透過 HTTPS 端點，並以測試 LINE Channel 驗證。這個專案**沒有自動建立 LINE Channel 或 GCP 資源**。
 
-預設 `LINE_EVENT_MODE=sync` 只支援文字事件，輸入 `flex` 或 `卡片` 時回 Flex bubble，其餘文字回固定說明。此預設模式已驗簽但**沒有持久去重**；另有需完整設定才能啟用的 `durable` 模式。詳見 [Durable Worker Staging 契約](durable-worker.md)。
+訊息入口只接受個人與群組文字事件；Room 會安全略過。輸入 `flex` 或 `卡片` 時回 Flex bubble，其餘文字回固定說明。所有回覆均走 Firestore／Cloud Tasks／Worker，詳見 [Durable Worker 契約](durable-worker.md)。
 
 ## 設定檢查與本機快速啟動
 
@@ -33,7 +33,8 @@ go run ./cmd/configcheck --validate --role webhook
 make dev
 
 # 真正要使用已授權的 LINE 測試 Channel，須在安全的 shell
-# 設定兩項測試憑證，再明確呼叫：make run-webhook
+# 設定簽章 Secret 與完整 durable 設定，再呼叫：make run-webhook
+# 發送 Token 僅交給獨立 Worker
 
 # 由 Go contract 自動驗證文件與安全的 .env.example
 make config-check
@@ -43,14 +44,14 @@ make config-check
 
 ## LINE SDK Runtime 與 Timeout
 
-同步 Webhook 使用受管理的 LINE SDK HTTP Client，預設 Timeout 為 `8s`。選用的 Durable Webhook 改為 Firestore/Cloud Tasks 非同步處理，不在 HTTP 回應期間直接呼叫 LINE Reply。可以在啟動服務前設定：
+LINE SDK HTTP Client 只在 Worker 與明確使用 LINE 的 CLI 建立，預設 Timeout 為 `8s`。Webhook 不在 HTTP 回應期間呼叫 LINE Reply。Worker 可在啟動前設定：
 
 ```bash
 export LINE_API_TIMEOUT=6s
-make run-webhook
+make run-worker
 ```
 
-允許 `1s` 至 `12s`，不合法的值會在啟動時拒絕；CLI Push 維持預設 `8s`。HTTP Client 使用獨立的連線池，完成 Shutdown 後關閉其閒置連線。SDK 出站 Debug Log 只有 Provider、Status、Duration、錯誤旗標，不應含 URL、Token 或原始訊息。LINE Context 已改為逐次呼叫隔離。**預設 sync Webhook 不提供持久事件去重**；只有明確設定且取得隔離 GCP 權限的 durable 模式具備 Firestore Inbox/Outbox 與單次 Claim，不代表已經完成正式環境驗證。
+允許 `1s` 至 `12s`，不合法的值會在啟動時拒絕；CLI Push 維持預設 `8s`。HTTP Client 使用獨立的連線池，完成 Shutdown 後關閉其閒置連線。SDK 出站 Debug Log 只有 Provider、Status、Duration、錯誤旗標，不應含 URL、Token 或原始訊息。LINE Context 已改為逐次呼叫隔離。Durable workflow 具備 Firestore Inbox/Outbox 與單次 Claim，不代表已經完成正式環境驗證。
 
 ## Push CLI
 

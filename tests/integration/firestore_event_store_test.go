@@ -41,7 +41,7 @@ func eventJob(id int, received time.Time) messagingdelivery.DeliveryWorkItem {
 	return messagingdelivery.DeliveryWorkItem{
 		Key: fmt.Sprintf("%064x", id),
 		Context: messagingdelivery.DeliveryContext{
-			TenantID: "tenant-a", ConnectionID: "line-main", ConversationKind: messagingdelivery.ConversationDirect,
+			ConversationKind:            messagingdelivery.ConversationDirect,
 			ConversationReferenceSHA256: fmt.Sprintf("%064x", 1), ActorSHA256: fmt.Sprintf("%064x", 1),
 		},
 		ReplyToken: "emulator-token",

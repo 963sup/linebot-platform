@@ -102,7 +102,7 @@ func (s *DeliveryService) SendNarrowcast(ctx context.Context, request Narrowcast
 	return gateway.SendNarrowcast(ctx, request, retryKey)
 }
 
-// ResponseForText is used by both synchronous and durable inbound adapters.
+// ResponseForText selects the fixed response persisted by durable ingestion.
 func (p ReplyPolicy) ResponseForText(text string) Message {
 	normalized := strings.ToLower(strings.TrimSpace(text))
 	switch normalized {

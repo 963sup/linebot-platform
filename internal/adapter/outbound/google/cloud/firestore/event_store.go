@@ -125,7 +125,7 @@ func (s *Store) Record(ctx context.Context, job messagingdelivery.DeliveryWorkIt
 			return err
 		}
 		if err := tx.Create(outbox, storedJob{
-			SchemaVersion:  3,
+			SchemaVersion:  4,
 			Context:        job.Context,
 			ReplyToken:     job.ReplyToken,
 			Message:        job.Message,
@@ -460,14 +460,14 @@ func (s *Store) reconcile(ctx context.Context, ref *sdk.DocumentRef, now time.Ti
 
 // Legacy jobs have no scope to compare. Never manufacture one from a retry.
 func validateRedeliveryContext(saved storedJob, incoming messagingdelivery.DeliveryContext) error {
-	if saved.SchemaVersion == 3 && saved.Context != incoming {
+	if (saved.SchemaVersion == 3 || saved.SchemaVersion == 4) && saved.Context != incoming {
 		return errors.New("redelivery scope does not match stored event")
 	}
 	return nil
 }
 
 func restoreDelivery(key string, saved storedJob) (aggregates.Delivery, error) {
-	if saved.SchemaVersion != 0 && saved.SchemaVersion != 2 && saved.SchemaVersion != 3 {
+	if saved.SchemaVersion != 0 && saved.SchemaVersion != 2 && saved.SchemaVersion != 3 && saved.SchemaVersion != 4 {
 		return aggregates.Delivery{}, errors.New("unsupported delivery schema version")
 	}
 	id, err := valueobjects.ParseDeliveryID(key)
@@ -494,8 +494,8 @@ func restoreDelivery(key string, saved storedJob) (aggregates.Delivery, error) {
 }
 
 func persistedSchemaVersion(saved int) int {
-	if saved == 3 {
-		return 3
+	if saved == 3 || saved == 4 {
+		return saved
 	}
 	return 2
 }

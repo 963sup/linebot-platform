@@ -10,11 +10,7 @@ import (
 	"time"
 
 	"github.com/963sup/linebot-platform/internal/adapter/inbound/http/health"
-	linein "github.com/963sup/linebot-platform/internal/adapter/inbound/http/line"
-	lineout "github.com/963sup/linebot-platform/internal/adapter/outbound/line"
 	messagingdelivery "github.com/963sup/linebot-platform/internal/application/usecases/messaging-delivery"
-	"github.com/963sup/linebot-platform/internal/infrastructure/httpclient"
-	lineinfra "github.com/963sup/linebot-platform/internal/infrastructure/line"
 	"github.com/963sup/linebot-platform/internal/infrastructure/observability"
 )
 
@@ -22,7 +18,6 @@ import (
 // the resources it constructs. No optional provider is initialized by default.
 type WebhookRuntime struct {
 	Handler   http.Handler
-	outbound  *httpclient.Managed
 	closers   []runtimeCloser
 	ready     atomic.Bool
 	closeOnce sync.Once
@@ -44,10 +39,10 @@ func closeRuntimeClosers(closers []runtimeCloser) error {
 
 // NewWebhookRuntime constructs only the clients needed by the webhook process.
 func NewWebhookRuntime(cfg Config, logger *slog.Logger) (*WebhookRuntime, error) {
-	if cfg.EventMode == "durable" && cfg.Secrets.MessagingAPIChannelAccessToken != "" {
+	if cfg.Secrets.MessagingAPIChannelAccessToken != "" {
 		return nil, errors.New("durable webhook cannot contain LINE send token")
 	}
-	replyPolicy, err := messagingdelivery.NewReplyPolicy(cfg.MiniAppEntryURL)
+	_, err := messagingdelivery.NewReplyPolicy(cfg.MiniAppEntryURL)
 	if err != nil {
 		return nil, err
 	}
@@ -76,38 +71,9 @@ func NewWebhookRuntime(cfg Config, logger *slog.Logger) (*WebhookRuntime, error)
 		runtime.ready.Store(true)
 		return runtime, nil
 	}
-	if cfg.EventMode == "durable" {
-		if err := configureDurableWebhook(cfg, logger, mux, runtime); err != nil {
-			return nil, errors.Join(err, runtime.Close())
-		}
-		runtime.ready.Store(true)
-		return runtime, nil
-	}
-
-	timeout := cfg.LINEAPITimeout
-	if timeout == 0 {
-		timeout = httpclient.DefaultTimeout
-	}
-	outboundHTTP, err := httpclient.New(httpclient.Config{Timeout: timeout}, telemetry.WrapHTTP("line"))
-	if err != nil {
+	if err := configureDurableWebhook(cfg, logger, mux, runtime); err != nil {
 		return nil, errors.Join(err, runtime.Close())
 	}
-	runtime.outbound = outboundHTTP
-	// The factory accepts a managed native HTTP client; its SDK client does not
-	// own the transport. The composition root closes it after HTTP shutdown.
-	client, err := lineinfra.NewMessagingClientWithHTTPClient(cfg.Secrets.MessagingAPIChannelAccessToken, outboundHTTP.Client)
-	if err != nil {
-		return nil, errors.Join(err, runtime.Close())
-	}
-	sender, err := lineout.NewSender(client)
-	if err != nil {
-		return nil, errors.Join(err, runtime.Close())
-	}
-	service, err := messagingdelivery.NewDeliveryService(sender)
-	if err != nil {
-		return nil, errors.Join(err, runtime.Close())
-	}
-	mux.Handle("/webhook/line", linein.NewHandler(cfg.Secrets.MessagingAPIChannelSecret, service, replyPolicy, logger))
 	runtime.ready.Store(true)
 	return runtime, nil
 }
@@ -137,7 +103,6 @@ func (r *WebhookRuntime) Close() error {
 	}
 	r.ready.Store(false)
 	r.closeOnce.Do(func() {
-		r.outbound.Close()
 		r.closeErr = closeRuntimeClosers(r.closers)
 	})
 	return r.closeErr

@@ -3,7 +3,6 @@ package messagingdelivery
 import (
 	"context"
 	"errors"
-	"strings"
 	"time"
 
 	valueobjects "github.com/963sup/linebot-platform/internal/domain/messaging-delivery/value-objects"
@@ -14,29 +13,26 @@ type ConversationKind string
 const (
 	ConversationDirect ConversationKind = "direct"
 	ConversationGroup  ConversationKind = "group"
-	ConversationRoom   ConversationKind = "room"
 )
 
-// DeliveryContext is the minimum tenant and conversation scope that must
+// DeliveryContext is the minimum conversation scope that must
 // survive the asynchronous delivery boundary. Provider identifiers are stored
 // only as irreversible SHA-256 fingerprints.
 type DeliveryContext struct {
-	TenantID, ConnectionID                   string
 	ConversationKind                         ConversationKind
 	ConversationReferenceSHA256, ActorSHA256 string
 }
 
 func (c DeliveryContext) Validate() error {
-	if strings.TrimSpace(c.TenantID) == "" || strings.TrimSpace(c.ConnectionID) == "" ||
-		!validSHA256(c.ConversationReferenceSHA256) || (c.ActorSHA256 != "" && !validSHA256(c.ActorSHA256)) {
-		return errors.New("complete tenant-scoped delivery context is required")
+	if !validSHA256(c.ConversationReferenceSHA256) || (c.ActorSHA256 != "" && !validSHA256(c.ActorSHA256)) {
+		return errors.New("complete conversation delivery context is required")
 	}
 	switch c.ConversationKind {
 	case ConversationDirect:
 		if c.ActorSHA256 != c.ConversationReferenceSHA256 {
 			return errors.New("direct conversation actor must match its address")
 		}
-	case ConversationGroup, ConversationRoom:
+	case ConversationGroup:
 	default:
 		return errors.New("supported conversation kind is required")
 	}

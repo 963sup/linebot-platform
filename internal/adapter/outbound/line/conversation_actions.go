@@ -19,9 +19,6 @@ func (s *Sender) Leave(ctx context.Context, conversation conversationoperations.
 	case conversationoperations.Group:
 		r, _, err := client.LeaveGroupWithHttpInfo(conversation.ID)
 		return lineWriteError("leaveGroup", r, err)
-	case conversationoperations.Room:
-		r, _, err := client.LeaveRoomWithHttpInfo(conversation.ID)
-		return lineWriteError("leaveRoom", r, err)
 	default:
 		return errors.New("unsupported LINE conversation kind")
 	}

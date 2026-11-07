@@ -68,8 +68,8 @@ func checkExample(data []byte) error {
 	if err != nil {
 		return fmt.Errorf(".env.example runtime settings: %w", err)
 	}
-	if cfg.Environment != bootstrap.EnvLocal || cfg.EventMode != "sync" || cfg.LiveLINE() {
-		return errors.New(".env.example must describe a credential-free local sync webhook")
+	if cfg.Environment != bootstrap.EnvLocal || cfg.EventMode != "durable" || cfg.LiveLINE() {
+		return errors.New(".env.example must describe a credential-free local health-only webhook")
 	}
 	return nil
 }

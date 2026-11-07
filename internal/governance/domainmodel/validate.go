@@ -61,9 +61,9 @@ func ValidateRepository(root string, inventory *EndpointInventory, model *Domain
 	for _, context := range model.Contexts {
 		contexts[context.ID] = context
 	}
-	endpoints := map[string]struct{}{}
+	endpoints := map[string]string{}
 	for _, endpoint := range inventory.Endpoints {
-		endpoints[endpoint.Operation] = struct{}{}
+		endpoints[endpoint.Operation] = endpoint.Integration
 	}
 	accounted := map[string]struct{}{}
 	for i, operation := range capabilities.Operations {
@@ -75,6 +75,12 @@ func ValidateRepository(root string, inventory *EndpointInventory, model *Domain
 			return fmt.Errorf("%s.operation %q is duplicated", path, operation.Operation)
 		}
 		accounted[operation.Operation] = struct{}{}
+		if operation.CurrentImplementation == "" {
+			if endpoints[operation.Operation] != "not_integrated" {
+				return fmt.Errorf("%s integrated endpoint requires an implementation", path)
+			}
+			continue
+		}
 		if operation.Context != "" {
 			if _, ok := contexts[operation.Context]; !ok {
 				return fmt.Errorf("%s.context %q does not exist", path, operation.Context)
@@ -413,6 +419,13 @@ func validateCapabilityMap(value *CapabilityMap) error {
 			if err := requireText(path+".reason", o.Reason); err != nil {
 				return err
 			}
+		}
+		// An intentionally unsupported provider operation has no fabricated
+		// implementation or owner. Repository validation also checks that its
+		// endpoint inventory explicitly marks it not_integrated.
+		if o.Status == "not-domain-relevant" && o.CurrentImplementation == "" &&
+			o.Ownership.Application == "" && o.Ownership.Integration == "" {
+			continue
 		}
 		if err := requireText(path+".current_implementation", o.CurrentImplementation); err != nil {
 			return err

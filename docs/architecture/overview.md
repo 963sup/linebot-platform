@@ -1,14 +1,14 @@
 # 架構概覽（Production baseline 已建立；外部環境尚未驗證）
 
-採 Go modular monolith、DDD 與 Hexagonal Architecture。**預設同步 LINE Webhook／CLI 已接線；可選的 Firestore Inbox/Outbox 與 Cloud Tasks Worker 程式碼已接線，但 Google Cloud 資源、IAM／OIDC、LINE 測試 Channel 與正式部署尚未啟用或驗證，因此本儲存庫不能宣稱 production-ready。**
+採 Go modular monolith、DDD 與 Hexagonal Architecture。**LINE Webhook 統一 durable；Firestore Inbox/Outbox 與 Cloud Tasks Worker 程式碼已接線，但 Google Cloud 資源、IAM／OIDC、LINE 測試 Channel 與正式部署尚未啟用或驗證，因此本儲存庫不能宣稱 production-ready。**
 
 Repository-specific 的目錄、compile-time dependency、runtime call、interface implementation、事件與驗收語意見唯一的 [Go DDD + Hexagonal Architecture Blueprint](blueprint.md)。
 
 ```text
 LINE Platform
   -> cmd/webhook: LINE SDK raw-body signature verification
-      |-> 預設 LINE_EVENT_MODE=sync -> Text/Flex usecase -> LINE Messaging API
-      |-> 選用 LINE_EVENT_MODE=durable
+      -> Bot destination verification
+      -> Direct user / Group conversation ACL (Room ignored)
            -> Firestore Inbox + Outbox (atomic transaction)
            -> Cloud Tasks OIDC queue
            -> cmd/worker (private OIDC-authenticated handler)
@@ -34,4 +34,4 @@ MINI App 的 Geolocation 是 browser mechanism。Go API 驗證 LINE ID token，�
 
 `internal/bootstrap/config_contract.go` 是 Go Runtime 設定的唯一契約；Webhook、Worker 共用同一組解析與驗證邏輯。各角色僅取得需要的 Secret，Cloud Run 必須明確選擇 staging/production Profile 且 Webhook 不得持有 LINE 發送 Token。正式文件由 `go run ./cmd/configcheck --write-doc` 產生，`make check` 檢查設定與文件一致。詳見 [Runtime Configuration](../operations/configuration.md)。
 
-可靠性與依賴規則由架構藍圖定義；durable runtime 的操作細節見 [事件處理](event-processing.md)。目前除了同步 LINE Webhook／Push 示範，已新增需明確設定 `LINE_EVENT_MODE=durable` 才會啟用的 Firestore 原子 Inbox/Outbox、Cloud Tasks OIDC Worker 與定期 Reconcile 程式碼。這些屬於程式與測試層級的 production baseline；**尚未部署任何 Google Cloud 資源**，也未實測真實 IAM、OIDC、LINE redelivery 或高吞吐，因此不是 Staging／Production 驗收證據。預設同步模式仍不具持久保證。
+可靠性與依賴規則由架構藍圖定義；durable runtime 的操作細節見 [事件處理](event-processing.md)。Webhook 只有 Firestore 原子 Inbox/Outbox、Cloud Tasks OIDC Worker 與定期 Reconcile 這一條訊息路徑。本機無憑證只服務 health/readiness，不處理訊息。共用 Bot 不需 Tenant／ChannelConnection 註冊；舊去重 metadata 僅作啟動相容讀取。這些屬於程式與測試層級的 baseline，不是 Staging／Production 驗收證據。

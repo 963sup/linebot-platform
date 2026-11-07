@@ -16,8 +16,8 @@ func runContacts(parent context.Context, args []string, getenv func(string) stri
 	deps := dependency(dependencies)
 	flags := flag.NewFlagSet("contacts", flag.ContinueOnError)
 	kind := flags.String("kind", "", "read-only LINE contacts/group query")
-	conversationID := flags.String("conversation-id", "", "LINE group or room ID")
-	userID := flags.String("user", "", "LINE user ID for group/room member profile")
+	conversationID := flags.String("conversation-id", "", "LINE group ID")
+	userID := flags.String("user", "", "LINE user ID for group member profile")
 	start := flags.String("start", "", "continuation token")
 	limit := flags.Int("limit", 0, "follower page size 1-1000")
 	read := flags.Bool("read", false, "authorize personal-data retrieval")
@@ -29,6 +29,11 @@ func runContacts(parent context.Context, args []string, getenv func(string) stri
 	}
 	if getenv == nil || output == nil {
 		return errors.New("missing CLI configuration")
+	}
+	switch *kind {
+	case "followers", "group-summary", "group-member-count", "group-members", "group-member-profile":
+	default:
+		return errors.New("unsupported contacts inspection kind")
 	}
 	if deps.ContactsRuntime == nil {
 		return errors.New("contacts runtime is not configured")
@@ -49,20 +54,11 @@ func runContacts(parent context.Context, args []string, getenv func(string) stri
 	case "group-summary", "group-member-count":
 		conversation.Kind = contactdirectory.RecipientGroup
 		result, err = rt.GetSummary(ctx, conversation)
-	case "room-member-count":
-		conversation.Kind = contactdirectory.RecipientRoom
-		result, err = rt.GetSummary(ctx, conversation)
 	case "group-members":
 		conversation.Kind = contactdirectory.RecipientGroup
 		result, err = rt.ListMembers(ctx, conversation, page)
-	case "room-members":
-		conversation.Kind = contactdirectory.RecipientRoom
-		result, err = rt.ListMembers(ctx, conversation, page)
 	case "group-member-profile":
 		conversation.Kind = contactdirectory.RecipientGroup
-		result, err = rt.GetMemberProfile(ctx, conversation, contactdirectory.RecipientID(*userID))
-	case "room-member-profile":
-		conversation.Kind = contactdirectory.RecipientRoom
 		result, err = rt.GetMemberProfile(ctx, conversation, contactdirectory.RecipientID(*userID))
 	default:
 		return errors.New("unsupported contacts inspection kind")

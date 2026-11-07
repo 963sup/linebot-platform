@@ -41,7 +41,7 @@ These are **offline contract tests** against the pinned Go SDK and local HTTP se
 - Worker：Pending 單次 Claim／送出、模糊網路失敗記錄 Unknown、同一 Key 的第二次交付不再呼叫 LINE。
 - HTTP：原始 LINE Webhook 驗章、bot destination、持久化後才回 200、派送失敗時回 503；Cloud Tasks／Scheduler Callback 必須經 OIDC Verifier 驗證。
 - Cloud Tasks Queue：事件 Key + 10 秒派送時窗決定 Task ID，驗證同一時窗去重、跨時窗可恢復，OIDC email/audience、只包含 opaque Key 的 JSON Body、AlreadyExists 與其他失敗區分。
-- Bootstrap Config：預設同步模式維持相容，Durable/Worker 的 GCP、LINE、OIDC 欄位缺少時 fail closed；`configcheck --validate` 與 Cloud Tasks Adapter 共用 Queue 資源名稱格式檢查，拒絕多餘路徑段、空 Location/Queue、非法資源 ID 字元、Queue ID 超過 100 字元與跨 Project（無須連接 Google Cloud）。
+- Bootstrap Config：同步入口已移除，無憑證本機僅有 health/readiness，Durable/Worker 的 GCP、LINE、OIDC 欄位缺少時 fail closed；`configcheck --validate` 與 Cloud Tasks Adapter 共用 Queue 資源名稱格式檢查，拒絕多餘路徑段、空 Location/Queue、非法資源 ID 字元、Queue ID 超過 100 字元與跨 Project（無須連接 Google Cloud）。
 - Firestore Emulator integration tests 由獨立 GitHub Actions job 執行，驗證 Inbox／Outbox 交易與 CAS 契約；本機也可用相同 `make integration-test` 重現。Cloud Run 使用真實 Firestore database 時，Cloud Tasks CreateTask、IAM、OIDC、TTL 政策與排程仍必須以已授權的部署驗收確認。
 
 ## CI

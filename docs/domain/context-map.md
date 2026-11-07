@@ -12,7 +12,6 @@
 | customer-segmentation | supporting | Define recipients independently from provider audience resources. |
 | platform-commodities | generic | Supply replaceable persistence scheduling secrets storage transport identifiers and governance tooling without creating business Contexts. |
 | reliable-customer-communication | core | Make customer communication reliable despite duplicate input and uncertain provider outcomes. |
-| tenant-channel-administration | supporting | Keep each LINE channel connection inside one tenant data and authorization boundary. |
 
 ## Contexts
 
@@ -26,7 +25,6 @@
 | membership | customer-experience | candidate | hypothesis | low | read-model | supporting | unassigned | Not Verified |
 | messaging-delivery | reliable-customer-communication | candidate | hypothesis | medium | domain-model | core | linebot-platform | internal/domain/messaging-delivery |
 | promotion | customer-experience | candidate | hypothesis | low | process-model | supporting | unassigned | internal/application/usecases/promotion |
-| tenant-administration | tenant-channel-administration | candidate | hypothesis | medium | domain-model | supporting | linebot-platform | internal/domain/tenant-administration |
 
 ## Aggregates and Data Ownership
 
@@ -46,9 +44,6 @@
 | messaging-delivery | delivery-state | data | local-authoritative | messaging-delivery |
 | messaging-delivery | provider-message-result | data | provider-authoritative | line-provider |
 | promotion | provider-coupon | data | provider-authoritative | line-provider |
-| tenant-administration | ChannelConnection | aggregate | A messaging destination belongs to one tenant channel connection. | linebot-platform |
-| tenant-administration | channel-connection-state | data | local-authoritative | tenant-administration |
-| tenant-administration | provider-channel-secret | data | provider-authoritative | line-provider |
 
 ## Invariants
 
@@ -60,7 +55,6 @@
 | membership | MEM-001 | A projection cannot grant an entitlement absent from source facts. |
 | messaging-delivery | MSG-001 | A delivery can be claimed for network send only once within its active lease. |
 | messaging-delivery | MSG-002 | Transport ambiguity becomes unknown-outcome rather than known failure. |
-| tenant-administration | TEN-001 | One valid LINE messaging destination resolves to one tenant channel connection. |
 
 ## Relationships
 
@@ -85,7 +79,6 @@ flowchart LR
     ctx_membership["membership\ncandidate"]
     ctx_messaging_delivery["messaging-delivery\ncandidate"]
     ctx_promotion["promotion\ncandidate"]
-    ctx_tenant_administration["tenant-administration\ncandidate"]
     ctx_audience -->|RecipientSelection / synchronous / published-language / hypothesis / medium| ctx_messaging_delivery
     ctx_contact_directory -->|RecipientReference / synchronous / published-language / hypothesis / medium| ctx_messaging_delivery
     ctx_content_intelligence -->|ContentDraft / synchronous / customer-supplier / hypothesis / low| ctx_experience_presentation
@@ -115,8 +108,6 @@ flowchart LR
 | messaging-delivery | idempotency-key | Stable identity preventing duplicate business delivery. |
 | messaging-delivery | unknown-outcome | Send whose remote effect cannot be safely determined. |
 | promotion | provider-coupon | Observed provider resource accessed through an application contract. |
-| tenant-administration | channel-connection | Tenant-owned association to one external provider channel identity. |
-| tenant-administration | tenant | Isolation boundary for customer data channel connections and authorization. |
 
 ## Endpoint Capabilities
 
@@ -178,9 +169,9 @@ flowchart LR
 | getRichMenuInsightDaily | mapped | communication-insights | Not Verified | internal/application/usecases/insights-reporting |
 | getRichMenuInsightSummary | mapped | communication-insights | Not Verified | internal/application/usecases/insights-reporting |
 | getRichMenuList | provisional | experience-presentation | experience-presentation | internal/application/usecases/experience-presentation |
-| getRoomMemberCount | mapped | contact-directory | Not Verified | internal/application/usecases/contact-directory |
-| getRoomMemberProfile | mapped | contact-directory | Not Verified | internal/application/usecases/contact-directory |
-| getRoomMembersIds | mapped | contact-directory | Not Verified | internal/application/usecases/contact-directory |
+| getRoomMemberCount | not-domain-relevant | unsupported-room-operation | Not Verified |  |
+| getRoomMemberProfile | not-domain-relevant | unsupported-room-operation | Not Verified |  |
+| getRoomMembersIds | not-domain-relevant | unsupported-room-operation | Not Verified |  |
 | getSharedAudienceData | provisional | audience-management | audience | internal/application/usecases/audience |
 | getSharedAudienceGroups | provisional | audience-management | audience | internal/application/usecases/audience |
 | getStatisticsPerUnit | mapped | communication-insights | Not Verified | internal/application/usecases/insights-reporting |
@@ -191,7 +182,7 @@ flowchart LR
 | issueLinkToken | unclassified | pending-business-classification | Not Verified | internal/application/usecases/account-link-token |
 | issueStatelessChannelToken | not-domain-relevant | provider-boundary-operation | Not Verified | internal/application/usecases/credential-lifecycle |
 | leaveGroup | mapped | message-delivery | messaging-delivery | internal/application/usecases/conversation-operations |
-| leaveRoom | mapped | message-delivery | messaging-delivery | internal/application/usecases/conversation-operations |
+| leaveRoom | not-domain-relevant | unsupported-room-operation | Not Verified |  |
 | linkRichMenuIdToUser | provisional | experience-presentation | experience-presentation | internal/application/usecases/experience-presentation |
 | linkRichMenuIdToUsers | provisional | experience-presentation | experience-presentation | internal/application/usecases/experience-presentation |
 | listCoupon | provisional | promotion-management | promotion | internal/application/usecases/promotion |

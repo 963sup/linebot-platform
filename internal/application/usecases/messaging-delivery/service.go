@@ -55,16 +55,17 @@ type EventQueue interface {
 }
 
 type Ingestor struct {
-	store EventRecorder
-	queue EventQueue
-	now   func() time.Time
+	store     EventRecorder
+	queue     EventQueue
+	namespace string
+	now       func() time.Time
 }
 
-func NewIngestor(store EventRecorder, queue EventQueue) (*Ingestor, error) {
-	if store == nil || queue == nil {
-		return nil, errors.New("event store and queue are required")
+func NewIngestor(store EventRecorder, queue EventQueue, namespace string) (*Ingestor, error) {
+	if store == nil || queue == nil || strings.TrimSpace(namespace) == "" {
+		return nil, errors.New("event store, queue and stable key namespace are required")
 	}
-	return &Ingestor{store: store, queue: queue, now: time.Now}, nil
+	return &Ingestor{store: store, queue: queue, namespace: namespace, now: time.Now}, nil
 }
 
 // Ingest must only receive events after LINE webhook signature verification.
@@ -87,7 +88,7 @@ func (s *Ingestor) Ingest(ctx context.Context, deliveryContext DeliveryContext, 
 	if err := message.Validate(); err != nil {
 		return err
 	}
-	key, err := NewEventKey(deliveryContext.TenantID+"\x00"+deliveryContext.ConnectionID, eventID)
+	key, err := NewEventKey(s.namespace, eventID)
 	if err != nil {
 		return err
 	}

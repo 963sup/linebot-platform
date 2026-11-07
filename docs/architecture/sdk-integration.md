@@ -40,16 +40,16 @@ For LINE, existing `internal/infrastructure/line/client_factory.go` and `interna
 
 ## Phase 2: implemented SDK runtime foundation
 
-The webhook entrypoint now calls `bootstrap.NewWebhookRuntime` to compose only the LINE provider. It owns a `httpclient.Managed` transport and closes idle connections **after** the inbound HTTP server shuts down. The existing `NewWebhookRouter` signature remains available for compatibility; new long-running entrypoints should use the runtime API for explicit ownership. The Push CLI builds and closes its own managed transport.
+The webhook entrypoint calls `bootstrap.NewWebhookRuntime` to compose Firestore and Cloud Tasks, without a LINE sending client. The worker and Push CLI each own their managed LINE HTTP transport and close it after their work drains. No synchronous webhook/router compatibility layer remains.
 
 - `internal/infrastructure/httpclient`: clones Go's default transport per process/SDK Client, reuses idle connections, applies explicit timeout, and supports optional transport decorators. It does not override TLS defaults or automatically retry.
 - `internal/infrastructure/observability`: logs provider name, numeric status, duration and transport error flag at debug level. It does **not** log URL, headers, body, credentials, user ID or raw SDK errors.
 - `internal/infrastructure/resilience`: categorizes HTTP failure and unknown outcomes without leaking SDK response data in `Error()`, and preserves underlying errors via `Unwrap()` for controlled code inspection. It provides **no global retry loops**.
 - `internal/infrastructure/line`: typed native LINE SDK Client factory with injected HTTP Client; the caller owns HTTP transport resources.
 - `internal/adapter/outbound/line`: SDK v8.23.0's `WithContext` mutates `MessagingApiAPI.ctx`, so the adapter creates a **per-call shallow copy** before calling `WithContext`. This works for the pinned client structure, prevents shared mutation under parallel requests, and must be revalidated on any SDK upgrade. The HTTP timeout is retained as an upper bound. Reply and Push use the native `WithHttpInfo` endpoints to obtain HTTP status for safe classification.
-- `internal/bootstrap/config.go`: optional `LINE_API_TIMEOUT` defaults to 8s, accepts 1s–12s to remain within the current synchronous webhook HTTP server's 15s write deadline.
+- `internal/bootstrap/config.go`: optional `LINE_API_TIMEOUT` defaults to 8s, accepts 1s–12s for bounded worker-side LINE calls; public webhook does not send LINE messages.
 
-**No additional service is enabled by default.** The optional `LINE_EVENT_MODE=durable` path can construct Firestore and Cloud Tasks providers only when fully configured; the default synchronous Webhook and Push CLI do not instantiate them. The durable path is **not production-ready** without authorized IAM/OIDC, TTL, scheduler and staging validation.
+**No cloud client is constructed by the credential-free local health process.** Enabling webhook messages requires the complete durable configuration and constructs Firestore and Cloud Tasks clients. The Push CLI only constructs its LINE client. The durable path is **not production-ready** without authorized IAM/OIDC, TTL, scheduler and staging validation.
 
 ## Phase 3: native provider Client Factories (merged via PR #8)
 

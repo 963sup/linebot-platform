@@ -20,7 +20,7 @@ func TestLoadConfig(t *testing.T) {
 	}{
 		{name: "defaults", values: nil, wantPort: "8080", wantTimeout: 8 * time.Second},
 		{name: "custom", values: map[string]string{"PORT": "8081", "LINE_API_TIMEOUT": "6s"}, wantPort: "8081", wantTimeout: 6 * time.Second},
-		{name: "credentials", values: map[string]string{"LINE_MESSAGING_API_CHANNEL_SECRET": "secret", "LINE_MESSAGING_API_CHANNEL_ACCESS_TOKEN": "token"}, wantPort: "8080", wantLive: true, wantTimeout: 8 * time.Second},
+		{name: "credentials", values: map[string]string{"LINE_MESSAGING_API_CHANNEL_SECRET": "secret", "LINE_MESSAGING_API_CHANNEL_ACCESS_TOKEN": "token"}, wantErr: true},
 		{name: "bad port", values: map[string]string{"PORT": "not-a-port"}, wantErr: true},
 		{name: "zero", values: map[string]string{"PORT": "0"}, wantErr: true},
 		{name: "port overflow", values: map[string]string{"PORT": "70000"}, wantErr: true},

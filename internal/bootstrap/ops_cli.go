@@ -45,9 +45,6 @@ func BuildOpsCLI() cli.Dependencies {
 
 func buildOpsCLI(lineRuntimes lineRuntimeFactories) cli.Dependencies {
 	return cli.Dependencies{
-		ChannelConnections: func(ctx context.Context, project string) (cli.ChannelConnectionsRuntime, error) {
-			return newChannelConnectionsRuntime(ctx, project)
-		},
 		PushRuntime: func(token string) (cli.PushRuntime, error) {
 			runtime, err := lineRuntimes.messaging(token)
 			if err != nil {

@@ -12,8 +12,19 @@ import (
 
 func testDeliveryContext() DeliveryContext {
 	return DeliveryContext{
-		TenantID: "tenant-a", ConnectionID: "line-main", ConversationKind: ConversationDirect,
+		ConversationKind:            ConversationDirect,
 		ConversationReferenceSHA256: strings.Repeat("a", 64), ActorSHA256: strings.Repeat("a", 64),
+	}
+}
+
+func TestIngestorRequiresStableNamespace(t *testing.T) {
+	if _, err := NewIngestor(newFakeStore(), &fakeQueue{}, " "); err == nil {
+		t.Fatal("empty namespace accepted")
+	}
+	context := testDeliveryContext()
+	context.ConversationKind = "room"
+	if err := context.Validate(); err == nil {
+		t.Fatal("new Room delivery accepted")
 	}
 }
 
@@ -177,7 +188,7 @@ func TestProcessorPreservesInFlightRetrySignal(t *testing.T) {
 
 func TestDuplicateReceiptDoesNotOverwriteAndRequeues(t *testing.T) {
 	store, queue := newFakeStore(), &fakeQueue{}
-	i, err := NewIngestor(store, queue)
+	i, err := NewIngestor(store, queue, "tenant-a\x00line-main")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -200,7 +211,7 @@ func TestDuplicateReceiptDoesNotOverwriteAndRequeues(t *testing.T) {
 
 func TestProcessorSendsAtMostOnce(t *testing.T) {
 	store, queue, sender := newFakeStore(), &fakeQueue{}, &fakeSender{}
-	i, _ := NewIngestor(store, queue)
+	i, _ := NewIngestor(store, queue, "tenant-a\x00line-main")
 	now := time.Now().UTC()
 	i.now = func() time.Time { return now }
 	msg := Message{Kind: KindText, Text: "fixed response"}
@@ -227,7 +238,7 @@ func TestProcessorSendsAtMostOnce(t *testing.T) {
 func TestProcessorRecordsCompletionAfterReplyReturns(t *testing.T) {
 	store, queue := newFakeStore(), &fakeQueue{}
 	base := time.Date(2026, 11, 5, 9, 0, 0, 0, time.UTC)
-	ingestor, _ := NewIngestor(store, queue)
+	ingestor, _ := NewIngestor(store, queue, "tenant-a\x00line-main")
 	ingestor.now = func() time.Time { return base }
 	if err := ingestor.Ingest(context.Background(), testDeliveryContext(), "timed-event", "reply", base, Message{Kind: KindText, Text: "fixed"}); err != nil {
 		t.Fatal(err)
@@ -263,7 +274,7 @@ func TestProcessorRecordsCompletionAfterReplyReturns(t *testing.T) {
 
 func TestUnknownOutcomeDoesNotResend(t *testing.T) {
 	store, queue, sender := newFakeStore(), &fakeQueue{}, &fakeSender{err: errors.New("network timeout")}
-	i, _ := NewIngestor(store, queue)
+	i, _ := NewIngestor(store, queue, "tenant-a\x00line-main")
 	now := time.Now()
 	i.now = func() time.Time { return now }
 	if err := i.Ingest(context.Background(), testDeliveryContext(), "event", "reply", now, Message{Kind: KindText, Text: "fixed"}); err != nil {
@@ -318,7 +329,7 @@ func TestDispatcherRejectsInvalidPersistedKey(t *testing.T) {
 // TestRedeliveryRefreshesOnlyNeverSentWork guards LINE's one-use reply token.
 func TestRedeliveryRefreshesOnlyNeverSentWork(t *testing.T) {
 	store, queue, sender := newFakeStore(), &fakeQueue{}, &fakeSender{}
-	ingestor, _ := NewIngestor(store, queue)
+	ingestor, _ := NewIngestor(store, queue, "tenant-a\x00line-main")
 	processor, _ := NewProcessor(store, sender)
 	first := time.Date(2026, 11, 3, 0, 0, 0, 0, time.UTC)
 	current := first
@@ -358,7 +369,7 @@ func TestRedeliveryRefreshesOnlyNeverSentWork(t *testing.T) {
 
 func TestRedeliveryWindowUsesOriginalTimestamp(t *testing.T) {
 	store, queue := newFakeStore(), &fakeQueue{}
-	ingestor, _ := NewIngestor(store, queue)
+	ingestor, _ := NewIngestor(store, queue, "tenant-a\x00line-main")
 	now := time.Date(2026, 11, 3, 0, 20, 1, 0, time.UTC)
 	ingestor.now = func() time.Time { return now }
 	message := Message{Kind: KindText, Text: "fixed"}

@@ -1,23 +1,30 @@
-# LINE 事件處理：同步 MVP 與選用的持久工作模式
+# LINE 事件處理：單一路徑的持久工作模式
 
 **程式碼已併入 main；目前未建立或部署任何專案專屬 GCP、Firestore、Cloud Tasks、Cloud Scheduler、Cloud Run 或正式 LINE 資源。** Firestore Emulator 交易／併發測試最初在 [CI #41555545761](https://github.com/963sup/linebot-platform/actions/runs/41555545761) 通過，現行 CI 亦以獨立 Java 25 Emulator job 執行 `make integration-test`。這只能證明本機 Emulator regression gate，不能替代真實雲端 IAM、TTL、索引、OIDC、LINE redelivery 或 Staging 驗收。
 
 ## 模式與入口
 
-- 預設 `LINE_EVENT_MODE=sync`：保留現有 LINE 簽章驗證與文字／Flex 同步 Reply 開發模式。
-- 設定 `LINE_EVENT_MODE=durable`：Firestore 原子存入 Inbox/Outbox，Cloud Tasks 以同一短時窗內固定的任務名稱和 OIDC 派送至私有 `cmd/worker`。**公開 Cloud Run 只能使用 durable 模式；Webhook 僅持有 Channel Secret、不持有 LINE 發送 Token**，發送 Token 僅交給私有 Worker。設定不足時拒絕啟動。
+- Webhook 固定使用 durable，sync 已移除；`LINE_EVENT_MODE` 可省略，若提供只接受 `durable`。
+- 啟用訊息處理後：Firestore 原子存入 Inbox/Outbox，Cloud Tasks 以同一短時窗內固定的任務名稱和 OIDC 派送至私有 `cmd/worker`。**公開 Cloud Run 只能使用 durable 模式；Webhook 僅持有 Channel Secret、不持有 LINE 發送 Token**，發送 Token 僅交給私有 Worker。設定不足時拒絕啟動。
 - Durable Webhook 在處理前以原始 Body 驗章，驗證 bot destination，只保存文字訊息所導出的固定回覆，不儲存原始使用者訊息。
 
 ## 資料流程
 
-1. **驗章 + 去重**：以 SHA-256(channel + separator + webhookEventId) 產生固定、不洩漏來源的事件 Key。
-2. **Firestore 交易**：在同一 Transaction 建立 `line_inbox_v1` 和 `line_outbox_v1`；Outbox 新文件帶 `schema_version=2`，重送不覆蓋原本的 Reply Token。既有無版本文件只經受限相容還原，不以改 collection 名稱隱性遺棄工作。
+1. **驗章 + 去重**：以 SHA-256(stable namespace + separator + webhookEventId) 產生固定、不洩漏來源的事件 Key。
+2. **Firestore 交易**：在同一 Transaction 建立 `line_inbox_v1` 和 `line_outbox_v1`；Outbox 新文件帶 `schema_version=4`，重送不覆蓋原本的 Reply Token。既有無版本、v2、v3 文件只經受限相容還原，不以改 collection 名稱隱性遺棄工作。
 3. **Cloud Tasks**：將版本化 Delivery ID 送往 HTTPS `/tasks/v2/line-reply`，Task ID 由「Delivery ID + 10 秒派送時窗」決定；同一時窗的 `AlreadyExists` 視為成功，但下一時窗可以建立新的恢復任務。Worker 仍以 Firestore 的單次 Claim 作為實際發送去重保障。其他派送錯誤回 HTTP 503，保留可修復的 Outbox。
    舊 `/tasks/line-reply` 與 `/tasks/dispatch` 僅供已存在工作 drain，沿用相同 OIDC 驗證且使用嚴格 legacy decoder；新 task/scheduler 不得再建立舊路由工作。
 4. **Worker 安全驗證**：必須通過 Google 簽章 OIDC Token、正確 Audience 和呼叫者服務帳號 Email。Cloud Run 另外必須啟用私有 Ingress 和 IAM Authentication。
 5. **Single-use Claim**：Worker 使用 Firestore Transaction 將 `pending` 改為 `sending`，再嘗試 LINE Reply；第二個 Worker 不會再次傳送。
 6. **終態**：`sent`、`expired`、`unknown`。網路逾時／結果不確定時，不能盲目重試外部發送。
 7. **Reconcile**：以明確設定的 Cloud Scheduler 定期呼叫具 OIDC 保護的 `POST /tasks/v2/dispatch`，重排 Pending、將過期的 Sending 移到 Unknown；不會重新發送 Unknown。
+
+## 共用 Bot 與群組隔離
+
+- 一套 Messaging API 與 MINI App 設定；個人使用 `userId`，群組使用 `groupId`，`userId` 是事件 actor，不是額外 Tenant 註冊。持久工作僅保留來源種類與 SHA-256 指紋。
+- Room 事件在驗簽及 destination 核對後 ACK 並略過，不建立 Inbox/Outbox 或排隊。既有 Room 工作仍可由 Worker drain。
+- 舊 `line_channel_connections_v1` 文件只在 Webhook 啟動讀取一次，用來維持既有去重 namespace；沒有舊文件的新環境使用 Bot ID，不需註冊。不再存在 Tenant Domain、Resolver、註冊 CLI 或每次請求查表。
+- 先升級 Worker，再切換 Webhook；不可在 v4 工作尚存在時回退舊 Worker。詳細切換與退出條件見 [ADR 0008](decisions/0008-shared-bot-durable-skeleton.md)。
 
 ## Reply Token、隱私和 TTL
 

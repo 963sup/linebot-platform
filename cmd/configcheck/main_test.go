@@ -84,7 +84,7 @@ func TestExampleRejectsInvalidRuntimeValues(t *testing.T) {
 		{"invalid log level", "LOG_LEVEL=info", "LOG_LEVEL=trace"},
 		{"invalid log format", "LOG_FORMAT=text", "LOG_FORMAT=xml"},
 		{"unsafe deployment profile", "APP_ENV=local", "APP_ENV=production"},
-		{"durable without credentials", "LINE_EVENT_MODE=sync", "LINE_EVENT_MODE=durable"},
+		{"retired sync mode", "LINE_EVENT_MODE=durable", "LINE_EVENT_MODE=sync"},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			if !bytes.Contains(original, []byte(tt.before)) {

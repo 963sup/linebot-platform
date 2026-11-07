@@ -12,7 +12,6 @@ type RecipientKind string
 const (
 	RecipientUser  RecipientKind = "user"
 	RecipientGroup RecipientKind = "group"
-	RecipientRoom  RecipientKind = "room"
 )
 
 type RecipientReference struct {
@@ -71,7 +70,7 @@ func validateRecipient(recipient RecipientReference) error {
 		return errors.New("recipient ID is required")
 	}
 	switch recipient.Kind {
-	case RecipientUser, RecipientGroup, RecipientRoom:
+	case RecipientUser, RecipientGroup:
 		return nil
 	default:
 		return errors.New("unsupported recipient kind")

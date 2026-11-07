@@ -235,12 +235,9 @@ operations:
       application: "internal/application/usecases/contact-directory"
       integration: "internal/adapter/outbound/line"
   - operation: "getRoomMemberProfile"
-    status: mapped
-    capability: "contact-directory"
-    current_implementation: "internal/application/usecases/contact-directory"
-    ownership:
-      application: "internal/application/usecases/contact-directory"
-      integration: "internal/adapter/outbound/line"
+    status: not-domain-relevant
+    capability: "unsupported-room-operation"
+    reason: "The product supports direct and group conversations only; Room application and adapter branches were removed."
   - operation: "getGroupMembersIds"
     status: mapped
     capability: "contact-directory"
@@ -249,12 +246,9 @@ operations:
       application: "internal/application/usecases/contact-directory"
       integration: "internal/adapter/outbound/line"
   - operation: "getRoomMembersIds"
-    status: mapped
-    capability: "contact-directory"
-    current_implementation: "internal/application/usecases/contact-directory"
-    ownership:
-      application: "internal/application/usecases/contact-directory"
-      integration: "internal/adapter/outbound/line"
+    status: not-domain-relevant
+    capability: "unsupported-room-operation"
+    reason: "The product supports direct and group conversations only; Room application and adapter branches were removed."
   - operation: "leaveGroup"
     status: mapped
     capability: "message-delivery"
@@ -264,13 +258,9 @@ operations:
       application: "internal/application/usecases/conversation-operations"
       integration: "internal/adapter/outbound/line"
   - operation: "leaveRoom"
-    status: mapped
-    capability: "message-delivery"
-    context: "messaging-delivery"
-    current_implementation: "internal/application/usecases/conversation-operations"
-    ownership:
-      application: "internal/application/usecases/conversation-operations"
-      integration: "internal/adapter/outbound/line"
+    status: not-domain-relevant
+    capability: "unsupported-room-operation"
+    reason: "The product supports direct and group conversations only; Room application and adapter branches were removed."
   - operation: "getGroupSummary"
     status: mapped
     capability: "contact-directory"
@@ -286,12 +276,9 @@ operations:
       application: "internal/application/usecases/contact-directory"
       integration: "internal/adapter/outbound/line"
   - operation: "getRoomMemberCount"
-    status: mapped
-    capability: "contact-directory"
-    current_implementation: "internal/application/usecases/contact-directory"
-    ownership:
-      application: "internal/application/usecases/contact-directory"
-      integration: "internal/adapter/outbound/line"
+    status: not-domain-relevant
+    capability: "unsupported-room-operation"
+    reason: "The product supports direct and group conversations only; Room application and adapter branches were removed."
   - operation: "createRichMenu"
     status: provisional
     capability: "experience-presentation"

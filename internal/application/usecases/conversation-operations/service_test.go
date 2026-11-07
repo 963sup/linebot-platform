@@ -51,7 +51,7 @@ func TestInvalidConversationCommandHasNoSideEffect(t *testing.T) {
 	service, _ := New(stub)
 	invalid := []func() error{
 		func() error { return service.Leave(context.Background(), Conversation{Kind: "user", ID: "user-1"}) },
-		func() error { return service.Leave(context.Background(), Conversation{Kind: Room, ID: " room-1"}) },
+		func() error { return service.Leave(context.Background(), Conversation{Kind: "room", ID: "room-1"}) },
 		func() error {
 			return service.ShowLoading(context.Background(), LoadingIndicator{ChatID: "user-1", Duration: 7 * time.Second})
 		},

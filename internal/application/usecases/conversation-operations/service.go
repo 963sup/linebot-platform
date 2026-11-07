@@ -12,7 +12,6 @@ type ConversationKind string
 
 const (
 	Group ConversationKind = "group"
-	Room  ConversationKind = "room"
 )
 
 type Conversation struct {
@@ -46,8 +45,8 @@ func (s *Service) Leave(ctx context.Context, conversation Conversation) error {
 	if err := validateContext(ctx); err != nil {
 		return err
 	}
-	if conversation.Kind != Group && conversation.Kind != Room {
-		return errors.New("conversation must be a group or room")
+	if conversation.Kind != Group {
+		return errors.New("conversation must be a group")
 	}
 	if err := validateID(conversation.ID); err != nil {
 		return err

@@ -4,7 +4,7 @@
 
 ## Processes and mode
 
-- **Public webhook**: existing `cmd/webhook`, with raw LINE signature validation. `LINE_EVENT_MODE=sync` is local-development-only; Cloud Run fails closed unless `LINE_EVENT_MODE=durable`. The public durable webhook holds `LINE_MESSAGING_API_CHANNEL_SECRET` but **must not be provided `LINE_MESSAGING_API_CHANNEL_ACCESS_TOKEN`**. Enable durable only after Firestore, queue, worker authentication and dispatcher are validated.
+- **Public webhook**: existing `cmd/webhook`, with raw LINE signature validation. Durable is the only processing path; `LINE_EVENT_MODE` may be omitted and rejects values other than `durable`. The public durable webhook holds `LINE_MESSAGING_API_CHANNEL_SECRET` but **must not be provided `LINE_MESSAGING_API_CHANNEL_ACCESS_TOKEN`**. Enable durable only after Firestore, queue, worker authentication and dispatcher are validated.
 - **Private worker**: `cmd/worker`, packaged with the shared `Dockerfile` by `cloudbuild.yaml`. Both the public webhook and private worker need least-privilege GCP identities; do not share a broad service account.
 - **Scheduled reconciliation**: Cloud Scheduler invokes POST `/tasks/v2/dispatch` using Google-signed OIDC. The worker independently checks the token Audience and the configured service account Email, in addition to Cloud Run IAM. This is best-effort pending-work recovery, **not** a guarantee to meet the 45-second LINE Reply window.
 
@@ -14,7 +14,7 @@
 |---|---|---|---|
 | `APP_ENV` | `staging` or `production` on Cloud Run | same | Explicit runtime profile; local is rejected when `K_SERVICE` is present |
 | `PORT` | optional | optional | HTTP listener port, default 8080 |
-| `LINE_EVENT_MODE` | `durable` | optional `durable` only | Worker always runs in durable mode; explicit `sync` or unknown values fail startup |
+| `LINE_EVENT_MODE` | optional `durable` only | optional `durable` only | Both roles always run durable; explicit `sync` or unknown values fail startup |
 | `LINE_MESSAGING_API_CHANNEL_SECRET` | required | n/a | Verify LINE raw-body signature |
 | `LINE_MESSAGING_API_CHANNEL_ACCESS_TOKEN` | **forbidden** | required | Only the private worker is permitted to send LINE messages |
 | `LINE_MESSAGING_API_BOT_USER_ID` | required | n/a | Webhook destination isolation and event-key derivation; Worker receives resolved delivery context |
@@ -28,6 +28,12 @@
 | `LOG_FORMAT` | json | json | staging/production require structured JSON |
 
 The checked and generated contract for the complete settings list is [Runtime Configuration](configuration.md). Do not duplicate or drift runtime defaults in deployment templates. In production the Webhook receives its Secret and the Worker receives its Token via separate Secret Manager references, not a shared `.env` file.
+
+## Shared-Bot cutover
+
+No Tenant/ChannelConnection registration is required. Webhook startup reads any existing `line_channel_connections_v1` mapping solely to preserve the old deduplication namespace; do not edit or remove it while in use. Only an absent document selects the Bot destination namespace. Read failures prevent startup.
+
+Upgrade the worker to read schema v4 before switching public webhook traffic. Do not mix old and new public revisions, and do not roll the worker back to a pre-v4 image until v4 work is drained. Old Room jobs can drain; new Room events are acknowledged without persistence. See [ADR 0008](../architecture/decisions/0008-shared-bot-durable-skeleton.md).
 
 ## IAM and networking checks before enabling
 

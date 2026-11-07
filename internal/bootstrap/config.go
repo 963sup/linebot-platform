@@ -126,13 +126,11 @@ func loadRuntimeConfig(role RuntimeRole, getenv func(string) string) (Config, er
 			return Config{}, err
 		}
 	}
+	if mode := readSetting(getenv, KeyEventMode); mode != "" && mode != "durable" {
+		return Config{}, errors.New("LINE_EVENT_MODE only accepts durable; synchronous webhook was removed")
+	}
+	cfg.EventMode = "durable"
 	if role == RoleWorker {
-		// Worker processing is always durable. Fail closed when a shared
-		// environment explicitly requests an incompatible webhook mode.
-		if mode := readSetting(getenv, KeyEventMode); mode != "" && mode != "durable" {
-			return Config{}, errors.New("worker LINE_EVENT_MODE must be durable when provided")
-		}
-		cfg.EventMode = "durable"
 		if cfg.Secrets.MessagingAPIChannelSecret != "" {
 			return Config{}, errors.New("worker must not hold LINE_MESSAGING_API_CHANNEL_SECRET")
 		}
@@ -145,33 +143,18 @@ func loadRuntimeConfig(role RuntimeRole, getenv func(string) string) (Config, er
 		}
 		return cfg, nil
 	}
-	cfg.EventMode = readSetting(getenv, KeyEventMode)
-	if cfg.EventMode == "" {
-		cfg.EventMode = "sync"
+	if cfg.Secrets.MessagingAPIChannelAccessToken != "" {
+		return Config{}, errors.New("public webhook must not hold LINE_MESSAGING_API_CHANNEL_ACCESS_TOKEN")
 	}
-	if cfg.EventMode != "sync" && cfg.EventMode != "durable" {
-		return Config{}, errors.New("LINE_EVENT_MODE must be sync or durable")
-	}
-	if cfg.EventMode == "durable" {
-		if cfg.Secrets.MessagingAPIChannelSecret == "" {
-			return Config{}, errors.New("durable webhook requires LINE_MESSAGING_API_CHANNEL_SECRET")
-		}
-		if cfg.Secrets.MessagingAPIChannelAccessToken != "" {
-			return Config{}, errors.New("public durable webhook must not hold LINE_MESSAGING_API_CHANNEL_ACCESS_TOKEN")
-		}
-		cfg.Durable, err = loadDurable(getenv, role)
-		if err != nil {
-			return Config{}, err
-		}
+	// A credential-free local process serves health endpoints, never messages.
+	if environment == EnvLocal && cfg.Secrets.MessagingAPIChannelSecret == "" {
 		return cfg, nil
 	}
-	if environment != EnvLocal {
-		return Config{}, errors.New("staging/production webhook must use durable mode")
+	if cfg.Secrets.MessagingAPIChannelSecret == "" {
+		return Config{}, errors.New("webhook requires LINE_MESSAGING_API_CHANNEL_SECRET")
 	}
-	if (cfg.Secrets.MessagingAPIChannelSecret == "") != (cfg.Secrets.MessagingAPIChannelAccessToken == "") {
-		return Config{}, errors.New("sync mode requires both LINE credentials or neither")
-	}
-	return cfg, nil
+	cfg.Durable, err = loadDurable(getenv, role)
+	return cfg, err
 }
 
 func loadMiniAppEntryURL(getenv func(string) string, environment Environment) (string, error) {
@@ -251,6 +234,5 @@ func loadLoggingConfig(getenv func(string) string, environment Environment) (Log
 }
 
 func (c Config) LiveLINE() bool {
-	return c.Secrets.MessagingAPIChannelSecret != "" &&
-		(c.EventMode == "durable" || c.Secrets.MessagingAPIChannelAccessToken != "")
+	return c.Secrets.MessagingAPIChannelSecret != ""
 }

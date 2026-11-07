@@ -23,7 +23,7 @@ domain-docs:
 
 # No implicit .env loading: make dev starts the safe, credential-free local MVP.
 dev:
-	APP_ENV=local LINE_EVENT_MODE=sync LINE_MESSAGING_API_CHANNEL_SECRET= LINE_MESSAGING_API_CHANNEL_ACCESS_TOKEN= go run ./cmd/webhook
+	APP_ENV=local LINE_EVENT_MODE=durable LINE_MESSAGING_API_CHANNEL_SECRET= LINE_MESSAGING_API_CHANNEL_ACCESS_TOKEN= go run ./cmd/webhook
 
 fmt-check:
 	@command -v gofmt >/dev/null 2>&1 || { printf '%s\n' 'gofmt is required for fmt-check' >&2; exit 1; }; \

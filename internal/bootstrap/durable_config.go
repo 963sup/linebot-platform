@@ -13,7 +13,7 @@ import (
 
 var messagingAPIBotUserIDPattern = regexp.MustCompile(`^U[0-9a-f]{32}$`)
 
-// DurableConfig is only used when LINE_EVENT_MODE=durable. Configuration is
+// DurableConfig configures the only supported message-processing path. Configuration is
 // explicit and independently validated before any GCP clients are created.
 type DurableConfig struct {
 	ProjectID    string

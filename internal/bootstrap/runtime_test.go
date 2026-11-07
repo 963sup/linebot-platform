@@ -7,7 +7,6 @@ import (
 	"reflect"
 	"strings"
 	"testing"
-	"time"
 )
 
 func TestRuntimeWithoutLINE(t *testing.T) {
@@ -24,11 +23,8 @@ func TestRuntimeWithoutLINE(t *testing.T) {
 	}
 }
 
-func TestRuntimeWithLINEAndShutdown(t *testing.T) {
-	r, err := NewWebhookRuntime(Config{
-		Port: "8080", Secrets: SecretConfig{MessagingAPIChannelSecret: "test-secret", MessagingAPIChannelAccessToken: "test-token"},
-		LINEAPITimeout: 5 * time.Second,
-	}, nil)
+func TestRuntimeHealthAndShutdown(t *testing.T) {
+	r, err := NewWebhookRuntime(Config{Port: "8080"}, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -51,13 +47,12 @@ func TestRuntimeWithLINEAndShutdown(t *testing.T) {
 	r.Close()
 }
 
-func TestRuntimeInvalidTimeout(t *testing.T) {
+func TestWebhookRuntimeRejectsSendingToken(t *testing.T) {
 	_, err := NewWebhookRuntime(Config{
-		Secrets:        SecretConfig{MessagingAPIChannelSecret: "secret", MessagingAPIChannelAccessToken: "token"},
-		LINEAPITimeout: -time.Second,
+		Secrets: SecretConfig{MessagingAPIChannelSecret: "secret", MessagingAPIChannelAccessToken: "token"},
 	}, nil)
 	if err == nil {
-		t.Fatal("expected invalid outbound policy to fail")
+		t.Fatal("public webhook must reject sending credentials")
 	}
 }
 

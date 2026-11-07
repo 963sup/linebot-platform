@@ -14,8 +14,8 @@ import (
 func runActions(parent context.Context, args []string, getenv func(string) string, dependencies ...Dependencies) (err error) {
 	deps := dependency(dependencies)
 	flags := flag.NewFlagSet("actions", flag.ContinueOnError)
-	action := flags.String("action", "", "leave-group|leave-room|loading|mark-read|mark-read-token")
-	id := flags.String("id", "", "group or room ID for leave actions")
+	action := flags.String("action", "", "leave-group|loading|mark-read|mark-read-token")
+	id := flags.String("id", "", "group ID for leave actions")
 	request := flags.String("request", "", "JSON file containing the request; no secrets in CLI arguments")
 	apply := flags.Bool("apply", false, "authorize a remote write")
 	confirm := flags.String("confirm", "", "must exactly match --action")
@@ -25,6 +25,11 @@ func runActions(parent context.Context, args []string, getenv func(string) strin
 	}
 	if len(flags.Args()) != 0 || !*apply || *confirm == "" || *confirm != *action || getenv == nil {
 		return errors.New("actions requires --apply --confirm ACTION and no extra arguments")
+	}
+	switch *action {
+	case "leave-group", "loading", "mark-read", "mark-read-token":
+	default:
+		return errors.New("unsupported conversation action")
 	}
 	if *action == "mark-read" && !*eligibilityReviewed {
 		return errors.New("mark-read requires --eligibility-reviewed")
@@ -58,8 +63,6 @@ func runActions(parent context.Context, args []string, getenv func(string) strin
 	switch *action {
 	case "leave-group":
 		return r.Leave(ctx, conversationoperations.Conversation{Kind: conversationoperations.Group, ID: *id})
-	case "leave-room":
-		return r.Leave(ctx, conversationoperations.Conversation{Kind: conversationoperations.Room, ID: *id})
 	case "loading":
 		chatID, ok := stringField(payload, "chatId")
 		seconds, secondsOK := numberField(payload, "loadingSeconds")

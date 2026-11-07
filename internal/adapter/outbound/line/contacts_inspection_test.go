@@ -29,24 +29,12 @@ func TestContactsReadOnlySDKEndpoints(t *testing.T) {
 			_, e := s.GetConversationSummary(ctx, contactdirectory.RecipientReference{ID: "C123", Kind: contactdirectory.RecipientGroup})
 			return e
 		}},
-		{"room", func() error {
-			_, e := s.GetConversationSummary(ctx, contactdirectory.RecipientReference{ID: "R123", Kind: contactdirectory.RecipientRoom})
-			return e
-		}},
 		{"groupids", func() error {
 			_, e := s.ListMembers(ctx, contactdirectory.RecipientReference{ID: "C123", Kind: contactdirectory.RecipientGroup}, contactdirectory.PageRequest{})
 			return e
 		}},
-		{"roomids", func() error {
-			_, e := s.ListMembers(ctx, contactdirectory.RecipientReference{ID: "R123", Kind: contactdirectory.RecipientRoom}, contactdirectory.PageRequest{})
-			return e
-		}},
 		{"groupmember", func() error {
 			_, e := s.GetMemberProfile(ctx, contactdirectory.RecipientReference{ID: "C123", Kind: contactdirectory.RecipientGroup}, "U123")
-			return e
-		}},
-		{"roommember", func() error {
-			_, e := s.GetMemberProfile(ctx, contactdirectory.RecipientReference{ID: "R123", Kind: contactdirectory.RecipientRoom}, "U123")
 			return e
 		}},
 	} {
