@@ -15,7 +15,7 @@
 | LINE SDK v8 | `integrated` | Webhook 驗章、Reply／Push、Flex、受管理 HTTP Client、Context 隔離 | 真實 LINE 測試 Channel／配額 |
 | Firestore | `integrated` | 原生 Factory、Inbox/Outbox 原子 Transaction、單次 Claim、Recover | 真實專案 IAM、TTL、擴容測試 |
 | Google Cloud Tasks | `integrated` | 原生 Factory、Queue／OIDC Task、私有 Worker、排程恢復入口 | 真實 Queue、Cloud Run OIDC、Scheduler |
-| Google Secret Manager | `client_ready` | 原生 Factory | 憑證／Secret Access 業務接線 |
+| Google Secret Manager | deployment-only | Cloud Run secret references 注入環境變數；無應用 SDK factory | 需部署 IAM 驗證 |
 | OpenAI Go SDK v3 | `client_ready` | 原生 Factory；Responses API 型別可查證 | 業務 Adapter、憑證與授權測試 |
 | Google Gen AI SDK | `client_ready` | Gemini API 與 Vertex AI 原生 Factory | 業務 Adapter、ADC／API Key 驗證 |
 | Google API Client | `integrated` | Cloud client options、iterator、Worker OIDC | 不包含 Workspace 功能 |

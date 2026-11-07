@@ -3,7 +3,7 @@ schema_version: 2
 subdomains:
   - {id: reliable-customer-communication, classification: core, decision_status: hypothesis, confidence: medium, purpose: "Make customer communication reliable despite duplicate input and uncertain provider outcomes.", evidence: [internal/application/usecases/messaging-delivery/service.go]}
   - {id: tenant-channel-administration, classification: supporting, decision_status: hypothesis, confidence: medium, purpose: "Keep each LINE channel connection inside one tenant data and authorization boundary.", evidence: [internal/domain/tenant-administration/aggregates/channel_connection.go]}
-  - {id: customer-segmentation, classification: supporting, decision_status: hypothesis, confidence: medium, purpose: "Define recipients independently from provider audience resources.", evidence: [internal/domain/audience/aggregates/audience_definition.go, internal/application/usecases/audience/service.go]}
+  - {id: customer-segmentation, classification: supporting, decision_status: hypothesis, confidence: medium, purpose: "Define recipients independently from provider audience resources.", evidence: [internal/application/usecases/audience/provider.go]}
   - {id: customer-experience, classification: supporting, decision_status: hypothesis, confidence: low, purpose: "Coordinate presentation promotion and membership without merging their lifecycles.", evidence: [internal/application/usecases/experience-presentation, internal/application/usecases/promotion, internal/application/usecases/membership]}
   - {id: customer-knowledge, classification: supporting, decision_status: hypothesis, confidence: medium, purpose: "Provide recipient references and derived insight without owning provider profiles or delivery decisions.", evidence: [internal/application/usecases/contact-directory, internal/application/usecases/insights-reporting]}
   - {id: content-intelligence-subdomain, classification: supporting, decision_status: hypothesis, confidence: low, purpose: "Produce reviewable content drafts through replaceable AI providers.", evidence: [internal/infrastructure/openai, internal/infrastructure/google/genai]}
@@ -70,77 +70,64 @@ contexts:
     subdomain: customer-segmentation
     status: candidate
     decision_status: hypothesis
-    confidence: medium
-    model_kind: domain-model
+    confidence: low
+    model_kind: process-model
     classification: supporting
     owner: unassigned
-    package: internal/domain/audience
-    purpose: Own provider-independent recipient selection definitions and synchronization intent.
-    non_responsibilities: [Own provider audience membership., Deliver messages., Mirror LINE endpoint groups.]
+    package: internal/application/usecases/audience
+    purpose: Read and manage LINE provider audiences without a local definition lifecycle.
+    non_responsibilities: [Own provider state., Persist speculative business lifecycles.]
     language:
-      - {term: audience-definition, definition: "Stable criteria for selecting recipients.", forbidden_aliases: [line-audience], code_symbols: [internal/domain/audience/aggregates.AudienceDefinition]}
-      - {term: recipient-selection, definition: "Immutable result consumed by delivery.", forbidden_aliases: [user-id-list], code_symbols: []}
-      - {term: audience-sync, definition: "Process aligning a definition with provider representation.", forbidden_aliases: [upload-job], code_symbols: []}
-    owns: [audience-definition, audience-sync-intent]
-    aggregates:
-      - {name: AudienceDefinition, root: audience-definition, consistency_boundary: "Definition identity and selection criteria change together.", owns: [selection-criteria, audience-lifecycle], repository: internal/domain/audience/repositories.AudienceRepository, confidence: medium, evidence: [internal/domain/audience/aggregates/audience_definition_test.go]}
+      - {term: provider-audience, definition: "Observed provider resource accessed through an application contract.", forbidden_aliases: [], code_symbols: []}
+    owns: [provider-operation-orchestration]
     data_ownership:
-      - {resource: audience-definition, authority: local-authoritative, owner: audience, write_policy: "Changes require an audience command.", evidence: [internal/application/usecases/audience/service.go]}
-      - {resource: provider-audience-membership, authority: provider-authoritative, owner: line-provider, write_policy: "Observed through an ACL.", evidence: [internal/adapter/outbound/line]}
-    invariants: [{id: AUD-001, statement: "A recipient selection is immutable once accepted by delivery.", evidence: [internal/domain/audience/aggregates/audience_definition_test.go]}]
-    capabilities: [define-audience, resolve-recipients, synchronize-audience]
-    open_questions: [Validate whether local audience definitions are persisted.]
-    evidence: [internal/domain/audience/aggregates/audience_definition_test.go, internal/application/usecases/audience/service_test.go]
+      - {resource: provider-audience, authority: provider-authoritative, owner: line-provider, write_policy: "Only explicit provider operations mutate the resource.", evidence: [internal/application/usecases/audience/provider.go]}
+    invariants: []
+    capabilities: [inspect-audience, manage-provider-audience]
+    adrs: [docs/architecture/decisions/0007-remove-speculative-operator-models.md]
+    evidence: [internal/application/usecases/audience/provider_test.go]
 
   - id: experience-presentation
     subdomain: customer-experience
     status: candidate
     decision_status: hypothesis
     confidence: low
-    model_kind: domain-model
+    model_kind: process-model
     classification: supporting
     owner: unassigned
-    package: internal/domain/experience-presentation
-    purpose: Own desired interactive presentation independently from deployed provider resources.
-    non_responsibilities: [Own promotions., Own delivery., Treat rich-menu SDK types as Domain entities.]
+    package: internal/application/usecases/experience-presentation
+    purpose: Read and manage LINE rich menus and assignments without a local publication lifecycle.
+    non_responsibilities: [Own provider state., Persist speculative business lifecycles.]
     language:
-      - {term: interaction-surface, definition: "Versioned desired interactive presentation.", forbidden_aliases: [rich-menu], code_symbols: [internal/domain/experience-presentation/aggregates.InteractionSurface]}
-      - {term: surface-assignment, definition: "Intent to expose a surface to selected recipients.", forbidden_aliases: [link-rich-menu], code_symbols: []}
-      - {term: presentation-asset, definition: "Referenced media used by a surface.", forbidden_aliases: [storage-object], code_symbols: []}
-    owns: [interaction-surface, surface-assignment]
-    aggregates: [{name: InteractionSurface, root: interaction-surface, consistency_boundary: "A surface version and its regions publish together.", owns: [surface-version, interaction-regions, asset-references], repository: internal/domain/experience-presentation/repositories.InteractionSurfaceRepository, confidence: medium, evidence: [internal/domain/experience-presentation/aggregates/interaction_surface_test.go]}]
+      - {term: provider-presentation, definition: "Observed provider resource accessed through an application contract.", forbidden_aliases: [], code_symbols: []}
+    owns: [provider-operation-orchestration]
     data_ownership:
-      - {resource: desired-presentation, authority: local-authoritative, owner: experience-presentation, write_policy: "Published through an InteractionSurface transition.", evidence: [internal/application/usecases/experience-presentation/service.go]}
-      - {resource: deployed-provider-presentation, authority: provider-authoritative, owner: line-provider, write_policy: "Managed through an ACL.", evidence: [internal/adapter/outbound/line]}
-    invariants: [{id: EXP-001, statement: "A published surface references a complete immutable presentation version.", evidence: [internal/domain/experience-presentation/aggregates/interaction_surface_test.go]}]
-    capabilities: [define-interaction-surface, assign-surface, publish-presentation]
-    open_questions: [Validate which presentation state is locally persisted.]
-    evidence: [internal/domain/experience-presentation/aggregates/interaction_surface_test.go, internal/application/usecases/experience-presentation/service_test.go]
+      - {resource: provider-presentation, authority: provider-authoritative, owner: line-provider, write_policy: "Only explicit provider operations mutate the resource.", evidence: [internal/application/usecases/experience-presentation/provider.go]}
+    invariants: []
+    capabilities: [inspect-presentation, manage-provider-presentation]
+    adrs: [docs/architecture/decisions/0007-remove-speculative-operator-models.md]
+    evidence: [internal/application/usecases/experience-presentation/provider_test.go]
 
   - id: promotion
     subdomain: customer-experience
     status: candidate
     decision_status: hypothesis
     confidence: low
-    model_kind: domain-model
+    model_kind: process-model
     classification: supporting
     owner: unassigned
-    package: internal/domain/promotion
-    purpose: Own promotion lifecycle and eligibility when those decisions are product-owned.
-    non_responsibilities: [Deliver promotion messages., Own audience definitions., Mirror coupon endpoints.]
+    package: internal/application/usecases/promotion
+    purpose: Read and manage provider coupons without a local campaign or eligibility lifecycle.
+    non_responsibilities: [Own provider state., Persist speculative business lifecycles.]
     language:
-      - {term: promotion, definition: "Time-bounded offer with an explicit lifecycle.", forbidden_aliases: [coupon-api], code_symbols: [internal/domain/promotion/aggregates.Promotion]}
-      - {term: eligibility-decision, definition: "Decision whether a subject may receive an offer.", forbidden_aliases: [membership-response], code_symbols: []}
-      - {term: promotion-delivery-intent, definition: "Approved promotion content prepared for delivery.", forbidden_aliases: [push-request], code_symbols: []}
-    owns: [promotion-lifecycle, offer-rules]
-    aggregates: [{name: Promotion, root: promotion, consistency_boundary: "Offer rules and lifecycle transition atomically.", owns: [offer, eligibility-policy, lifecycle], repository: internal/domain/promotion/repositories.PromotionRepository, confidence: medium, evidence: [internal/domain/promotion/aggregates/promotion_test.go]}]
+      - {term: provider-coupon, definition: "Observed provider resource accessed through an application contract.", forbidden_aliases: [], code_symbols: []}
+    owns: [provider-operation-orchestration]
     data_ownership:
-      - {resource: promotion-definition, authority: local-authoritative, owner: promotion, write_policy: "Only promotion commands mutate it.", evidence: [internal/application/usecases/promotion/service.go]}
-      - {resource: provider-coupon-state, authority: provider-authoritative, owner: line-provider, write_policy: "Imported through an ACL.", evidence: [internal/adapter/outbound/line]}
-    invariants: [{id: PRO-001, statement: "A closed promotion cannot issue a new delivery intent.", evidence: [internal/domain/promotion/aggregates/promotion_test.go]}]
-    capabilities: [define-promotion, evaluate-eligibility, close-promotion]
-    open_questions: [If no local lifecycle exists demote this to provider orchestration.]
-    evidence: [internal/domain/promotion/aggregates/promotion_test.go, internal/application/usecases/promotion/service_test.go]
+      - {resource: provider-coupon, authority: provider-authoritative, owner: line-provider, write_policy: "Only explicit provider operations mutate the resource.", evidence: [internal/application/usecases/promotion/coupons.go]}
+    invariants: []
+    capabilities: [inspect-coupon, manage-provider-coupon]
+    adrs: [docs/architecture/decisions/0007-remove-speculative-operator-models.md]
+    evidence: [internal/application/usecases/promotion/coupons_test.go]
 
   - id: membership
     subdomain: customer-experience

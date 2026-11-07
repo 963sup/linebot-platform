@@ -65,16 +65,6 @@ adapter = "internal/adapter/outbound/google/cloud/cloudtasks"
 reference = "https://cloud.google.com/go/docs/reference/cloud.google.com/go/cloudtasks/latest"
 
 [[modules]]
-module = "cloud.google.com/go/secretmanager"
-provider = "google-cloud"
-kind = "service"
-status = "client_ready"
-imports = ["cloud.google.com/go/secretmanager/apiv1"]
-capabilities = ["secret-manager", "secret-access"]
-factory = "internal/infrastructure/google/cloud/secretmanager"
-reference = "https://cloud.google.com/go/docs/reference/cloud.google.com/go/secretmanager/latest"
-
-[[modules]]
 module = "github.com/openai/openai-go/v3"
 provider = "openai"
 kind = "service"

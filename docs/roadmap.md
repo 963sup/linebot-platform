@@ -29,11 +29,11 @@
 
 - [x] LINE Typed Client Factory 接受受管理 HTTP Client，加入 Timeout、獨立 Transport、生命週期關閉、出站安全 Telemetry、錯誤分類、Context 隔離及離線契約測試。
 - [x] 依實際 SDK 特性建立原生 Typed Client Factory，區分 HTTP／gRPC、API Key／Vertex ADC。
-- [x] Firestore、Cloud Tasks（背景工作）、Secret Manager 的 Typed Client Factory 與配置驗證。
+- [x] Firestore、Cloud Tasks（背景工作） 的 Typed Client Factory 與配置驗證。
 - [x] Firestore Inbox/Outbox 交易 Adapter、Cloud Tasks OIDC 派送 Adapter、可選 Durable Webhook、私有 Worker／定期 Reconcile 程式碼。
 - [ ] Google Cloud Staging IAM／Firestore TTL／Cloud Scheduler／高吞吐與實際 LINE 回覆驗證。
-- [x] OpenAI、Gemini／Vertex、Drive、Sheets、Calendar、Google Tasks（待辦）的原生 Client Factory 與離線契約測試。
-- [ ] 其他 Provider（AI／MCP／Secret Manager）業務 Adapter；**LINE 已接入預設 Webhook／CLI，Firestore 與 Cloud Tasks 已接入可選 Durable Workflow**。
+- [x] OpenAI、Gemini／Vertex、MCP client的原生 Client Factory 與離線契約測試。
+- [ ] 其他 Provider（AI／MCP）業務 Adapter；**LINE 已接入預設 Webhook／CLI，Firestore 與 Cloud Tasks 已接入可選 Durable Workflow**。
 - [x] 原子 Inbox/Outbox、事件 Key 去重、Worker 單次 Claim、unknown/expired 終態和 Reconcile 程式碼。
 - [ ] 實際部署、定期 Cloud Scheduler 與獨立 Staging 的故障恢復驗收。
 - [ ] 經授權的真實 Staging SDK／IAM／OIDC／OAuth 測試與六個全新 Codex 工作階段零先驗驗收（CI 與已清理的一次性 Emulator 測試不能取代）。
@@ -49,7 +49,7 @@
 
 ## 近期實作順序與不可退化條件
 
-1. **命名與架構 Gate（PR #28 已合併）**：所有已登記的 tactical Domain model directory 都使用 `value-objects/`，Go package 為 `valueobjects`；架構測試禁止同義異名目錄。Identity 已建立八類具體元件並逐步接入 OAuth／Firestore；後續變更仍需按最新 commit 驗證。
+1. **命名與架構 Gate（PR #28 已合併）**：所有已登記的 tactical Domain model directory 都使用 `value-objects/`，Go package 為 `valueobjects`；架構測試禁止同義異名目錄。
 2. **DDD 不退化**：保留有實際用途的模型；移除 Workspace 與 Google 帳號連結，不因套用架構而建立空抽象。
 3. **Hexagonal Architecture 不退化（同一功能 PR 的 Gate）**：擴充 AST import boundary 檢查，驗證 Domain 不依賴外層、Application 不 import Adapter/Infrastructure/SDK；新增 usecase 只能透過 Port 呼叫外部效果，Bootstrap 負責 DI。
 4. **GPT／Codex 零先驗不退化（獨立可重現驗收）**：全新、無過往聊天上下文的 Codex session 從 `AGENTS.md` → `README.md` → `docs/architecture/overview.md` → `docs/sdk/catalog.toml`，只讀必要 skill 與 SDK symbol，完成 sandbox-only 微小 Domain 修改；能定位正確的 `value-objects/`，並以 `go.mod`、Catalog、build-tag manifest 保留核准依賴而不建立空 scaffold。將指令、測試結果、失敗與修正紀錄於 PR。
@@ -59,19 +59,18 @@
 
 ### Tactical model baseline
 
-- [x] `implemented_offline`：Audience、Experience Presentation、Promotion 具備 provider-independent Aggregate、Value Object、modeled Domain facts、Domain-owned Repository contract 與行為測試。
+- Audience、Experience Presentation、Promotion 僅保留 LINE provider 操作；自建業務模型與持久化已退役。
 - [x] `implemented_offline`：Messaging Delivery 具備 provider-independent Aggregate、Value Object、modeled Domain facts 與行為測試；完整 transaction persistence boundary 是 Application-owned `DeliveryWorkflowStore`，刻意不建立重複的 Domain Repository contract。
 - [x] `implemented_offline`：Membership、Contact Directory、Insights Reporting 與 Content Intelligence 明確建模為 Application-owned read/process model，未虛構 Aggregate。
 - [x] `implemented_offline`：架構測試禁止 Domain model directory 互相匯入，Application 禁止 provider SDK type，並要求 manifest 登記的 tactical Domain model directory 同時存在行為與測試。
-- [ ] `business_validated`：上述 Context（Identity 除外）仍是 `candidate/hypothesis`；需經業務訪談確認語言、owner、邊界與 Core／Supporting 分類後才能提升狀態。
-- [ ] `production_integrated`：ADR 0003 tactical models 的 provider／persistence Adapter 與 composition code 已存在，但資料遷移、provider behavior、授權環境與 Staging rollout 尚未完整驗證；不以 tactical code 或離線測試宣稱可部署。
+- [ ] `business_validated`：上述 Context仍是 `candidate/hypothesis`；需經業務訪談確認語言、owner、邊界與 Core／Supporting 分類後才能提升狀態。
+- [ ] `production_integrated`：Messaging Delivery 的 persistence Adapter 與 composition code 已存在，但資料遷移、provider behavior、授權環境與 Staging rollout 尚未完整驗證；不以 tactical code 或離線測試宣稱可部署。
 
 ## Outbox 可靠性與營運驗收
 
 - [x] `implemented_offline`：經簽章 LINE redelivery、原始 Event Timestamp、只恢復從未發送的工作、bounded Reconcile 與必要離線契約測試已存在於 `main`。
-- [x] `implemented_offline`：Identity Aggregate state 與版本化 Integration Event outbox records 可在同一 Firestore transaction 提交，並具 reserve／lease／resolve dispatcher 邊界；尚無 production publisher sink，因此不得宣稱事件已發布。
 - [ ] `staging_verified`：線上索引、TTL、Backfill、Cloud Tasks OIDC、Scheduler 與故障恢復仍需經授權環境驗證。
-- [x] `implemented_offline`：只讀 Outbox 運維 CLI、Staging 驗收契約及告警策略文件已存在；Cloud Run Job、Monitoring、Scheduler、publisher sink 與真實 LINE／Identity event publication 仍待明確授權及驗證。
+- [x] `implemented_offline`：只讀 Outbox 運維 CLI、Staging 驗收契約及告警策略文件已存在；Cloud Run Job、Monitoring、Scheduler、publisher sink 與真實 LINE event publication 仍待明確授權及驗證。
 - [ ] Production readiness：完成 `docs/operations/staging-acceptance.md` 每一項 Gate 的真實證據，並取得 deployment/rollout 授權。
 
 ## 設定契約整合

@@ -18,14 +18,6 @@ modules:
     contexts: []
     evidence: [internal/adapter/outbound/google/cloud/firestore/event_store.go]
     assumption: Persists context-owned data but is not a Domain owner.
-  - module: cloud.google.com/go/secretmanager
-    version: v1.23.1
-    catalog_status: client_ready
-    classification: generic-infrastructure
-    capabilities: [secret-access]
-    contexts: []
-    evidence: [internal/infrastructure/google/cloud/secretmanager]
-    assumption: Provides credential storage without owning authorization semantics.
   - module: github.com/BurntSushi/toml
     version: v1.6.0
     catalog_status: integrated

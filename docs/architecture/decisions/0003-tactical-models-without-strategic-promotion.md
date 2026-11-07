@@ -12,6 +12,8 @@ The dependency-informed context map identifies several useful business-boundary 
 
 Messaging Delivery also needs a hard wire and persistence boundary because the previous task payload and Firestore documents do not carry an explicit schema version.
 
+> Audience, Experience Presentation and Promotion tactical models are retired by [ADR 0007](0007-remove-speculative-operator-models.md); native LINE operations remain.
+
 ## Decision
 
 Implement provider-independent tactical models for Audience, Experience Presentation, Promotion, Workspace Automation, and Messaging Delivery. Implement Membership, Contact Directory, Insights Reporting, and Content Intelligence as Application-owned read/process models rather than inventing Aggregates.

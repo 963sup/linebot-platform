@@ -308,12 +308,12 @@ Aggregate 是 transaction consistency boundary；Entity 不能脫離其 Aggregat
 | --- | --- | --- |
 | Package | 小寫、簡短、無底線，以責任而非技術流行語命名 | `ingestion`, `audience`, `firestore` |
 | 檔案 | `snake_case.go`，以主要行為或能力命名 | `delivery.go` |
-| Aggregate／Entity／Value Object | 使用 Ubiquitous Language 的業務名詞 | `AudienceDefinition`, `Promotion` |
+| Aggregate／Entity／Value Object | 使用 Ubiquitous Language 的業務名詞 | `Delivery`, `DeliveryID` |
 | Use Case | 動詞＋受詞 | `CreateDeliveryIntent` |
 | Command／Query | 寫入與讀取語意明確，不用萬用 `Request` | `DefineAudience`, `InspectChannel` |
 | Port | 以消費者需要的能力命名 | `EventStore`, `EventQueue`, `Messaging` |
 | Adapter | Provider＋能力，由 package path 表達 provider | `firestore.Store`, `cloudtasks.Queue` |
-| Constructor | 新建使用 `NewX`；持久化還原使用 `RestoreX` | `NewAudienceDefinition`, `RestoreAudienceDefinition` |
+| Constructor | 新建使用 `NewX`；持久化還原使用 `RestoreX` | `NewDelivery`, `Restore` |
 | Domain Event | 使用已發生的過去式 | `Activated`, `Archived` |
 | Error | 使用穩定語意，不暴露 provider 細節 | `ErrEventTooOld` |
 | Boolean | 使用 `Is`、`Has`、`Can`、`Should` | `IsActive`, `CanPublish` |
@@ -421,7 +421,7 @@ stateDiagram-v2
 
 ### Client lifecycle
 
-- Firestore、Secret Manager、Cloud Tasks、GenAI、LINE、OpenAI 與 MCP client 在啟動期建立並重用；request handler 不重建 client。
+- Firestore、Cloud Tasks、GenAI、LINE、OpenAI 與 MCP client 在啟動期建立並重用；request handler 不重建 client。
 - gRPC 重用 `ClientConn`，依服務設定 deadline、keepalive、interceptor 與 stream cancellation；每個 stream 必須由 context 取消或正常讀完以避免資源洩漏。
 - 同一個 client 是否可共享，必須以 SDK thread-safety 與認證 scope 判定；帶使用者 OAuth 狀態的 TokenSource/HTTP client 不得跨使用者共享。
 

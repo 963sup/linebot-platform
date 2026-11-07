@@ -28,7 +28,6 @@ Go module 已加入，`go.mod`／`go.sum` 由 Go 工具鏈與 CI 管理；此表
 | `google.golang.org/genai` | v1.77.0 | Gemini／Vertex 分別建立 Factory，未授權啟用 |
 | `cloud.google.com/go/firestore` | v1.29.2 | 原生 Client Factory 與 Durable Inbox/Outbox Adapter 已接線；僅在明確啟用持久模式後使用，尚未 Staging 驗收 |
 | `cloud.google.com/go/cloudtasks` | v1.21.1 | 原生 Client Factory、背景任務 Queue Adapter、OIDC Worker 與 Reconcile 程式碼已實作；尚未正式部署 |
-| `cloud.google.com/go/secretmanager` | v1.23.1 | Client Factory 已建，尚未使用正式憑證 |
 | `google.golang.org/api` | v0.310.0 | Cloud client options、iterator 與 Worker OIDC 驗證；不包含 Workspace API 接線 |
 | `google.golang.org/grpc` | v1.84.0 | Firestore／Cloud Tasks 狀態碼與 gRPC 錯誤處理的直接依賴（原間接依賴升級分類，未新增下載） |
 

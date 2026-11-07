@@ -78,4 +78,4 @@ go doc google.golang.org/genai.Client
 
 `go.mod` 只表示模組版本需求。`go.mod`／`go.sum` 已於 GitHub Actions Go 1.27.3 環境解析並提交。後續升級模組時應在有網路的環境執行 `go mod tidy`、`go mod download`，檢查並提交異動；CI 持續保留依賴解析的審查用 artifact。
 
-Firestore 與 Cloud Tasks 已接入 Durable Workflow；Secret Manager、OpenAI、GenAI、MCP client 保留原生 SDK factory。Workspace 自動化延後整合，不保留預先建立的 OAuth 或 API 骨架。
+Firestore 與 Cloud Tasks 已接入 Durable Workflow；OpenAI、GenAI、MCP client 保留原生 SDK factory；Secret Manager 僅由部署平台注入，不使用應用 SDK。Workspace 自動化延後整合，不保留預先建立的 OAuth 或 API 骨架。

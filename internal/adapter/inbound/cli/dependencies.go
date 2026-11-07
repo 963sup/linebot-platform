@@ -181,83 +181,6 @@ type BulkMessagingRuntime interface {
 	Close() error
 }
 
-type AudienceDefinitionSummary struct {
-	ID               string `json:"id"`
-	Source           string `json:"source"`
-	DefinitionSHA256 string `json:"definition_sha256"`
-	DefinitionBytes  int    `json:"definition_bytes"`
-	Version          uint64 `json:"version"`
-	Status           string `json:"status"`
-}
-
-type AudienceSyncSummary struct {
-	ProviderReference string `json:"provider_reference"`
-	SynchronizedCount int    `json:"synchronized_count"`
-}
-
-type AudienceDefinitionsRuntime interface {
-	GetAudienceDefinition(context.Context, string) (AudienceDefinitionSummary, error)
-	DefineAudience(context.Context, string, string, string) (AudienceDefinitionSummary, error)
-	ReviseAudience(context.Context, string, string, string) (AudienceDefinitionSummary, error)
-	ActivateAudience(context.Context, string) (AudienceDefinitionSummary, error)
-	ArchiveAudience(context.Context, string) (AudienceDefinitionSummary, error)
-	SyncAudience(context.Context, string) (AudienceSyncSummary, error)
-	Close() error
-}
-
-type InteractionRegion struct {
-	ID              string `json:"id"`
-	ActionReference string `json:"action_reference"`
-	AssetReference  string `json:"asset_reference,omitempty"`
-}
-
-type InteractionSurfaceSummary struct {
-	ID          string `json:"id"`
-	RegionCount int    `json:"region_count"`
-	Version     uint64 `json:"version"`
-	Status      string `json:"status"`
-}
-
-type SurfaceDeploymentSummary struct {
-	ProviderReference string `json:"provider_reference"`
-	Version           uint64 `json:"version"`
-}
-
-type InteractionSurfacesRuntime interface {
-	GetSurface(context.Context, string) (InteractionSurfaceSummary, error)
-	DefineSurface(context.Context, string, []InteractionRegion) (InteractionSurfaceSummary, error)
-	ReviseSurface(context.Context, string, []InteractionRegion) (InteractionSurfaceSummary, error)
-	PublishSurface(context.Context, string) (InteractionSurfaceSummary, error)
-	RetireSurface(context.Context, string) (InteractionSurfaceSummary, error)
-	DeploySurface(context.Context, string) (SurfaceDeploymentSummary, error)
-	Close() error
-}
-
-type PromotionSummary struct {
-	ID                      string    `json:"id"`
-	OfferSHA256             string    `json:"offer_sha256"`
-	EligibilityPolicySHA256 string    `json:"eligibility_policy_sha256"`
-	StartsAt                time.Time `json:"starts_at"`
-	EndsAt                  time.Time `json:"ends_at"`
-	Revision                uint64    `json:"revision"`
-	Status                  string    `json:"status"`
-}
-
-type DeliveryIntentSummary struct {
-	PromotionID     string `json:"promotion_id"`
-	RecipientSHA256 string `json:"recipient_sha256"`
-	OfferSHA256     string `json:"offer_sha256"`
-}
-
-type PromotionsRuntime interface {
-	GetPromotion(context.Context, string) (PromotionSummary, error)
-	DefinePromotion(context.Context, string, string, string, time.Time, time.Time) (PromotionSummary, error)
-	ActivatePromotion(context.Context, string, time.Time) (PromotionSummary, error)
-	ClosePromotion(context.Context, string) (PromotionSummary, error)
-	CreateDeliveryIntent(context.Context, string, string, string, bool, time.Time) (DeliveryIntentSummary, error)
-	Close() error
-}
-
 type ChannelConnectionSummary struct {
 	TenantID             string `json:"tenant_id"`
 	ConnectionID         string `json:"connection_id"`
@@ -294,9 +217,6 @@ type Dependencies struct {
 	TokenRuntime              func() (TokenRuntime, error)
 	AudienceManagementRuntime func(string) (AudienceManagementRuntime, error)
 	BulkMessagingRuntime      func(string) (BulkMessagingRuntime, error)
-	AudienceDefinitions       func(context.Context, string) (AudienceDefinitionsRuntime, error)
-	InteractionSurfaces       func(context.Context, string) (InteractionSurfacesRuntime, error)
-	Promotions                func(context.Context, string) (PromotionsRuntime, error)
 	ChannelConnections        func(context.Context, string) (ChannelConnectionsRuntime, error)
 }
 

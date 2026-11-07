@@ -16,7 +16,6 @@
 | Push Text／Flex | `cmd/ops` | 僅 CLI `push --send` 會實際呼叫 API，且需要接收者與 retry key |
 | Profile（明確查詢） | `cmd/ops`、`internal/application/usecases/contact-directory`、LINE adapter | `profile --lookup` 只在 CLI 查詢；已有離線契約測試，未完成真實 Channel 驗收 |
 | Firestore、Cloud Tasks（背景佇列） | `internal/adapter/outbound/google/cloud/` | 具備選用 Durable Inbox/Outbox 與派送 Adapter，尚未部署 |
-| Secret Manager | `internal/infrastructure/google/cloud/` | 原生 Client Factory，未接入業務 |
 | OpenAI、Google Gen AI | `internal/infrastructure/openai/`、`internal/infrastructure/google/genai/` | 原生 Client Factory 已建立；尚未接入業務／啟用 |
 | LINE 官方文件來源 | [line-developers-docs-source](https://github.com/line/line-developers-docs-source) | 僅供查閱，不是 SDK |
 
@@ -125,7 +124,7 @@ Profile 回應包含個人資料，請勿將 stdout、Shell 紀錄或查詢結�
 
 ## Provider Client Factories（階段 3）
 
-- **Google Cloud**：Firestore、Cloud Tasks（背景佇列）、Secret Manager 已有原生 Client Factory；啟用時需提供適當 ADC／Workload Identity、Project、IAM，並關閉擁有的 Client。
+- **Google Cloud**：Firestore、Cloud Tasks（背景佇列）已有原生 Client Factory；啟用時需提供適當 ADC／Workload Identity、Project、IAM，並關閉擁有的 Client。
 - **AI**：OpenAI、Gemini Developer API、Vertex AI 已建立分別驗證認證模式的原生 Client Factory；建構時不自動發送付費 API 請求。
 - SDK Catalog 新增 `client_ready`，意為原生 Factory 存在但**不代表**已接入業務 Adapter、取得使用者 OAuth 或完成 Staging／Production 驗證。
 

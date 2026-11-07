@@ -45,15 +45,6 @@ func BuildOpsCLI() cli.Dependencies {
 
 func buildOpsCLI(lineRuntimes lineRuntimeFactories) cli.Dependencies {
 	return cli.Dependencies{
-		AudienceDefinitions: func(ctx context.Context, project string) (cli.AudienceDefinitionsRuntime, error) {
-			return newAudienceDomainRuntime(ctx, project)
-		},
-		InteractionSurfaces: func(ctx context.Context, project string) (cli.InteractionSurfacesRuntime, error) {
-			return newSurfaceDomainRuntime(ctx, project)
-		},
-		Promotions: func(ctx context.Context, project string) (cli.PromotionsRuntime, error) {
-			return newPromotionDomainRuntime(ctx, project)
-		},
 		ChannelConnections: func(ctx context.Context, project string) (cli.ChannelConnectionsRuntime, error) {
 			return newChannelConnectionsRuntime(ctx, project)
 		},

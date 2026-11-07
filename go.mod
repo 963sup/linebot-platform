@@ -5,7 +5,6 @@ go 1.27.3
 require (
 	cloud.google.com/go/cloudtasks v1.21.1
 	cloud.google.com/go/firestore v1.29.2
-	cloud.google.com/go/secretmanager v1.23.1
 	github.com/BurntSushi/toml v1.6.0
 	github.com/google/uuid v1.6.0
 	github.com/line/line-bot-sdk-go/v8 v8.23.0

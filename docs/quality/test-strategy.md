@@ -31,7 +31,7 @@ These are **offline contract tests** against the pinned Go SDK and local HTTP se
 ## Provider Client Factories (Stage 3)
 
 - **OpenAI / Gemini**: verify explicit API Key requirements, backend differences (Gemini Developer API vs Vertex AI), and native SDK access without paid API calls.
-- **Google Cloud**: type-checked Firestore, Cloud Tasks, Secret Manager constructors reject nil/cancelled contexts and missing Firestore project. GCP IAM and external services are not tested.
+- **Google Cloud**: type-checked Firestore and Cloud Tasks constructors reject nil/cancelled contexts and missing Firestore project. GCP IAM and external services are not tested.
 - Google Tasks, Google Calendar and Google Cloud Tasks are distinct products with different credentials, scopes and API models.
 - Catalog `client_ready` requires actual native Factory source but does not mean a service is enabled, an Adapter exists or a live API permission was verified.
 

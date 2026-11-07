@@ -79,3 +79,17 @@ func TestProviderOperationsUseTypedCommands(t *testing.T) {
 		t.Fatalf("CreateInteractionGroup rejected valid provider request: %v", err)
 	}
 }
+
+func TestProviderContextValidation(t *testing.T) {
+	if err := validateContext(nil); err != ErrContextRequired {
+		t.Fatalf("nil context: %v", err)
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	if err := validateContext(ctx); err != context.Canceled {
+		t.Fatalf("canceled context: %v", err)
+	}
+	if err := validateContext(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+}

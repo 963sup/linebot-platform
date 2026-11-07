@@ -5,6 +5,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/BurntSushi/toml"
 )
 
 func TestGuidanceTracksRegisteredCapabilities(t *testing.T) {
@@ -60,10 +62,24 @@ func TestGuidanceTracksRegisteredCapabilities(t *testing.T) {
 		}
 	}
 	mise := read("mise.toml")
-	for _, marker := range []string{"BOOTSTRAP_WORKSPACE", "BOOTSTRAP_REPO", "mise run plugins-install", "mise run plugins-install-standard", "mise run graphify-update", "mise run agent-preflight"} {
+	for _, marker := range []string{"BOOTSTRAP_WORKSPACE", "BOOTSTRAP_REPO", "[tasks.setup-agents]", "[tasks.plugins-install-standard]", "mise run graphify-update", "mise run agent-preflight"} {
 		if !strings.Contains(mise, marker) {
 			t.Errorf("mise setup missing autonomous preparation step %q", marker)
 		}
+	}
+	var tasks struct {
+		Tasks struct {
+			Setup struct {
+				Run []string `toml:"run"`
+			} `toml:"setup"`
+		} `toml:"tasks"`
+	}
+	if _, err := toml.Decode(mise, &tasks); err != nil {
+		t.Fatal(err)
+	}
+	setup := tasks.Tasks.Setup.Run
+	if len(setup) != 2 || setup[0] != "go mod download" || setup[1] != "go mod verify" {
+		t.Fatal("core setup must prepare Go dependencies without optional plugins or graph indexing")
 	}
 	if !strings.Contains(mise, "graphify extract ${BOOTSTRAP_REPO} --code-only --allow-dedup-shrink") {
 		t.Error("graphify update must accept safe dedup shrink in its rebuildable cache")

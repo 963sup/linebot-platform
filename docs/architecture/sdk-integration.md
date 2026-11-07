@@ -55,9 +55,9 @@ The webhook entrypoint now calls `bootstrap.NewWebhookRuntime` to compose only t
 
 - `internal/infrastructure/openai` requires explicit API Key and caller-owned HTTP client, and returns `openai.Client` with the native SDK Responses API and retry behavior.
 - `internal/infrastructure/google/genai` separates Gemini Developer API key authentication from Vertex AI ADC/workload identity. Vertex does not inject an unauthenticated custom HTTP client.
-- `internal/infrastructure/google/cloud/{firestore,cloudtasks,secretmanager}` returns native clients accepting ADC/client options and caller-owned `Close()`. No resources are provisioned by construction.
+- `internal/infrastructure/google/cloud/{firestore,cloudtasks}` returns native clients accepting ADC/client options and caller-owned `Close()`. No resources are provisioned by construction.
 - Google Tasks is `google.golang.org/api/tasks/v1`, included in the existing `google.golang.org/api`; Google Cloud Tasks is the separately pinned background queue SDK.
-- OpenAI, Gemini, MCP and Secret Manager remain `client_ready`. Firestore and Cloud Tasks now have explicit outbound Adapters for the optional Stage-4 event pipeline and are listed `integrated` in the Catalog, **not** deployed or staging-verified.
+- OpenAI, Gemini and MCP remain `client_ready`. Firestore and Cloud Tasks now have explicit outbound Adapters for the optional Stage-4 event pipeline and are listed `integrated` in the Catalog, **not** deployed or staging-verified.
 
 ## Phase 4: gated durable LINE webhook and private worker (merged via PR #8)
 

@@ -7,6 +7,15 @@ import (
 	"time"
 )
 
+var ErrContextRequired = errors.New("context is required")
+
+func validateContext(ctx context.Context) error {
+	if ctx == nil {
+		return ErrContextRequired
+	}
+	return ctx.Err()
+}
+
 type ProviderSurfaceID string
 type AliasID string
 type RecipientID string

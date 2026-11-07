@@ -7,14 +7,22 @@ import (
 	"time"
 )
 
+var ErrContextRequired = errors.New("context is required")
+
+func validateContext(ctx context.Context) error {
+	if ctx == nil {
+		return ErrContextRequired
+	}
+	return ctx.Err()
+}
+
 const (
 	DefaultPageSize     = 20
 	MaxPageSize         = 100
 	MaxAudienceFileSize = 20 << 20
 )
 
-// ProviderAudienceID is an external audience identifier. It deliberately does
-// not replace the provider-independent AudienceID used by the aggregate.
+// ProviderAudienceID is an external LINE audience identifier.
 type ProviderAudienceID int64
 
 type PageRequest struct {

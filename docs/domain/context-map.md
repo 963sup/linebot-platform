@@ -18,30 +18,26 @@
 
 | Context | Subdomain | Status | Decision | Confidence | Model | Classification | Owner | Package |
 |---|---|---|---|---|---|---|---|---|
-| audience | customer-segmentation | candidate | hypothesis | medium | domain-model | supporting | unassigned | internal/domain/audience |
+| audience | customer-segmentation | candidate | hypothesis | low | process-model | supporting | unassigned | internal/application/usecases/audience |
 | contact-directory | customer-knowledge | candidate | hypothesis | medium | read-model | supporting | unassigned | Not Verified |
 | content-intelligence | content-intelligence-subdomain | candidate | hypothesis | low | process-model | supporting | unassigned | Not Verified |
-| experience-presentation | customer-experience | candidate | hypothesis | low | domain-model | supporting | unassigned | internal/domain/experience-presentation |
+| experience-presentation | customer-experience | candidate | hypothesis | low | process-model | supporting | unassigned | internal/application/usecases/experience-presentation |
 | insights-reporting | customer-knowledge | candidate | hypothesis | medium | read-model | supporting | unassigned | Not Verified |
 | membership | customer-experience | candidate | hypothesis | low | read-model | supporting | unassigned | Not Verified |
 | messaging-delivery | reliable-customer-communication | candidate | hypothesis | medium | domain-model | core | linebot-platform | internal/domain/messaging-delivery |
-| promotion | customer-experience | candidate | hypothesis | low | domain-model | supporting | unassigned | internal/domain/promotion |
+| promotion | customer-experience | candidate | hypothesis | low | process-model | supporting | unassigned | internal/application/usecases/promotion |
 | tenant-administration | tenant-channel-administration | candidate | hypothesis | medium | domain-model | supporting | linebot-platform | internal/domain/tenant-administration |
 
 ## Aggregates and Data Ownership
 
 | Context | Aggregate / Resource | Kind | Authority / Consistency Boundary | Owner |
 |---|---|---|---|---|
-| audience | AudienceDefinition | aggregate | Definition identity and selection criteria change together. | unassigned |
-| audience | audience-definition | data | local-authoritative | audience |
-| audience | provider-audience-membership | data | provider-authoritative | line-provider |
+| audience | provider-audience | data | provider-authoritative | line-provider |
 | contact-directory | provider-profile | data | provider-authoritative | line-provider |
 | contact-directory | profile-projection | data | derived-projection | contact-directory |
 | content-intelligence | generation-policy | data | local-authoritative | content-intelligence |
 | content-intelligence | model-output | data | provider-authoritative | ai-provider |
-| experience-presentation | InteractionSurface | aggregate | A surface version and its regions publish together. | unassigned |
-| experience-presentation | desired-presentation | data | local-authoritative | experience-presentation |
-| experience-presentation | deployed-provider-presentation | data | provider-authoritative | line-provider |
+| experience-presentation | provider-presentation | data | provider-authoritative | line-provider |
 | insights-reporting | delivery-facts | data | local-authoritative | messaging-delivery |
 | insights-reporting | reporting-projection | data | derived-projection | insights-reporting |
 | membership | membership-source-state | data | provider-authoritative | line-provider |
@@ -49,9 +45,7 @@
 | messaging-delivery | Delivery | aggregate | Claim is single-use and completion accepts one terminal outcome. | linebot-platform |
 | messaging-delivery | delivery-state | data | local-authoritative | messaging-delivery |
 | messaging-delivery | provider-message-result | data | provider-authoritative | line-provider |
-| promotion | Promotion | aggregate | Offer rules and lifecycle transition atomically. | unassigned |
-| promotion | promotion-definition | data | local-authoritative | promotion |
-| promotion | provider-coupon-state | data | provider-authoritative | line-provider |
+| promotion | provider-coupon | data | provider-authoritative | line-provider |
 | tenant-administration | ChannelConnection | aggregate | A messaging destination belongs to one tenant channel connection. | linebot-platform |
 | tenant-administration | channel-connection-state | data | local-authoritative | tenant-administration |
 | tenant-administration | provider-channel-secret | data | provider-authoritative | line-provider |
@@ -60,15 +54,12 @@
 
 | Context | Invariant | Statement |
 |---|---|---|
-| audience | AUD-001 | A recipient selection is immutable once accepted by delivery. |
 | contact-directory | CON-001 | A snapshot records observation time and never overwrites provider authority. |
 | content-intelligence | CNT-001 | Generated output remains a draft until accepted by its consumer. |
-| experience-presentation | EXP-001 | A published surface references a complete immutable presentation version. |
 | insights-reporting | INS-001 | A metric snapshot identifies its period and source facts. |
 | membership | MEM-001 | A projection cannot grant an entitlement absent from source facts. |
 | messaging-delivery | MSG-001 | A delivery can be claimed for network send only once within its active lease. |
 | messaging-delivery | MSG-002 | Transport ambiguity becomes unknown-outcome rather than known failure. |
-| promotion | PRO-001 | A closed promotion cannot issue a new delivery intent. |
 | tenant-administration | TEN-001 | One valid LINE messaging destination resolves to one tenant channel connection. |
 
 ## Relationships
@@ -109,16 +100,12 @@ flowchart LR
 
 | Context | Term | Definition |
 |---|---|---|
-| audience | audience-definition | Stable criteria for selecting recipients. |
-| audience | audience-sync | Process aligning a definition with provider representation. |
-| audience | recipient-selection | Immutable result consumed by delivery. |
+| audience | provider-audience | Observed provider resource accessed through an application contract. |
 | contact-directory | profile-snapshot | Time-stamped observation of provider profile data. |
 | contact-directory | recipient-reference | Stable reference usable by delivery. |
 | content-intelligence | content-draft | Unapproved generated output returned to a consumer. |
 | content-intelligence | generation-request | Provider-independent request constrained by consumer policy. |
-| experience-presentation | interaction-surface | Versioned desired interactive presentation. |
-| experience-presentation | presentation-asset | Referenced media used by a surface. |
-| experience-presentation | surface-assignment | Intent to expose a surface to selected recipients. |
+| experience-presentation | provider-presentation | Observed provider resource accessed through an application contract. |
 | insights-reporting | delivery-fact | Proposed immutable fact from Messaging Delivery; publication is not implemented. |
 | insights-reporting | metric-snapshot | Derived metric for a defined reporting period. |
 | membership | entitlement-view | Derived benefits visible to a consumer. |
@@ -127,9 +114,7 @@ flowchart LR
 | messaging-delivery | delivery-intent | Request to deliver content to a resolved recipient. |
 | messaging-delivery | idempotency-key | Stable identity preventing duplicate business delivery. |
 | messaging-delivery | unknown-outcome | Send whose remote effect cannot be safely determined. |
-| promotion | eligibility-decision | Decision whether a subject may receive an offer. |
-| promotion | promotion | Time-bounded offer with an explicit lifecycle. |
-| promotion | promotion-delivery-intent | Approved promotion content prepared for delivery. |
+| promotion | provider-coupon | Observed provider resource accessed through an application contract. |
 | tenant-administration | channel-connection | Tenant-owned association to one external provider channel identity. |
 | tenant-administration | tenant | Isolation boundary for customer data channel connections and authorization. |
 
@@ -246,7 +231,6 @@ flowchart LR
 |---|---|---|---|---|---|
 | cloud.google.com/go/cloudtasks | v1.21.1 | integrated | generic-infrastructure | durable-background-work, oidc-worker, bounded-task-deduplication | Not Verified |
 | cloud.google.com/go/firestore | v1.29.2 | integrated | generic-infrastructure | transactions, durable-inbox-outbox, persistence | Not Verified |
-| cloud.google.com/go/secretmanager | v1.23.1 | client_ready | generic-infrastructure | secret-access | Not Verified |
 | github.com/BurntSushi/toml | v1.6.0 | integrated | tooling | toml-parse, configuration-validation | Not Verified |
 | github.com/google/uuid | v1.6.0 | integrated | generic-infrastructure | uuid-v4, retry-key-generation | Not Verified |
 | github.com/line/line-bot-sdk-go/v8 | v8.23.0 | integrated | domain-signal | webhook, messaging, audiences, presentation, promotion, membership, analytics | messaging-delivery, audience, experience-presentation, promotion, membership, contact-directory, insights-reporting |
