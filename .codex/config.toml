@@ -1,6 +1,5 @@
 #:schema https://developers.openai.com/codex/config-schema.json
 # V3 project configuration. Registration is not runtime proof of connectivity.
-project_doc_max_bytes = 65536
 
 [features]
 multi_agent = true

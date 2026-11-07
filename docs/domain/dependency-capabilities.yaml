@@ -74,14 +74,6 @@ modules:
     contexts: [content-intelligence]
     evidence: [internal/infrastructure/openai]
     assumption: May implement Content Intelligence ports but does not prove product-owned generation policy.
-  - module: go.linecorp.com/garr
-    version: v0.1.1
-    catalog_status: declared
-    classification: generic-infrastructure
-    capabilities: [retry, circuit-breaker]
-    contexts: []
-    evidence: [internal/infrastructure/dependencies/modules.go]
-    assumption: Declared-only resilience capability must not be represented as integrated behavior.
   - module: go.opentelemetry.io/contrib/detectors/gcp
     version: v1.45.0
     catalog_status: integrated

@@ -78,7 +78,7 @@ Run `go test ./internal/domain/...`, `go test ./tests/architecture/...`, `go tes
 | Outbound | Google OAuth Provider and Firestore OAuth Store | Keep private `legacyOAuthConnection` wire compatibility, avoid duplicate Application DTO | Existing ciphertext, collection keys, version/CAS, refresh token and revoke fail-closed tests |
 | Infrastructure | OAuth Flow, Keyring, native API clients | Do not create another OAuth Factory or copy transport logic | No credentials in Domain, logs, or URL |
 | Bootstrap/cmd | Dependency construction and process lifecycle only | Delegate eligibility decisions to Application | Local token-only operations are **not** Google self-service account linking |
-| go.mod/go.sum | Module versions and checksums, not Go import package paths | Audit direct `golang.org/x/oauth2` and `google.golang.org/api`; preserve preapproved SDKs | `go mod tidy` must leave lockfiles unchanged in CI; no forced Go module deletion |
+| go.mod/go.sum | Module versions and checksums, not Go import package paths | Audit direct `golang.org/x/oauth2` and `google.golang.org/api`; retain only dependencies required by implemented code | `go mod tidy` must leave lockfiles unchanged in CI; no forced Go module deletion |
 | Catalog/CI | Package inventory and architecture gates | Record Identity package use; forbid Bootstrap authorization policy | `make check` plus tagged integration compilation |
 
 ### Planned verification before declaring closure

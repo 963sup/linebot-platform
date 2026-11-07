@@ -6,7 +6,6 @@
 - **Google Cloud**：Firestore、Cloud Tasks、Secret Manager、Storage 的 Typed Client Factories 已存在。Firestore Inbox/Outbox Adapter 及 Cloud Tasks Queue Adapter、私有 OIDC Worker／Reconcile 在 **`LINE_EVENT_MODE=durable`** 明確設定後才會啟用；不代表雲端帳號或 IAM 已配置。
 - **Google Workspace**：Google Tasks、Calendar、Sheets、Drive 都使用 `google.golang.org/api` 的原生 Factory；使用者 OAuth 同意、Scope、Token 保管、正式業務 Adapter 均尚未完成。
 - **AI**：OpenAI、Gemini Developer API、Vertex AI 的原生 Factory 已建立；未接入 Webhook 業務，也不會在啟動時自動呼叫付費 API。
-- **保留依賴**：`go.linecorp.com/garr` 為已核准、尚未啟用的工具模組；依賴版本由 `go.mod`／`go.sum` 保存，路由與接線狀態由 SDK Catalog 保存，可選模組 import 由 `internal/infrastructure/dependencies/modules.go` 保存。空白 SDK 目錄不是依賴保留機制，也不代表功能已實作。
 
 驗證：`go run ./cmd/codexcheck` 與 `make check` 由 CI 執行，保護依賴、架構、型別、Race Test 與建置。PR #8 的 Firestore Emulator 整合測試曾通過，但一次性驗收檔已於合併前移除；**真實 GCP IAM／OIDC／Firestore TTL／Cloud Scheduler／LINE 測試 Channel／使用者 OAuth 仍待隔離 Staging 驗收**。
 

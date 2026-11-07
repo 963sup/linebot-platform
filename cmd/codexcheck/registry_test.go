@@ -154,7 +154,7 @@ default_tools_approval_mode = "writes"`},
 		{"terraform-digest", "hashicorp/terraform-mcp-server@sha256:11dd418bba6003dd5777e9d0979b68de59929a155b355f338f407947e00e9d80", "hashicorp/terraform-mcp-server:1.4.1"},
 		{"repomix-sandbox", `"--sandbox", "/workspace/linebot-platform"`, `"--sandbox", "/"`},
 		{"bootstrap-path", "/workspace/linebot-platform/bootstrap.sh", "/tmp/bootstrap.sh"},
-		{"unknown", "project_doc_max_bytes = 65536", "project_doc_max_bytes = 65536\nunknown_key = true"},
+		{"unknown", "[features]", "unknown_key = true\n[features]"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			if !strings.Contains(string(data), tc.from) {

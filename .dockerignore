@@ -1,14 +1,9 @@
-.git
-.github
-.agents
-.codex
-.vscode
-docs
-tests
-.env
-.env.*
-bin
-dist
-coverage.out
-*.tfstate
-*.tfvars
+# Cloud Build compiles and verifies Go before invoking Docker.
+# Dockerfile packages only these prebuilt service binaries.
+**
+!Dockerfile
+!.dockerignore
+!.release/
+!.release/webhook
+!.release/worker
+!.release/miniapp

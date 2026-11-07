@@ -18,9 +18,15 @@ Apply DDD, Hexagonal Architecture, Go Idioms, KISS, YAGNI and DRY to every non-l
 
 ## Full-read gate
 
+### Accepted execution fallbacks
+
+Repomix MCP and the mise-pinned Repomix CLI are accepted snapshot transports for this workflow. All references below to MCP packs also allow CLI packs with the same normalized include/exclude patterns. Record the tool version, command, repository HEAD, dirty-state fingerprint, artifact path and SHA-256; verify the packed path set against the intended source inventory, including any files omitted by ignore or security rules. Do not disable security checks to force completeness. Record MCP evidence as `Not Verified` when using the CLI. Use the same patterns for the final review pack and account for added or deleted files.
+
+When delegation is unavailable or prohibited by the host, the primary agent performs the auditor's full analysis and decision matrix, prepares the plan, reviews that plan in a separate pass, then implements and reviews the final diff sequentially. References to `architecture_auditor`, `architect`, implementation agents and an independent `reviewer` below describe the preferred delegated route, not prerequisites in this fallback. Explicitly report that self-review is not independent review. Preserve all source-reading, compatibility and verification gates; never claim an agent or MCP was used when it was not.
+
 1. Record HEAD, dirty-state fingerprint, normalized patterns and baseline output IDs. Call Repomix MCP `pack_codebase` with `includePatterns: **/*.go` and `ignorePatterns: **/*_test.go`; verify the output contains no test files. Separately inventory and read `docs/assets/architecture/**`, `docs/architecture/blueprint.md`, domain manifests and relevant ADRs. The user-facing `/assets/architecture/**` means the repository path `docs/assets/architecture/**`.
 2. Read every packed production Go file in bounded contiguous ranges. Record range ownership, total lines, first/last offsets and truncation; repair gaps before proceeding. When agents divide ranges, the orchestrator checks their union covers the full snapshot exactly. Confirm changing facts against current files and gopls; packed output is a snapshot.
-3. No code or architecture asset edits before the read and analysis gates complete. If Repomix MCP is unavailable or its output cannot be fully read, report the audit `BLOCKED`; a CLI pack does not count as MCP evidence for this workflow.
+3. No code or architecture asset edits before the read and analysis gates complete. If neither accepted snapshot transport can produce a complete pack, or the output cannot be fully read, report the audit `BLOCKED` with the missing evidence. A verified CLI pack satisfies this gate without being reported as MCP evidence.
 
 ## First-principles decision
 

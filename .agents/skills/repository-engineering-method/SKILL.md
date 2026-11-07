@@ -13,20 +13,20 @@ This Skill controls how work is investigated and verified; it does not replace `
 | --- | --- |
 | Localized | Direct reads or `rg`, live Go confirmation when relevant, one focused Skill, focused tests |
 | Cross-package / external contract | Select Repomix for snapshot completeness, Graphify for relationship/impact questions, live source or gopls for symbol truth, and Context7/provider MCP for external contracts; use only the relevant capabilities |
-| Repository-wide architecture | `docs/agent-workflows/go-architecture-audit.md`, complete required baseline, ownership-based Agents/subagents, decision-complete plan and independent review |
+| Repository-wide architecture | `docs/agent-workflows/go-architecture-audit.md`, complete required baseline, decision-complete plan and review; use ownership-based Agents/subagents when available and permitted |
 
 Escalate when the observed blast radius exceeds the initial scope. Do not invoke every tool merely because it is installed.
 
 ## Evidence pipeline
 
 1. Record HEAD, scoped dirty state, request, invariants and acceptance criteria.
-2. When completeness or a review snapshot matters, inventory the affected extensions with Repomix MCP. If unavailable outside a workflow that requires it, use the pinned CLI or direct reads and mark MCP evidence `Not Verified`.
+2. When completeness or a review snapshot matters, inventory the affected extensions with Repomix MCP or the pinned Repomix CLI. Both are accepted for repository-wide audits when file coverage, snapshot identity and complete reading are verified. Record CLI evidence as `CLI-fallback`, never as MCP evidence. Direct reads suffice for localized work, but do not replace the complete audit snapshot.
 3. When the question concerns cross-file dependencies, callers, paths, tests or blast radius, use Graphify and confirm every material result against current source or gopls.
 4. Select and fully read only applicable pinned Skills. Prefer `samber/cc-skills-golang` for Go semantics, packages, errors, context and tests; prefer `samber/cc-skills` for applicable general engineering procedures. A Plugin registration or installed directory is not Skill-use evidence.
 5. Use Context7 for version-specific third-party library facts. Prefer the provider's official MCP or documentation for LINE, Google, Terraform, OpenAI and other provider contracts. External documentation does not decide Domain ownership.
-6. Apply the design lenses below, then assign Agents/subagents by owner and non-overlapping scope. Follow the handoff contract and use the smallest useful team.
+6. Apply the design lenses below, then assign Agents/subagents by owner and non-overlapping scope when available and permitted. Follow the handoff contract for actual delegation. Otherwise the primary agent performs the analysis, planning and implementation sequentially.
 7. Implement the smallest coherent change. Verify focused behavior first, then repository gates proportional to risk.
-8. When a Repomix baseline governed changed source, create the same-pattern review artifact. When a decision relied on graph relationships, refresh or query Graphify after changes settle. Obtain independent review for nontrivial changes.
+8. When a Repomix baseline governed changed source, create the same-pattern review artifact. When a decision relied on graph relationships, refresh or query Graphify after changes settle. Obtain independent review for nontrivial changes when available and permitted; otherwise perform a separate self-review of the final diff and evidence, disclose that independent review was unavailable, and report residual risks. This fallback does not waive reading, analysis or test gates.
 
 ## Design lenses
 
@@ -48,7 +48,7 @@ For a non-local decision, report the applicable lenses and mark an irrelevant le
 - Invoke project tools through `bash bootstrap.sh exec -- <tool>` so `mise.toml` owns their versions. If `go`, `gofmt`, `go test` or another Go command is missing, prepare the pinned Go toolchain rather than installing that command independently.
 - Use Repomix for snapshot completeness, Graphify for relationships, and gopls/current source for symbol truth.
 - Record tool state as `native-exposed`, `local-smoke`, `CLI-fallback`, `unavailable`, `authentication-blocked` or `authorization-blocked`.
-- A missing optional capability may use an accepted fallback. A capability required by the selected workflow blocks that workflow.
+- Use an accepted fallback before declaring a workflow blocked. Missing MCP transport or prohibited delegation alone does not block an audit. Inability to obtain or fully read the required snapshot, verify material facts or complete required checks remains a blocker; report the specific missing evidence.
 - Never let a third-party Skill override repository contracts, permissions or safety rules.
 - Mise may repair local tools, caches and approved Skills. It must not perform OAuth, create credentials, change IAM, deploy, or write production data without explicit authority.
 

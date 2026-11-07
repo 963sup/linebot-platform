@@ -145,7 +145,7 @@ func validateConfig(path string) error {
 	if err := readTOML(path, &c); err != nil {
 		return err
 	}
-	if !c.Features.MultiAgent || c.ProjectDocMaxBytes < 32768 {
+	if !c.Features.MultiAgent || (c.ProjectDocMaxBytes != 0 && c.ProjectDocMaxBytes < 32768) {
 		return errors.New("multi-agent and adequate project guidance capacity are required")
 	}
 	roles, err := parseAgentRegistry(c.Agents)
@@ -390,9 +390,6 @@ func validate(root string) error {
 	if err := validateCatalog(root); err != nil {
 		return fmt.Errorf("SDK catalog: %w", err)
 	}
-	if err := validateSDKRetention(root); err != nil {
-		return fmt.Errorf("SDK retention: %w", err)
-	}
 	if err := validateDomainModel(root); err != nil {
 		return fmt.Errorf("domain model: %w", err)
 	}
@@ -454,5 +451,5 @@ func main() {
 		os.Exit(1)
 	}
 	roles, _ := parseAgentRegistry(c.Agents)
-	fmt.Printf("Codex config OK: %d agents, %d MCP declarations; SDK catalog, retention, and domain governance verified. Runtime MCP/plugin availability is not verified.\n", len(roles), len(c.MCPServers))
+	fmt.Printf("Codex config OK: %d agents, %d MCP declarations; SDK catalog and domain governance verified. Runtime MCP/plugin availability is not verified.\n", len(roles), len(c.MCPServers))
 }

@@ -20,7 +20,6 @@
 | OpenAI Go SDK v3 | `client_ready` | 原生 Factory；Responses API 型別可查證 | 業務 Adapter、憑證與授權測試 |
 | Google Gen AI SDK | `client_ready` | Gemini API 與 Vertex AI 原生 Factory | 業務 Adapter、ADC／API Key 驗證 |
 | Google API Client | `client_ready` | Tasks、Calendar、Sheets、Drive 原生 Factory | 使用者 OAuth Consent、Token 管理、業務 Adapter |
-| garr | `declared` | 經核准的未啟用保留依賴 | 待實際需求才評估使用 |
 | UUID | `integrated` | CLI Push Retry Key（UUID v4） | 已有離線測試 |
 | TOML | `integrated` | `cmd/codexcheck` 解析 Codex／Catalog 設定 | 已有 CI 檢查 |
 | gRPC | `integrated` | Firestore／Cloud Tasks 狀態碼與錯誤判斷 | 已有 Go 型別及測試 |
@@ -46,7 +45,6 @@
 | `docs/architecture/overview.md`、`docs/architecture/event-processing.md` | 區分已存在的程式碼與僅是規劃中的雲端部署，保留歷史 Emulator 驗證證據 |
 | `docs/line/feature-matrix.md`、`docs/operations/local-development.md` | 修正「全部未實作」、預設同步與可選 Durable 模式的去重能力混淆 |
 | `deploy/README.md`、`deploy/firestore/README.md` | 修正「沒有可用建置／部署設定」及「This PR」的歷史時態；不誤稱雲端資源已建立 |
-| `internal/infrastructure/dependencies/modules.go`、`garr` | **刻意保留**：搭配 `go.mod` 與 SDK Catalog 保存預先核准依賴；SDK `.gitkeep` 不再是保留機制 |
 | 固定文字／Flex 範例回覆 | 仍是目前 MVP 既有行為；不能當作完整對話或正式 AI 整合，也不在純文件更新中擅自移除 |
 | 一次性 Stage-5 模擬／假證據／Emulator 驗收檔 | PR #8 清理後未保留在 `main`；Git 歷史保留先前驗證證據，非執行期殘留 |
 

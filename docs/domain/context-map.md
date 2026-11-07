@@ -281,7 +281,6 @@ flowchart LR
 | github.com/line/line-bot-sdk-go/v8 | v8.23.0 | integrated | domain-signal | webhook, messaging, audiences, presentation, promotion, membership, analytics | messaging-delivery, audience, experience-presentation, promotion, membership, contact-directory, insights-reporting |
 | github.com/modelcontextprotocol/go-sdk | v1.8.0 | client_ready | generic-infrastructure | tool-discovery, tool-invocation | Not Verified |
 | github.com/openai/openai-go/v3 | v3.91.1 | client_ready | supporting-capability | ai-text-generation, responses-api | content-intelligence |
-| go.linecorp.com/garr | v0.1.1 | declared | generic-infrastructure | retry, circuit-breaker | Not Verified |
 | go.opentelemetry.io/contrib/detectors/gcp | v1.45.0 | integrated | generic-infrastructure | gcp-resource-detection | Not Verified |
 | go.opentelemetry.io/otel | v1.47.0 | integrated | generic-infrastructure | trace-context, telemetry-api | Not Verified |
 | go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc | v1.47.0 | integrated | generic-infrastructure | otlp-metric-export | Not Verified |

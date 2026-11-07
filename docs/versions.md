@@ -8,7 +8,6 @@ Go module 已加入，`go.mod`／`go.sum` 由 Go 工具鏈與 CI 管理；此表
 - Google Gen AI Go SDK（Gemini 等）：`google.golang.org/genai`；目前只有 `internal/infrastructure/google/genai/` client factory，Hexagonal outbound adapter 尚未實作。
 - Google Cloud：依服務採 `cloud.google.com/go/<service>`。
 - Google Workspace／Discovery：`google.golang.org/api`。
-- 程序內韌性選配：`go.linecorp.com/garr`。
 
 正式採用前需固定實際版本、CI Go 工具鏈、建置映像與 Actions SHA；不得以浮動 `latest` 作為可重現 build 依據。
 
@@ -33,7 +32,6 @@ Go module 已加入，`go.mod`／`go.sum` 由 Go 工具鏈與 CI 管理；此表
 | `cloud.google.com/go/secretmanager` | v1.23.1 | Client Factory 已建，尚未使用正式憑證 |
 | `google.golang.org/api` | v0.310.0 | Drive、Sheets Factory 保留；Calendar 38、Tasks 14 與 Forms 10 項操作已有離線 Adapter／CLI 契約；真實使用者 OAuth Consent 與 Staging 驗收仍為 `Not Verified` |
 | `golang.org/x/oauth2` | v0.37.0 | 直接依賴；供 Authorization Code + PKCE、Workspace User TokenSource 與離線 Token Repository 接線使用；可信 LINE principal、公開路由與真實 OAuth 驗收仍為 `Not Verified` |
-| `go.linecorp.com/garr` | v0.1.1 | Worker pool / retry / circuit breaker 選用、未啟用 |
 | `google.golang.org/grpc` | v1.84.0 | Firestore／Cloud Tasks 狀態碼與 gRPC 錯誤處理的直接依賴（原間接依賴升級分類，未新增下載） |
 
 Google Tasks API 使用現有模組的 `google.golang.org/api/tasks/v1`，**沒有新增 Go Module**；Google Cloud Tasks 則使用獨立的 `cloud.google.com/go/cloudtasks`。

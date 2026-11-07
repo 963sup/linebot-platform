@@ -24,8 +24,8 @@ SDK 版本與能力不由目錄保留：
 
 1. `go.mod`／`go.sum` 是版本與解析結果來源。
 2. `docs/sdk/catalog.toml` 記錄 module、用途、接線狀態與預期邊界。
-3. `internal/infrastructure/dependencies/modules.go` 以 `dependencies` build tag 保留尚未 runtime 啟用的核准 import。
-4. `go run ./cmd/codexcheck` 驗證三者的一致性，不驗證空目錄。
+3. 由實際程式碼 import 與 `go mod tidy` 決定依賴，不為未實作能力保留空白 import。
+4. `go run ./cmd/codexcheck` 驗證 module 與 Catalog 的一致性，不驗證空目錄。
 
 ## 查核命令
 
