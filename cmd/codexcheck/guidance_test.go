@@ -49,6 +49,36 @@ func TestGuidanceTracksRegisteredCapabilities(t *testing.T) {
 			t.Errorf("full-read audit missing %q", marker)
 		}
 	}
+	method := read(".agents/skills/repository-engineering-method/SKILL.md")
+	for _, marker := range []string{
+		"Classify scope first", "Localized", "Cross-package / external contract", "Repository-wide architecture",
+		"samber/cc-skills-golang", "samber/cc-skills", "Context7", "provider MCP", "Agents/subagents",
+		"DDD", "Hexagonal Architecture", "Go Idioms", "KISS", "YAGNI", "DRY",
+		"pinned Mise", "unavailable", "Not Applicable",
+	} {
+		if !strings.Contains(method, marker) {
+			t.Errorf("repository engineering method missing %q", marker)
+		}
+	}
+	rootGuidance := read("AGENTS.md")
+	for _, marker := range []string{
+		"repository-engineering-method/SKILL.md", "Repomix inventories", "Graphify explores",
+		"samber/cc-skills-golang", "samber/cc-skills", "Context7 and provider MCPs",
+		"DDD, Hexagonal Architecture, Go Idioms, KISS, YAGNI and DRY", "pinned Mise tasks", "bootstrap.sh exec -- gofmt",
+	} {
+		if !strings.Contains(rootGuidance, marker) {
+			t.Errorf("AGENTS.md missing repository method contract %q", marker)
+		}
+	}
+	mise := read("mise.toml")
+	for _, marker := range []string{"BOOTSTRAP_WORKSPACE", "BOOTSTRAP_REPO", "mise run plugins-install", "mise run plugins-install-standard", "mise run graphify-update", "mise run agent-preflight"} {
+		if !strings.Contains(mise, marker) {
+			t.Errorf("mise setup missing autonomous preparation step %q", marker)
+		}
+	}
+	if !strings.Contains(mise, "graphify extract ${BOOTSTRAP_REPO} --code-only --allow-dedup-shrink") {
+		t.Error("graphify update must accept safe dedup shrink in its rebuildable cache")
+	}
 	blueprint := read("docs/architecture/blueprint.md")
 	for _, marker := range []string{
 		"Business Fact -> Invariant -> Owner -> Boundary -> Component Kind -> Name -> Acceptance Test",
@@ -98,7 +128,7 @@ func TestGuidanceTracksRegisteredCapabilities(t *testing.T) {
 		}
 	}
 	acceptance := read("docs/ai/agents-mcp-plugins-acceptance.md")
-	for _, want := range []string{"9 個角色", "11 宣告、5 啟用、6 個服務維持停用", "1／4／8／9", "0／10"} {
+	for _, want := range []string{"9 個角色", "15 宣告、10 啟用、5 個服務維持停用", "1／4／8／9", "0／10"} {
 		if !strings.Contains(acceptance, want) {
 			t.Errorf("acceptance guidance missing current baseline %q", want)
 		}
@@ -112,7 +142,7 @@ func TestGuidanceTracksRegisteredCapabilities(t *testing.T) {
 		}
 	}
 	handoff := read("docs/agent-workflows/handoff-contract.md")
-	for _, want := range []string{"Repomix Lifecycle", "Include Patterns", "Baseline Output ID", "Review Output ID or Not Applicable", "Pattern Match or Not Applicable", "Scoped Fingerprint", "Stale"} {
+	for _, want := range []string{"Repomix Lifecycle", "Include Patterns", "Baseline Output ID", "Review Output ID or Not Applicable", "Pattern Match or Not Applicable", "Scoped Fingerprint", "Stale", "Method Scope", "Design Lenses", "Graphify Evidence", "External Documentation"} {
 		if !strings.Contains(handoff, want) {
 			t.Errorf("handoff contract missing Repomix evidence field %q", want)
 		}

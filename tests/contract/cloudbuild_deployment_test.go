@@ -76,7 +76,7 @@ func TestCloudBuildConfigurationTargetsLineBotProduction(t *testing.T) {
 	if next := strings.Index(miniappStep[1:], "\n  - id:"); next >= 0 {
 		miniappStep = miniappStep[:next+1]
 	}
-	for _, want := range []string{"--service-account=${_MINIAPP_SERVICE_ACCOUNT}", "--allow-unauthenticated", "LINE_LIFF_ID=${_LINE_LIFF_ID}", "LINE_LOGIN_CHANNEL_ID=${_LINE_LOGIN_CHANNEL_ID}", "MINIAPP_PUBLIC_ORIGIN=${_MINIAPP_PUBLIC_ORIGIN}", "--remove-env-vars=GCP_PROJECT_ID,ATTENDANCE_LOCATION_ACTIVE_KEY_ID,ATTENDANCE_LOCATION_KEY_VERSIONS"} {
+	for _, want := range []string{"--service-account=${_MINIAPP_SERVICE_ACCOUNT}", "--allow-unauthenticated", "LINE_MINI_APP_CHANNEL_ID=${_LINE_MINI_APP_CHANNEL_ID}", "LINE_MINI_APP_LIFF_URL=${_LINE_MINI_APP_LIFF_URL}", "LINE_MINI_APP_ENDPOINT_URL=${_LINE_MINI_APP_ENDPOINT_URL}", "--remove-env-vars=LINE_LOGIN_CHANNEL_ID,LINE_LIFF_ID,MINIAPP_PUBLIC_ORIGIN"} {
 		if !strings.Contains(miniappStep, want) {
 			t.Errorf("MINI App deployment missing %q", want)
 		}

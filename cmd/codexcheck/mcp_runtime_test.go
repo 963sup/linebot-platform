@@ -35,11 +35,9 @@ func copyMCPRuntimeInputs(t *testing.T, root string) string {
 
 func TestMiseRejectsRuntimeInstallAndVersionDrift(t *testing.T) {
 	for _, tc := range []struct{ name, from, to string }{
-		{"filesystem-runtime-mismatch", `"npm:@modelcontextprotocol/server-filesystem" = "2.2.0"`, `"npm:@modelcontextprotocol/server-filesystem" = "2.2.1"`},
-		{"filesystem-version", `"npm:@modelcontextprotocol/server-filesystem" = "2.2.0"`, `"npm:@modelcontextprotocol/server-filesystem" = "latest"`},
 		{"chrome-version", `"npm:chrome-devtools-mcp" = "1.12.0"`, `"npm:chrome-devtools-mcp" = "latest"`},
 		{"playwright-missing", `"npm:@playwright/mcp" = "0.0.84"`, ``},
-		{"graphify-extra", `extras = "mcp"`, `extras = "all"`},
+		{"graphify-extra", `extras = "mcp,terraform"`, `extras = "all"`},
 		{"graphify-version", `version = "0.9.103"`, `version = "latest"`},
 		{"graphify-backend", `GRAPHIFY_BACKEND = "none"`, `GRAPHIFY_BACKEND = "openai"`},
 		{"graphify-python", `python = "3.12.14"`, ``},

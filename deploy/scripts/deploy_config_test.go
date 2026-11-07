@@ -32,10 +32,10 @@ func TestCloudBuildDeploymentSafetyContract(t *testing.T) {
 		"--service-account=${_WORKER_SERVICE_ACCOUNT}",
 		"--service-account=${_MINIAPP_SERVICE_ACCOUNT}",
 		"_MINIAPP_IMAGE_URI: ''",
-		"_MINIAPP_PUBLIC_ORIGIN: ''",
-		"_LINE_LIFF_ID: ''",
-		"ATTENDANCE_ENTRY_URL=https://liff.line.me/${_LINE_LIFF_ID}",
-		"_LINE_LOGIN_CHANNEL_ID: ''",
+		"_LINE_MINI_APP_CHANNEL_ID: ''",
+		"_LINE_MINI_APP_LIFF_URL: ''",
+		"LINE_MINI_APP_LIFF_URL=${_LINE_MINI_APP_LIFF_URL}",
+		"_LINE_MINI_APP_ENDPOINT_URL: ''",
 		"_ATTENDANCE_LOCATION_ACTIVE_KEY_ID: ''",
 		"_ATTENDANCE_LOCATION_KEY_VERSIONS: ''",
 		"--ingress=internal",
@@ -50,7 +50,7 @@ func TestCloudBuildDeploymentSafetyContract(t *testing.T) {
 	if strings.Contains(text, "--service-account=line-bot-runtime@") {
 		t.Error("public and worker must not share the legacy runtime identity")
 	}
-	if strings.Count(text, "ATTENDANCE_ENTRY_URL=https://liff.line.me/${_LINE_LIFF_ID}") != 1 {
+	if strings.Count(text, "LINE_MINI_APP_LIFF_URL=${_LINE_MINI_APP_LIFF_URL}") != 2 {
 		t.Error("Attendance entry must be derived once for the public webhook only")
 	}
 	if strings.Contains(text, "update-traffic") || strings.Contains(text, "latestReadyRevisionName") {
@@ -65,12 +65,12 @@ func TestPreflightBindsMiniAppConfigToApprovedEvidence(t *testing.T) {
 	}
 	text := string(raw)
 	for _, required := range []string{
-		`evidence_miniapp_origin="$(jq -r '.miniapp_config.public_origin'`,
-		`evidence_liff_id="$(jq -r '.miniapp_config.liff_id'`,
-		`evidence_login_channel_id="$(jq -r '.miniapp_config.login_channel_id'`,
-		`"${evidence_miniapp_origin}" != "${MINIAPP_PUBLIC_ORIGIN}"`,
-		`"${evidence_liff_id}" != "${LINE_LIFF_ID}"`,
-		`"${evidence_login_channel_id}" != "${LINE_LOGIN_CHANNEL_ID}"`,
+		`evidence_miniapp_endpoint_url="$(jq -r '.miniapp_config.endpoint_url'`,
+		`evidence_miniapp_liff_url="$(jq -r '.miniapp_config.liff_url'`,
+		`evidence_miniapp_channel_id="$(jq -r '.miniapp_config.channel_id'`,
+		`"${evidence_miniapp_endpoint_url}" != "${LINE_MINI_APP_ENDPOINT_URL}"`,
+		`"${evidence_miniapp_liff_url}" != "${LINE_MINI_APP_LIFF_URL}"`,
+		`"${evidence_miniapp_channel_id}" != "${LINE_MINI_APP_CHANNEL_ID}"`,
 		`"${evidence_attendance_key_id}" != "${ATTENDANCE_LOCATION_ACTIVE_KEY_ID}"`,
 	} {
 		if !strings.Contains(text, required) {
@@ -84,9 +84,9 @@ func TestPreflightBindsMiniAppConfigToApprovedEvidence(t *testing.T) {
 	}
 	var evidence struct {
 		MiniAppConfig struct {
-			PublicOrigin   string `json:"public_origin"`
-			LIFFID         string `json:"liff_id"`
-			LoginChannelID string `json:"login_channel_id"`
+			EndpointURL string `json:"endpoint_url"`
+			LIFFURL     string `json:"liff_url"`
+			ChannelID   string `json:"channel_id"`
 			LocationKeyID  string `json:"attendance_location_active_key_id"`
 			KeyMappingHash string `json:"attendance_location_key_versions_sha256"`
 		} `json:"miniapp_config"`
@@ -94,7 +94,7 @@ func TestPreflightBindsMiniAppConfigToApprovedEvidence(t *testing.T) {
 	if err := json.Unmarshal(evidenceRaw, &evidence); err != nil {
 		t.Fatal(err)
 	}
-	if evidence.MiniAppConfig.PublicOrigin == "" || evidence.MiniAppConfig.LIFFID == "" || evidence.MiniAppConfig.LoginChannelID == "" || evidence.MiniAppConfig.LocationKeyID == "" || evidence.MiniAppConfig.KeyMappingHash == "" {
+	if evidence.MiniAppConfig.EndpointURL == "" || evidence.MiniAppConfig.LIFFURL == "" || evidence.MiniAppConfig.ChannelID == "" || evidence.MiniAppConfig.LocationKeyID == "" || evidence.MiniAppConfig.KeyMappingHash == "" {
 		t.Fatalf("staging evidence omits approved MINI App configuration: %+v", evidence.MiniAppConfig)
 	}
 }

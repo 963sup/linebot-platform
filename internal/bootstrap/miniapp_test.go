@@ -26,9 +26,9 @@ func (fakeMiniAppActions) Punch(context.Context, attendanceapp.PunchCommand) (at
 
 func validMiniAppSettings() map[string]string {
 	return map[string]string{
-		KeyLIFFID: "2000000000-example", KeyLoginChannelID: "2000000000",
-		KeyMiniAppPublicOrigin: "http://127.0.0.1:8080",
-		KeyAttendanceKeyID:     "v1", KeyAttendanceKeyMap: "v1=projects/test-project/secrets/attendance-location-key/versions/1",
+		KeyMiniAppChannelID: "2000000000", KeyMiniAppLIFFURL: "https://miniapp.line.me/2000000000-example",
+		KeyMiniAppEndpointURL: "http://127.0.0.1:8080/miniapp/",
+		KeyAttendanceKeyID:    "v1", KeyAttendanceKeyMap: "v1=projects/test-project/secrets/attendance-location-key/versions/1",
 	}
 }
 
@@ -38,12 +38,12 @@ func TestLoadMiniAppConfig(t *testing.T) {
 	if err != nil || cfg.Role != RoleMiniApp || cfg.Environment != EnvLocal || cfg.LINEAPITimeout == 0 || cfg.FirestoreDatabase != "(default)" {
 		t.Fatalf("config=%#v err=%v", cfg, err)
 	}
-	values[KeyMiniAppPublicOrigin] = "http://localhost:8080"
+	values[KeyMiniAppEndpointURL] = "http://localhost:8080/miniapp/"
 	values[KeyAppEnv] = "production"
 	if _, err := LoadMiniAppConfig(env(values)); err == nil {
 		t.Fatal("production accepted non-HTTPS public origin")
 	}
-	values[KeyMiniAppPublicOrigin] = "https://miniapp.example.test"
+	values[KeyMiniAppEndpointURL] = "https://miniapp.example.test/miniapp/"
 	cfg, err = LoadMiniAppConfig(env(values))
 	if err != nil || cfg.Log.Format != "json" {
 		t.Fatalf("production config=%#v err=%v", cfg, err)
@@ -52,8 +52,8 @@ func TestLoadMiniAppConfig(t *testing.T) {
 
 func TestMiniAppConfigRejectsOriginAndMessagingSecrets(t *testing.T) {
 	for _, mutate := range []func(map[string]string){
-		func(v map[string]string) { v[KeyMiniAppPublicOrigin] = "https://miniapp.example.test/path" },
-		func(v map[string]string) { v[KeyMiniAppPublicOrigin] = "https://miniapp.example.test/" },
+		func(v map[string]string) { v[KeyMiniAppEndpointURL] = "https://miniapp.example.test/path" },
+		func(v map[string]string) { v[KeyMiniAppEndpointURL] = "https://miniapp.example.test/" },
 		func(v map[string]string) { v[KeyChannelSecret] = "forbidden-secret" },
 		func(v map[string]string) { v[KeyChannelToken] = "forbidden-token" },
 		func(v map[string]string) { v[KeyQueueName] = "forbidden-queue" },
@@ -80,18 +80,18 @@ func TestMiniAppConfigDoesNotRequireEncryptionDeploymentDetails(t *testing.T) {
 
 func TestMiniAppConfigRejectsMalformedPublicIdentifiersAndCloudPort(t *testing.T) {
 	for _, mutate := range []func(map[string]string){
-		func(v map[string]string) { v[KeyLIFFID] = "missing-hyphen-format!" },
-		func(v map[string]string) { v[KeyLoginChannelID] = "12345" },
-		func(v map[string]string) { v[KeyLoginChannelID] = "123456789012345678901" },
+		func(v map[string]string) { v[KeyMiniAppLIFFURL] = "https://miniapp.line.me/missing-hyphen-format!" },
+		func(v map[string]string) { v[KeyMiniAppChannelID] = "12345" },
+		func(v map[string]string) { v[KeyMiniAppChannelID] = "123456789012345678901" },
 		func(v map[string]string) {
 			v[KeyAppEnv] = "staging"
-			v[KeyMiniAppPublicOrigin] = "https://miniapp.example.test:8443"
+			v[KeyMiniAppEndpointURL] = "https://miniapp.example.test:8443/miniapp/"
 		},
 		func(v map[string]string) {
 			v[KeyAppEnv] = "staging"
-			v[KeyMiniAppPublicOrigin] = "https://MINIAPP.example.test"
+			v[KeyMiniAppEndpointURL] = "https://MINIAPP.example.test/miniapp/"
 		},
-		func(v map[string]string) { v[KeyMiniAppPublicOrigin] = "http://example.test" },
+		func(v map[string]string) { v[KeyMiniAppEndpointURL] = "http://example.test/miniapp/" },
 	} {
 		values := validMiniAppSettings()
 		mutate(values)
@@ -104,7 +104,7 @@ func TestMiniAppConfigRejectsMalformedPublicIdentifiersAndCloudPort(t *testing.T
 func TestMiniAppRuntimeLifecycleAndPublicConfig(t *testing.T) {
 	values := validMiniAppSettings()
 	values[KeyAppEnv] = "staging"
-	values[KeyMiniAppPublicOrigin] = "https://miniapp.example.test"
+	values[KeyMiniAppEndpointURL] = "https://miniapp.example.test/miniapp/"
 	cfg, err := LoadMiniAppConfig(env(values))
 	if err != nil {
 		t.Fatal(err)

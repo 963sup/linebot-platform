@@ -131,8 +131,6 @@ func TestRejectConfigDrift(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, tc := range []struct{ name, from, to string }{
-		{"filesystem-roots", `"--confine-roots", "/workspace/linebot-platform"`, `"--confine-roots", "/workspace"`},
-		{"filesystem-unconfined", `"--confine-roots", `, ``},
 		{"cloud-bearer", `bearer_token_env_var = "GOOGLE_CLOUD_ACCESS_TOKEN"`, `bearer_token_env_var = "OTHER_TOKEN"`},
 		{"cloud-project", `"x-goog-user-project" = "GOOGLE_CLOUD_PROJECT"`, `"x-goog-user-project" = "OTHER_PROJECT"`},
 		{"cloud-approval", `enabled_tools = ["run_gcloud_command"]

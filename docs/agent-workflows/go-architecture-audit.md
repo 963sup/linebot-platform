@@ -10,6 +10,12 @@ Trigger this workflow for a request to align or refactor all production Go again
 
 This trigger covers architecture, domain semantics, abstractions, types, interfaces, packages, functions, and naming. The auditor remains read-only; only the primary orchestrator implements the reviewed plan.
 
+## Capability orchestration
+
+Read `.agents/skills/repository-engineering-method/SKILL.md` before the audit. Repomix MCP owns complete snapshot evidence; Graphify explores package and symbol relationships, callers, tests and blast radius; gopls and current source confirm symbol truth. Select and fully read applicable pinned `samber/cc-skills-golang` procedures for Go Idioms and applicable `samber/cc-skills` procedures for general engineering decisions. Installation or Plugin registration is not evidence of use. Context7 verifies version-specific third-party Go or SDK claims, while provider MCPs or first-party documentation verify provider contracts; neither source decides Domain ownership.
+
+Apply DDD, Hexagonal Architecture, Go Idioms, KISS, YAGNI and DRY to every non-local decision, marking an irrelevant lens `Not Applicable` rather than inventing a finding. Assign Agents and subagents by Bounded Context, layer or operational owner only after shared facts and boundaries are established. Use the smallest non-overlapping role set and retain an independent reviewer.
+
 ## Full-read gate
 
 1. Record HEAD, dirty-state fingerprint, normalized patterns and baseline output IDs. Call Repomix MCP `pack_codebase` with `includePatterns: **/*.go` and `ignorePatterns: **/*_test.go`; verify the output contains no test files. Separately inventory and read `docs/assets/architecture/**`, `docs/architecture/blueprint.md`, domain manifests and relevant ADRs. The user-facing `/assets/architecture/**` means the repository path `docs/assets/architecture/**`.
@@ -51,3 +57,5 @@ The orchestrator merges specialist findings into one decision-complete plan, ord
 Discover available gopls MCP/LSP tools before relying on them. Use workspace, package API, diagnostics, search and references for impact analysis; use rename only after checking affected references. Unexposed LSP actions are not assumed available. Use the normal editor for changes gopls cannot perform. After each batch run focused compilation, tests and diagnostics.
 
 Finish with gofmt, `go test ./...`, `go vet ./...`, `go build ./...`, architecture/dependency and contract tests, relevant race and integration checks, gopls diagnostics/references, and a same-pattern Repomix MCP review pack. Compare production LOC, file/package/interface counts, changed-function complexity and measured performance only where a benchmark exists. An independent `reviewer` checks the authorized diff and evidence. Report the difference/root-cause register, unified design, actual changes, before/after metrics, passed and failed checks, and remaining risks. Do not claim external verification that was not performed.
+
+Final evidence records Graphify graph freshness and material queries when relationship claims were made, selected Skill provenance and fingerprints, the six design-lens outcomes, external documentation sources, delegated ownership and accepted fallbacks. A configured Plugin, MCP or Agent is never reported as used without an observed call or handoff.

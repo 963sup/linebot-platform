@@ -14,7 +14,6 @@
 
 - 專案級 `config.toml` 只在 Codex **信任此儲存庫** 時載入；不要將 token 寫到 Git。
 - `gopls` 本地 MCP 透過 mise 安裝；Repomix 固定為 1.18.1，並以 `/workspace/linebot-platform` 為唯讀 sandbox。Context7 與 OpenAI Docs 使用遠端文件 MCP。OpenAI Docs 須允許 `developers.openai.com` 的 agent-phase 網路連線。
-- Filesystem MCP 已啟用並固定版本 `2.2.0`，限制於 `/workspace/linebot-platform`；`--confine-roots` 防止 MCP Roots 擴大目錄範圍，寫入工具採 `writes` 核准。它不會限制 Codex Shell 或其他工具，完整隔離仍依賴 Sandbox／OS 權限。`bootstrap.sh setup` 會透過 mise 安裝；`mise run mcp-smoke` 會驗證握手、工具探索與讀取。
 - GitHub MCP 已啟用並可在明確授權下寫入，且僅使用安全環境提供的 `GITHUB_MCP_TOKEN`；Firestore Toolbox 維持停用。
 - Google Cloud CLI 遠端 MCP 已啟用；Codex 執行環境須安全提供 `GOOGLE_CLOUD_ACCESS_TOKEN`（短效 OAuth Token，需更新）與 `GOOGLE_CLOUD_PROJECT`（例如 `line-bot-963sup`）。必須事先啟用 Cloud CLI Execution API 並配置最小 IAM 權限。`run_gcloud_command` 可能修改或刪除資源，所有工具呼叫採 `prompt` 核准；每次新環境仍須確認 token 有效及 Host 已載入工具。切勿將 Token 提交至 Git。
 - 角色清單與數量只以 `config.toml` 為準；全庫 Go 架構任務由唯讀 `architecture_auditor` 先依完整閱讀閘門分析；不得額外建立 orchestrator／reviewer profile Agent。

@@ -11,10 +11,10 @@ Project adaptation of [Graphify's Codex workflow](https://github.com/Graphify-La
 
 Use a graph for cross-file relationships and repeated exploration. A narrow known-file lookup needs only rg/direct reads. If the host actually exposes Graphify MCP tools, use them against the configured graph. Otherwise use the sandbox-compatible local CLI below; identify that evidence as CLI, not MCP. Do not duplicate both paths for the same question.
 
-Run from `/workspace/linebot-platform`. All commands use the pinned mise environment:
+The two explicit roots are `/workspace` and `/workspace/linebot-platform`. All commands use the pinned mise environment:
 
 ```bash
-bash bootstrap.sh exec -- graphify query "validateConfig" --graph /workspace/.cache/linebot-graphify/graphify-out/graph.json --budget 1500 --depth 1
+bash /workspace/linebot-platform/bootstrap.sh exec -- graphify query "validateConfig" --graph /workspace/.cache/linebot-graphify/graphify-out/graph.json --budget 1500 --depth 1
 ```
 
 Replace the quoted question with the task's symbol or relationship. Quote arguments safely. Start shallow and narrow to relevant symbols. The budget is advisory: Graphify may preserve a complete answer above it. Do not read the entire graph JSON or report into context. Follow the returned source locations with direct reads or gopls before changing code. Graph edges can be inferred and are not proof of architecture compliance.

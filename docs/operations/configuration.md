@@ -23,10 +23,9 @@
 | `TASK_INVOKER_EMAIL` | webhook-durable,worker | 否 | — | durable 必需 | 允許呼叫 Worker 的 Service Account Email |
 | `K_SERVICE` | webhook,worker,miniapp | 否 | 平台提供 | Cloud Run 自動提供 | 防止在 Cloud Run 以 local profile 啟動 |
 | `LINEBOT_STAGING_PROJECT` | ops-events | 否 | — | events inspect/check 必需 | 明確指定只讀操作允許的 Staging Project |
-| `ATTENDANCE_ENTRY_URL` | webhook | 否 | — | 選用；設定後啟用聊天打卡入口 | LIFF 或 MINI App 絕對 URL；正式環境必須 HTTPS |
-| `LINE_LIFF_ID` | miniapp | 否 | — | 必需 | 公開 LIFF ID，不是 Messaging API secret |
-| `LINE_LOGIN_CHANNEL_ID` | miniapp | 否 | — | 必需 | LINE Login Channel ID |
-| `MINIAPP_PUBLIC_ORIGIN` | miniapp | 否 | — | 必需；production 必須 HTTPS | 無 path/query/fragment 的精確 public origin |
+| `LINE_MINI_APP_CHANNEL_ID` | miniapp | 否 | — | 必需 | LINE MINI App Channel ID；ID token audience |
+| `LINE_MINI_APP_LIFF_URL` | webhook,miniapp | 否 | — | 正式 LINE MINI App 必需 | Console Web app settings 提供的完整 LIFF URL；Bot 入口與前端 LIFF ID 的單一來源 |
+| `LINE_MINI_APP_ENDPOINT_URL` | miniapp | 否 | — | 必需 | Console Web app settings 的完整 Endpoint URL；同源驗證的單一來源 |
 | `FIRESTORE_DATABASE` | miniapp,ops-attendance | 否 | (default) | 選用 | Attendance 使用的明確 Firestore database ID |
 | `ATTENDANCE_LOCATION_ACTIVE_KEY_ID` | ops-attendance | 否 | — | Ops CLI 必需 | Attendance Ops 的位置 AES-GCM active key ID；Mini App 自動發現 enabled versions |
 | `ATTENDANCE_LOCATION_KEY_VERSIONS` | ops-attendance | 否 | — | Ops CLI 必需 | Attendance Ops 的 pinned key mapping；Mini App 自動發現 enabled versions |

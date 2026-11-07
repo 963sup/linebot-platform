@@ -36,7 +36,7 @@ def check_asyncio_ipc():
 
 
 def check(name, server, root=root):
-    require(name in ('repomix', 'gopls', 'filesystem', 'repomix_skills', 'graphify'), f'Unsupported probe: {name}')
+    require(name in ('repomix', 'gopls', 'repomix_skills', 'graphify'), f'Unsupported probe: {name}')
     require(server.get('enabled'), f'{name} is disabled')
     require(server.get('command') and not server.get('url'), f'{name}: expected stdio command')
     if name == 'graphify':
@@ -86,11 +86,11 @@ def check(name, server, root=root):
         send({'method': 'notifications/initialized'})
         tools = request('tools/list', {})['tools']
         names = {tool['name'] for tool in tools}
-        tool = {'repomix': 'file_system_read_file', 'gopls': 'go_workspace', 'filesystem': 'read_text_file', 'repomix_skills': 'generate_skill', 'graphify': 'graph_stats'}[name]
+        tool = {'repomix': 'file_system_read_file', 'gopls': 'go_workspace', 'repomix_skills': 'generate_skill', 'graphify': 'graph_stats'}[name]
         require(tool in names, f'{name}: required tool {tool} not advertised')
         require(tool in server.get('enabled_tools', [tool]) and tool not in server.get('disabled_tools', []),
                 f'{name}: {tool} blocked by tool policy')
-        arguments = {'path': str(root / 'mise.toml')} if name == 'filesystem' else ({'path': 'mise.toml'} if name == 'repomix' else {})
+        arguments = {'path': 'mise.toml'} if name == 'repomix' else {}
         if name == 'repomix_skills':
             fixture = tempfile.TemporaryDirectory(prefix='.repomix-skill-smoke-', dir=root)
             source = Path(fixture.name)
@@ -101,7 +101,7 @@ def check(name, server, root=root):
         result = request('tools/call', {'name': tool, 'arguments': arguments})
         require(not result.get('isError'), f'{name}: tool error {result}')
         require(result.get('content'), f'{name}: empty tool response')
-        if name in ('repomix', 'filesystem'):
+        if name == 'repomix':
             require('min_version' in json.dumps(result), f'{name} did not read expected file')
         if name == 'graphify':
             stats = '\n'.join(item.get('text', '') for item in result['content'])
@@ -153,8 +153,8 @@ def check(name, server, root=root):
 
 
 if __name__ == '__main__':
-    selected = sys.argv[1:] or ['repomix', 'gopls', 'filesystem', 'graphify']
+    selected = sys.argv[1:] or ['repomix', 'gopls', 'graphify']
     config = tomllib.loads((root / '.codex/config.toml').read_text())
     for name in selected:
-        require(name in ('repomix', 'gopls', 'filesystem', 'repomix_skills', 'graphify'), f'Unsupported probe: {name}')
+        require(name in ('repomix', 'gopls', 'repomix_skills', 'graphify'), f'Unsupported probe: {name}')
         check(name, config['mcp_servers'][name])

@@ -17,6 +17,11 @@ coverage.out
 *.pprof
 .release/
 
+# Pinned third-party Skills installed by cmd/codexplugins; project-authored Skills remain tracked.
+.agents/skills/cc-skills/
+.agents/skills/cc-skills-golang/
+.agents/skills/google-developer-knowledge/
+
 # Terraform state and local values
 .terraform/
 *.tfstate

@@ -27,7 +27,7 @@ for line in sys.stdin:
         print(json.dumps({'jsonrpc':'2.0', 'id':msg['id'], 'error':{'code':-32603,'message':'failed'}}), flush=True)
         continue
     result = {}
-    if method == 'tools/list': result = {'tools': [{'name': 'generate_skill' if mode == 'skill-no-files' else ('read_text_file' if mode == 'filesystem' else 'file_system_read_file')}]}
+    if method == 'tools/list': result = {'tools': [{'name': 'generate_skill' if mode == 'skill-no-files' else 'file_system_read_file'}]}
     if method == 'tools/list' and mode.startswith('graph-'):
         result = {'tools': [{'name': 'graph_stats'}, {'name': 'query_graph'}]}
     if method == 'tools/call' and mode.startswith('graph-'):
@@ -38,8 +38,7 @@ for line in sys.stdin:
         result = {'content': [{'type': 'text', 'text': text}]}
         if mode == 'graph-error': result['isError'] = True
     elif method == 'tools/call':
-        expected = os.path.join(os.path.dirname(__file__), 'mise.toml') if mode == 'filesystem' else 'mise.toml'
-        if mode != 'skill-no-files' and msg['params']['arguments'] != {'path': expected}: raise ValueError('unexpected read path')
+        if mode != 'skill-no-files' and msg['params']['arguments'] != {'path': 'mise.toml'}: raise ValueError('unexpected read path')
         result = {'content':[{'type':'text','text':'min_version = "2026.11.3"'}]}
         if mode == 'tool-error': result['isError'] = True
         if mode == 'wrong-content': result['content'][0]['text'] = 'wrong file'
@@ -65,11 +64,6 @@ class SmokeTest(unittest.TestCase):
         with contextlib.redirect_stdout(io.StringIO()) as output:
             mcp_smoke.check('repomix', self.server('success'), self.root)
         self.assertIn('file_system_read_file passed', output.getvalue())
-
-    def test_filesystem_reads_workspace_file(self):
-        with contextlib.redirect_stdout(io.StringIO()) as output:
-            mcp_smoke.check('filesystem', self.server('filesystem'), self.root)
-        self.assertIn('read_text_file passed', output.getvalue())
 
     def test_generation_requires_real_artifacts_and_cleans_fixture(self):
         with self.assertRaisesRegex(RuntimeError, 'did not create SKILL.md'):

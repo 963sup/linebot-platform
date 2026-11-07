@@ -7,8 +7,8 @@ set -euo pipefail
 required=(
   PROJECT_ID REGION QUEUE_ID PUBLIC_IMAGE_URI PRIVATE_IMAGE_URI MINIAPP_IMAGE_URI
   PUBLIC_SERVICE_ACCOUNT WORKER_SERVICE_ACCOUNT MINIAPP_SERVICE_ACCOUNT INVOKER_SERVICE_ACCOUNT
-  WORKER_SERVICE TASK_WORKER_ORIGIN MINIAPP_PUBLIC_ORIGIN
-  LINE_LIFF_ID LINE_LOGIN_CHANNEL_ID
+  WORKER_SERVICE TASK_WORKER_ORIGIN LINE_MINI_APP_ENDPOINT_URL
+  LINE_MINI_APP_CHANNEL_ID LINE_MINI_APP_LIFF_URL
   ATTENDANCE_LOCATION_ACTIVE_KEY_ID ATTENDANCE_LOCATION_KEY_VERSIONS
   STAGING_EVIDENCE_FILE STAGING_EVIDENCE_SHA256
 )
@@ -23,16 +23,16 @@ if [[ ! "${TASK_WORKER_ORIGIN}" =~ ^https://[a-z0-9-]+\.[a-z0-9-]+\.run\.app$ ]]
   echo "TASK_WORKER_ORIGIN must be a Cloud Run HTTPS origin without a path" >&2
   exit 2
 fi
-if [[ ! "${MINIAPP_PUBLIC_ORIGIN}" =~ ^https://[a-z0-9.-]+$ ]]; then
-  echo "MINIAPP_PUBLIC_ORIGIN must be an HTTPS origin without userinfo, port, path, query, or fragment" >&2
+if [[ ! "${LINE_MINI_APP_ENDPOINT_URL}" =~ ^https://[a-z0-9.-]+/miniapp/$ ]]; then
+  echo "LINE_MINI_APP_ENDPOINT_URL must be an exact HTTPS URL ending in /miniapp/" >&2
   exit 2
 fi
-if [[ ! "${LINE_LIFF_ID}" =~ ^[0-9]+-[A-Za-z0-9_-]+$ ]]; then
-  echo "LINE_LIFF_ID has an invalid format" >&2
+if [[ ! "${LINE_MINI_APP_LIFF_URL}" =~ ^https://miniapp\.line\.me/([0-9]+-[A-Za-z0-9_-]+)$ ]]; then
+  echo "LINE_MINI_APP_LIFF_URL has an invalid format" >&2
   exit 2
 fi
-if [[ ! "${LINE_LOGIN_CHANNEL_ID}" =~ ^[0-9]{6,20}$ ]]; then
-  echo "LINE_LOGIN_CHANNEL_ID must be a numeric channel ID" >&2
+if [[ ! "${LINE_MINI_APP_CHANNEL_ID}" =~ ^[0-9]{6,20}$ || "${BASH_REMATCH[1]%%-*}" != "${LINE_MINI_APP_CHANNEL_ID}" ]]; then
+  echo "LINE_MINI_APP_CHANNEL_ID must own LINE_MINI_APP_LIFF_URL" >&2
   exit 2
 fi
 if [[ ! "${ATTENDANCE_LOCATION_ACTIVE_KEY_ID}" =~ ^[A-Za-z0-9._-]+$ ]]; then
@@ -91,9 +91,9 @@ jq -e '
   (.image_digests.public | type == "string" and contains("@sha256:")) and
   (.image_digests.private | type == "string" and contains("@sha256:")) and
   (.image_digests.miniapp | type == "string" and contains("@sha256:")) and
-  (.miniapp_config.public_origin | type == "string" and length > 0) and
-  (.miniapp_config.liff_id | type == "string" and length > 0) and
-  (.miniapp_config.login_channel_id | type == "string" and length > 0) and
+  (.miniapp_config.endpoint_url | type == "string" and length > 0) and
+  (.miniapp_config.liff_url | type == "string" and length > 0) and
+  (.miniapp_config.channel_id | type == "string" and length > 0) and
   .miniapp_config.firestore_database == "(default)" and
   (.miniapp_config.attendance_location_active_key_id | type == "string" and length > 0) and
   (.miniapp_config.attendance_location_key_versions_sha256 | type == "string" and test("^[0-9a-f]{64}$")) and
@@ -103,9 +103,9 @@ jq -e '
 evidence_public="$(jq -r '.image_digests.public' "${STAGING_EVIDENCE_FILE}")"
 evidence_private="$(jq -r '.image_digests.private' "${STAGING_EVIDENCE_FILE}")"
 evidence_miniapp="$(jq -r '.image_digests.miniapp' "${STAGING_EVIDENCE_FILE}")"
-evidence_miniapp_origin="$(jq -r '.miniapp_config.public_origin' "${STAGING_EVIDENCE_FILE}")"
-evidence_liff_id="$(jq -r '.miniapp_config.liff_id' "${STAGING_EVIDENCE_FILE}")"
-evidence_login_channel_id="$(jq -r '.miniapp_config.login_channel_id' "${STAGING_EVIDENCE_FILE}")"
+evidence_miniapp_endpoint_url="$(jq -r '.miniapp_config.endpoint_url' "${STAGING_EVIDENCE_FILE}")"
+evidence_miniapp_liff_url="$(jq -r '.miniapp_config.liff_url' "${STAGING_EVIDENCE_FILE}")"
+evidence_miniapp_channel_id="$(jq -r '.miniapp_config.channel_id' "${STAGING_EVIDENCE_FILE}")"
 evidence_attendance_key_id="$(jq -r '.miniapp_config.attendance_location_active_key_id' "${STAGING_EVIDENCE_FILE}")"
 evidence_attendance_key_versions_sha256="$(jq -r '.miniapp_config.attendance_location_key_versions_sha256' "${STAGING_EVIDENCE_FILE}")"
 expires_at="$(jq -r '.expires_at_utc' "${STAGING_EVIDENCE_FILE}")"
@@ -123,7 +123,7 @@ if [[ "${evidence_public_digest}" != "${public_digest}" || "${evidence_private_d
   echo "deployment images do not match approved staging evidence" >&2
   exit 2
 fi
-if [[ "${evidence_miniapp_origin}" != "${MINIAPP_PUBLIC_ORIGIN}" || "${evidence_liff_id}" != "${LINE_LIFF_ID}" || "${evidence_login_channel_id}" != "${LINE_LOGIN_CHANNEL_ID}" ]]; then
+if [[ "${evidence_miniapp_endpoint_url}" != "${LINE_MINI_APP_ENDPOINT_URL}" || "${evidence_miniapp_liff_url}" != "${LINE_MINI_APP_LIFF_URL}" || "${evidence_miniapp_channel_id}" != "${LINE_MINI_APP_CHANNEL_ID}" ]]; then
   echo "MINI App deployment configuration does not match approved staging evidence" >&2
   exit 2
 fi

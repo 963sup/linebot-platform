@@ -2,6 +2,8 @@
 
 本文件是本專案唯一的架構與依賴規範，包含目錄樹、分層責任、依賴、效能、命名與驗收規則。避免以另一份文件重複維護相同契約。文字規則與 architecture tests 具規範性；下方視覺藍圖只作概念導覽。
 
+根目錄 [`ARCHITECTURE-METHODOLOGY.md`](../../ARCHITECTURE-METHODOLOGY.md) 定義 DDD、Hexagonal Architecture、Go Idioms、KISS、YAGNI 與 DRY 的決策詞彙；它說明如何作設計判斷，不另行定義本文件的架構或依賴規則。Agent 的比例化證據與工具程序由 [`repository-engineering-method`](../../.agents/skills/repository-engineering-method/SKILL.md) 定義。
+
 ## 視覺藍圖（Illustrative / non-normative）
 
 PNG 是高階 DDD／Hexagonal Architecture 概覽的渲染版本；其中右下方區塊只是品質閘門名稱，不能宣稱本 repository 已通過部署驗收：

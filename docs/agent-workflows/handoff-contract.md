@@ -9,7 +9,7 @@ Keep handoffs concise. Use `None`, `Not Applicable`, or `Not Verified` instead o
 Before spawning, record:
 
 ```text
-Handoff ID / State=PREPARE / Task / Requested Role / Role Guidance Mode / Lifecycle / Acceptance Criteria / Inputs / Scope / File Ownership / Authority / Expected HEAD / Scoped Dirty State or Fingerprint / Snapshot Identity / Selected Skills and Fingerprints / Required Tool Capabilities / Output Contract
+Handoff ID / State=PREPARE / Task / Requested Role / Role Guidance Mode / Lifecycle / Acceptance Criteria / Inputs / Scope / File Ownership / Authority / Expected HEAD / Scoped Dirty State or Fingerprint / Snapshot Identity / Selected Skills and Fingerprints / Required Tool Capabilities / Method Scope / Design Lenses / Output Contract
 ```
 
 - `Role Guidance Mode` is `native-verified` only when the host role selector was observed; otherwise it is `explicit` and the selected `.codex/agents/<role>.toml` instructions are supplied in the task.
@@ -18,6 +18,8 @@ Handoff ID / State=PREPARE / Task / Requested Role / Role Guidance Mode / Lifecy
 - `Snapshot Identity` records normalized include patterns, output ID, HEAD, scoped fingerprint and artifact hash when Repomix or another generated reference is used.
 - `Selected Skills and Fingerprints` records only relevant skills, their path/provenance, and content or source identity. Naming a skill is not proof it was read.
 - `Required Tool Capabilities` distinguishes `native-exposed`, `local-smoke`, `CLI-fallback`, `unavailable`, `authentication-blocked`, and `authorization-blocked`.
+- `Method Scope` is `localized`, `cross-package/external-contract`, or `repository-wide`; it selects the proportional evidence pipeline in `.agents/skills/repository-engineering-method/SKILL.md`.
+- `Design Lenses` records applicable DDD, Hexagonal Architecture, Go Idioms, KISS, YAGNI and DRY questions, using `Not Applicable` where justified.
 
 ## READY — child to orchestrator
 
@@ -46,12 +48,14 @@ Only `START` grants writer ownership. Read-only investigation may proceed only a
 Every delegated result contains:
 
 ```text
-Handoff ID / State=RESULT / Outcome / Task / Owner / Inputs / Scope / Files / Contract Changes / Workspace Identity / Tool Evidence / Skill Evidence / Ownership / Evidence / Tests Run / Findings / Risks / Next Action
+Handoff ID / State=RESULT / Outcome / Task / Owner / Inputs / Scope / Files / Contract Changes / Workspace Identity / Tool Evidence / Skill Evidence / Method Scope / Design Lenses / Graphify Evidence / External Documentation / Ownership / Evidence / Tests Run / Findings / Risks / Next Action
 ```
 
 `Outcome` is `COMPLETED`, `PARTIAL`, or `BLOCKED`. Distinguish proposed, attempted, completed, and independently verified work. `Workspace Identity` reports final pwd, checkout, HEAD and scoped dirty state/fingerprint. `Ownership` confirms that only approved files were written. Parent and child verify material artifacts exist in the consuming workspace before relying on them.
 
 Use `Not Verified` when a command, MCP, credential, deployment, host integration, or external API was not actually verified. Reviewers remain independent and read-only.
+
+`Graphify Evidence` records graph freshness or commit, material queries or handles and live-source confirmation, or `Not Applicable`. `External Documentation` names Context7, provider MCP or first-party sources actually consulted, or `Not Applicable`. Plugin installation and MCP configuration are capability inventory, not execution evidence.
 
 ## Repomix and generated references
 

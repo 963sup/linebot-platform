@@ -175,16 +175,16 @@ func loadRuntimeConfig(role RuntimeRole, getenv func(string) string) (Config, er
 }
 
 func loadAttendanceEntryURL(getenv func(string) string, environment Environment) (string, error) {
-	value := readSetting(getenv, KeyAttendanceEntryURL)
+	value := readSetting(getenv, KeyMiniAppLIFFURL)
 	if value == "" {
 		return "", nil
 	}
 	if len(value) > 1000 {
-		return "", errors.New("ATTENDANCE_ENTRY_URL must not exceed 1000 bytes")
+		return "", errors.New("LINE_MINI_APP_LIFF_URL must not exceed 1000 bytes")
 	}
 	parsed, err := url.ParseRequestURI(value)
 	if err != nil || strings.ContainsAny(value, "?#") || parsed.Host == "" || parsed.User != nil || parsed.RawQuery != "" || parsed.Fragment != "" {
-		return "", errors.New("ATTENDANCE_ENTRY_URL must be an absolute URL without userinfo, query or fragment")
+		return "", errors.New("LINE_MINI_APP_LIFF_URL must be an absolute URL without userinfo, query or fragment")
 	}
 	if parsed.Scheme == "https" {
 		return value, nil
@@ -192,7 +192,7 @@ func loadAttendanceEntryURL(getenv func(string) string, environment Environment)
 	localLoopback := environment == EnvLocal && parsed.Scheme == "http" &&
 		(parsed.Hostname() == "localhost" || parsed.Hostname() == "127.0.0.1")
 	if !localLoopback {
-		return "", errors.New("ATTENDANCE_ENTRY_URL must use HTTPS except for local loopback HTTP")
+		return "", errors.New("LINE_MINI_APP_LIFF_URL must use HTTPS except for local loopback HTTP")
 	}
 	return value, nil
 }

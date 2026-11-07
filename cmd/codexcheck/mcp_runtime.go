@@ -31,17 +31,14 @@ func validateMCPRuntimeSupplyChain(root string) error {
 		if !exactNPMVersion.MatchString(tool.Version) {
 			return fmt.Errorf("mise tool %s must have an exact version", name)
 		}
-		if (name == "pipx:graphifyy" && tool.Extras != "mcp") || (name != "pipx:graphifyy" && tool.Extras != "") {
-			return fmt.Errorf("only Graphify may specify extras, and it requires mcp")
+		if (name == "pipx:graphifyy" && tool.Extras != "mcp,terraform") || (name != "pipx:graphifyy" && tool.Extras != "") {
+			return fmt.Errorf("only Graphify may specify extras, and it requires the pinned mcp,terraform set")
 		}
 	}
-	for _, name := range []string{"go", "node", "python", "uv", "pipx:graphifyy", "go:golang.org/x/tools/gopls", "npm:repomix", "npm:@modelcontextprotocol/server-filesystem", "npm:chrome-devtools-mcp", "npm:@playwright/mcp"} {
+	for _, name := range []string{"go", "node", "python", "uv", "pipx:graphifyy", "go:golang.org/x/tools/gopls", "npm:repomix", "npm:chrome-devtools-mcp", "npm:@playwright/mcp"} {
 		if miseConfig.Tools[name].Version == "" {
 			return fmt.Errorf("mise is missing required tool %s", name)
 		}
-	}
-	if miseConfig.Tools["npm:@modelcontextprotocol/server-filesystem"].Version != "2.2.0" {
-		return fmt.Errorf("Filesystem MCP install version must match the configured 2.2.0 runtime")
 	}
 	if miseConfig.Env["GRAPHIFY_BACKEND"] != "none" || miseConfig.Env["GRAPHIFY_QUERY_LOG_DISABLE"] != "1" {
 		return fmt.Errorf("Graphify must disable LLM backends and query logging")

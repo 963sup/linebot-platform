@@ -13,6 +13,43 @@ import (
 func fixtureSource() source {
 	return source{Name: "cc-skills", Repository: "https://github.com/samber/cc-skills.git", Commit: strings.Repeat("a", 40), SkillRoot: "skills"}
 }
+
+func TestBootstrapRepository(t *testing.T) {
+	want := t.TempDir()
+	t.Setenv("BOOTSTRAP_REPO", want)
+	got, err := bootstrapRepository()
+	if err != nil || got != want {
+		t.Fatalf("bootstrapRepository() = %q, %v; want %q", got, err, want)
+	}
+}
+
+func TestBootstrapRepositoryRejectsMissingAndRelativeValues(t *testing.T) {
+	for _, value := range []string{"", "relative/repo"} {
+		t.Run(value, func(t *testing.T) {
+			t.Setenv("BOOTSTRAP_REPO", value)
+			if _, err := bootstrapRepository(); err == nil {
+				t.Fatalf("BOOTSTRAP_REPO %q was accepted", value)
+			}
+		})
+	}
+}
+
+func TestPrepareAgentHomeCreatesFirstRunDirectories(t *testing.T) {
+	home := filepath.Join(t.TempDir(), "managed-home")
+	agents, err := prepareAgentHome(home)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if agents != filepath.Join(home, ".agents") {
+		t.Fatalf("agents path = %q", agents)
+	}
+	for _, path := range []string{home, agents} {
+		info, statErr := os.Lstat(path)
+		if statErr != nil || !info.IsDir() || info.Mode()&os.ModeSymlink != 0 {
+			t.Fatalf("managed directory %q invalid: %v", path, statErr)
+		}
+	}
+}
 func archive(t *testing.T, names ...string) []byte {
 	t.Helper()
 	var b bytes.Buffer

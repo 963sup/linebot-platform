@@ -2,6 +2,14 @@
 
 Build maintainable Go services with pragmatic DDD, Hexagonal Architecture and idiomatic Go. Optimize for correctness, small changes, high cohesion, low coupling and evidence-based performance.
 
+## Repository engineering method
+
+Use [the repository engineering method](.agents/skills/repository-engineering-method/SKILL.md) as the default way to select evidence and collaborators. Apply it proportionally: a localized edit uses direct reads and the smallest relevant Skill; cross-package work selects Repomix when snapshot completeness matters and Graphify when relationships or blast radius matter; external-contract work selects Context7 or the authoritative provider MCP; a repository-wide architecture change follows the full audit and independent-review gates. Do not run every integration for every task.
+
+The evidence roles are distinct: Repomix inventories a bounded source snapshot; Graphify explores dependencies, callers and blast radius; gopls confirms live Go symbols; `samber/cc-skills-golang` supplies Go-specific engineering procedures; `samber/cc-skills` supplies applicable general engineering procedures; Context7 and provider MCPs verify current external contracts; Agents and subagents divide work by ownership after the shared facts and boundaries are established. Plugins provide capabilities but are not evidence that a Skill or MCP was actually used.
+
+For every non-local design decision, review it through the repository's DDD, Hexagonal Architecture, Go Idioms, KISS, YAGNI and DRY lenses. Preserve necessary business complexity, reject speculative abstractions, and do not merge coincidentally similar knowledge across Bounded Contexts.
+
 ## Architecture
 
 - [`docs/architecture/blueprint.md`](docs/architecture/blueprint.md) is the single architecture and dependency contract. The visual blueprint embedded there is illustrative; the text and architecture tests are normative.
@@ -28,7 +36,7 @@ Accuracy comes first; minimize redundant context, calls and coordination without
 - Independent review: after nontrivial implementation, assign a read-only `reviewer` who did not author that implementation. For a trivial edit, direct verification is sufficient. Pure investigation does not require a writer or artificial before/after artifacts.
 - Parallelize only independent scopes. Serialize dependent decisions and shared-file edits. The nine-role project budget is a ceiling; the host's actual concurrency/depth limits always apply when lower.
 
-Use Skills for relevant reusable procedures, MCP for available authoritative data or semantic operations, and Plugins as providers of those capabilities. These are complementary to agents, not mandatory stages. Discover capabilities before relying on them; read only the selected Skill and needed references. Prefer direct reads for narrow questions; use scoped Repomix for relationships. Do not install or invoke every available integration. A failed capability lookup is not a reason to repeat discovery without a state change; use a documented fallback and state its limits.
+Use Skills for relevant reusable procedures, MCP for available authoritative data or semantic operations, and Plugins as providers of those capabilities. These are complementary to agents, not mandatory stages. Discover capabilities before relying on them; read only the selected Skill and needed references. Prefer direct reads for narrow questions; use scoped Repomix when snapshot completeness or a review lifecycle matters, and Graphify when relationships or blast radius matter. Do not install or invoke every available integration. A failed capability lookup is not a reason to repeat discovery without a state change; use a documented fallback and state its limits.
 
 Before delegation, read the selected `.codex/agents/<role>.toml`. Use the host's native role selector only if available and verified. Otherwise explicitly pass its `developer_instructions` together with task constraints to the child; a task name alone does not load a role. Report this as explicit role guidance, not native role registration. Follow the `PREPARE -> READY -> START -> RESULT` protocol in `docs/agent-workflows/handoff-contract.md`; spawning never grants write ownership, and the child must report observed identity, loaded guidance, capabilities and artifact visibility before the orchestrator records `START`. Repository guidance never overrides host instructions or permissions. If delegation is unavailable or prohibited, report that limitation and continue authorized independent work; do not claim independent review.
 
@@ -54,9 +62,11 @@ For cross-component development, use `docs/agent-workflows/architecture-context.
 - MCP configuration is not proof of startup, authentication, authorization or availability.
 - Report commands actually executed; never invent tests, permissions, deployment status or citations.
 
-For work that needs cross-file or cross-package relationship evidence, establish a task-scoped Repomix baseline, confirm current symbols and text with direct reads or gopls, route implementation to the smallest role set, run repository checks, then repack the same scope for independent review when scoped source changed. If scope expands, the orchestrator establishes a new baseline before further edits. A full-repository pack is reserved for genuine repository-wide analysis.
+When cross-file or cross-package work needs snapshot completeness or an authorized before/after review lifecycle, establish a task-scoped Repomix baseline and repack the same scope after governed source changes. Use Graphify separately for relationship and blast-radius questions, and confirm material results with direct reads or gopls. If a Repomix-governed scope expands, establish a new baseline before further edits. A full-repository pack is reserved for genuine repository-wide analysis; otherwise unused evidence tools are `Not Applicable`.
 
 ## Skills
+
+Start cross-boundary and repository-wide work with [the repository engineering method](.agents/skills/repository-engineering-method/SKILL.md). Record only the Skills actually selected and read. The approved pinned Samber sources are `samber/cc-skills-golang` for Go-specific engineering and `samber/cc-skills` for applicable general procedures; their presence on disk or in a Plugin registry is not execution evidence.
 
 For Graphify relationship exploration or `$graphify`, use [the project Graphify skill](.agents/skills/graphify/SKILL.md). It shares the configured graph and pinned mise tools; CLI fallback is not evidence of native MCP registration.
 
@@ -67,6 +77,10 @@ Generated code-reference skills use `.agents/skills/repomix-reference/SKILL.md`:
 ## Cloud and environment safety
 
 The environment role may repair only pinned local tools, PATH, rebuildable caches and approved Skills. Never automatically perform OAuth login, create credentials, grant IAM, expand network policy, deploy resources, write production data or overwrite user-level Codex configuration.
+
+When a task-relevant local tool or approved Skill is missing, use the repository's pinned Mise tasks to install or repair it and rerun the smallest capability check without waiting for a user reminder. Do not substitute unpinned global installers. Authentication, authorization and external side effects remain explicit blockers rather than automatic setup.
+
+Invoke repository toolchain commands through `bash bootstrap.sh exec -- <tool>` (for example `bash bootstrap.sh exec -- gofmt ...`) so `mise.toml` supplies the pinned version. A missing Go command means the Mise-managed Go toolchain must be prepared; `gofmt` is never installed separately.
 
 Cloud write operations, IAM changes, paid resources, destructive actions, Git push, PR creation and merge require explicit user authorization.
 

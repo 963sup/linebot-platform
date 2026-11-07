@@ -17,32 +17,31 @@ type SettingSpec struct {
 }
 
 const (
-	KeyAppEnv              = "APP_ENV"
-	KeyPort                = "PORT"
-	KeyEventMode           = "LINE_EVENT_MODE"
-	KeyLINETimeout         = "LINE_API_TIMEOUT"
-	KeyLogLevel            = "LOG_LEVEL"
-	KeyLogFormat           = "LOG_FORMAT"
-	KeyTelemetryMode       = "TELEMETRY_MODE"
-	KeyTraceSampleRatio    = "OTEL_TRACE_SAMPLE_RATIO"
-	KeyMetricInterval      = "OTEL_METRIC_INTERVAL"
-	KeyChannelSecret       = "LINE_CHANNEL_SECRET"
-	KeyChannelToken        = "LINE_CHANNEL_ACCESS_TOKEN"
-	KeyBotDestination      = "LINE_BOT_DESTINATION"
-	KeyProjectID           = "GCP_PROJECT_ID"
-	KeyQueueName           = "TASK_QUEUE_NAME"
-	KeyWorkerURL           = "TASK_WORKER_URL"
-	KeyOIDCAudience        = "TASK_OIDC_AUDIENCE"
-	KeyInvokerEmail        = "TASK_INVOKER_EMAIL"
-	KeyCloudRunService     = "K_SERVICE"
-	KeyOpsStagingProject   = "LINEBOT_STAGING_PROJECT"
-	KeyAttendanceEntryURL  = "ATTENDANCE_ENTRY_URL"
-	KeyLIFFID              = "LINE_LIFF_ID"
-	KeyLoginChannelID      = "LINE_LOGIN_CHANNEL_ID"
-	KeyMiniAppPublicOrigin = "MINIAPP_PUBLIC_ORIGIN"
-	KeyFirestoreDatabase   = "FIRESTORE_DATABASE"
-	KeyAttendanceKeyID     = "ATTENDANCE_LOCATION_ACTIVE_KEY_ID"
-	KeyAttendanceKeyMap    = "ATTENDANCE_LOCATION_KEY_VERSIONS"
+	KeyAppEnv             = "APP_ENV"
+	KeyPort               = "PORT"
+	KeyEventMode          = "LINE_EVENT_MODE"
+	KeyLINETimeout        = "LINE_API_TIMEOUT"
+	KeyLogLevel           = "LOG_LEVEL"
+	KeyLogFormat          = "LOG_FORMAT"
+	KeyTelemetryMode      = "TELEMETRY_MODE"
+	KeyTraceSampleRatio   = "OTEL_TRACE_SAMPLE_RATIO"
+	KeyMetricInterval     = "OTEL_METRIC_INTERVAL"
+	KeyChannelSecret      = "LINE_CHANNEL_SECRET"
+	KeyChannelToken       = "LINE_CHANNEL_ACCESS_TOKEN"
+	KeyBotDestination     = "LINE_BOT_DESTINATION"
+	KeyProjectID          = "GCP_PROJECT_ID"
+	KeyQueueName          = "TASK_QUEUE_NAME"
+	KeyWorkerURL          = "TASK_WORKER_URL"
+	KeyOIDCAudience       = "TASK_OIDC_AUDIENCE"
+	KeyInvokerEmail       = "TASK_INVOKER_EMAIL"
+	KeyCloudRunService    = "K_SERVICE"
+	KeyOpsStagingProject  = "LINEBOT_STAGING_PROJECT"
+	KeyMiniAppChannelID   = "LINE_MINI_APP_CHANNEL_ID"
+	KeyMiniAppLIFFURL     = "LINE_MINI_APP_LIFF_URL"
+	KeyMiniAppEndpointURL = "LINE_MINI_APP_ENDPOINT_URL"
+	KeyFirestoreDatabase  = "FIRESTORE_DATABASE"
+	KeyAttendanceKeyID    = "ATTENDANCE_LOCATION_ACTIVE_KEY_ID"
+	KeyAttendanceKeyMap   = "ATTENDANCE_LOCATION_KEY_VERSIONS"
 )
 
 // settingContract owns the role, default and secret metadata for each key.
@@ -68,10 +67,9 @@ var settingContract = []SettingSpec{
 	{Key: KeyInvokerEmail, Roles: "webhook-durable,worker", Secret: false, Default: "—", Required: "durable 必需", Description: "允許呼叫 Worker 的 Service Account Email"},
 	{Key: KeyCloudRunService, Roles: "webhook,worker,miniapp", Secret: false, Default: "平台提供", Required: "Cloud Run 自動提供", Description: "防止在 Cloud Run 以 local profile 啟動"},
 	{Key: KeyOpsStagingProject, Roles: "ops-events", Secret: false, Default: "—", Required: "events inspect/check 必需", Description: "明確指定只讀操作允許的 Staging Project"},
-	{Key: KeyAttendanceEntryURL, Roles: "webhook", Secret: false, Default: "—", Required: "選用；設定後啟用聊天打卡入口", Description: "LIFF 或 MINI App 絕對 URL；正式環境必須 HTTPS"},
-	{Key: KeyLIFFID, Roles: "miniapp", Secret: false, Default: "—", Required: "必需", Description: "公開 LIFF ID，不是 Messaging API secret"},
-	{Key: KeyLoginChannelID, Roles: "miniapp", Secret: false, Default: "—", Required: "必需", Description: "LINE Login Channel ID"},
-	{Key: KeyMiniAppPublicOrigin, Roles: "miniapp", Secret: false, Default: "—", Required: "必需；production 必須 HTTPS", Description: "無 path/query/fragment 的精確 public origin"},
+	{Key: KeyMiniAppChannelID, Roles: "miniapp", Secret: false, Default: "—", Required: "必需", Description: "LINE MINI App Channel ID；ID token audience"},
+	{Key: KeyMiniAppLIFFURL, Roles: "webhook,miniapp", Secret: false, Default: "—", Required: "正式 LINE MINI App 必需", Description: "Console Web app settings 提供的完整 LIFF URL；Bot 入口與前端 LIFF ID 的單一來源"},
+	{Key: KeyMiniAppEndpointURL, Roles: "miniapp", Secret: false, Default: "—", Required: "必需", Description: "Console Web app settings 的完整 Endpoint URL；同源驗證的單一來源"},
 	{Key: KeyFirestoreDatabase, Roles: "miniapp,ops-attendance", Secret: false, Default: "(default)", Required: "選用", Description: "Attendance 使用的明確 Firestore database ID"},
 	{Key: KeyAttendanceKeyID, Roles: "ops-attendance", Secret: false, Default: "—", Required: "Ops CLI 必需", Description: "Attendance Ops 的位置 AES-GCM active key ID；Mini App 自動發現 enabled versions"},
 	{Key: KeyAttendanceKeyMap, Roles: "ops-attendance", Secret: false, Default: "—", Required: "Ops CLI 必需", Description: "Attendance Ops 的 pinned key mapping；Mini App 自動發現 enabled versions"},

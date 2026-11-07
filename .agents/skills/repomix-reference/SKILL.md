@@ -7,6 +7,18 @@ description: Evaluate, generate, review and refresh narrowly scoped repository r
 
 Use this workflow when considering `repomix_skills.generate_skill`, or when a generated reference skill is relevant to a task. It supplies a reusable source snapshot, not new architectural authority or executable expertise. Follow root AGENTS.md; generation does not grant permissions.
 
+## Verified project baseline
+
+Last verified: 2026-11-07.
+
+- Mise pins Repomix `1.18.1`, which is also the current npm `latest` release at verification time.
+- The sandboxed `repomix` MCP initializes successfully and exposes five read-only tools: `pack_codebase`, `read_repomix_output`, `grep_repomix_output`, `file_system_read_file`, and `file_system_read_directory`.
+- The separate `repomix_skills` MCP initializes successfully and exposes `generate_skill`; its project smoke test generated a disposable skill successfully.
+- Repomix sandbox paths are repository-relative and reject absolute paths, `..` traversal, and symlink escapes. Sandboxed mode disables remote packing and skill generation.
+- The CLI remains the supported route for direct skill generation with `--skill-generate`, `--skill-output`, and, when explicitly justified, `--force`.
+
+Treat this section as a tested compatibility baseline, not a permanent upstream guarantee. Before changing schemas, flags, or security assumptions, check the Mise pin, current MCP `tools/list`, official Repomix documentation, and the repository smoke tests. Update this date and evidence only after those checks pass.
+
 ## Decide before generating
 
 Generate only when all apply:

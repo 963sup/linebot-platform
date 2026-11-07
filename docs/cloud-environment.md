@@ -1,5 +1,7 @@
 # Codex Cloud environment
 
+Only two explicit bootstrap roots exist: `BOOTSTRAP_WORKSPACE=/workspace` is the execution-environment root, and `BOOTSTRAP_REPO=/workspace/linebot-platform` is this repository's checkout root. Bootstrap validates both and never infers the repository root silently.
+
 The normal workflow has three files:
 
 - `mise.toml` owns tool versions and tasks.

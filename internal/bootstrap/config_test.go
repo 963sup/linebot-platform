@@ -131,7 +131,7 @@ func TestAttendanceEntryURLValidation(t *testing.T) {
 	}
 	for _, test := range valid {
 		t.Run(test.name, func(t *testing.T) {
-			cfg, err := LoadConfig(env(map[string]string{KeyAppEnv: test.env, KeyAttendanceEntryURL: test.url}))
+			cfg, err := LoadConfig(env(map[string]string{KeyAppEnv: test.env, KeyMiniAppLIFFURL: test.url}))
 			if err != nil || cfg.AttendanceEntryURL != test.url {
 				t.Fatalf("config=%#v err=%v", cfg, err)
 			}
@@ -147,7 +147,7 @@ func TestAttendanceEntryURLValidation(t *testing.T) {
 	}
 	for _, value := range invalid {
 		t.Run(value, func(t *testing.T) {
-			if _, err := LoadConfig(env(map[string]string{KeyAttendanceEntryURL: value})); err == nil {
+			if _, err := LoadConfig(env(map[string]string{KeyMiniAppLIFFURL: value})); err == nil {
 				t.Fatalf("invalid Attendance entry URL accepted: %q", value)
 			}
 		})
@@ -155,8 +155,8 @@ func TestAttendanceEntryURLValidation(t *testing.T) {
 
 	production := map[string]string{
 		KeyAppEnv: "production", KeyEventMode: "durable", KeyChannelSecret: "secret",
-		KeyAttendanceEntryURL: "http://127.0.0.1:8080/miniapp/",
-		KeyBotDestination:     "U0123456789abcdef0123456789abcdef", KeyProjectID: "test-project",
+		KeyMiniAppLIFFURL: "http://127.0.0.1:8080/miniapp/",
+		KeyBotDestination: "U0123456789abcdef0123456789abcdef", KeyProjectID: "test-project",
 		KeyQueueName:    "projects/test-project/locations/asia-east1/queues/line-queue",
 		KeyWorkerURL:    "https://worker.example.test/tasks/v2/line-reply",
 		KeyOIDCAudience: "https://worker.example.test", KeyInvokerEmail: "invoker@test-project.iam.gserviceaccount.com",

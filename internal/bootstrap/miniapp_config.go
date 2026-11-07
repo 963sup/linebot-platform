@@ -9,11 +9,11 @@ import (
 )
 
 var (
-	lineLoginChannelIDPattern = regexp.MustCompile(`^[0-9]{6,20}$`)
-	liffIDPattern             = regexp.MustCompile(`^[0-9]+-[A-Za-z0-9_-]+$`)
-	projectIDPattern          = regexp.MustCompile(`^[a-z][a-z0-9-]{4,28}[a-z0-9]$`)
-	keyIDPattern              = regexp.MustCompile(`^[A-Za-z0-9._-]+$`)
-	pinnedAttendanceKey       = regexp.MustCompile(`^projects/([^/]+)/secrets/attendance-location-key/versions/([1-9][0-9]*)$`)
+	miniAppChannelIDPattern = regexp.MustCompile(`^[0-9]{6,20}$`)
+	liffIDPattern           = regexp.MustCompile(`^[0-9]+-[A-Za-z0-9_-]+$`)
+	projectIDPattern        = regexp.MustCompile(`^[a-z][a-z0-9-]{4,28}[a-z0-9]$`)
+	keyIDPattern            = regexp.MustCompile(`^[A-Za-z0-9._-]+$`)
+	pinnedAttendanceKey     = regexp.MustCompile(`^projects/([^/]+)/secrets/attendance-location-key/versions/([1-9][0-9]*)$`)
 )
 
 type MiniAppConfig struct {
@@ -24,7 +24,9 @@ type MiniAppConfig struct {
 	Log               LogConfig
 	Telemetry         TelemetryConfig
 	LIFFID            string
-	LoginChannelID    string
+	ChannelID         string
+	LIFFURL           string
+	EndpointURL       string
 	PublicOrigin      string
 	FirestoreDatabase string
 }
@@ -66,9 +68,9 @@ func LoadMiniAppConfig(getenv func(string) string) (MiniAppConfig, error) {
 	if err != nil {
 		return MiniAppConfig{}, err
 	}
-	liffID := readSetting(getenv, KeyLIFFID)
-	channelID := readSetting(getenv, KeyLoginChannelID)
-	origin := readSetting(getenv, KeyMiniAppPublicOrigin)
+	channelID := readSetting(getenv, KeyMiniAppChannelID)
+	liffURL := readSetting(getenv, KeyMiniAppLIFFURL)
+	endpointURL := readSetting(getenv, KeyMiniAppEndpointURL)
 	database := readSetting(getenv, KeyFirestoreDatabase)
 	if database == "" {
 		database = "(default)"
@@ -76,30 +78,44 @@ func LoadMiniAppConfig(getenv func(string) string) (MiniAppConfig, error) {
 	if database != "(default)" && !keyIDPattern.MatchString(database) {
 		return MiniAppConfig{}, errors.New("FIRESTORE_DATABASE has an invalid database ID")
 	}
-	if !liffIDPattern.MatchString(liffID) {
-		return MiniAppConfig{}, errors.New("LINE_LIFF_ID must contain a numeric app ID, hyphen and endpoint ID")
+	if !miniAppChannelIDPattern.MatchString(channelID) {
+		return MiniAppConfig{}, errors.New("LINE_MINI_APP_CHANNEL_ID must contain decimal digits")
 	}
-	if !lineLoginChannelIDPattern.MatchString(channelID) {
-		return MiniAppConfig{}, errors.New("LINE_LOGIN_CHANNEL_ID must contain decimal digits")
+	liffID, err := miniAppLIFFID(liffURL, channelID)
+	if err != nil {
+		return MiniAppConfig{}, err
 	}
-	parsed, err := url.Parse(origin)
-	if err != nil || parsed.Scheme == "" || parsed.Host == "" || parsed.User != nil || parsed.Path != "" || parsed.RawQuery != "" || parsed.Fragment != "" || parsed.String() != origin {
-		return MiniAppConfig{}, errors.New("MINIAPP_PUBLIC_ORIGIN must be an exact origin without path, query, user info or fragment")
+	parsed, err := url.Parse(endpointURL)
+	if err != nil || parsed.Scheme == "" || parsed.Host == "" || parsed.User != nil || parsed.Path != "/miniapp/" || parsed.RawQuery != "" || parsed.Fragment != "" || parsed.String() != endpointURL {
+		return MiniAppConfig{}, errors.New("LINE_MINI_APP_ENDPOINT_URL must be an exact URL ending in /miniapp/")
 	}
+	origin := parsed.Scheme + "://" + parsed.Host
 	if environment == EnvLocal {
 		host := parsed.Hostname()
 		if parsed.Scheme != "http" || (host != "localhost" && host != "127.0.0.1") {
-			return MiniAppConfig{}, errors.New("local MINIAPP_PUBLIC_ORIGIN must use http loopback localhost or 127.0.0.1")
+			return MiniAppConfig{}, errors.New("local LINE_MINI_APP_ENDPOINT_URL must use HTTP loopback")
 		}
 	} else if parsed.Scheme != "https" || parsed.Port() != "" || parsed.Host != parsed.Hostname() || parsed.Host != strings.ToLower(parsed.Host) {
-		return MiniAppConfig{}, errors.New("staging/production MINIAPP_PUBLIC_ORIGIN must use https without an explicit port")
+		return MiniAppConfig{}, errors.New("staging/production LINE_MINI_APP_ENDPOINT_URL must use HTTPS without an explicit port")
 	}
 	return MiniAppConfig{
 		Environment: environment, Role: RoleMiniApp, Port: port,
 		LINEAPITimeout: timeout, Log: logging, Telemetry: telemetry,
-		LIFFID: liffID, LoginChannelID: channelID, PublicOrigin: origin,
+		LIFFID: liffID, ChannelID: channelID, LIFFURL: liffURL, EndpointURL: endpointURL, PublicOrigin: origin,
 		FirestoreDatabase: database,
 	}, nil
+}
+
+func miniAppLIFFID(rawURL, channelID string) (string, error) {
+	parsed, err := url.Parse(rawURL)
+	if err != nil || parsed.Scheme != "https" || parsed.Host != "miniapp.line.me" || parsed.User != nil || parsed.RawQuery != "" || parsed.Fragment != "" {
+		return "", errors.New("LINE_MINI_APP_LIFF_URL must use https://miniapp.line.me/{liffId}")
+	}
+	liffID := strings.TrimPrefix(parsed.EscapedPath(), "/")
+	if strings.Contains(liffID, "/") || !liffIDPattern.MatchString(liffID) || !strings.HasPrefix(liffID, channelID+"-") {
+		return "", errors.New("LINE_MINI_APP_LIFF_URL must contain a LIFF ID owned by LINE_MINI_APP_CHANNEL_ID")
+	}
+	return liffID, nil
 }
 
 func parseAttendanceKeyVersions(raw, projectID string) (map[string]string, error) {

@@ -26,6 +26,10 @@ description: Select the task-relevant MCP and inspect or install the project's a
 
 ## 缺少技能時自主處理
 
+缺少 task-relevant 的本地 executable、graph cache 或已核准 Skill 時，不等待使用者提醒：先使用 repository 的 pinned Mise task（`bash bootstrap.sh setup`、`bash bootstrap.sh run plugins-install` 或更小的既有 task）安裝／修復，再重跑最小 smoke check。不得以未鎖定的 `go install`、全域 npm、`uvx` 或臨時下載取代 Mise。Mise 自動準備僅限本地工具、可重建 cache 與核准 Skills；OAuth、credentials、IAM、部署及 production 寫入仍必須停止並取得明確授權。
+
+所有 repository toolchain commands 透過 `bash bootstrap.sh exec -- <tool>` 執行，使版本由 `mise.toml` 管理。例如格式化使用 `bash bootstrap.sh exec -- gofmt ...`；缺少 `gofmt` 代表應準備 Mise 鎖定的 Go toolchain，不得另行安裝 `gofmt`。
+
 先從 repository root 執行 `bash bootstrap.sh exec -- go run ./cmd/codexplugins`；這只檢查，不安裝或認證。缺少的項目若屬 `.codex/plugins.lock.json` 核准來源及 revision，且當次工作已授權準備開發工具，主 Agent 可執行 `bash bootstrap.sh exec -- go run ./cmd/codexplugins --install`；只有明確授權註冊 marketplace 時才加 `--register-google-marketplace`。唯讀角色只在 `READY`／`RESULT` 交接中提出缺口，不執行安裝。
 
 工具以固定 commit 取得資料、不執行上游腳本、不覆寫既有目錄。原生 Plugin CLI 不支援固定來源版本或有重複 MCP 時，使用明確標記的 skills-only fallback；這不是原生 Plugin 安裝成功。Google marketplace 可用 `--register-google-marketplace` 註冊，但註冊不是安裝。原生 `google-cloud-developer` 附帶與本專案重複的 MCP 及安裝認證，需要先解決衝突，不能暗中啟用。

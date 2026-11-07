@@ -66,17 +66,6 @@ required = false
 startup_timeout_sec = 45
 tool_timeout_sec = 120
 
-# Filesystem operations are limited to this repository; Roots cannot widen access.
-# Filesystem MCP is not a substitute for the Codex sandbox or OS permissions.
-[mcp_servers.filesystem]
-command = "bash"
-args = ["/workspace/linebot-platform/bootstrap.sh", "exec", "npm:@modelcontextprotocol/server-filesystem@2.2.0", "--", "mcp-server-filesystem", "--confine-roots", "/workspace/linebot-platform"]
-default_tools_approval_mode = "writes"
-enabled = true
-required = false
-startup_timeout_sec = 45
-tool_timeout_sec = 60
-
 [mcp_servers.context7]
 url = "https://mcp.context7.com/mcp"
 enabled = true
@@ -149,7 +138,7 @@ tool_timeout_sec = 60
 # invoke-api-endpoint is intentionally absent from enabled_tools.
 [mcp_servers.openapi_line]
 command = "bash"
-args = ["/workspace/linebot-platform/bootstrap.sh", "exec", "npm:@ivotoby/openapi-mcp-server@1.16.1", "--", "openapi-mcp-server", "--api-base-url", "https://api.line.me", "--openapi-spec", "/workspace/.linebot-tools/openapi/line-messaging-api.yml", "--tools", "dynamic", "--verbose", "false"]
+args = ["/workspace/linebot-platform/bootstrap.sh", "exec", "npm:@ivotoby/openapi-mcp-server@1.16.1", "--", "openapi-mcp-server", "--api-base-url", "https://api.line.me", "--openapi-spec", "/workspace/.tools/openapi/line-messaging-api.yml", "--tools", "dynamic", "--verbose", "false"]
 enabled_tools = ["list-api-endpoints", "get-api-endpoint-schema"]
 default_tools_approval_mode = "prompt"
 enabled = false

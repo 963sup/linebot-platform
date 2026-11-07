@@ -10,7 +10,6 @@ Repository MCP configuration is inherited by all configured Agents. Agent role f
 | `gopls` | `configured-enabled` |
 | `repomix` | `configured-enabled` |
 | `repomix_skills` | `configured-enabled` |
-| `filesystem` | `configured-enabled` |
 | `chrome_devtools` | `configured-enabled` |
 | `playwright` | `configured-enabled` |
 | `context7` | `configured-enabled` |

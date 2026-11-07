@@ -44,7 +44,7 @@ func NewMiniAppRuntime(cfg MiniAppConfig, logger *slog.Logger) (*MiniAppRuntime,
 }
 
 func newMiniAppRuntime(cfg MiniAppConfig, logger *slog.Logger, compose miniAppComposer) (*MiniAppRuntime, error) {
-	if cfg.Role != RoleMiniApp || cfg.LIFFID == "" || cfg.LoginChannelID == "" || cfg.PublicOrigin == "" ||
+	if cfg.Role != RoleMiniApp || cfg.LIFFID == "" || cfg.ChannelID == "" || cfg.LIFFURL == "" || cfg.EndpointURL == "" || cfg.PublicOrigin == "" ||
 		cfg.FirestoreDatabase == "" {
 		return nil, errors.New("validated miniapp configuration is required")
 	}
@@ -105,7 +105,7 @@ func composeMiniApp(ctx context.Context, cfg MiniAppConfig, logger *slog.Logger)
 		return fail(err)
 	}
 	result.closers = append(result.closers, runtimeCloser{name: "line HTTP", close: func() error { outbound.Close(); return nil }})
-	verifier, err := lineout.NewIDTokenVerifier(outbound.Client, cfg.LoginChannelID)
+	verifier, err := lineout.NewIDTokenVerifier(outbound.Client, cfg.ChannelID)
 	if err != nil {
 		return fail(err)
 	}

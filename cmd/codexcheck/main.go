@@ -16,7 +16,11 @@ import (
 	"github.com/BurntSushi/toml"
 )
 
-const maxAgentThreads = 9
+const (
+	maxAgentThreads = 9
+	workspaceRoot   = "/workspace"
+	repositoryRoot  = workspaceRoot + "/linebot-platform"
+)
 
 var approvedAgentRoles = []string{"application", "architect", "architecture_auditor", "domain", "environment", "integration", "platform", "researcher", "reviewer"}
 
@@ -155,7 +159,7 @@ func validateConfig(path string) error {
 	if !sameStrings(actualRoles, approvedAgentRoles) {
 		return fmt.Errorf("agent registry must contain exactly the approved delegated roles: %v", approvedAgentRoles)
 	}
-	expected := []string{"graphify", "gopls", "repomix", "repomix_skills", "filesystem", "chrome_devtools", "playwright", "terraform", "line", "openapi_line", "firestore_toolbox"}
+	expected := []string{"graphify", "gopls", "repomix", "repomix_skills", "chrome_devtools", "playwright", "terraform", "line", "openapi_line", "firestore_toolbox"}
 	for name := range remoteEndpoints {
 		expected = append(expected, name)
 	}
@@ -174,7 +178,7 @@ func validateConfig(path string) error {
 		if name != "github" && name != "google_cloud_cli" && server.BearerTokenEnvVar != "" {
 			return fmt.Errorf("MCP %s: unexpected bearer token mapping", name)
 		}
-		if name != "graphify" && name != "firestore_toolbox" && name != "google_cloud_cli" && name != "filesystem" && name != "repomix" && name != "repomix_skills" && name != "terraform" && name != "line" && name != "openapi_line" && (len(server.EnvVars) != 0 || len(server.EnabledTools) != 0) {
+		if name != "graphify" && name != "firestore_toolbox" && name != "google_cloud_cli" && name != "repomix" && name != "repomix_skills" && name != "terraform" && name != "line" && name != "openapi_line" && (len(server.EnvVars) != 0 || len(server.EnabledTools) != 0) {
 			return fmt.Errorf("MCP %s: unexpected tool or environment override", name)
 		}
 	}
@@ -182,19 +186,19 @@ func validateConfig(path string) error {
 		return fmt.Errorf("MCP servers differ from the approved set: %v", actual)
 	}
 	graphify := c.MCPServers["graphify"]
-	graphifyArgs := []string{"/workspace/linebot-platform/bootstrap.sh", "exec", "--", "graphify-mcp", "/workspace/.cache/linebot-graphify/graphify-out/graph.json"}
+	graphifyArgs := []string{repositoryRoot + "/bootstrap.sh", "exec", "--", "graphify-mcp", workspaceRoot + "/.cache/linebot-graphify/graphify-out/graph.json"}
 	graphifyTools := []string{"query_graph", "get_node", "get_neighbors", "get_community", "god_nodes", "graph_stats", "shortest_path"}
 	if !graphify.Enabled || graphify.Command != "bash" || graphify.URL != "" || !slices.Equal(graphify.Args, graphifyArgs) ||
 		!sameStrings(graphify.EnabledTools, graphifyTools) || len(graphify.EnvVars) != 0 || graphify.DefaultToolsApprovalMode != "" {
 		return errors.New("Graphify must use the installed local server, cached graph and graph-query allowlist")
 	}
 	gopls := c.MCPServers["gopls"]
-	goplsArgs := []string{"/workspace/linebot-platform/bootstrap.sh", "exec", "--", "gopls", "mcp"}
+	goplsArgs := []string{repositoryRoot + "/bootstrap.sh", "exec", "--", "gopls", "mcp"}
 	if !gopls.Enabled || gopls.Command != "bash" || !slices.Equal(gopls.Args, goplsArgs) || gopls.URL != "" || gopls.DefaultToolsApprovalMode != "" {
 		return errors.New("gopls must use the pinned workspace path and writable XDG cache")
 	}
 	repomix := c.MCPServers["repomix"]
-	repomixArgs := []string{"/workspace/linebot-platform/bootstrap.sh", "exec", "--", "repomix", "--mcp", "--sandbox", "/workspace/linebot-platform"}
+	repomixArgs := []string{repositoryRoot + "/bootstrap.sh", "exec", "--", "repomix", "--mcp", "--sandbox", repositoryRoot}
 	repomixTools := []string{"pack_codebase", "read_repomix_output", "grep_repomix_output", "file_system_read_file", "file_system_read_directory"}
 	if !repomix.Enabled || repomix.Command != "bash" || repomix.URL != "" || repomix.DefaultToolsApprovalMode != "" ||
 		!slices.Equal(repomix.Args, repomixArgs) || !sameStrings(repomix.EnabledTools, repomixTools) ||
@@ -202,22 +206,15 @@ func validateConfig(path string) error {
 		return errors.New("Repomix MCP must use the pinned workspace-confined read-only sandbox")
 	}
 	skillGenerator := c.MCPServers["repomix_skills"]
-	skillArgs := []string{"/workspace/linebot-platform/bootstrap.sh", "exec", "--", "repomix", "--mcp"}
+	skillArgs := []string{repositoryRoot + "/bootstrap.sh", "exec", "--", "repomix", "--mcp"}
 	if !skillGenerator.Enabled || skillGenerator.Command != "bash" || skillGenerator.URL != "" ||
 		!slices.Equal(skillGenerator.Args, skillArgs) || !sameStrings(skillGenerator.EnabledTools, []string{"generate_skill"}) ||
 		skillGenerator.DefaultToolsApprovalMode != "prompt" || len(skillGenerator.EnvVars) != 0 {
 		return errors.New("Repomix skill generation requires the pinned native server, generate_skill only, and prompt approval")
 	}
-	filesystem := c.MCPServers["filesystem"]
-	filesystemArgs := []string{"/workspace/linebot-platform/bootstrap.sh", "exec", "npm:@modelcontextprotocol/server-filesystem@2.2.0", "--", "mcp-server-filesystem", "--confine-roots", "/workspace/linebot-platform"}
-	if !filesystem.Enabled || filesystem.Command != "bash" || filesystem.URL != "" ||
-		!slices.Equal(filesystem.Args, filesystemArgs) || filesystem.DefaultToolsApprovalMode != "writes" ||
-		len(filesystem.EnabledTools) != 0 || len(filesystem.EnvVars) != 0 || filesystem.BearerTokenEnvVar != "" || len(filesystem.EnvHTTPHeaders) != 0 {
-		return errors.New("Filesystem MCP must use the pinned repository-confined executable with write approval")
-	}
 	for name, args := range map[string][]string{
-		"chrome_devtools": {"/workspace/linebot-platform/bootstrap.sh", "exec", "--", "chrome-devtools-mcp", "--headless", "--isolated", "--executable-path=/usr/bin/chromium", "--proxy-server=http://proxy:8080", "--no-usage-statistics", "--no-performance-crux"},
-		"playwright":      {"/workspace/linebot-platform/bootstrap.sh", "exec", "--", "playwright-mcp", "--headless", "--isolated", "--executable-path=/usr/bin/chromium", "--proxy-server=http://proxy:8080", "--proxy-bypass=localhost,127.0.0.1,[::1]", "--sandbox"},
+		"chrome_devtools": {repositoryRoot + "/bootstrap.sh", "exec", "--", "chrome-devtools-mcp", "--headless", "--isolated", "--executable-path=/usr/bin/chromium", "--proxy-server=http://proxy:8080", "--no-usage-statistics", "--no-performance-crux"},
+		"playwright":      {repositoryRoot + "/bootstrap.sh", "exec", "--", "playwright-mcp", "--headless", "--isolated", "--executable-path=/usr/bin/chromium", "--proxy-server=http://proxy:8080", "--proxy-bypass=localhost,127.0.0.1,[::1]", "--sandbox"},
 	} {
 		server := c.MCPServers[name]
 		if !server.Enabled || server.Command != "bash" || server.URL != "" || !slices.Equal(server.Args, args) || server.DefaultToolsApprovalMode != "writes" {
@@ -262,20 +259,20 @@ func validateConfig(path string) error {
 	line := c.MCPServers["line"]
 	lineTools := []string{"get_profile", "get_message_quota", "get_rich_menu_list", "get_follower_ids", "get_group_summary"}
 	if line.Enabled || line.Command != "bash" || line.URL != "" || line.DefaultToolsApprovalMode != "prompt" ||
-		!slices.Equal(line.Args, []string{"/workspace/linebot-platform/bootstrap.sh", "exec", "npm:@line/line-bot-mcp-server@0.5.0", "--", "line-bot-mcp-server"}) ||
+		!slices.Equal(line.Args, []string{repositoryRoot + "/bootstrap.sh", "exec", "npm:@line/line-bot-mcp-server@0.5.0", "--", "line-bot-mcp-server"}) ||
 		!sameStrings(line.EnvVars, []string{"CHANNEL_ACCESS_TOKEN"}) ||
 		!sameStrings(line.EnabledTools, lineTools) {
 		return errors.New("LINE MCP must use the approved read-only tool set")
 	}
 	openAPI := c.MCPServers["openapi_line"]
-	openAPIArgs := []string{"/workspace/linebot-platform/bootstrap.sh", "exec", "npm:@ivotoby/openapi-mcp-server@1.16.1", "--", "openapi-mcp-server", "--api-base-url", "https://api.line.me", "--openapi-spec", "/workspace/.linebot-tools/openapi/line-messaging-api.yml", "--tools", "dynamic", "--verbose", "false"}
+	openAPIArgs := []string{repositoryRoot + "/bootstrap.sh", "exec", "npm:@ivotoby/openapi-mcp-server@1.16.1", "--", "openapi-mcp-server", "--api-base-url", "https://api.line.me", "--openapi-spec", workspaceRoot + "/.tools/openapi/line-messaging-api.yml", "--tools", "dynamic", "--verbose", "false"}
 	if openAPI.Enabled || openAPI.Command != "bash" || openAPI.URL != "" || openAPI.DefaultToolsApprovalMode != "prompt" ||
 		!slices.Equal(openAPI.Args, openAPIArgs) || !sameStrings(openAPI.EnabledTools, []string{"list-api-endpoints", "get-api-endpoint-schema"}) || len(openAPI.EnvVars) != 0 {
 		return errors.New("OpenAPI MCP must use the pinned LINE spec and omit endpoint invocation")
 	}
 	toolbox := c.MCPServers["firestore_toolbox"]
 	if toolbox.Enabled || toolbox.Command != "bash" || toolbox.URL != "" || toolbox.DefaultToolsApprovalMode != "prompt" ||
-		!slices.Equal(toolbox.Args, []string{"/workspace/linebot-platform/bootstrap.sh", "exec", "npm:@toolbox-sdk/server@1.14.0", "--", "toolbox", "--prebuilt=firestore", "--stdio"}) ||
+		!slices.Equal(toolbox.Args, []string{repositoryRoot + "/bootstrap.sh", "exec", "npm:@toolbox-sdk/server@1.14.0", "--", "toolbox", "--prebuilt=firestore", "--stdio"}) ||
 		!sameStrings(toolbox.EnvVars, []string{"FIRESTORE_PROJECT", "GOOGLE_APPLICATION_CREDENTIALS"}) ||
 		!sameStrings(toolbox.EnabledTools, []string{"get_documents", "query_collection", "list_collections", "get_rules", "validate_rules"}) {
 		return errors.New("Firestore Toolbox must remain disabled with its pinned executable and restricted tools")

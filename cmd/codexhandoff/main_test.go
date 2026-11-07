@@ -14,7 +14,7 @@ import (
 func validHandoff(phase string) handoff {
 	h := handoff{
 		Version: "1", HandoffID: "task-1", Phase: phase, Task: "verify handoff", Owner: "orchestrator",
-		Role: "reviewer", RoleMode: "explicit", RolePath: ".codex/agents/reviewer.toml", RoleSHA256: strings.Repeat("d", 64), Workspace: "/workspace/repo",
+		Role: "reviewer", RoleMode: "explicit", RolePath: ".codex/agents/reviewer.toml", RoleSHA256: strings.Repeat("d", 64), Workspace: "/tmp/codexhandoff-repository",
 		Head: strings.Repeat("a", 40), ScopedFingerprint: strings.Repeat("b", 64),
 		Scope: []string{"cmd/codexhandoff"}, Acceptance: []string{"tests pass"},
 		Skills:       []skillEvidence{{Path: ".agents/skills/example/SKILL.md", SHA256: strings.Repeat("c", 64), Status: "selected-parent-read"}},

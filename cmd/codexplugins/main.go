@@ -194,10 +194,10 @@ func inspect(home string, sources []source) report {
 		r.Prerequisites = append(r.Prerequisites, item{name, state, "presence is not a successful host or MCP check"})
 	}
 	state := "missing"
-	if info, err := os.Stat(filepath.Join(home, ".local", "bin", "gopls")); err == nil && info.Mode().IsRegular() && info.Mode()&0111 != 0 {
+	if _, err := exec.LookPath("gopls"); err == nil {
 		state = "executable-present"
 	}
-	r.Prerequisites = append(r.Prerequisites, item{"gopls", state, "setup-installed path; MCP handshake not checked"})
+	r.Prerequisites = append(r.Prerequisites, item{"gopls", state, "Mise-managed PATH checked; MCP handshake not checked"})
 	return r
 }
 
@@ -479,10 +479,15 @@ func registerGoogle(s source, run commandRunner) (string, error) {
 }
 
 func run(args []string) int {
+	repoRoot, err := bootstrapRepository()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		return 1
+	}
 	flags := flag.NewFlagSet("codexplugins", flag.ContinueOnError)
 	install := flags.Bool("install", false, "install approved pinned skills; never execute their scripts")
 	marketplace := flags.Bool("register-google-marketplace", false, "register pinned Google marketplace; requires --install")
-	lock := flags.String("lock", ".codex/plugins.lock.json", "reviewed source lock")
+	lock := flags.String("lock", filepath.Join(repoRoot, ".codex", "plugins.lock.json"), "reviewed source lock")
 	if err := flags.Parse(args); err != nil {
 		return 1
 	}
@@ -495,16 +500,11 @@ func run(args []string) int {
 		fmt.Fprintln(os.Stderr, err)
 		return 1
 	}
-	home, err := os.UserHomeDir()
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		return 1
-	}
-	r := inspect(home, sources)
+	r := inspect(repoRoot, sources)
 	exit := 0
 	if *install {
-		agents := filepath.Join(home, ".agents")
-		if err := realDirectories(agents); err != nil {
+		agents, err := prepareAgentHome(repoRoot)
+		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			return 1
 		}
@@ -515,7 +515,7 @@ func run(args []string) int {
 		}
 		defer os.Remove(guard)
 		for _, s := range sources {
-			state, _ := installationState(home, s)
+			state, _ := installationState(repoRoot, s)
 			if state == "installed" {
 				continue
 			}
@@ -525,14 +525,14 @@ func run(args []string) int {
 			}
 			data, err := downloadSkills(s, runCommand)
 			if err == nil {
-				err = installArchive(home, s, data)
+				err = installArchive(repoRoot, s, data)
 			}
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "%s: %v\n", s.Name, err)
 				exit = 2
 			}
 		}
-		r = inspect(home, sources)
+		r = inspect(repoRoot, sources)
 		if *marketplace {
 			for _, s := range sources {
 				if s.Name == "google-developer-knowledge" {
@@ -559,4 +559,24 @@ func run(args []string) int {
 	}
 	return exit
 }
+
+func bootstrapRepository() (string, error) {
+	repo := strings.TrimSpace(os.Getenv("BOOTSTRAP_REPO"))
+	if repo == "" {
+		return "", errors.New("BOOTSTRAP_REPO is required; run through bootstrap.sh and Mise")
+	}
+	if !filepath.IsAbs(repo) || filepath.Clean(repo) != repo {
+		return "", errors.New("BOOTSTRAP_REPO must be a clean absolute path")
+	}
+	return repo, nil
+}
+
+func prepareAgentHome(home string) (string, error) {
+	agents := filepath.Join(home, ".agents")
+	if err := realDirectories(home, agents); err != nil {
+		return "", err
+	}
+	return agents, nil
+}
+
 func main() { os.Exit(run(os.Args[1:])) }

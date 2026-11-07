@@ -16,6 +16,11 @@ var architectureAuditorInstructionClauses = []architectureAuditorClause{
 	{name: "complete Repomix production-Go snapshot", text: "Repomix MCP pack_codebase includePatterns **/*.go, ignorePatterns **/*_test.go"},
 	{name: "read before edit", text: "Do not edit while reading or analyzing"},
 	{name: "gopls confirmation", text: "Confirm current symbols and dependencies through gopls MCP where available"},
+	{name: "repository method", text: ".agents/skills/repository-engineering-method/SKILL.md"},
+	{name: "Graphify evidence role", text: "Graphify explores relationships and blast radius but does not establish architecture compliance"},
+	{name: "Samber skill provenance", text: "samber/cc-skills-golang and samber/cc-skills"},
+	{name: "proportional capability selection", text: "selected proportionally rather than invoked as mandatory stages"},
+	{name: "six design lenses", text: "DDD, Hexagonal Architecture, Go Idioms, KISS, YAGNI and DRY"},
 	{name: "six-part decision matrix", text: "mandatory six-part decision matrix"},
 	{name: "Domain classification", text: "Aggregate, Aggregate Root, Entity, Value Object, Domain Service, Policy, Specification, Factory, Repository Interface, Domain Event, Domain Error"},
 	{name: "Application classification", text: "Use Case, Application Service, Command, Query, DTO, Input Port, Output Port, Unit of Work, Transaction Boundary, Event Handler, Authorization"},
@@ -64,6 +69,11 @@ var architectureAuditorInstructionClauses = []architectureAuditorClause{
 }
 
 var architectureAuditorWorkflowClauses = []architectureAuditorClause{
+	{name: "repository method", text: ".agents/skills/repository-engineering-method/SKILL.md"},
+	{name: "capability orchestration", text: "Capability orchestration"},
+	{name: "Graphify evidence role", text: "Graphify explores package and symbol relationships, callers, tests and blast radius"},
+	{name: "Samber skill provenance", text: "samber/cc-skills-golang"},
+	{name: "six design lenses", text: "DDD, Hexagonal Architecture, Go Idioms, KISS, YAGNI and DRY"},
 	{name: "production-Go inclusion", text: "includePatterns: **/*.go"},
 	{name: "test exclusion", text: "ignorePatterns: **/*_test.go"},
 	{name: "complete-read gate", text: "Read every packed production Go file in bounded contiguous ranges"},
