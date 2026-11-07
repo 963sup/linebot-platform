@@ -13,6 +13,12 @@ import (
 
 const DefaultDatabase = "(default)"
 
+// NewDetectedClientWithDatabase creates a client using Application Default
+// Credentials to discover the Google Cloud project. The caller owns Close().
+func NewDetectedClientWithDatabase(ctx context.Context, databaseID string, opts ...option.ClientOption) (*sdk.Client, error) {
+	return NewClientWithDatabase(ctx, sdk.DetectProjectID, databaseID, opts...)
+}
+
 // NewClient returns the native default-database Firestore client. The caller
 // owns Close(). Use a dedicated GCP project and least-privilege workload
 // identity.
@@ -32,8 +38,15 @@ func NewClientWithDatabase(ctx context.Context, projectID, databaseID string, op
 	if strings.TrimSpace(projectID) == "" {
 		return nil, errors.New("Firestore project ID is required")
 	}
-	if strings.TrimSpace(databaseID) == "" || databaseID == "." || databaseID == ".." || databaseID != strings.TrimSpace(databaseID) || strings.ContainsAny(databaseID, "/\\\x00\r\n\t ") {
-		return nil, errors.New("Firestore database ID is required")
+	if err := ValidateDatabaseID(databaseID); err != nil {
+		return nil, err
 	}
 	return sdk.NewClientWithDatabase(ctx, projectID, databaseID, opts...)
+}
+
+func ValidateDatabaseID(databaseID string) error {
+	if strings.TrimSpace(databaseID) == "" || databaseID == "." || databaseID == ".." || databaseID != strings.TrimSpace(databaseID) || strings.ContainsAny(databaseID, "/\\\x00\r\n\t ") {
+		return errors.New("Firestore database ID is required")
+	}
+	return nil
 }

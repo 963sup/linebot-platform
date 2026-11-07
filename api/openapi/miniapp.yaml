@@ -2,7 +2,7 @@ openapi: 3.1.0
 info:
   title: linebot-platform LINE MINI App Infrastructure API
   version: 1.0.0
-  description: LIFF assets and server-verified LINE Login session infrastructure. No business data is written.
+  description: LINE MINI App assets and server-verified LIFF session infrastructure. No business data is written.
 paths:
   /miniapp/:
     get:

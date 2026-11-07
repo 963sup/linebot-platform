@@ -67,7 +67,7 @@ Forms v1 的 10 個官方方法沿用現有 Workspace Typed SDK 及操作確認�
 
 ## 自助綁定規格（來源 PR #26，整合至 PR #27）
 
-[Google 自助綁定安全規格](../google/user-self-service-linking.md) 是 P2–P4 的驗收契約，包含可轉傳連結防護、LINE Login／LIFF 再驗證、Channel／LINE 使用者／Google `sub` 隔離、Token 綁定與每位使用者同步。帳號／Firestore Client 已經存在不等於上述跨服務授權已得到驗證。
+[Google 自助綁定安全規格](../google/user-self-service-linking.md) 是 P2–P4 的驗收契約，包含可轉傳連結防護、LINE MINI App／LIFF 再驗證、Channel／LINE 使用者／Google `sub` 隔離、Token 綁定與每位使用者同步。帳號／Firestore Client 已經存在不等於上述跨服務授權已得到驗證。
 
 ## Identity 全鏈依賴／Go Module 對照（PR #28）
 

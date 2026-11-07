@@ -15,7 +15,7 @@
   <g id="architecture-content">
   <rect fill="#103254" height="130" rx="23" ry="23" width="3548" x="26" y="22"/>
   <text fill="#ffffff" font-family="Noto Sans CJK TC, Microsoft JhengHei, PingFang TC, sans-serif" font-size="49" font-weight="700" opacity="1" text-anchor="start" x="64" y="82">Golang DDD + Hexagonal Architecture｜Codex 架構參考圖</text>
-  <text fill="#cfe2f7" font-family="Noto Sans CJK TC, Microsoft JhengHei, PingFang TC, sans-serif" font-size="26" font-weight="400" opacity="1" text-anchor="start" x="66" y="126">Pragmatic DDD · LINE Login · LINE MINI App (LIFF) · Web Geolocation · Cloud Run · 非規範性</text>
+  <text fill="#cfe2f7" font-family="Noto Sans CJK TC, Microsoft JhengHei, PingFang TC, sans-serif" font-size="26" font-weight="400" opacity="1" text-anchor="start" x="66" y="126">Pragmatic DDD · LINE MINI App (LIFF) · Messaging API · Web Geolocation · Cloud Run · 非規範性</text>
   <rect fill="#e5eef8" height="66" rx="10" ry="10" width="3532" x="34" y="172"/>
   <text fill="#17334d" font-family="Noto Sans CJK TC, Microsoft JhengHei, PingFang TC, sans-serif" font-size="26" font-weight="700" opacity="1" text-anchor="start" x="61" y="216">判讀：</text>
   <line marker-end="url(#arrowBlue)" stroke="#2367ad" stroke-linecap="round" stroke-width="3" x1="170" x2="265" y1="204" y2="204"/>
@@ -35,15 +35,15 @@
   <text fill="#58718b" font-family="Noto Sans CJK TC, Microsoft JhengHei, PingFang TC, sans-serif" font-size="21" font-weight="400" opacity="1" text-anchor="start" x="82" y="463">維護不變條件；保護業務語義</text>
   <rect fill="#eaf3ff" height="155" rx="16" ry="16" stroke="#a9c5df" stroke-width="1.6" width="1095" x="1175" y="334"/>
   <text fill="#17334d" font-family="Noto Sans CJK TC, Microsoft JhengHei, PingFang TC, sans-serif" font-size="27" font-weight="700" opacity="1" text-anchor="start" x="1201" y="385">Supporting｜支援領域</text>
-  <text fill="#58718b" font-family="Noto Sans CJK TC, Microsoft JhengHei, PingFang TC, sans-serif" font-size="21" font-weight="400" opacity="1" text-anchor="start" x="1201" y="428">Identity / Attendance（implemented Supporting）</text>
+  <text fill="#58718b" font-family="Noto Sans CJK TC, Microsoft JhengHei, PingFang TC, sans-serif" font-size="21" font-weight="400" opacity="1" text-anchor="start" x="1201" y="428">Identity（implemented Supporting）</text>
   <text fill="#58718b" font-family="Noto Sans CJK TC, Microsoft JhengHei, PingFang TC, sans-serif" font-size="21" font-weight="400" opacity="1" text-anchor="start" x="1201" y="463">只在必要時建立獨立業務模型</text>
   <rect fill="#f0e8fc" height="155" rx="16" ry="16" stroke="#a9c5df" stroke-width="1.6" width="1242" x="2294" y="334"/>
   <text fill="#17334d" font-family="Noto Sans CJK TC, Microsoft JhengHei, PingFang TC, sans-serif" font-size="27" font-weight="700" opacity="1" text-anchor="start" x="2320" y="385">Generic｜通用能力</text>
-  <text fill="#58718b" font-family="Noto Sans CJK TC, Microsoft JhengHei, PingFang TC, sans-serif" font-size="21" font-weight="400" opacity="1" text-anchor="start" x="2320" y="428">LINE Login、Web Geolocation、儲存與佇列</text>
+  <text fill="#58718b" font-family="Noto Sans CJK TC, Microsoft JhengHei, PingFang TC, sans-serif" font-size="21" font-weight="400" opacity="1" text-anchor="start" x="2320" y="428">LINE MINI App、Messaging API、儲存與佇列</text>
   <text fill="#58718b" font-family="Noto Sans CJK TC, Microsoft JhengHei, PingFang TC, sans-serif" font-size="21" font-weight="400" opacity="1" text-anchor="start" x="2320" y="463">採用既有平台、SDK 與 Web APIs</text>
   <rect fill="#f9fbff" height="179" rx="16" ry="16" stroke="#a9c5df" stroke-width="1.6" width="1700" x="56" y="512"/>
   <text fill="#17334d" font-family="Noto Sans CJK TC, Microsoft JhengHei, PingFang TC, sans-serif" font-size="28" font-weight="700" opacity="1" text-anchor="start" x="82" y="561">Bounded Context：獨立語言、模型與不變條件</text>
-  <text fill="#17334d" font-family="Noto Sans CJK TC, Microsoft JhengHei, PingFang TC, sans-serif" font-size="22" font-weight="400" opacity="1" text-anchor="start" x="82" y="610">Identity / Attendance 已實作；其他邊界依 model.yaml。</text>
+  <text fill="#17334d" font-family="Noto Sans CJK TC, Microsoft JhengHei, PingFang TC, sans-serif" font-size="22" font-weight="400" opacity="1" text-anchor="start" x="82" y="610">Identity 已實作；其他邊界依 model.yaml。</text>
   <text fill="#17334d" font-family="Noto Sans CJK TC, Microsoft JhengHei, PingFang TC, sans-serif" font-size="22" font-weight="400" opacity="1" text-anchor="start" x="82" y="649">同一 Go binary 可包含多個 Context，不需先拆微服務。</text>
   <rect fill="#f9fbff" height="179" rx="16" ry="16" stroke="#a9c5df" stroke-width="1.6" width="1758" x="1778" y="512"/>
   <text fill="#17334d" font-family="Noto Sans CJK TC, Microsoft JhengHei, PingFang TC, sans-serif" font-size="28" font-weight="700" opacity="1" text-anchor="start" x="1805" y="561">Context Map：跨 Context 使用公開契約／ACL</text>
@@ -63,7 +63,7 @@
   <path d="M 1210,988 L 1210,1034" fill="none" marker-end="url(#arrowBlue)" stroke="#2367ad" stroke-linecap="round" stroke-linejoin="round" stroke-width="4"/>
   <text fill="#2367ad" font-family="Noto Sans CJK TC, Microsoft JhengHei, PingFang TC, sans-serif" font-size="21" font-weight="700" opacity="1" text-anchor="start" x="1228" y="1023">HTTPS + ID Token + coords / accuracy / timestamp</text>
   <rect fill="#eaf3ff" height="125" rx="16" ry="16" stroke="#93c2ed" stroke-width="1.6" width="2297" x="65" y="1045"/>
-  <text fill="#17334d" font-family="Noto Sans CJK TC, Microsoft JhengHei, PingFang TC, sans-serif" font-size="28" font-weight="700" opacity="1" text-anchor="start" x="95" y="1096">Driving Adapters｜HTTP / Session / Attendance API</text>
+  <text fill="#17334d" font-family="Noto Sans CJK TC, Microsoft JhengHei, PingFang TC, sans-serif" font-size="28" font-weight="700" opacity="1" text-anchor="start" x="95" y="1096">Driving Adapters｜HTTP / Session / MINI App API</text>
   <text fill="#58718b" font-family="Noto Sans CJK TC, Microsoft JhengHei, PingFang TC, sans-serif" font-size="22" font-weight="400" opacity="1" text-anchor="start" x="95" y="1139">HTTP handler / DTO / request validation · LINE Webhook（獨立 Messaging API ingress） · Admin / Jobs</text>
   <path d="M 1210,1173 L 1210,1211" fill="none" marker-end="url(#arrowBlue)" stroke="#2367ad" stroke-linecap="round" stroke-linejoin="round" stroke-width="4"/>
   <rect fill="#f0e8fc" height="181" rx="17" ry="17" stroke="#9b7ad4" stroke-width="2" width="2297" x="65" y="1225"/>
@@ -75,13 +75,13 @@
   <text fill="#17334d" font-family="Noto Sans CJK TC, Microsoft JhengHei, PingFang TC, sans-serif" font-size="24" font-weight="700" opacity="1" text-anchor="middle" x="1206.0" y="1338">RecordCheckIn</text>
   <text fill="#58718b" font-family="Noto Sans CJK TC, Microsoft JhengHei, PingFang TC, sans-serif" font-size="19" font-weight="400" opacity="1" text-anchor="middle" x="1206.0" y="1367.6">permission / idempotency / location DTO</text>
   <rect fill="#ffffff" height="85" rx="11" ry="11" stroke="#a9c5df" stroke-width="1.5" width="720" x="1602" y="1303"/>
-  <text fill="#17334d" font-family="Noto Sans CJK TC, Microsoft JhengHei, PingFang TC, sans-serif" font-size="24" font-weight="700" opacity="1" text-anchor="middle" x="1962.0" y="1338">GetAttendance</text>
+  <text fill="#17334d" font-family="Noto Sans CJK TC, Microsoft JhengHei, PingFang TC, sans-serif" font-size="24" font-weight="700" opacity="1" text-anchor="middle" x="1962.0" y="1338">VerifySession</text>
   <text fill="#58718b" font-family="Noto Sans CJK TC, Microsoft JhengHei, PingFang TC, sans-serif" font-size="19" font-weight="400" opacity="1" text-anchor="middle" x="1962.0" y="1367.6">member-scoped read model</text>
   <path d="M 750,1407 L 750,1461" fill="none" marker-end="url(#arrowBlue)" stroke="#2367ad" stroke-linecap="round" stroke-linejoin="round" stroke-width="4"/>
   <path d="M 1800,1407 L 1800,1461" fill="none" marker-end="url(#arrowGreen)" stroke="#177858" stroke-linecap="round" stroke-linejoin="round" stroke-width="4"/>
   <rect fill="#fff5db" height="262" rx="17" ry="17" stroke="#d7aa42" stroke-width="2" width="1300" x="65" y="1475"/>
   <text fill="#a46b0c" font-family="Noto Sans CJK TC, Microsoft JhengHei, PingFang TC, sans-serif" font-size="31" font-weight="700" opacity="1" text-anchor="middle" x="715" y="1525">Domain｜業務模型</text>
-  <text fill="#8d6515" font-family="Noto Sans CJK TC, Microsoft JhengHei, PingFang TC, sans-serif" font-size="21" font-weight="400" opacity="1" text-anchor="middle" x="715" y="1562">Attendance · Participant · LocationAssessment</text>
+  <text fill="#8d6515" font-family="Noto Sans CJK TC, Microsoft JhengHei, PingFang TC, sans-serif" font-size="21" font-weight="400" opacity="1" text-anchor="middle" x="715" y="1562">Identity · AccountLink</text>
   <rect fill="#ffffff" height="105" rx="11" ry="11" stroke="#a9c5df" stroke-width="1.5" width="399" x="90" y="1595"/>
   <text fill="#17334d" font-family="Noto Sans CJK TC, Microsoft JhengHei, PingFang TC, sans-serif" font-size="23" font-weight="700" opacity="1" text-anchor="middle" x="289.5" y="1630">Entity / Aggregate</text>
   <text fill="#58718b" font-family="Noto Sans CJK TC, Microsoft JhengHei, PingFang TC, sans-serif" font-size="18" font-weight="400" opacity="1" text-anchor="middle" x="289.5" y="1660">檢查不變條件</text>
@@ -106,7 +106,7 @@
   <rect fill="#ffffff" height="467" rx="14" ry="14" stroke="#a9c5df" stroke-width="1.5" width="1154" x="2412" y="745"/>
   <rect fill="#103254" height="48" rx="12" ry="12" stroke="#103254" stroke-width="0" width="1154" x="2412" y="745"/>
   <rect fill="#103254" height="16" rx="0" ry="0" width="1154" x="2412" y="777"/>
-  <text fill="#ffffff" font-family="Noto Sans CJK TC, Microsoft JhengHei, PingFang TC, sans-serif" font-size="29" font-weight="700" opacity="1" text-anchor="start" x="2430" y="777">03  LINE Login / Identity Flow</text>
+  <text fill="#ffffff" font-family="Noto Sans CJK TC, Microsoft JhengHei, PingFang TC, sans-serif" font-size="29" font-weight="700" opacity="1" text-anchor="start" x="2430" y="777">03  MINI App / Identity Flow</text>
   <text fill="#17334d" font-family="Noto Sans CJK TC, Microsoft JhengHei, PingFang TC, sans-serif" font-size="23" font-weight="400" opacity="1" text-anchor="start" x="2441" y="829">① MINI App：LIFF SDK 做身分登入</text>
   <text fill="#17334d" font-family="Noto Sans CJK TC, Microsoft JhengHei, PingFang TC, sans-serif" font-size="23" font-weight="400" opacity="1" text-anchor="start" x="2441" y="874">② 取得 raw ID token（openid scope）</text>
   <text fill="#17334d" font-family="Noto Sans CJK TC, Microsoft JhengHei, PingFang TC, sans-serif" font-size="23" font-weight="400" opacity="1" text-anchor="start" x="2441" y="919">③ HTTPS POST 到 Go API（session 為假設）</text>
@@ -179,7 +179,7 @@
   <text fill="#17334d" font-family="Noto Sans CJK TC, Microsoft JhengHei, PingFang TC, sans-serif" font-size="19" font-weight="400" opacity="1" text-anchor="start" x="2378" y="2154">02  使用 openid scope；server 驗 raw ID token</text>
   <text fill="#17334d" font-family="Noto Sans CJK TC, Microsoft JhengHei, PingFang TC, sans-serif" font-size="19" font-weight="400" opacity="1" text-anchor="start" x="2378" y="2201">03  外部瀏覽器處理 login / redirect / init</text>
   <text fill="#17334d" font-family="Noto Sans CJK TC, Microsoft JhengHei, PingFang TC, sans-serif" font-size="19" font-weight="400" opacity="1" text-anchor="start" x="2378" y="2248">04  Geolocation consent / timeout / unavailable</text>
-  <text fill="#17334d" font-family="Noto Sans CJK TC, Microsoft JhengHei, PingFang TC, sans-serif" font-size="19" font-weight="400" opacity="1" text-anchor="start" x="2378" y="2295">05  身分與打卡業務授權分離</text>
+  <text fill="#17334d" font-family="Noto Sans CJK TC, Microsoft JhengHei, PingFang TC, sans-serif" font-size="19" font-weight="400" opacity="1" text-anchor="start" x="2378" y="2295">05  身分驗證與業務授權分離</text>
   <text fill="#17334d" font-family="Noto Sans CJK TC, Microsoft JhengHei, PingFang TC, sans-serif" font-size="19" font-weight="400" opacity="1" text-anchor="start" x="2378" y="2342">06  去重、審計、座標品質與保留政策</text>
   <text fill="#17334d" font-family="Noto Sans CJK TC, Microsoft JhengHei, PingFang TC, sans-serif" font-size="19" font-weight="400" opacity="1" text-anchor="start" x="2378" y="2389">07  Webhook signature / idempotency / retry</text>
   <text fill="#17334d" font-family="Noto Sans CJK TC, Microsoft JhengHei, PingFang TC, sans-serif" font-size="19" font-weight="400" opacity="1" text-anchor="start" x="2378" y="2436">08  Go tests / architecture tests / integration</text>

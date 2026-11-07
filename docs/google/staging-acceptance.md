@@ -4,7 +4,7 @@
 
 ## Source of user-self-service security contract
 
-The requirements from [PR #26](https://github.com/963sup/linebot-platform/pull/26) are preserved in [User Self-Service Linking](user-self-service-linking.md). All work in PR #27 must comply with forwarded-link defense, independent LINE Login/LIFF verification, channel/user/Google subject isolation, and disabling sync on account unlink. Existing LINE or Firestore deployment does not prove these OAuth-specific boundaries.
+The requirements from [PR #26](https://github.com/963sup/linebot-platform/pull/26) are preserved in [User Self-Service Linking](user-self-service-linking.md). All work in PR #27 must comply with forwarded-link defense, independent LINE MINI App/LIFF verification, channel/user/Google subject isolation, and disabling sync on account unlink. Existing LINE or Firestore deployment does not prove these OAuth-specific boundaries.
 
 ## Authorized setup
 
@@ -12,13 +12,13 @@ The requirements from [PR #26](https://github.com/963sup/linebot-platform/pull/2
 2. Securely provision OAuth Client Secret in Secret Manager, a **pinned, randomly generated 32-byte AES-256 key** in a separate versioned Secret, and a restricted Firestore database.
 3. Grant least-privilege IAM only to the private OAuth service runtime. Do not give LINE's public webhook token-access authority; do not allow unverified LINE users to start OAuth.
 4. Enable TTL on `google_oauth_states_v1.expires_at` and `google_oauth_connections_v1.expires_at`. Firestore TTL is asynchronous; application-level expiry and disconnect checks remain mandatory.
-5. Wire a **verified LINE principal resolver** to the OAuth Start/Callback handler after review of the LINE Account Linking or LINE Login trust chain. The current code intentionally does not register HTTP routes.
+5. Wire a **verified LINE principal resolver** to the OAuth Start/Callback handler after review of the Messaging API Account Linking or LINE MINI App trust chain. The current code intentionally does not register HTTP routes.
 
 ## Acceptance matrix
 
 | Gate | Expected staging evidence |
 |---|---|
-| OAuth identity | State binds to verified LINE Channel/user; spoofed LINE ID and unauthorized HTTP start rejected; browser LINE Login/LIFF reverified at handoff/callback |
+| OAuth identity | State binds to verified LINE Channel/user; spoofed LINE ID and unauthorized HTTP start rejected; browser LINE MINI App/LIFF identity reverified at handoff/callback |
 | CSRF/PKCE | Missing/modified/replayed/forwarded authorization link or cookie rejected; expired session rejected; code verifier and nonce checked |
 | Google identity | Wrong Google Client ID, issuer, nonce, expiry, or subject rejected; no email-as-identity shortcut |
 | Scopes | Only approved Calendar / Tasks / Forms scopes are issued; missing granted API scope is rejected |

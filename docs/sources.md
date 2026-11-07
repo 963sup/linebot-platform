@@ -7,12 +7,12 @@
 | [google-cloud-go](https://github.com/googleapis/google-cloud-go/blob/main/README.md) | `cloud.google.com/go/<service>` | Firestore、Cloud Tasks、Storage、Secret Manager 等雲端服務。 |
 | [google-api-go-client](https://github.com/googleapis/google-api-go-client/blob/main/README.md) | `google.golang.org/api` | Sheets、Drive、Calendar、Google Tasks 等 Discovery/Workspace API；個人資料需使用者 OAuth，且與 Cloud Tasks 不同。 |
 | [line-bot-sdk-go](https://github.com/line/line-bot-sdk-go/blob/master/README.md) | `github.com/line/line-bot-sdk-go/v8/linebot` | Messaging API、Webhook、Audience、Insight、Channel token 等。 |
-| [line-developers-docs-source](https://github.com/line/line-developers-docs-source) | LINE Developers 文件原始碼 | LINE 平台規格、事件 payload、Messaging API、LIFF、LINE Login 與 Account Linking 的文件查證；Go SDK 型別仍以已鎖定 module 原始碼為準。 |
+| [line-developers-docs-source](https://github.com/line/line-developers-docs-source) | LINE Developers 文件原始碼 | LINE 平台規格、事件 payload、Messaging API、LINE MINI App、LIFF 與 Account Linking 的文件查證；Go SDK 型別仍以已鎖定 module 原始碼為準。 |
 | [garr](https://github.com/line/garr/blob/main/README.md) | `go.linecorp.com/garr` | 選配 retry、circuit breaker、程序內韌性；不能代替 Cloud Tasks 的持久處理。 |
 | [line-developers-docs-source](https://github.com/line/line-developers-docs-source/blob/main/README.md) | 官方文件來源（不當 runtime dependency） | 核對事件與 endpoints。上游標示 read-only，請勿直接複製無授權內容。 |
 | [LIFF API reference](https://developers.line.biz/en/reference/liff/) | 官方瀏覽器 API 文件 | 核對 `liff.init()`、登入狀態與 `liff.getIDToken()`；MINI App bearer 使用 ID token，不使用 LIFF access token。 |
-| [Verify ID token](https://developers.line.biz/en/reference/line-login/#verify-id-token) | LINE Login 官方端點文件 | 核對 server-side ID token 驗證；實際 LINE 外部驗證在 Staging／Production 仍為 `Not Verified`。 |
-| [Geolocation API](https://developer.mozilla.org/en-US/docs/Web/API/Geolocation_API) | Web Platform 參考 | 使用者明確操作後取得瀏覽器位置；Attendance 只把它視為可模擬的審核證據，不是實體在場證明。 |
+| [Using user information in LIFF apps](https://developers.line.biz/en/docs/liff/using-user-profile/) | LINE MINI App／LIFF 官方文件 | 核對 server-side ID token 驗證；實際 LINE 外部驗證在 Staging／Production 仍為 `Not Verified`。 |
+| [Geolocation API](https://developer.mozilla.org/en-US/docs/Web/API/Geolocation_API) | Web Platform 參考 | 使用者明確操作後取得瀏覽器位置；目前 MINI App 只在本機顯示讀值，不會提交或持久化座標。 |
 | [openai-go](https://github.com/openai/openai-go/blob/main/README.md) | `github.com/openai/openai-go/v3` | OpenAI Responses API 等 AI 功能。 |
 | [go-genai](https://github.com/googleapis/go-genai/blob/main/README.md) | `google.golang.org/genai` | Google Gen AI SDK（Gemini API 等）；目前只有 `internal/infrastructure/google/genai/` client factory，尚未建立業務 outbound adapter。 |
 
@@ -31,4 +31,4 @@ Firestore／Cloud Tasks 的持久事件與 OIDC Worker 接線流程參考 [事�
 5. LINE「全功能」以可用公開 API reference 為追蹤範圍，資格或地區受限的 endpoints 要有 feature gate。
 6. `line-developers-docs-source` 是文件來源，不是 Go SDK，不能加入 `go.mod`。
 7. `go.linecorp.com/garr` 保留在預先宣告的選用模組中，不能用其程序內 queue 代替 Cloud Tasks 的持久排程。
-8. MINI App Attendance 只接受 `liff.getIDToken()` 取得的 ID token 作為 bearer；原始 LINE subject 不保存。精確座標以獨立 AES-GCM key 加密並於 90 天 TTL 後清除，公開 origin、LIFF channel、瀏覽器權限、IAM、TTL 與外部驗證必須以各環境證據另行確認。
+8. MINI App session endpoint 只接受 `liff.getIDToken()` 取得的 ID token 作為 bearer；原始 LINE subject 不保存。公開 origin、LIFF channel、瀏覽器權限、IAM 與外部驗證必須以各環境證據另行確認。

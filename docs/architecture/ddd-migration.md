@@ -89,4 +89,4 @@ Run `go test ./internal/domain/...`, `go test ./tests/architecture/...`, `go tes
 5. Require a separate Firestore Emulator run to claim real transactional correctness; passing compile-only integration tests is not enough.
 
 ### External acceptance blocker
-The Google OAuth inbound HTTP handler is intentionally not mounted in a public `cmd/` service, because there is no verified LINE Login / LIFF / Messaging API account-link principal provider connected to the route. Do not weaken this security boundary merely to make the call graph look complete. Runtime-eligible means built and testable by dependency injection; publicly enabled requires authorized identity, staging acceptance and explicit deployment.
+The Google OAuth inbound HTTP handler is intentionally not mounted in a public `cmd/` service, because there is no verified LINE MINI App / LIFF / Messaging API account-link principal provider connected to the route. Do not weaken this security boundary merely to make the call graph look complete. Runtime-eligible means built and testable by dependency injection; publicly enabled requires authorized identity, staging acceptance and explicit deployment.

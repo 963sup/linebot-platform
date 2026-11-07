@@ -15,7 +15,7 @@ import (
 
 const oauthCSRFCookie = "__Host-google_oauth_state"
 
-// TrustedLINEIdentity MUST authenticate the request with LINE Login or
+// TrustedLINEIdentity MUST authenticate the request with LINE MINI App or
 // an equivalent server-side verified LINE session. Never read a claimed
 // user ID from request URL, form, query or an unsigned cookie.
 type TrustedLINEIdentity func(*http.Request) (string, error)

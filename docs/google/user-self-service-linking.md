@@ -3,7 +3,7 @@
 ## 範圍與狀態
 
 - **已完成離線整合**：Calendar v3、Tasks v1、Forms v1 及 Google OAuth 核心、Firestore 加密憑證與一次性 State 的程式碼及離線測試已進入 `main`。
-- **尚未完成／驗證**：一般 LINE 使用者的網頁自助綁定入口與 LINE Login／LIFF 信任鏈、實際 Google OAuth 同意及 Secret Manager／Firestore IAM 驗收、各帳號獨立同步。OAuth Handler 尚未掛載公開路由。
+- **尚未完成／驗證**：一般 LINE 使用者的網頁自助綁定入口與 LINE MINI App／LIFF 信任鏈、實際 Google OAuth 同意及 Secret Manager／Firestore IAM 驗收、各帳號獨立同步。OAuth Handler 尚未掛載公開路由。
 - 此文由 [PR #26](https://github.com/963sup/linebot-platform/pull/26) 的原始自助連結規格整合至 [PR #27](https://github.com/963sup/linebot-platform/pull/27)，作為 P2～P4 的安全／驗收契約，不代表已部署、取得 Google OAuth 審核或擁有真實使用者資料。
 - 使用者自己操作並同意授權；平台只代其執行已授權的操作，不取得 Google 密碼，也不提供管理員共用 Google 帳號。
 
@@ -13,7 +13,7 @@
 
 1. 使用者在 LINE Bot 私人對話中點選「連結 Google 帳號」。Webhook 先驗證 LINE 原始簽章，取得可信的 Channel／LINE 使用者身分；群組訊息不得直接代表某位成員授權。
 2. 產生一次性、短期有效的綁定 Session（隨機 `state`、PKCE verifier／S256 challenge、LINE 使用者關聯、Scope、建立及過期時間）。Firestore 只保留必要的安全資料及 TTL；state 必須原子單次消耗。
-3. 打開獨立的 HTTPS 綁定頁面。**連結可能被轉傳**，所以在完成 Google 綁定前，需由伺服器再驗證目前瀏覽器使用者的 LINE Login／LIFF 身分，並確認能與原始 Bot 使用者識別對應。不可相信自行輸入的 `lineUserId`、任意 query parameter 或只有連結持有權；**Start／Callback 的 state cookie 本身不等於持有者已通過 LINE Login 身分校驗**。
+3. 打開獨立的 HTTPS 綁定頁面。**連結可能被轉傳**，所以在完成 Google 綁定前，需由伺服器再驗證目前瀏覽器使用者的 LINE MINI App／LIFF 身分，並確認能與原始 Bot 使用者識別對應。不可相信自行輸入的 `lineUserId`、任意 query parameter 或只有連結持有權；**Start／Callback 的 state cookie 本身不等於持有者已通過 LINE 身分校驗**。
 4. 綁定者在瀏覽器選擇自己的 Google 帳號並明確同意 Calendar、Tasks 或 Forms 所需最小 Scope；Authorization Code 回到伺服器端固定 Redirect URI；檢查 state、PKCE、一次性 Session、拒絕及過期狀態。
 5. 伺服器交換授權碼、驗證 Google ID Token（issuer、audience、expiry、nonce）或經驗證身分流程；以 Google `sub` 當穩定識別，不把可能變動的 Email 當主鍵。核對實際核發的 Scopes。
 6. 依 `(LINE Channel／LINE User ID, Google sub)` 保存帳號連結；必須在可信的 `owner` 識別中包含 Channel／租戶邊界（PR #27 現有 Repository 只對呼叫端提供的 owner + sub 做隔離，不能因此假設已完成 Channel 隔離）。先支援每人一個預設 Google 帳號，可保留擴充多帳號選擇的結構。禁止跨使用者查詢或交換 Token。
@@ -53,7 +53,7 @@ P3 **不是讓管理員代替使用者連結帳號**，而是以經同意的隔�
 
 **已具備程式碼（不代表已在正式 LINE／Firestore 環境驗收）：** `internal/application/usecases/identity/link_service.go`、`internal/adapter/inbound/http/google/oauth/handler.go`、`internal/adapter/outbound/google/cloud/firestore/workspace_oauth.go`、`internal/adapter/outbound/google/api/oauth/provider.go`、`internal/infrastructure/google/api/oauth/flow.go`、`internal/infrastructure/google/api/oauth/keyring.go` 及 `internal/bootstrap/workspace_links.go`。
 
-**仍需實作／驗證：** 將現有可信 LINE Login／LIFF／Messaging Account Linking 識別映射至同一個使用者及 Channel；連結被轉傳時在瀏覽器重新確認 LINE 身分；安全掛載 OAuth Start／Callback；正式 Google 同意／撤銷、Firestore Emulator 多執行個體交易、Secret Manager 金鑰權限、使用者取消連結後同步任務終止，以及 Calendar／Tasks／Forms 的持久同步。
+**仍需實作／驗證：** 將現有可信 LINE MINI App／LIFF／Messaging API Account Linking 識別映射至同一個使用者及 Channel；連結被轉傳時在瀏覽器重新確認 LINE 身分；安全掛載 OAuth Start／Callback；正式 Google 同意／撤銷、Firestore Emulator 多執行個體交易、Secret Manager 金鑰權限、使用者取消連結後同步任務終止，以及 Calendar／Tasks／Forms 的持久同步。
 
 新增設定須遵守 `internal/bootstrap/config_contract.go` 單一設定契約；保留既有 SDK 與 Go Idioms，不為未啟用功能建立空實作。
 

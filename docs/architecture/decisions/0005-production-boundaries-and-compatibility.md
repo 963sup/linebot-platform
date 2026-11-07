@@ -37,7 +37,7 @@ The retained factory exceptions have these concrete owners and acceptance eviden
 
 Breaking report return types or silently reassigning legacy fields would force an unplanned CLI migration. Retaining only the legacy fields would continue losing provider facts. Additive projection preserves current consumers while making accurate data available; consumers requiring a strict fixed JSON field set must tolerate the documented additive evolution.
 
-Conceptual architecture assets remain non-normative hypotheses. They cannot promote contexts, require new authentication sessions, reject successful attendance retries, or establish an Attendance event/outbox contract. Current ownership and invariants remain in the Blueprint and Domain manifest.
+Conceptual architecture assets remain non-normative hypotheses. They cannot promote contexts, require new authentication sessions, or establish event/outbox contracts. Current ownership and invariants remain in the Blueprint and Domain manifest.
 
 ## Rollback
 

@@ -1,4 +1,4 @@
-// Package linesession verifies a LINE Login identity for provider-neutral consumers.
+// Package linesession verifies a LINE MINI App identity for provider-neutral consumers.
 package linesession
 
 import (

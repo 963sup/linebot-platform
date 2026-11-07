@@ -64,7 +64,7 @@ func TestMarkdownArchitectureContractsStayAligned(t *testing.T) {
 		},
 		{
 			path:     "../../docs/sources.md",
-			required: []string{"目前只有 `internal/infrastructure/google/genai/` client factory", "尚未建立業務 outbound adapter", "`liff.getIDToken()`", "AES-GCM", "90 天 TTL"},
+			required: []string{"目前只有 `internal/infrastructure/google/genai/` client factory", "尚未建立業務 outbound adapter", "`liff.getIDToken()`", "目前 MINI App 只在本機顯示讀值", "不會提交或持久化座標"},
 			forbid:   []string{"`internal/adapter/outbound/genai/`"},
 		},
 		{

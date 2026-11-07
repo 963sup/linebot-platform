@@ -25,3 +25,16 @@ func TestNewClientWithDatabaseRejectsInvalidInputBeforeCredentials(t *testing.T)
 		}
 	}
 }
+
+func TestValidateDatabaseID(t *testing.T) {
+	for _, databaseID := range []string{DefaultDatabase, "tenant-platform"} {
+		if err := ValidateDatabaseID(databaseID); err != nil {
+			t.Fatalf("ValidateDatabaseID(%q): %v", databaseID, err)
+		}
+	}
+	for _, databaseID := range []string{"", ".", "..", " invalid", "invalid/database"} {
+		if err := ValidateDatabaseID(databaseID); err == nil {
+			t.Fatalf("ValidateDatabaseID(%q) succeeded", databaseID)
+		}
+	}
+}

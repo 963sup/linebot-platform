@@ -32,13 +32,10 @@ Keep the existing layer-first structure, consumer-owned capability ports, live d
 | A10 | Correct candidate Application package comments. |
 | D1 | Delete five unused candidate event packages/queues and discard calls. Preserve state/revision/restore invariants, Promotion delivery intent and Identity events. |
 | D2 | Stop requiring a repository merely because an aggregate is implemented. Continue validating every declared repository and its ownership. |
-| D3 | Delete redundant Attendance error alias; retain `ErrNotFound` identity. |
 | D4 | Delete test-only constructors that lose lifecycle ownership; use managed runtime/client construction and cleanup. |
 | V1 / V5 | Correct global-port implications and Application capability versus Domain persistence ownership in assets. |
-| V2 | Align Identity/Attendance supporting classifications with the manifest. |
 | V3 | Correct conceptual retry and hypothetical publication semantics. |
 | V4 | Label every conceptual Mermaid view as a hypothesis, not an implemented model. |
-| V6 | Keep dated ADR historical assertions; ADR 0004 explicitly supersedes the prior Identity-only status. |
 | V7 | Clarify prospective DeliveryFact publication in the manifest and regenerate the context map. |
 
 ## Measured change

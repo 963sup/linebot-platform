@@ -62,7 +62,7 @@ Approved for production? (default: NO):
 Evidence schema version: 1
 Public / private immutable image digests:
 MINI App immutable image digest / authoritative HTTPS origin:
-LIFF internal channel class, LIFF ID and Login Channel ID (Developing only; no token):
+LINE MINI App internal channel class, LIFF ID and Channel ID (Developing only; no token):
 MINI App identity / geolocation gate evidence:
 Reviewer identity and approval record:
 Promotion approval expires at (UTC):

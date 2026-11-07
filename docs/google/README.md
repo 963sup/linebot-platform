@@ -33,5 +33,5 @@
 ## 使用者自助連結規格（整合自 PR #26）
 
 - [LINE 使用者自行綁定 Google 帳號](user-self-service-linking.md)：明確規範連結轉傳防護、瀏覽器重新驗證 LINE 身分、Channel／使用者／Google sub 隔離與取消連結時停止同步。
-- OAuth 核心、Firestore、TokenSource 及 Handler 仍是 opt-in 基礎元件；尚未透過已驗證 LINE Login／LIFF 接上公開路由，不能宣稱已能讓每位 LINE 使用者自行綁定。
+- OAuth 核心、Firestore、TokenSource 及 Handler 仍是 opt-in 基礎元件；尚未透過已驗證 LINE MINI App／LIFF 接上公開路由，不能宣稱已能讓每位 LINE 使用者自行綁定。
 - [OAuth 基礎實作](oauth-foundation.md) · [隔離 Staging 驗收](staging-acceptance.md)。

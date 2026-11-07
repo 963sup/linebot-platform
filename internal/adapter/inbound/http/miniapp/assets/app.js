@@ -22,7 +22,7 @@ async function initialize() {
   const configResponse = await fetch("/miniapp/config.json"); if (!configResponse.ok) throw new Error("configuration unavailable");
   const config = await configResponse.json(); await liff.init({liffId: config.liffId});
   if (!liff.isLoggedIn()) { liff.login({redirectUri: window.location.origin + "/miniapp/"}); return; }
-  const idToken = liff.getIDToken(); if (!idToken) throw new Error("LINE login is required");
+  const idToken = liff.getIDToken(); if (!idToken) throw new Error("LINE MINI App authentication is required");
   const response = await fetch("/miniapp/api/v1/session", {headers: {Authorization: `Bearer ${idToken}`}}); if (!response.ok) throw new Error("LINE session verification failed");
   locateButton.disabled = false; status("LINE 身分驗證成功。");
 }

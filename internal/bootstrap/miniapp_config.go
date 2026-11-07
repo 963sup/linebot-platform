@@ -6,6 +6,8 @@ import (
 	"regexp"
 	"strings"
 	"time"
+
+	storeinfra "github.com/963sup/linebot-platform/internal/infrastructure/google/cloud/firestore"
 )
 
 var (
@@ -16,17 +18,18 @@ var (
 )
 
 type MiniAppConfig struct {
-	Environment    Environment
-	Role           RuntimeRole
-	Port           string
-	LINEAPITimeout time.Duration
-	Log            LogConfig
-	Telemetry      TelemetryConfig
-	LIFFID         string
-	ChannelID      string
-	LIFFURL        string
-	EndpointURL    string
-	PublicOrigin   string
+	Environment       Environment
+	Role              RuntimeRole
+	Port              string
+	LINEAPITimeout    time.Duration
+	Log               LogConfig
+	Telemetry         TelemetryConfig
+	LIFFID            string
+	ChannelID         string
+	LIFFURL           string
+	EndpointURL       string
+	PublicOrigin      string
+	FirestoreDatabase string
 }
 
 func LoadMiniAppConfig(getenv func(string) string) (MiniAppConfig, error) {
@@ -69,6 +72,13 @@ func LoadMiniAppConfig(getenv func(string) string) (MiniAppConfig, error) {
 	channelID := readSetting(getenv, KeyMiniAppChannelID)
 	liffURL := readSetting(getenv, KeyMiniAppLIFFURL)
 	endpointURL := readSetting(getenv, KeyMiniAppEndpointURL)
+	databaseID := readSetting(getenv, KeyFirestoreDatabase)
+	if databaseID == "" {
+		databaseID = storeinfra.DefaultDatabase
+	}
+	if err := storeinfra.ValidateDatabaseID(databaseID); err != nil {
+		return MiniAppConfig{}, err
+	}
 	if !miniAppChannelIDPattern.MatchString(channelID) {
 		return MiniAppConfig{}, errors.New("LINE_MINI_APP_CHANNEL_ID must contain decimal digits")
 	}
@@ -93,6 +103,7 @@ func LoadMiniAppConfig(getenv func(string) string) (MiniAppConfig, error) {
 		Environment: environment, Role: RoleMiniApp, Port: port,
 		LINEAPITimeout: timeout, Log: logging, Telemetry: telemetry,
 		LIFFID: liffID, ChannelID: channelID, LIFFURL: liffURL, EndpointURL: endpointURL, PublicOrigin: origin,
+		FirestoreDatabase: databaseID,
 	}, nil
 }
 

@@ -12,8 +12,8 @@
 
 ## 尚未完成的外部接線及驗收（不可對公提供登入）
 
-- [使用者自助綁定規格](user-self-service-linking.md) 來自 PR #26，保留了**連結可轉傳時須在瀏覽器再次驗證 LINE Login／LIFF 身分**的安全限制。單靠 Callback 的 state Cookie 無法證明原始 LINE 身分。
-- Firestore 一次性 State、AES-GCM 加密 Token Repository、金鑰輪替版本、刷新 CAS／停用及 OAuth Start／Callback Handler 的**離線程式碼已於 PR #27 實作**；但尚未在既有正式 LINE Login、Firestore IAM、Secret Manager 金鑰及真實 Google 帳號上驗收。
+- [使用者自助綁定規格](user-self-service-linking.md) 來自 PR #26，保留了**連結可轉傳時須在瀏覽器再次驗證 LINE MINI App／LIFF 身分**的安全限制。單靠 Callback 的 state Cookie 無法證明原始 LINE 身分。
+- Firestore 一次性 State、AES-GCM 加密 Token Repository、金鑰輪替版本、刷新 CAS／停用及 OAuth Start／Callback Handler 的**離線程式碼已於 PR #27 實作**；但尚未在既有正式 LINE MINI App、Firestore IAM、Secret Manager 金鑰及真實 Google 帳號上驗收。
 - OAuth Start／Callback 尚未掛載公開路由，可信的 Channel／LINE user／Google `sub` 隔離與瀏覽器再驗證、憑證輪替、權限擴充與解除連結後停止背景同步仍待整合測試。
 - 使用者個別 Calendar／Tasks／Forms 同步及 Pub/Sub Watch 通知不是本輪已完成的服務；詳見 [Staging Acceptance](staging-acceptance.md)。
 
@@ -48,7 +48,7 @@
 
 ### Prerequisites remaining before public use
 
-1. Verify the LINE principal with Messaging Account Linking or LINE Login **and reverify the browser's LINE Login/LIFF identity at handoff and callback**; a forwarded authorization link or matching state cookie alone cannot bind a Google account.
+1. Verify the LINE principal with Messaging API Account Linking or LINE MINI App **and reverify the browser's LIFF identity at handoff and callback**; a forwarded authorization link or matching state cookie alone cannot bind a Google account.
 2. Provision dedicated GCP staging project, restricted Firestore permissions, TTL policy and pinned Secret Manager encryption versions; validate revocation and key rotation.
 3. Demonstrate Firestore Emulator transaction races, secret-manager IAM and real Google OAuth consent/refresh/revoke on a separate test Google account. Define a reauthorization fallback for concurrent or revoked refresh tokens.
 4. Bind the HTTPS start/callback routes to a reviewed identity gate; enforce session and consent policy, use staging OAuth client IDs, and record redacted audit and recovery evidence.
