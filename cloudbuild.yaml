@@ -2,6 +2,10 @@
 substitutions:
   _REGION: 'asia-east1'
   _AR_REPOSITORY: 'line-bot'
+  _LINE_MINI_APP_CHANNEL_ID: '2012412009'
+  _LINE_MINI_APP_LIFF_URL: 'https://miniapp.line.me/2012412009-Xp2CQWOP'
+  _LINE_MINI_APP_ENDPOINT_URL: 'https://line-miniapp-185354881750.asia-east1.run.app/miniapp/'
+  _LINE_MESSAGING_API_BOT_USER_ID: 'Ud0b6801817535b771ba47af2f15b42e8'
 
 serviceAccount: 'projects/bubbly-area-513305-s0/serviceAccounts/line-bot-build@bubbly-area-513305-s0.iam.gserviceaccount.com'
 
