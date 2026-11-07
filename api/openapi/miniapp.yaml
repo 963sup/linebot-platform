@@ -1,34 +1,23 @@
 openapi: 3.1.0
 info:
   title: linebot-platform Attendance MINI App API
-  version: 1.0.0
-  description: >-
-    LIFF browser assets and authenticated Attendance enrollment, assigned
-    options, and punch submission. Offline code does not prove the LIFF,
-    public origin, LINE verification, persistence, or IAM is deployed.
-tags:
-  - name: Mini App
-  - name: Attendance
+  version: 2.0.0
+  description: LIFF assets and authenticated enrollment, today's attendance state, and clock-in/out submission.
+tags: [{name: Mini App}, {name: Attendance}]
 paths:
   /miniapp:
     get:
       tags: [Mini App]
       operationId: redirectMiniApp
       responses:
-        '308':
-          description: Permanent redirect to `/miniapp/`.
-          headers:
-            Location: {schema: {type: string, const: /miniapp/}}
+        '308': {description: Permanent redirect to `/miniapp/`.}
         '405': {$ref: '#/components/responses/MethodNotAllowed'}
   /miniapp/:
     get:
       tags: [Mini App]
       operationId: getMiniApp
       responses:
-        '200':
-          description: Attendance MINI App HTML.
-          headers: {Cache-Control: {$ref: '#/components/headers/NoStore'}}
-          content: {text/html: {schema: {type: string}}}
+        '200': {description: Attendance MINI App HTML., content: {text/html: {schema: {type: string}}}}
         '405': {$ref: '#/components/responses/MethodNotAllowed'}
   /miniapp/assets/app.css:
     get:
@@ -49,99 +38,68 @@ paths:
       tags: [Mini App]
       operationId: getMiniAppConfig
       responses:
-        '200':
-          description: Public LIFF configuration.
-          headers: {Cache-Control: {$ref: '#/components/headers/NoStore'}}
-          content: {application/json: {schema: {$ref: '#/components/schemas/MiniAppConfig'}}}
+        '200': {description: Public LIFF configuration., content: {application/json: {schema: {$ref: '#/components/schemas/MiniAppConfig'}}}}
         '405': {$ref: '#/components/responses/MethodNotAllowed'}
   /miniapp/api/v1/attendance/enrollments:
     post:
       tags: [Attendance]
       operationId: enrollAttendanceParticipant
-      summary: Redeem an enrollment code for the verified participant
       security: [{lineIDToken: []}]
-      requestBody:
-        required: true
-        content: {application/json: {schema: {$ref: '#/components/schemas/EnrollmentRequest'}}}
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/EnrollmentRequest'}}}}
       responses:
-        '200':
-          description: The same participant had already redeemed this enrollment.
-          headers: {Cache-Control: {$ref: '#/components/headers/NoStore'}}
-          content: {application/json: {schema: {$ref: '#/components/schemas/EnrollmentResult'}}}
-        '201':
-          description: Enrollment created.
-          headers: {Cache-Control: {$ref: '#/components/headers/NoStore'}}
-          content: {application/json: {schema: {$ref: '#/components/schemas/EnrollmentResult'}}}
+        '200': {description: Already enrolled., content: {application/json: {schema: {$ref: '#/components/schemas/EnrollmentResult'}}}}
+        '201': {description: Enrollment created., content: {application/json: {schema: {$ref: '#/components/schemas/EnrollmentResult'}}}}
         '400': {$ref: '#/components/responses/InvalidRequest'}
         '401': {$ref: '#/components/responses/Unauthenticated'}
         '403': {$ref: '#/components/responses/Forbidden'}
         '404': {$ref: '#/components/responses/NotFound'}
-        '409': {$ref: '#/components/responses/Conflict'}
         '405': {$ref: '#/components/responses/MethodNotAllowed'}
-        '408': {$ref: '#/components/responses/RequestCancelled'}
+        '409': {$ref: '#/components/responses/Conflict'}
         '413': {$ref: '#/components/responses/RequestTooLarge'}
         '415': {$ref: '#/components/responses/UnsupportedMediaType'}
         '500': {$ref: '#/components/responses/InternalError'}
         '503': {$ref: '#/components/responses/CapabilityUnavailable'}
-        '504': {$ref: '#/components/responses/DeadlineExceeded'}
-  /miniapp/api/v1/attendance/options:
+  /miniapp/api/v1/attendance/today:
     get:
       tags: [Attendance]
-      operationId: listAttendanceOptions
-      summary: List only the verified participant's assigned current shifts
+      operationId: getTodayAttendance
+      summary: Read the verified participant's server-resolved workday state
       security: [{lineIDToken: []}]
       responses:
-        '200':
-          description: Enrollment state and currently punchable assigned shift/workplace options.
-          headers: {Cache-Control: {$ref: '#/components/headers/NoStore'}}
-          content: {application/json: {schema: {$ref: '#/components/schemas/AttendanceOptions'}}}
+        '200': {description: Enrollment and current workday state., content: {application/json: {schema: {$ref: '#/components/schemas/AttendanceToday'}}}}
         '401': {$ref: '#/components/responses/Unauthenticated'}
         '403': {$ref: '#/components/responses/Forbidden'}
         '405': {$ref: '#/components/responses/MethodNotAllowed'}
-        '408': {$ref: '#/components/responses/RequestCancelled'}
         '409': {$ref: '#/components/responses/Conflict'}
         '500': {$ref: '#/components/responses/InternalError'}
         '503': {$ref: '#/components/responses/CapabilityUnavailable'}
-        '504': {$ref: '#/components/responses/DeadlineExceeded'}
   /miniapp/api/v1/attendance/punches:
     post:
       tags: [Attendance]
       operationId: createAttendancePunch
-      summary: Record an assigned shift clock-in or clock-out
+      summary: Record clock-in or clock-out for the server-resolved workday
       security: [{lineIDToken: []}]
-      requestBody:
-        required: true
-        content: {application/json: {schema: {$ref: '#/components/schemas/PunchRequest'}}}
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/PunchRequest'}}}}
       responses:
-        '200':
-          description: Idempotent replay of an existing punch.
-          headers: {Cache-Control: {$ref: '#/components/headers/NoStore'}}
-          content: {application/json: {schema: {$ref: '#/components/schemas/PunchResult'}}}
-        '201':
-          description: Punch recorded.
-          headers: {Cache-Control: {$ref: '#/components/headers/NoStore'}}
-          content: {application/json: {schema: {$ref: '#/components/schemas/PunchResult'}}}
+        '200': {description: Idempotent replay., content: {application/json: {schema: {$ref: '#/components/schemas/PunchResult'}}}}
+        '201': {description: Punch recorded., content: {application/json: {schema: {$ref: '#/components/schemas/PunchResult'}}}}
         '400': {$ref: '#/components/responses/InvalidRequest'}
         '401': {$ref: '#/components/responses/Unauthenticated'}
         '403': {$ref: '#/components/responses/Forbidden'}
         '404': {$ref: '#/components/responses/NotFound'}
-        '409': {$ref: '#/components/responses/Conflict'}
         '405': {$ref: '#/components/responses/MethodNotAllowed'}
-        '408': {$ref: '#/components/responses/RequestCancelled'}
+        '409': {$ref: '#/components/responses/Conflict'}
         '413': {$ref: '#/components/responses/RequestTooLarge'}
         '415': {$ref: '#/components/responses/UnsupportedMediaType'}
         '500': {$ref: '#/components/responses/InternalError'}
         '503': {$ref: '#/components/responses/CapabilityUnavailable'}
-        '504': {$ref: '#/components/responses/DeadlineExceeded'}
 components:
   securitySchemes:
     lineIDToken:
       type: http
       scheme: bearer
       bearerFormat: LINE LIFF ID token
-      description: "`liff.getIDToken()` value; LIFF access tokens are not accepted."
-  headers:
-    NoStore: {description: Prevent browser storage of Attendance responses., schema: {type: string, const: no-store}}
+      description: The `liff.getIDToken()` value.
   schemas:
     MiniAppConfig:
       type: object
@@ -157,35 +115,29 @@ components:
       type: object
       additionalProperties: false
       required: [status]
-      properties:
-        status: {type: string, enum: [enrolled, already_enrolled]}
-    AttendanceOptions:
+      properties: {status: {type: string, enum: [enrolled, already_enrolled]}}
+    PunchView:
       type: object
       additionalProperties: false
-      required: [enrollmentRequired, options]
+      required: [kind, recordedAt]
+      properties:
+        kind: {type: string, enum: [clock_in, clock_out]}
+        recordedAt: {type: string, format: date-time}
+    AttendanceToday:
+      type: object
+      additionalProperties: false
+      required: [enrollmentRequired, workday, clockIn, clockOut, allowedKinds]
       properties:
         enrollmentRequired: {type: boolean}
-        options:
-          type: array
-          items: {$ref: '#/components/schemas/AttendanceOption'}
-    AttendanceOption:
-      type: object
-      additionalProperties: false
-      required: [shiftInstanceId, label, workplaceLabel, allowedKinds]
-      properties:
-        shiftInstanceId: {type: string, minLength: 1}
-        label: {type: string, minLength: 1, description: Assigned shift display label.}
-        workplaceLabel: {type: string, minLength: 1, description: Assigned workplace display label.}
-        allowedKinds:
-          type: array
-          uniqueItems: true
-          items: {type: string, enum: [clock_in, clock_out]}
+        workday: {type: string, description: Server-resolved attendance date.}
+        clockIn: {oneOf: [{$ref: '#/components/schemas/PunchView'}, {type: 'null'}]}
+        clockOut: {oneOf: [{$ref: '#/components/schemas/PunchView'}, {type: 'null'}]}
+        allowedKinds: {type: array, uniqueItems: true, items: {type: string, enum: [clock_in, clock_out]}}
     PunchRequest:
       type: object
       additionalProperties: false
-      required: [shiftInstanceId, kind, latitude, longitude, accuracyMeters]
+      required: [kind, latitude, longitude, accuracyMeters]
       properties:
-        shiftInstanceId: {type: string, minLength: 1}
         kind: {type: string, enum: [clock_in, clock_out]}
         latitude: {type: number, format: double, minimum: -90, maximum: 90}
         longitude: {type: number, format: double, minimum: -180, maximum: 180}
@@ -193,15 +145,12 @@ components:
     PunchResult:
       type: object
       additionalProperties: false
-      required: [attendanceId, punchId, kind, recordedAt, status, reviewState, reasons]
+      required: [workday, kind, recordedAt, status]
       properties:
-        attendanceId: {type: string, minLength: 1}
-        punchId: {type: string, minLength: 1}
+        workday: {type: string}
         kind: {type: string, enum: [clock_in, clock_out]}
         recordedAt: {type: string, format: date-time}
         status: {type: string, enum: [recorded, already_recorded]}
-        reviewState: {type: string, enum: [clear, required, confirmed, corrected, voided]}
-        reasons: {type: array, items: {type: string}}
     Error:
       type: object
       additionalProperties: false
@@ -215,13 +164,11 @@ components:
   responses:
     InvalidRequest: {description: Strict JSON or field validation failed., content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}}
     Unauthenticated: {description: LINE ID token authentication failed., content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}}
-    Forbidden: {description: Origin/fetch metadata failed or the participant is not permitted., content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}}
-    NotFound: {description: Enrollment code or assigned shift was not found., content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}}
-    Conflict: {description: Enrollment, options or punch conflicts with current Attendance state., content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}}
+    Forbidden: {description: Origin validation or enrollment failed., content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}}
+    NotFound: {description: Enrollment code was not found., content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}}
+    Conflict: {description: Punch conflicts with current workday state., content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}}
     MethodNotAllowed: {description: Method not supported., content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}}
     RequestTooLarge: {description: Body exceeds 4096 bytes., content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}}
     UnsupportedMediaType: {description: Content-Type is not JSON., content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}}
-    RequestCancelled: {description: Request context was cancelled., content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}}
     InternalError: {description: Unexpected internal failure., content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}}
     CapabilityUnavailable: {description: Identity or Attendance persistence is unavailable., content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}}
-    DeadlineExceeded: {description: Request deadline expired., content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}}

@@ -110,7 +110,7 @@ Context 內的依賴仍必須保持行為所有權：Aggregate 可以使用同�
 
 Application 不得 import Firestore、gRPC、Google、LINE、OpenAI、MCP 或其他外部 SDK，也不得直接依賴具體 Adapter。
 
-Browser API 或 provider SDK 的存在不會自行形成 Domain。MINI App 的 Web Geolocation 仍只是 inbound browser mechanism；真正的業務邊界是 `attendance` Context：它以員工、Workplace、明確 ShiftAssignment、上／下班 Punch 與 Review Action 表達出勤不變條件。Application 驗證 LINE principal、協調 repository 與 transaction；Domain 不依賴 LIFF、LINE、Firestore、Secret Manager 或 HTTP。位置只形成可模擬的審核證據，不能宣稱本人實體在場；精確座標的加密與 TTL 屬 Adapter／Infrastructure policy。HTTP 契約見 [MINI App OpenAPI](../../api/openapi/miniapp.yaml)。
+Browser API 或 provider SDK 的存在不會自行形成 Domain。MINI App 的 Web Geolocation 仍只是 inbound browser mechanism；真正的業務邊界是 `attendance` Context：它以已登錄員工、server-derived Workday 與最多一組上／下班 Punch 表達出勤不變條件。Application 驗證 LINE principal、協調 repository 與 transaction；Domain 不依賴 LIFF、LINE、Firestore 或 HTTP。GPS fix 是私有輸入與紀錄，不能宣稱本人實體在場。HTTP 契約見 [MINI App OpenAPI](../../api/openapi/miniapp.yaml)。
 
 ### Ports
 

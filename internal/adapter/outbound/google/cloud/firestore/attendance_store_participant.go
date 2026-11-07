@@ -3,7 +3,6 @@ package firestore
 import (
 	"context"
 	"errors"
-	"fmt"
 	"time"
 
 	sdk "cloud.google.com/go/firestore"
@@ -13,6 +12,18 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
+
+func (s *AttendanceStore) participantRef(id valueobjects.EmployeeID) *sdk.DocumentRef {
+	return s.client.Collection(attendanceParticipantsCollection).Doc(attendanceDocumentID("employee", string(id)))
+}
+
+func (s *AttendanceStore) enrollmentRef(hash valueobjects.EnrollmentCodeHash) *sdk.DocumentRef {
+	return s.client.Collection(attendanceEnrollmentTokensCollection).Doc(attendanceDocumentID("enrollment", string(hash)))
+}
+
+func (s *AttendanceStore) bindingRef(id valueobjects.ParticipantID) *sdk.DocumentRef {
+	return s.client.Collection(attendanceParticipantBindings).Doc(attendanceDocumentID("participant-binding", string(id)))
+}
 
 func (s *AttendanceStore) FindByEmployeeID(ctx context.Context, id valueobjects.EmployeeID) (entities.Participant, error) {
 	if ctx == nil || !id.Valid() {
@@ -27,13 +38,7 @@ func (s *AttendanceStore) FindByEmployeeID(ctx context.Context, id valueobjects.
 	}
 	var stored attendanceParticipantDocument
 	if err := snapshot.DataTo(&stored); err != nil {
-		return entities.Participant{}, fmt.Errorf("%w: decode participant", ErrRepositoryCorrupt)
-	}
-	if !stored.Active && stored.ExpiresAt == nil {
 		return entities.Participant{}, ErrRepositoryCorrupt
-	}
-	if stored.ExpiresAt != nil && retentionExpired(*stored.ExpiresAt, s.now().UTC()) {
-		return entities.Participant{}, repositories.ErrNotFound
 	}
 	return restoreAttendanceParticipant(stored)
 }
@@ -42,7 +47,7 @@ func (s *AttendanceStore) FindByParticipantID(ctx context.Context, id valueobjec
 	if ctx == nil || !id.Valid() {
 		return entities.Participant{}, errors.New("valid participant ID is required")
 	}
-	snapshot, err := s.client.Collection(attendanceParticipantBindings).Doc(attendanceDocumentID("participant-binding", string(id))).Get(ctx)
+	bindingSnapshot, err := s.bindingRef(id).Get(ctx)
 	if status.Code(err) == codes.NotFound {
 		return entities.Participant{}, repositories.ErrNotFound
 	}
@@ -50,15 +55,12 @@ func (s *AttendanceStore) FindByParticipantID(ctx context.Context, id valueobjec
 		return entities.Participant{}, attendanceStoreError(ctx, "read participant binding")
 	}
 	var binding attendanceBindingDocument
-	if err := snapshot.DataTo(&binding); err != nil || binding.SchemaVersion != attendanceSchemaVersion || binding.ParticipantID != string(id) {
-		return entities.Participant{}, fmt.Errorf("%w: invalid participant binding", ErrRepositoryCorrupt)
-	}
-	if binding.ExpiresAt != nil && retentionExpired(*binding.ExpiresAt, s.now().UTC()) {
-		return entities.Participant{}, repositories.ErrNotFound
+	if err := bindingSnapshot.DataTo(&binding); err != nil || binding.SchemaVersion != attendanceParticipantSchemaVersion || binding.ParticipantID != string(id) {
+		return entities.Participant{}, ErrRepositoryCorrupt
 	}
 	employeeID, err := valueobjects.NewEmployeeID(binding.EmployeeID)
 	if err != nil {
-		return entities.Participant{}, fmt.Errorf("%w: invalid employee binding", ErrRepositoryCorrupt)
+		return entities.Participant{}, ErrRepositoryCorrupt
 	}
 	participant, err := s.FindByEmployeeID(ctx, employeeID)
 	if err != nil {
@@ -66,7 +68,7 @@ func (s *AttendanceStore) FindByParticipantID(ctx context.Context, id valueobjec
 	}
 	boundID, bound := participant.ParticipantID()
 	if !bound || boundID != id {
-		return entities.Participant{}, fmt.Errorf("%w: participant binding mismatch", ErrRepositoryCorrupt)
+		return entities.Participant{}, ErrRepositoryCorrupt
 	}
 	return participant, nil
 }
@@ -75,24 +77,21 @@ func (s *AttendanceStore) SaveParticipant(ctx context.Context, participant entit
 	if ctx == nil || !participant.EmployeeID().Valid() {
 		return errors.New("valid participant is required")
 	}
-	if err := ctx.Err(); err != nil {
-		return err
-	}
 	now := s.now().UTC()
 	ref := s.participantRef(participant.EmployeeID())
-	return classifyAttendanceStoreError(ctx, s.client.RunTransaction(ctx, func(ctx context.Context, tx *sdk.Transaction) error {
+	err := s.client.RunTransaction(ctx, func(ctx context.Context, tx *sdk.Transaction) error {
 		current, err := tx.Get(ref)
 		createdAt := now
 		if err == nil {
 			var stored attendanceParticipantDocument
-			if err := current.DataTo(&stored); err != nil || stored.SchemaVersion != attendanceSchemaVersion || stored.EmployeeID != string(participant.EmployeeID()) {
+			if err := current.DataTo(&stored); err != nil || stored.SchemaVersion != attendanceParticipantSchemaVersion || stored.EmployeeID != string(participant.EmployeeID()) {
 				return ErrRepositoryCorrupt
 			}
-			incomingParticipantID := ""
+			incomingID := ""
 			if id, bound := participant.ParticipantID(); bound {
-				incomingParticipantID = string(id)
+				incomingID = string(id)
 			}
-			if stored.ParticipantID != incomingParticipantID {
+			if stored.ParticipantID != incomingID {
 				return repositories.ErrConflict
 			}
 			createdAt = stored.CreatedAt
@@ -101,32 +100,9 @@ func (s *AttendanceStore) SaveParticipant(ctx context.Context, participant entit
 		} else if _, bound := participant.ParticipantID(); bound {
 			return repositories.ErrConflict
 		}
-		doc := storeAttendanceParticipant(participant, createdAt, now)
-		var bindingRef *sdk.DocumentRef
-		if participantID, bound := participant.ParticipantID(); bound && doc.ExpiresAt != nil {
-			bindingRef = s.client.Collection(attendanceParticipantBindings).Doc(attendanceDocumentID("participant-binding", string(participantID)))
-			bindingSnapshot, err := tx.Get(bindingRef)
-			if status.Code(err) == codes.NotFound {
-				return ErrRepositoryCorrupt
-			}
-			if err != nil {
-				return err
-			}
-			var binding attendanceBindingDocument
-			if err := bindingSnapshot.DataTo(&binding); err != nil || binding.SchemaVersion != attendanceSchemaVersion || binding.ParticipantID != string(participantID) || binding.EmployeeID != string(participant.EmployeeID()) {
-				return ErrRepositoryCorrupt
-			}
-		}
-		if err := tx.Set(ref, doc); err != nil {
-			return err
-		}
-		if bindingRef != nil {
-			if err := tx.Update(bindingRef, []sdk.Update{{Path: "expires_at", Value: *doc.ExpiresAt}}); err != nil {
-				return err
-			}
-		}
-		return nil
-	}))
+		return tx.Set(ref, storeAttendanceParticipant(participant, createdAt, now))
+	})
+	return classifyAttendanceStoreError(ctx, err)
 }
 
 func (s *AttendanceStore) Invite(ctx context.Context, participant entities.Participant, invitation entities.EnrollmentInvitation) error {
@@ -137,9 +113,8 @@ func (s *AttendanceStore) Invite(ctx context.Context, participant entities.Parti
 	if !invitation.ExpiresAt().After(now) || invitation.ExpiresAt().After(now.Add(24*time.Hour)) {
 		return errors.New("enrollment invitation expiry must be within 24 hours")
 	}
-	ref := s.enrollmentRef(invitation.CodeHash())
 	err := s.client.RunTransaction(ctx, func(ctx context.Context, tx *sdk.Transaction) error {
-		participantRef := s.participantRef(invitation.EmployeeID())
+		participantRef := s.participantRef(participant.EmployeeID())
 		participantSnapshot, participantErr := tx.Get(participantRef)
 		if participantErr == nil {
 			var stored attendanceParticipantDocument
@@ -147,7 +122,7 @@ func (s *AttendanceStore) Invite(ctx context.Context, participant entities.Parti
 				return ErrRepositoryCorrupt
 			}
 			existing, err := restoreAttendanceParticipant(stored)
-			if err != nil || existing.EmployeeCode() != participant.EmployeeCode() || existing.DisplayName() != participant.DisplayName() {
+			if err != nil || existing.EmployeeCode() != participant.EmployeeCode() || existing.DisplayName() != participant.DisplayName() || !existing.Active() {
 				return repositories.ErrConflict
 			}
 			if _, bound := existing.ParticipantID(); bound {
@@ -160,7 +135,10 @@ func (s *AttendanceStore) Invite(ctx context.Context, participant entities.Parti
 		} else {
 			return participantErr
 		}
-		return tx.Create(ref, attendanceEnrollmentDocument{SchemaVersion: attendanceSchemaVersion, CodeHash: string(invitation.CodeHash()), EmployeeID: string(invitation.EmployeeID()), ExpiresAt: invitation.ExpiresAt(), CreatedAt: now})
+		return tx.Create(s.enrollmentRef(invitation.CodeHash()), attendanceEnrollmentDocument{
+			SchemaVersion: attendanceParticipantSchemaVersion, CodeHash: string(invitation.CodeHash()), EmployeeID: string(invitation.EmployeeID()),
+			ExpiresAt: invitation.ExpiresAt(), CreatedAt: now,
+		})
 	})
 	return classifyAttendanceStoreError(ctx, err)
 }
@@ -174,7 +152,7 @@ func (s *AttendanceStore) ConsumeEnrollment(ctx context.Context, codeHash valueo
 	var outcome valueobjects.EnrollmentOutcome
 	err := s.client.RunTransaction(ctx, func(ctx context.Context, tx *sdk.Transaction) error {
 		tokenRef := s.enrollmentRef(codeHash)
-		tokenSnap, err := tx.Get(tokenRef)
+		tokenSnapshot, err := tx.Get(tokenRef)
 		if status.Code(err) == codes.NotFound {
 			return repositories.ErrNotFound
 		}
@@ -182,47 +160,14 @@ func (s *AttendanceStore) ConsumeEnrollment(ctx context.Context, codeHash valueo
 			return err
 		}
 		var token attendanceEnrollmentDocument
-		if err := tokenSnap.DataTo(&token); err != nil || token.SchemaVersion != attendanceSchemaVersion || token.CodeHash != string(codeHash) {
+		if err := tokenSnapshot.DataTo(&token); err != nil || token.SchemaVersion != attendanceParticipantSchemaVersion || token.CodeHash != string(codeHash) {
 			return ErrRepositoryCorrupt
 		}
 		if token.ConsumedAt != nil {
 			if token.ParticipantID != string(participantID) {
 				return repositories.ErrConflict
 			}
-			employeeID, err := valueobjects.NewEmployeeID(token.EmployeeID)
-			if err != nil {
-				return ErrRepositoryCorrupt
-			}
-			participantSnap, err := tx.Get(s.participantRef(employeeID))
-			if err != nil {
-				return err
-			}
-			var participantDoc attendanceParticipantDocument
-			if err := participantSnap.DataTo(&participantDoc); err != nil {
-				return ErrRepositoryCorrupt
-			}
-			result, err = restoreAttendanceParticipant(participantDoc)
-			if err != nil {
-				return err
-			}
-			boundParticipantID, bound := result.ParticipantID()
-			if !bound || boundParticipantID != participantID {
-				return ErrRepositoryCorrupt
-			}
-			bindingRef := s.client.Collection(attendanceParticipantBindings).Doc(attendanceDocumentID("participant-binding", string(participantID)))
-			bindingSnapshot, bindingErr := tx.Get(bindingRef)
-			if status.Code(bindingErr) == codes.NotFound {
-				return ErrRepositoryCorrupt
-			}
-			if bindingErr != nil {
-				return bindingErr
-			}
-			var binding attendanceBindingDocument
-			if err := bindingSnapshot.DataTo(&binding); err != nil || binding.SchemaVersion != attendanceSchemaVersion || binding.ParticipantID != string(participantID) || binding.EmployeeID != string(employeeID) {
-				return ErrRepositoryCorrupt
-			}
-			outcome = valueobjects.EnrollmentAlreadyBound
-			return nil
+			return s.restoreConsumedEnrollment(tx, token, participantID, &result, &outcome)
 		}
 		if retentionExpired(token.ExpiresAt, serverTime) {
 			return repositories.ErrConflict
@@ -232,29 +177,23 @@ func (s *AttendanceStore) ConsumeEnrollment(ctx context.Context, codeHash valueo
 			return ErrRepositoryCorrupt
 		}
 		participantRef := s.participantRef(employeeID)
-		participantSnap, err := tx.Get(participantRef)
+		participantSnapshot, err := tx.Get(participantRef)
 		if err != nil {
 			return err
 		}
 		var participantDoc attendanceParticipantDocument
-		if err := participantSnap.DataTo(&participantDoc); err != nil {
+		if err := participantSnapshot.DataTo(&participantDoc); err != nil {
 			return ErrRepositoryCorrupt
 		}
 		participant, err := restoreAttendanceParticipant(participantDoc)
-		if err != nil {
-			return err
-		}
-		if !participant.Active() {
+		if err != nil || !participant.Active() {
 			return repositories.ErrConflict
 		}
-		if existing, ok := participant.ParticipantID(); ok && existing != participantID {
-			return repositories.ErrConflict
-		}
-		bindingRef := s.client.Collection(attendanceParticipantBindings).Doc(attendanceDocumentID("participant-binding", string(participantID)))
-		bindingSnap, bindingErr := tx.Get(bindingRef)
+		bindingRef := s.bindingRef(participantID)
+		bindingSnapshot, bindingErr := tx.Get(bindingRef)
 		if bindingErr == nil {
 			var binding attendanceBindingDocument
-			if err := bindingSnap.DataTo(&binding); err != nil || binding.EmployeeID != string(employeeID) || binding.ParticipantID != string(participantID) {
+			if err := bindingSnapshot.DataTo(&binding); err != nil || binding.SchemaVersion != attendanceParticipantSchemaVersion || binding.EmployeeID != string(employeeID) || binding.ParticipantID != string(participantID) {
 				return repositories.ErrConflict
 			}
 		} else if status.Code(bindingErr) != codes.NotFound {
@@ -264,13 +203,11 @@ func (s *AttendanceStore) ConsumeEnrollment(ctx context.Context, codeHash valueo
 		if err != nil {
 			return repositories.ErrConflict
 		}
-		outcome = bindOutcome
-		participantDoc = storeAttendanceParticipant(participant, participantDoc.CreatedAt, serverTime)
-		if err := tx.Set(participantRef, participantDoc); err != nil {
+		if err := tx.Set(participantRef, storeAttendanceParticipant(participant, participantDoc.CreatedAt, serverTime)); err != nil {
 			return err
 		}
 		if status.Code(bindingErr) == codes.NotFound {
-			if err := tx.Create(bindingRef, attendanceBindingDocument{SchemaVersion: attendanceSchemaVersion, ParticipantID: string(participantID), EmployeeID: string(employeeID), CreatedAt: serverTime}); err != nil {
+			if err := tx.Create(bindingRef, attendanceBindingDocument{SchemaVersion: attendanceParticipantSchemaVersion, ParticipantID: string(participantID), EmployeeID: string(employeeID), CreatedAt: serverTime}); err != nil {
 				return err
 			}
 		}
@@ -278,8 +215,44 @@ func (s *AttendanceStore) ConsumeEnrollment(ctx context.Context, codeHash valueo
 		if err := tx.Set(tokenRef, token); err != nil {
 			return err
 		}
-		result = participant
+		result, outcome = participant, bindOutcome
 		return nil
 	})
 	return result, outcome, classifyAttendanceStoreError(ctx, err)
 }
+
+func (s *AttendanceStore) restoreConsumedEnrollment(tx *sdk.Transaction, token attendanceEnrollmentDocument, participantID valueobjects.ParticipantID, result *entities.Participant, outcome *valueobjects.EnrollmentOutcome) error {
+	employeeID, err := valueobjects.NewEmployeeID(token.EmployeeID)
+	if err != nil {
+		return ErrRepositoryCorrupt
+	}
+	participantSnapshot, err := tx.Get(s.participantRef(employeeID))
+	if err != nil {
+		return err
+	}
+	var stored attendanceParticipantDocument
+	if err := participantSnapshot.DataTo(&stored); err != nil {
+		return ErrRepositoryCorrupt
+	}
+	participant, err := restoreAttendanceParticipant(stored)
+	if err != nil {
+		return err
+	}
+	boundID, bound := participant.ParticipantID()
+	if !bound || boundID != participantID {
+		return ErrRepositoryCorrupt
+	}
+	bindingSnapshot, err := tx.Get(s.bindingRef(participantID))
+	if err != nil {
+		return err
+	}
+	var binding attendanceBindingDocument
+	if err := bindingSnapshot.DataTo(&binding); err != nil || binding.SchemaVersion != attendanceParticipantSchemaVersion || binding.EmployeeID != string(employeeID) || binding.ParticipantID != string(participantID) {
+		return ErrRepositoryCorrupt
+	}
+	*result, *outcome = participant, valueobjects.EnrollmentAlreadyBound
+	return nil
+}
+
+var _ repositories.ParticipantRepository = (*AttendanceStore)(nil)
+var _ repositories.EnrollmentRepository = (*AttendanceStore)(nil)

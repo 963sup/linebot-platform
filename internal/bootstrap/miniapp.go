@@ -15,7 +15,6 @@ import (
 	lineout "github.com/963sup/linebot-platform/internal/adapter/outbound/line"
 	attendanceapp "github.com/963sup/linebot-platform/internal/application/usecases/attendance"
 	firestoreinfra "github.com/963sup/linebot-platform/internal/infrastructure/google/cloud/firestore"
-	secretmanagerinfra "github.com/963sup/linebot-platform/internal/infrastructure/google/cloud/secretmanager"
 	"github.com/963sup/linebot-platform/internal/infrastructure/httpclient"
 	"github.com/963sup/linebot-platform/internal/infrastructure/observability"
 	"golang.org/x/oauth2/google"
@@ -113,25 +112,17 @@ func composeMiniApp(ctx context.Context, cfg MiniAppConfig, logger *slog.Logger)
 	if err != nil || !projectIDPattern.MatchString(credentials.ProjectID) {
 		return fail(errors.New("detect Google Cloud project from application default credentials"))
 	}
-	secretClient, err := secretmanagerinfra.NewClient(ctx)
-	if err != nil {
-		return fail(err)
-	}
-	keyring, loadErr := secretmanagerinfra.LoadManagedAttendanceKeyring(ctx, secretClient, "projects/"+credentials.ProjectID+"/secrets/attendance-location-key")
-	if err := errors.Join(loadErr, secretClient.Close()); err != nil {
-		return fail(err)
-	}
 	firestoreClient, err := firestoreinfra.NewClientWithDatabase(ctx, credentials.ProjectID, cfg.FirestoreDatabase)
 	if err != nil {
 		return fail(err)
 	}
 	result.closers = append(result.closers, runtimeCloser{name: "Firestore", close: firestoreClient.Close})
-	store, err := firestoreout.NewAttendanceStore(firestoreClient, keyring)
+	store, err := firestoreout.NewAttendanceStore(firestoreClient)
 	if err != nil {
 		return fail(err)
 	}
 	service, err := attendanceapp.NewService(attendanceapp.Dependencies{
-		Verifier: verifier, Enrollment: store, Reader: store,
+		Verifier: verifier, Participants: store, Enrollment: store,
 		Attendance: store, Clock: systemClock{},
 	})
 	if err != nil {

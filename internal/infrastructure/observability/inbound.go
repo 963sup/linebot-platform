@@ -163,8 +163,8 @@ func boundedRoute(path string) string {
 		return "miniapp_asset"
 	case "/miniapp/api/v1/attendance/enrollments":
 		return "miniapp_attendance_enrollment"
-	case "/miniapp/api/v1/attendance/options":
-		return "miniapp_attendance_options"
+	case "/miniapp/api/v1/attendance/today":
+		return "miniapp_attendance_today"
 	case "/miniapp/api/v1/attendance/punches":
 		return "miniapp_attendance_punch"
 	case "/tasks/v2/line-reply", "/tasks/line-reply":

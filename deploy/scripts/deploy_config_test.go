@@ -36,8 +36,6 @@ func TestCloudBuildDeploymentSafetyContract(t *testing.T) {
 		"_LINE_MINI_APP_LIFF_URL: ''",
 		"LINE_MINI_APP_LIFF_URL=${_LINE_MINI_APP_LIFF_URL}",
 		"_LINE_MINI_APP_ENDPOINT_URL: ''",
-		"_ATTENDANCE_LOCATION_ACTIVE_KEY_ID: ''",
-		"_ATTENDANCE_LOCATION_KEY_VERSIONS: ''",
 		"--ingress=internal",
 		"--concurrency=16",
 		"--no-traffic",
@@ -71,7 +69,6 @@ func TestPreflightBindsMiniAppConfigToApprovedEvidence(t *testing.T) {
 		`"${evidence_miniapp_endpoint_url}" != "${LINE_MINI_APP_ENDPOINT_URL}"`,
 		`"${evidence_miniapp_liff_url}" != "${LINE_MINI_APP_LIFF_URL}"`,
 		`"${evidence_miniapp_channel_id}" != "${LINE_MINI_APP_CHANNEL_ID}"`,
-		`"${evidence_attendance_key_id}" != "${ATTENDANCE_LOCATION_ACTIVE_KEY_ID}"`,
 	} {
 		if !strings.Contains(text, required) {
 			t.Errorf("preflight does not bind approved MINI App configuration: missing %q", required)
@@ -87,14 +84,12 @@ func TestPreflightBindsMiniAppConfigToApprovedEvidence(t *testing.T) {
 			EndpointURL string `json:"endpoint_url"`
 			LIFFURL     string `json:"liff_url"`
 			ChannelID   string `json:"channel_id"`
-			LocationKeyID  string `json:"attendance_location_active_key_id"`
-			KeyMappingHash string `json:"attendance_location_key_versions_sha256"`
 		} `json:"miniapp_config"`
 	}
 	if err := json.Unmarshal(evidenceRaw, &evidence); err != nil {
 		t.Fatal(err)
 	}
-	if evidence.MiniAppConfig.EndpointURL == "" || evidence.MiniAppConfig.LIFFURL == "" || evidence.MiniAppConfig.ChannelID == "" || evidence.MiniAppConfig.LocationKeyID == "" || evidence.MiniAppConfig.KeyMappingHash == "" {
+	if evidence.MiniAppConfig.EndpointURL == "" || evidence.MiniAppConfig.LIFFURL == "" || evidence.MiniAppConfig.ChannelID == "" {
 		t.Fatalf("staging evidence omits approved MINI App configuration: %+v", evidence.MiniAppConfig)
 	}
 }
@@ -224,7 +219,7 @@ func TestTerraformConsumesAuthoritativeFirestoreContract(t *testing.T) {
 	}
 }
 
-func TestTerraformGrantsMiniAppOnlyAttendancePersistenceSecrets(t *testing.T) {
+func TestTerraformGrantsMiniAppOnlyAttendancePersistence(t *testing.T) {
 	raw, err := os.ReadFile("../terraform/main.tf")
 	if err != nil {
 		t.Fatal(err)
@@ -233,15 +228,13 @@ func TestTerraformGrantsMiniAppOnlyAttendancePersistenceSecrets(t *testing.T) {
 	for _, required := range []string{
 		`resource "google_project_iam_member" "miniapp_datastore"`,
 		`member  = "serviceAccount:${google_service_account.runtime["miniapp"].email}"`,
-		`data "google_secret_manager_secret" "attendance_location_key"`,
-		`resource "google_secret_manager_secret_iam_member" "miniapp_attendance_location_key"`,
 	} {
 		if !strings.Contains(text, required) {
 			t.Errorf("Terraform MINI App Attendance contract missing %q", required)
 		}
 	}
 	for _, forbidden := range []string{
-		`miniapp_channel_secret`, `miniapp_access_token`, `miniapp_tasks`,
+		`miniapp_channel_secret`, `miniapp_access_token`, `miniapp_tasks`, `attendance_location_key`,
 	} {
 		if strings.Contains(text, forbidden) {
 			t.Errorf("Terraform grants forbidden MINI App capability %q", forbidden)

@@ -14,9 +14,7 @@
     "endpoint_url": "https://REPLACE_APPROVED_MINIAPP_ORIGIN/miniapp/",
     "liff_url": "https://miniapp.line.me/REPLACE_APPROVED_LIFF_ID",
     "channel_id": "REPLACE_APPROVED_MINI_APP_CHANNEL_ID",
-    "firestore_database": "(default)",
-    "attendance_location_active_key_id": "REPLACE_APPROVED_KEY_ID",
-    "attendance_location_key_versions_sha256": "REPLACE_WITH_SHA256_OF_EXACT_KEY_VERSION_MAPPING"
+    "firestore_database": "(default)"
   },
   "passed_gates": []
 }

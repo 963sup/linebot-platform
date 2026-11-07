@@ -1,7 +1,7 @@
 schema_version: 2
 
 subdomains:
-  - {id: workforce-attendance, classification: supporting, decision_status: implemented, confidence: high, purpose: "Record and review workforce clock-in and clock-out for assigned shifts without owning HR or payroll lifecycle.", evidence: [internal/domain/attendance/aggregates/attendance.go]}
+  - {id: workforce-attendance, classification: supporting, decision_status: implemented, confidence: high, purpose: "Record one GPS-backed clock-in and clock-out per participant workday without owning HR or payroll lifecycle.", evidence: [internal/domain/attendance/aggregates/attendance.go]}
   - {id: reliable-customer-communication, classification: core, decision_status: hypothesis, confidence: medium, purpose: "Make customer communication reliable despite duplicate input and uncertain provider outcomes.", evidence: [internal/application/usecases/messaging-delivery/service.go]}
   - {id: account-identity-and-authorization, classification: supporting, decision_status: implemented, confidence: high, purpose: "Maintain verified account-link identity and authorization eligibility without owning credentials.", evidence: [internal/domain/identity/aggregates/account_link.go]}
   - {id: customer-segmentation, classification: supporting, decision_status: hypothesis, confidence: medium, purpose: "Define recipients independently from provider audience resources.", evidence: [internal/domain/audience/aggregates/audience_definition.go, internal/application/usecases/audience/service.go]}
@@ -20,40 +20,34 @@ contexts:
     model_kind: domain-model
     classification: supporting
     owner: linebot-platform
-    purpose: Record one reviewable clock-in and clock-out pair for a participant assigned to a shift.
-    non_responsibilities: [Own HR payroll or employment lifecycle., Authenticate LINE callers., Prove physical presence., Send attendance notifications.]
+    purpose: Record at most one clock-in and one clock-out for an enrolled participant on a server-derived workday.
+    non_responsibilities: [Own HR payroll or employment lifecycle., Authenticate LINE callers., Prove physical presence., Own workplace scheduling or review workflow., Send attendance notifications.]
     package: internal/domain/attendance
     language:
       - {term: participant, definition: "Attendance employee projection identified by EmployeeID and optionally bound to one verified ParticipantID; Attendance does not own the HR master record.", forbidden_aliases: [line-user, employee-document], code_symbols: [internal/domain/attendance/entities.Participant]}
-      - {term: workplace, definition: "Attendance location policy with a center radius maximum accepted accuracy and version.", forbidden_aliases: [firestore-workplace], code_symbols: [internal/domain/attendance/entities.Workplace]}
-      - {term: shift-instance, definition: "Scheduled work interval and hard submission window under one policy version.", forbidden_aliases: [calendar-event], code_symbols: [internal/domain/attendance/entities.ShiftInstance]}
-      - {term: shift-assignment, definition: "Assignment of one participant to one shift instance.", forbidden_aliases: [line-binding], code_symbols: [internal/domain/attendance/entities.ShiftAssignment]}
-      - {term: punch, definition: "Server-timestamped clock-in or clock-out with immutable submission identity and review history.", forbidden_aliases: [location-request], code_symbols: [internal/domain/attendance/entities.Punch]}
-      - {term: location-assessment, definition: "Long-lived distance accuracy anomaly reasons evidence reference and policy version without raw coordinates; it is not proof of physical presence.", forbidden_aliases: [geolocation-position], code_symbols: [internal/domain/attendance/value-objects.LocationAssessment]}
-      - {term: review-state, definition: "Attendance review lifecycle clear required confirmed corrected or voided.", forbidden_aliases: [approval-flag], code_symbols: [internal/domain/attendance/value-objects.ReviewState]}
-    owns: [attendance-record, punch-pair, attendance-review-history, attendance-submission-idempotency]
+      - {term: workday, definition: "Attendance business date derived exclusively from server time in the fixed Asia/Taipei timezone.", forbidden_aliases: [client-date, shift-date], code_symbols: [internal/domain/attendance/value-objects.Workday]}
+      - {term: punch, definition: "Server-timestamped clock-in or clock-out with the submitted GPS fix.", forbidden_aliases: [location-request], code_symbols: [internal/domain/attendance/entities.Punch]}
+      - {term: location-fix, definition: "Client-submitted latitude longitude and accuracy recorded as private attendance data; it is not proof of physical presence.", forbidden_aliases: [location-proof], code_symbols: [internal/domain/attendance/value-objects.LocationFix]}
+    owns: [attendance-day, punch-pair, attendance-submission-idempotency]
     aggregates:
-      - name: Attendance
-        root: attendance-record
-        consistency_boundary: "One participant and shift assignment owns at most one effective clock-in and one effective clock-out plus immutable review history."
-        owns: [punch-pair, effective-punch-ordering, attendance-review-history, submission-idempotency]
-        repository: internal/domain/attendance/repositories.AttendanceRepository
+      - name: AttendanceDay
+        root: attendance-day
+        consistency_boundary: "One participant and server-derived workday own at most one clock-in and one clock-out."
+        owns: [punch-pair, punch-ordering, submission-idempotency]
+        repository: internal/domain/attendance/repositories.AttendanceDayRepository
         confidence: high
         evidence: [internal/domain/attendance/aggregates/attendance.go, internal/domain/attendance/aggregates/attendance_test.go]
     data_ownership:
-      - {resource: attendance-record, authority: local-authoritative, owner: attendance, write_policy: "Only Attendance Aggregate transitions may record review correct or void punches.", evidence: [internal/domain/attendance/aggregates/attendance.go]}
-      - {resource: raw-location-evidence, authority: local-authoritative, owner: attendance, write_policy: "Encrypted raw coordinates commit atomically with the punch and expire independently without preventing aggregate restoration.", evidence: [internal/domain/attendance/repositories/attendance_repository.go]}
-      - {resource: provider-identity-token, authority: provider-authoritative, owner: line-provider, write_policy: "Verified outside Attendance and never stored in the Aggregate.", evidence: [docs/architecture/decisions/0004-attendance-bounded-context.md]}
+      - {resource: attendance-day, authority: local-authoritative, owner: attendance, write_policy: "Only AttendanceDay Aggregate transitions may record clock-in or clock-out.", evidence: [internal/domain/attendance/aggregates/attendance.go]}
+      - {resource: provider-identity-token, authority: provider-authoritative, owner: line-provider, write_policy: "Verified outside Attendance and never stored in the Aggregate.", evidence: [docs/architecture/decisions/0006-workday-attendance-mvp.md]}
     invariants:
-      - {id: ATT-001, statement: "A participant and shift assignment own at most one effective clock-in and one effective clock-out.", evidence: [internal/domain/attendance/aggregates/attendance_test.go]}
+      - {id: ATT-001, statement: "A participant and workday own at most one clock-in and one clock-out.", evidence: [internal/domain/attendance/aggregates/attendance_test.go]}
       - {id: ATT-002, statement: "Clock-out requires and follows clock-in using authoritative server timestamps.", evidence: [internal/domain/attendance/aggregates/attendance_test.go]}
-      - {id: ATT-003, statement: "Each assignment and punch kind is one idempotency slot; after the first success, retries return the existing Punch.", evidence: [internal/domain/attendance/aggregates/attendance_test.go]}
-      - {id: ATT-004, statement: "Location and schedule anomalies require review but do not reject an otherwise valid in-window punch.", evidence: [internal/domain/attendance/aggregates/attendance_test.go]}
-      - {id: ATT-005, statement: "Review corrections preserve effective punch ordering and every review action appends immutable history.", evidence: [internal/domain/attendance/aggregates/attendance_test.go]}
-      - {id: ATT-006, statement: "Punches outside the hard submission window are rejected.", evidence: [internal/domain/attendance/aggregates/attendance_test.go]}
+      - {id: ATT-003, statement: "Each participant workday and punch kind is one idempotency slot; after the first success, retries return the existing Punch.", evidence: [internal/domain/attendance/aggregates/attendance_test.go]}
+      - {id: ATT-004, statement: "Punch time and workday are derived from authoritative server time; the client only submits the GPS fix.", evidence: [internal/application/usecases/attendance/service_test.go]}
       - {id: ATT-007, statement: "Enrollment atomically binds one EmployeeID to one ParticipantID and rejects cross-employee or cross-participant reuse.", evidence: [internal/domain/attendance/entities/participant_test.go]}
-    capabilities: [invite-participant, deactivate-participant, define-workplace, create-shift-instance, assign-participant, record-clock-in, record-clock-out, review-attendance]
-    adrs: [docs/architecture/decisions/0004-attendance-bounded-context.md]
+    capabilities: [invite-participant, deactivate-participant, inspect-today-attendance, record-clock-in, record-clock-out]
+    adrs: [docs/architecture/decisions/0006-workday-attendance-mvp.md]
     evidence: [internal/domain/attendance/aggregates/attendance_test.go, internal/domain/attendance/value-objects/location_test.go]
 
   - id: identity

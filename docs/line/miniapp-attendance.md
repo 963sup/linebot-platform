@@ -1,21 +1,16 @@
 # LINE MINI App Attendance
 
-The Attendance MINI App lets a LINE-authenticated participant enroll, view only assigned current shift/workplace options, and submit a clock-in or clock-out. Its normative HTTP contract is [the MINI App OpenAPI document](../../api/openapi/miniapp.yaml).
+The Attendance MINI App lets an enrolled LINE-authenticated participant inspect today's attendance state and submit one clock-in and one clock-out with the device's current GPS fix. Its normative HTTP contract is [the MINI App OpenAPI document](../../api/openapi/miniapp.yaml).
 
-When the webhook role has `LINE_MINI_APP_LIFF_URL` configured, a text message
-that equals `打卡` after trimming surrounding whitespace returns a Flex button
-that opens this MINI App. The same command
-works in one-to-one, room and group conversations, but the conversation source
-is only a distribution channel: it is not stored and never becomes an
-Attendance participant, assignment or authorization scope.
+When the webhook role has `LINE_MINI_APP_LIFF_URL` configured, the trimmed text command `打卡` returns a Flex button that opens the MINI App. The conversation is only a distribution channel and never becomes an Attendance identity or authorization scope.
 
 ## Boundary and ownership
 
-- Attendance Domain owns participants, workplaces, shift instances, assignments, punches, review state and their invariants.
-- The Attendance Application use case verifies the principal, redeems enrollment, lists participant-scoped current options and records idempotent punches through consumer-owned capabilities and Domain repository contracts.
-- The inbound adapter owns HTTP, strict JSON mapping, LIFF UI and safe error/status mapping. It does not decide assignment, time-window, location-review or replay rules.
-- The LINE outbound adapter verifies the LIFF ID token. Browser identifiers, query parameters, cookies and page possession are not authenticated principals.
-- Browser geolocation is user-supplied evidence, not proof of physical presence. Domain/Application policy decides whether evidence is clear or requires review.
+- Attendance owns Participant enrollment and one `AttendanceDay` per Participant and server-derived `Workday`.
+- Application verifies the LINE principal, derives server time and Asia/Taipei workday, and coordinates transactional persistence.
+- The HTTP adapter owns strict JSON, status mapping, LIFF assets and exact-origin validation; it does not decide attendance invariants.
+- The LINE adapter verifies the LIFF ID token with `LINE_MINI_APP_CHANNEL_ID` as audience. Browser identifiers, query parameters, cookies and page possession are not authenticated principals.
+- Browser Geolocation is user-supplied data, not proof of physical presence. The MVP records latitude, longitude and accuracy as private Firestore data and relies on Google Cloud encryption at rest plus a dedicated runtime identity; it has no Attendance Secret Manager keyring. The current project-scoped `roles/datastore.user` binding is broader than collection-level least privilege, so Production remains `Not Verified` until Attendance uses an isolated database or equivalently scoped access boundary.
 
 ## Routes
 
@@ -24,34 +19,29 @@ Attendance participant, assignment or authorization scope.
 | `GET` | `/miniapp` | none | Redirect to `/miniapp/` |
 | `GET` | `/miniapp/` | none | Attendance UI |
 | `GET` | `/miniapp/config.json` | none | Public LIFF ID |
-| `GET` | `/miniapp/assets/app.css` | none | Stylesheet |
-| `GET` | `/miniapp/assets/app.js` | none | Browser application |
+| `GET` | `/miniapp/assets/*` | none | Embedded static assets |
 | `POST` | `/miniapp/api/v1/attendance/enrollments` | LIFF ID-token Bearer | Redeem an enrollment code |
-| `GET` | `/miniapp/api/v1/attendance/options` | LIFF ID-token Bearer | List assigned current shift/workplace options |
-| `POST` | `/miniapp/api/v1/attendance/punches` | LIFF ID-token Bearer | Submit clock-in or clock-out evidence |
+| `GET` | `/miniapp/api/v1/attendance/today` | LIFF ID-token Bearer | Read today's clock-in/out state and allowed action |
+| `POST` | `/miniapp/api/v1/attendance/punches` | LIFF ID-token Bearer | Submit `clock_in` or `clock_out` plus GPS |
 
-All Attendance API routes require one `Authorization: Bearer <LIFF ID token>`. Mutating routes also require one exact configured `Origin`. Because browsers may omit `Origin` on a same-origin GET, the options route accepts that omission only when `Sec-Fetch-Site` is exactly `same-origin`; when `Origin` is present it must match exactly. They emit no CORS headers and all responses use `Cache-Control: no-store`. POST bodies are strict JSON, reject unknown/trailing values and are limited to 4096 bytes.
+Every Attendance API route requires exactly one `Authorization: Bearer <LIFF ID token>`. Mutating routes additionally require the exact origin derived from `LINE_MINI_APP_ENDPOINT_URL`. The same-origin GET may omit `Origin` only when `Sec-Fetch-Site` is exactly `same-origin`. Responses emit no CORS permission and use `Cache-Control: no-store`. POST JSON rejects unknown fields, trailing values and oversized bodies.
 
-Enrollment returns `201` when created and `200` for an idempotent existing enrollment. Punch submission returns `201` when recorded and `200` for a replay. Options contain only the authenticated participant's assigned, currently applicable shift/workplace choices; an arbitrary workplace or participant supplied by the browser is never accepted.
+Enrollment returns `201` when created and `200` for an idempotent replay. Punch returns `201` when recorded and `200` when the same participant/workday/kind was already committed. The browser cannot choose Participant, Workday, recorded time or persistence identifiers. Clock-out requires an existing clock-in and must follow it.
 
-Errors use `{ "error": { "code": "...", "message": "..." } }`. Codes and messages are safe for presentation and never contain ID tokens, provider subjects, enrollment codes or coordinates.
+Punch retry idempotency is scoped to the server-derived Asia/Taipei Workday. A response-lost retry that crosses midnight targets the next Workday and is not a replay of the previous day's command.
 
 ## UI and privacy
 
-The page initializes LIFF, redirects unauthenticated users to LINE Login using the fixed `/miniapp/` URL, and obtains the ID token through `liff.getIDToken()` only after initialization. It holds the token only in memory. When enrollment is required it displays the enrollment-code form. Once enrolled it renders the server-provided assigned shift/workplace options and only the allowed clock-in/out actions.
+The page initializes LIFF, performs LINE Login when needed and obtains `liff.getIDToken()` only after initialization. The token stays in memory. An unenrolled participant sees the enrollment form; an enrolled participant sees today's server-provided status and only the currently allowed clock action.
 
-Geolocation is requested once, directly from a clock-in/out button gesture, with `enableHighAccuracy: false`, `maximumAge: 0` and a ten-second timeout. The UI uses no local/session storage, location watch, maps or analytics. Attendance responses never return latitude, longitude or accuracy; they expose application identifiers, server record time, outcome and review state/reasons. The LINE-derived `ParticipantID`, generated `ShiftAssignmentID`, Punch ID and evidence references are opaque; operator-managed Shift IDs are application references and must not contain personal data. In particular, punch responses never return latitude or any other coordinate field.
+Geolocation is requested once from a clock button gesture with a ten-second timeout. The UI uses no local/session storage, location watch, maps or analytics. API responses do not expose coordinates or internal record identifiers. Coordinates, ID tokens, participant IDs and enrollment codes must not enter URLs, logs, traces, analytics or error text.
 
-Coordinates and identity material must not appear in logs, traces, error text or browser storage. Persistence retention, reviewer access and deletion remain Domain/deployment policy, not an HTTP adapter decision.
+`attendance_days_v2` currently has no approved TTL. Because it contains precise coordinates, Production must not be promoted until a retention period and deletion mechanism are approved and implemented.
 
 ## Operator workflow
 
-`ops attendance` manages the server-owned data that the browser is never allowed to choose: employee invitations/deactivation, workplace definitions, shift instances, employee assignments, and review actions. Every command requires explicit `--project` and `--environment`; writes additionally require `--approve-write`. Enrollment codes expire within 24 hours, are returned once by `employee invite`, and must be delivered through an approved private channel.
-
-Workplace upsert requires an operator-facing `--display-name`, and shift creation requires an operator-facing `--label` plus explicit clock-in, clock-out, and hard submission windows. The Mini App combines those labels with the shift time range in its assigned-options dropdown. IDs remain opaque persistence and command references rather than user-facing names; the separate windows determine the independent time-anomaly flag.
-
-Review supports `list`, `show`, `confirm`, `correct`, and `void`. `review show` returns coordinate-free evidence by default. Raw coordinates are decrypted only with `--include-location`, `--approve-write`, and non-empty `--reviewer` and `--reason`; the reviewer value is an operator-supplied claim, while Cloud Audit Logs remain the authoritative workload identity evidence. The Firestore adapter writes a five-year immutable access record before reading the 90-day evidence. Manual correction retains the Punch evidence reference and appends provenance plus before/after coordinate-free decision state; it does not create new raw evidence or claim to rerun system location assessment.
+`ops attendance employee invite` creates an employee invitation and returns its one-time enrollment code; `employee deactivate` disables an employee. Both require explicit `--project`, `--environment` and `--approve-write`. Enrollment codes expire within 24 hours and must be delivered through an approved private channel. Workplace, Shift, Assignment and Review commands are intentionally absent from this MVP.
 
 ## Verification limits
 
-Repository tests can verify routing, parsing, headers, status mapping and browser source constraints. They do not prove LIFF configuration, LINE identity verification, Firestore IAM, assignment data, public HTTPS origin, browser permission behavior or deployed retention controls. Those remain `Not Verified` until authorized staging evidence exists.
+Repository tests verify routing, parsing, headers, server-time invariants, idempotency and persistence contracts. They do not prove LINE Console configuration, real ID-token verification, device permission behavior, Cloud Run origin, Firestore IAM or live concurrency. Those remain `Not Verified` until an authorized no-traffic candidate passes staging smoke and is separately promoted.

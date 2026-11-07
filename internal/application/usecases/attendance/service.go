@@ -10,19 +10,19 @@ import (
 	"unicode/utf8"
 
 	"github.com/963sup/linebot-platform/internal/domain/attendance/aggregates"
+	"github.com/963sup/linebot-platform/internal/domain/attendance/entities"
 	"github.com/963sup/linebot-platform/internal/domain/attendance/repositories"
 	valueobjects "github.com/963sup/linebot-platform/internal/domain/attendance/value-objects"
 )
 
+const maxEnrollmentCodeLength = 256
+
+var taipeiLocation = time.FixedZone("Asia/Taipei", 8*60*60)
+
 type Service struct{ deps Dependencies }
 
-const (
-	maxEnrollmentCodeLength = 256
-	rawEvidenceRetention    = 90 * 24 * time.Hour
-)
-
 func NewService(deps Dependencies) (*Service, error) {
-	if deps.Verifier == nil || deps.Enrollment == nil || deps.Reader == nil || deps.Attendance == nil || deps.Clock == nil {
+	if deps.Verifier == nil || deps.Participants == nil || deps.Enrollment == nil || deps.Attendance == nil || deps.Clock == nil {
 		return nil, errors.New("attendance dependencies are required")
 	}
 	return &Service{deps: deps}, nil
@@ -33,7 +33,6 @@ func (s *Service) Enroll(ctx context.Context, command EnrollCommand) (EnrollResu
 	if err != nil {
 		return EnrollResult{}, err
 	}
-	now := s.deps.Clock.Now().UTC()
 	code := strings.TrimSpace(command.Code)
 	if code == "" {
 		return EnrollResult{}, ErrEnrollmentInvalid
@@ -41,8 +40,7 @@ func (s *Service) Enroll(ctx context.Context, command EnrollCommand) (EnrollResu
 	if !utf8.ValidString(code) || utf8.RuneCountInString(code) > maxEnrollmentCodeLength {
 		return EnrollResult{}, ErrInvalidInput
 	}
-	codeHash := enrollmentCodeHash(code)
-	participant, outcome, err := s.deps.Enrollment.ConsumeEnrollment(ctx, codeHash, principal.ParticipantID, now)
+	participant, outcome, err := s.deps.Enrollment.ConsumeEnrollment(ctx, enrollmentCodeHash(code), principal.ParticipantID, s.deps.Clock.Now().UTC())
 	if err != nil {
 		return EnrollResult{}, repositoryError(ctx, err, ErrEnrollmentInvalid)
 	}
@@ -50,192 +48,181 @@ func (s *Service) Enroll(ctx context.Context, command EnrollCommand) (EnrollResu
 	if !ok || bound != principal.ParticipantID || !participant.Active() {
 		return EnrollResult{}, ErrEnrollmentInvalid
 	}
-	var status EnrollStatus
 	switch outcome {
 	case valueobjects.EnrollmentBound:
-		status = EnrollCreated
+		return EnrollResult{Status: EnrollCreated}, nil
 	case valueobjects.EnrollmentAlreadyBound:
-		status = EnrollAlreadyCompleted
+		return EnrollResult{Status: EnrollAlreadyCompleted}, nil
 	default:
 		return EnrollResult{}, ErrRepositoryUnavailable
 	}
-	return EnrollResult{Status: status}, nil
 }
 
-func (s *Service) ListOptions(ctx context.Context, command OptionsCommand) (OptionsResult, error) {
-	principal, err := s.principal(ctx, command.IDToken)
+func (s *Service) GetToday(ctx context.Context, query TodayQuery) (TodayResult, error) {
+	principal, err := s.enrolledPrincipal(ctx, query.IDToken)
 	if err != nil {
-		return OptionsResult{}, err
+		return TodayResult{}, err
 	}
-	now := s.deps.Clock.Now().UTC()
-	snapshots, err := s.deps.Reader.ListCurrentOptions(ctx, principal.ParticipantID, now)
+	workday, err := valueobjects.WorkdayAt(s.deps.Clock.Now().UTC(), taipeiLocation)
 	if err != nil {
-		return OptionsResult{}, currentReaderError(ctx, err, ErrRepositoryUnavailable)
+		return TodayResult{}, ErrRepositoryUnavailable
 	}
-	result := OptionsResult{Options: make([]AttendanceOption, 0, len(snapshots))}
-	for _, snapshot := range snapshots {
-		if !currentSnapshotConsistent(snapshot, principal.ParticipantID, snapshot.Shift.ID()) || !snapshot.Participant.Active() || !snapshot.Shift.Active() || !snapshot.Workplace.Active() {
-			return OptionsResult{}, ErrRepositoryUnavailable
+	attendance, err := s.deps.Attendance.Find(ctx, principal.ParticipantID, workday)
+	if err != nil {
+		if errors.Is(err, repositories.ErrNotFound) {
+			return TodayResult{Workday: workday.String(), AllowedKinds: []PunchKind{ClockIn}}, nil
 		}
-		allowedKinds := allowedKinds(snapshot.Attendance)
-		if len(allowedKinds) == 0 {
-			continue
-		}
-		label := snapshot.Shift.Label() + " · " + snapshot.Shift.StartsAt().Format(time.RFC3339) + " – " + snapshot.Shift.EndsAt().Format(time.RFC3339)
-		result.Options = append(result.Options, AttendanceOption{ShiftInstanceID: string(snapshot.Shift.ID()), WorkplaceLabel: snapshot.Workplace.DisplayName(), Label: label, AllowedKinds: allowedKinds})
+		return TodayResult{}, repositoryError(ctx, err, ErrRepositoryUnavailable)
 	}
-	return result, nil
-}
-
-func allowedKinds(record *aggregates.Attendance) []PunchKind {
-	if record == nil {
-		return []PunchKind{ClockIn}
-	}
-	clockIn, hasClockIn := record.ClockIn()
-	if !hasClockIn {
-		return []PunchKind{ClockIn}
-	}
-	if clockIn.ReviewState() == valueobjects.ReviewVoided {
-		return nil
-	}
-	if _, hasClockOut := record.ClockOut(); !hasClockOut {
-		return []PunchKind{ClockOut}
-	}
-	return nil
+	return todayResult(attendance), nil
 }
 
 func (s *Service) Punch(ctx context.Context, command PunchCommand) (PunchResult, error) {
-	principal, err := s.principal(ctx, command.IDToken)
+	principal, err := s.enrolledPrincipal(ctx, command.IDToken)
 	if err != nil {
 		return PunchResult{}, err
 	}
+	if !command.Kind.Valid() {
+		return PunchResult{}, ErrInvalidInput
+	}
+	location, err := valueobjects.NewLocationFix(command.Location.Latitude, command.Location.Longitude, command.Location.AccuracyMeters)
+	if err != nil {
+		return PunchResult{}, ErrInvalidInput
+	}
 	now := s.deps.Clock.Now().UTC()
-	shiftID, err := valueobjects.NewShiftInstanceID(command.ShiftInstanceID)
-	if err != nil || (command.Kind != ClockIn && command.Kind != ClockOut) {
-		return PunchResult{}, ErrInvalidInput
-	}
-	evidence, err := valueobjects.NewLocationEvidence(command.Location.Latitude, command.Location.Longitude, command.Location.AccuracyMeters)
+	workday, err := valueobjects.WorkdayAt(now, taipeiLocation)
 	if err != nil {
-		return PunchResult{}, ErrInvalidInput
-	}
-	snapshot, err := s.deps.Reader.ResolvePunchContext(ctx, principal.ParticipantID, shiftID, now)
-	if err != nil {
-		return PunchResult{}, currentReaderError(ctx, err, ErrNotAssigned)
-	}
-	if !currentSnapshotConsistent(snapshot, principal.ParticipantID, shiftID) {
 		return PunchResult{}, ErrRepositoryUnavailable
 	}
-	if !snapshot.Participant.Active() {
-		return PunchResult{}, ErrNotEnrolled
-	}
-	if !snapshot.Shift.Active() || !snapshot.Workplace.Active() {
-		return PunchResult{}, ErrNotAssigned
-	}
-	assignmentID := snapshot.Assignment.ID()
-	var attendance aggregates.Attendance
-	if snapshot.Attendance == nil {
-		attendance, err = aggregates.NewAttendance(snapshot.Participant, snapshot.Workplace, snapshot.Shift, snapshot.Assignment)
-		if err != nil {
-			return PunchResult{}, ErrRepositoryUnavailable
-		}
-	} else {
-		attendance = *snapshot.Attendance
-	}
-	punchID, _ := valueobjects.NewPunchID(opaqueID("punch", string(assignmentID), string(command.Kind)))
-	ref, _ := valueobjects.NewEvidenceRef(string(punchID))
-	assessment, err := attendance.Workplace().AssessLocation(evidence, ref)
+	attendance, baseRevision, err := s.loadDay(ctx, principal.ParticipantID, workday)
 	if err != nil {
-		return PunchResult{}, ErrInvalidInput
+		return PunchResult{}, err
 	}
-	baseRevision := attendance.Revision()
-	submissionID, _ := valueobjects.NewSubmissionID(opaqueID("submission", string(assignmentID), string(command.Kind)))
+	punchID, _ := valueobjects.NewPunchID(opaqueID("punch", string(principal.ParticipantID), workday.String(), string(command.Kind)))
 	var outcome valueobjects.SubmissionOutcome
+	var punch entities.Punch
 	if command.Kind == ClockIn {
-		outcome, err = attendance.RecordClockIn(punchID, submissionID, now, assessment)
+		outcome, punch, err = attendance.RecordClockIn(punchID, now, location)
 	} else {
-		outcome, err = attendance.RecordClockOut(punchID, submissionID, now, assessment)
+		outcome, punch, err = attendance.RecordClockOut(punchID, now, location)
 	}
 	if err != nil {
-		switch {
-		case errors.Is(err, aggregates.ErrSubmissionWindowClosed):
-			return PunchResult{}, ErrSubmissionClosed
-		case errors.Is(err, aggregates.ErrClockInRequired), errors.Is(err, aggregates.ErrPunchOrdering):
+		if errors.Is(err, aggregates.ErrClockInRequired) || errors.Is(err, aggregates.ErrPunchOrdering) {
 			return PunchResult{}, ErrConflict
 		}
 		return PunchResult{}, err
 	}
 	if outcome == valueobjects.SubmissionRecorded {
-		if err := s.deps.Attendance.SavePunch(ctx, attendance, baseRevision, punchID, evidence, now.Add(rawEvidenceRetention)); err != nil {
-			if errors.Is(err, repositories.ErrConflict) || errors.Is(err, repositories.ErrConcurrentUpdate) {
-				committed, findErr := s.deps.Attendance.Find(ctx, principal.ParticipantID, assignmentID)
-				if findErr == nil {
-					stored, ok := committed.ClockIn()
-					if command.Kind == ClockOut {
-						stored, ok = committed.ClockOut()
-					}
-					if ok && stored.ID() == punchID && stored.SubmissionID() == submissionID {
-						attendance, outcome = committed, valueobjects.SubmissionDuplicate
-					} else {
-						return PunchResult{}, ErrConflict
-					}
-				} else {
-					return PunchResult{}, repositoryError(ctx, findErr, ErrConflict)
-				}
-			} else {
+		if err := s.deps.Attendance.Save(ctx, attendance, baseRevision); err != nil {
+			if !errors.Is(err, repositories.ErrConflict) && !errors.Is(err, repositories.ErrConcurrentUpdate) {
 				return PunchResult{}, repositoryError(ctx, err, ErrConflict)
 			}
+			committed, findErr := s.deps.Attendance.Find(ctx, principal.ParticipantID, workday)
+			if findErr != nil {
+				return PunchResult{}, repositoryError(ctx, findErr, ErrConflict)
+			}
+			stored, ok := committed.ClockIn()
+			if command.Kind == ClockOut {
+				stored, ok = committed.ClockOut()
+			}
+			if !ok || stored.ID() != punchID {
+				return PunchResult{}, ErrConflict
+			}
+			attendance, punch, outcome = committed, stored, valueobjects.SubmissionDuplicate
 		}
-	}
-	punch, _ := attendance.ClockIn()
-	if command.Kind == ClockOut {
-		punch, _ = attendance.ClockOut()
-	}
-	reasons := reviewReasons(punch)
-	if reasons == nil {
-		reasons = []string{}
 	}
 	status := PunchRecorded
 	if outcome == valueobjects.SubmissionDuplicate {
 		status = PunchAlreadyRecorded
 	}
-	return PunchResult{AttendanceID: string(assignmentID), PunchID: string(punch.ID()), Kind: punch.Kind(), RecordedAt: punch.RecordedAt(), Status: status, ReviewState: string(punch.ReviewState()), ReviewReasons: reasons}, nil
+	return PunchResult{
+		AttendanceDayID: string(attendance.ID()),
+		Workday:         attendance.Workday().String(),
+		Punch:           punchView(punch),
+		Status:          status,
+	}, nil
 }
 
-func currentSnapshotConsistent(snapshot CurrentAttendanceSnapshot, participantID valueobjects.ParticipantID, shiftID valueobjects.ShiftInstanceID) bool {
-	boundID, bound := snapshot.Participant.ParticipantID()
-	if !bound || boundID != participantID || !snapshot.Assignment.ID().Valid() || snapshot.Assignment.EmployeeID() != snapshot.Participant.EmployeeID() || snapshot.Assignment.ShiftInstanceID() != shiftID || snapshot.Shift.ID() != shiftID || snapshot.Shift.WorkplaceID() != snapshot.Workplace.ID() {
-		return false
+func (s *Service) loadDay(ctx context.Context, participantID valueobjects.ParticipantID, workday valueobjects.Workday) (aggregates.AttendanceDay, uint64, error) {
+	attendance, err := s.deps.Attendance.Find(ctx, participantID, workday)
+	if err == nil {
+		return attendance, attendance.Revision(), nil
 	}
-	if snapshot.Attendance == nil {
-		return true
+	if !errors.Is(err, repositories.ErrNotFound) {
+		return aggregates.AttendanceDay{}, 0, repositoryError(ctx, err, ErrRepositoryUnavailable)
 	}
-	attendanceParticipantID, attendanceBound := snapshot.Attendance.Participant().ParticipantID()
-	return attendanceBound && attendanceParticipantID == participantID &&
-		snapshot.Attendance.Assignment().ID() == snapshot.Assignment.ID() &&
-		snapshot.Attendance.Shift().ID() == snapshot.Shift.ID() &&
-		snapshot.Attendance.Workplace().ID() == snapshot.Workplace.ID()
+	id, _ := valueobjects.NewAttendanceDayID(opaqueID("day", string(participantID), workday.String()))
+	attendance, err = aggregates.NewAttendanceDay(id, participantID, workday)
+	if err != nil {
+		return aggregates.AttendanceDay{}, 0, ErrRepositoryUnavailable
+	}
+	return attendance, 0, nil
 }
 
-func currentReaderError(ctx context.Context, err, notFound error) error {
-	if ctxErr := ctx.Err(); ctxErr != nil {
-		return ctxErr
+func (s *Service) enrolledPrincipal(ctx context.Context, token string) (VerifiedPrincipal, error) {
+	principal, err := s.principal(ctx, token)
+	if err != nil {
+		return VerifiedPrincipal{}, err
+	}
+	participant, err := s.deps.Participants.FindByParticipantID(ctx, principal.ParticipantID)
+	if err != nil {
+		return VerifiedPrincipal{}, repositoryError(ctx, err, ErrNotEnrolled)
+	}
+	bound, ok := participant.ParticipantID()
+	if !ok || bound != principal.ParticipantID || !participant.Active() {
+		return VerifiedPrincipal{}, ErrNotEnrolled
+	}
+	return principal, nil
+}
+
+func (s *Service) principal(ctx context.Context, token string) (VerifiedPrincipal, error) {
+	if ctx == nil || strings.TrimSpace(token) == "" {
+		return VerifiedPrincipal{}, ErrUnauthenticated
+	}
+	if err := ctx.Err(); err != nil {
+		return VerifiedPrincipal{}, err
+	}
+	principal, err := s.deps.Verifier.Verify(ctx, token)
+	if err != nil {
+		return VerifiedPrincipal{}, err
+	}
+	if !principal.ParticipantID.Valid() || principal.ValidatedAt.IsZero() {
+		return VerifiedPrincipal{}, ErrUnauthenticated
+	}
+	return principal, nil
+}
+
+func todayResult(attendance aggregates.AttendanceDay) TodayResult {
+	result := TodayResult{Workday: attendance.Workday().String()}
+	if punch, ok := attendance.ClockIn(); ok {
+		view := punchView(punch)
+		result.ClockIn = &view
+	}
+	if punch, ok := attendance.ClockOut(); ok {
+		view := punchView(punch)
+		result.ClockOut = &view
 	}
 	switch {
-	case errors.Is(err, context.Canceled), errors.Is(err, context.DeadlineExceeded):
-		return err
-	case errors.Is(err, repositories.ErrNotFound):
-		return notFound
+	case result.ClockIn == nil:
+		result.AllowedKinds = []PunchKind{ClockIn}
+	case result.ClockOut == nil:
+		result.AllowedKinds = []PunchKind{ClockOut}
 	default:
-		return ErrRepositoryUnavailable
+		result.AllowedKinds = []PunchKind{}
 	}
+	return result
+}
+
+func punchView(punch entities.Punch) PunchView {
+	return PunchView{PunchID: string(punch.ID()), Kind: punch.Kind(), RecordedAt: punch.RecordedAt()}
 }
 
 func repositoryError(ctx context.Context, err, notFound error) error {
 	if err == nil {
 		return nil
 	}
-	if ctxErr := ctx.Err(); ctxErr != nil {
-		return ctxErr
+	if ctx != nil && ctx.Err() != nil {
+		return ctx.Err()
 	}
 	switch {
 	case errors.Is(err, context.Canceled), errors.Is(err, context.DeadlineExceeded):
@@ -249,34 +236,14 @@ func repositoryError(ctx context.Context, err, notFound error) error {
 	}
 }
 
-func (s *Service) principal(ctx context.Context, token string) (VerifiedPrincipal, error) {
-	if ctx == nil {
-		return VerifiedPrincipal{}, ErrUnauthenticated
-	}
-	if err := ctx.Err(); err != nil {
-		return VerifiedPrincipal{}, err
-	}
-	if strings.TrimSpace(token) == "" {
-		return VerifiedPrincipal{}, ErrUnauthenticated
-	}
-	principal, err := s.deps.Verifier.Verify(ctx, token)
-	if err != nil {
-		return VerifiedPrincipal{}, err
-	}
-	if !principal.ParticipantID.Valid() || principal.ValidatedAt.IsZero() {
-		return VerifiedPrincipal{}, ErrUnauthenticated
-	}
-	return principal, nil
-}
-
 func opaqueID(kind string, parts ...string) string {
-	h := sha256.New()
-	_, _ = h.Write([]byte("attendance-" + kind + "-v1"))
+	hash := sha256.New()
+	_, _ = hash.Write([]byte("attendance-" + kind + "-v1"))
 	for _, part := range parts {
-		_, _ = h.Write([]byte{0})
-		_, _ = h.Write([]byte(part))
+		_, _ = hash.Write([]byte{0})
+		_, _ = hash.Write([]byte(part))
 	}
-	return kind + ":v1:" + hex.EncodeToString(h.Sum(nil))
+	return kind + ":v1:" + hex.EncodeToString(hash.Sum(nil))
 }
 
 var _ Actions = (*Service)(nil)

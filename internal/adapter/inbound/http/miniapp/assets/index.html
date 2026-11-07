@@ -16,9 +16,10 @@
       <input id="enrollment-code" name="enrollmentCode" autocomplete="off" required>
       <button type="submit">登錄</button>
     </form>
-    <section id="punch-panel" hidden>
-      <label for="attendance-option">目前指派班次與工作地點</label>
-      <select id="attendance-option"></select>
+    <section id="attendance-panel" hidden>
+      <p id="workday"></p>
+      <p id="clock-in-time"></p>
+      <p id="clock-out-time"></p>
       <div class="actions">
         <button id="clock-in" type="button">上班打卡</button>
         <button id="clock-out" type="button">下班打卡</button>

@@ -69,8 +69,8 @@ func TestMarkdownArchitectureContractsStayAligned(t *testing.T) {
 		},
 		{
 			path:     "../../docs/line/miniapp-attendance.md",
-			required: []string{"Attendance Domain owns", "shift instances", "`liff.getIDToken()`", "never return latitude", "Not Verified"},
-			forbid:   []string{"LIFF access token>"},
+			required: []string{"Attendance owns", "AttendanceDay", "server-derived `Workday`", "`liff.getIDToken()`", "do not expose coordinates", "Not Verified"},
+			forbid:   []string{"LIFF access token>", "shift instances"},
 		},
 		{
 			path:     "../../docs/architecture/decisions/0004-attendance-bounded-context.md",

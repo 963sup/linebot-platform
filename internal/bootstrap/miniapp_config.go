@@ -13,7 +13,6 @@ var (
 	liffIDPattern           = regexp.MustCompile(`^[0-9]+-[A-Za-z0-9_-]+$`)
 	projectIDPattern        = regexp.MustCompile(`^[a-z][a-z0-9-]{4,28}[a-z0-9]$`)
 	keyIDPattern            = regexp.MustCompile(`^[A-Za-z0-9._-]+$`)
-	pinnedAttendanceKey     = regexp.MustCompile(`^projects/([^/]+)/secrets/attendance-location-key/versions/([1-9][0-9]*)$`)
 )
 
 type MiniAppConfig struct {
@@ -116,39 +115,4 @@ func miniAppLIFFID(rawURL, channelID string) (string, error) {
 		return "", errors.New("LINE_MINI_APP_LIFF_URL must contain a LIFF ID owned by LINE_MINI_APP_CHANNEL_ID")
 	}
 	return liffID, nil
-}
-
-func parseAttendanceKeyVersions(raw, projectID string) (map[string]string, error) {
-	if raw == "" || raw != strings.TrimSpace(raw) {
-		return nil, errors.New("ATTENDANCE_LOCATION_KEY_VERSIONS must be an exact pinned key mapping")
-	}
-	versions := make(map[string]string)
-	detectedProjectID := projectID
-	for _, entry := range strings.Split(raw, ",") {
-		if entry == "" || entry != strings.TrimSpace(entry) || strings.Count(entry, "=") != 1 {
-			return nil, errors.New("ATTENDANCE_LOCATION_KEY_VERSIONS contains an invalid entry")
-		}
-		parts := strings.SplitN(entry, "=", 2)
-		id, resource := parts[0], parts[1]
-		if id == "" || resource == "" || id != strings.TrimSpace(id) || resource != strings.TrimSpace(resource) || !keyIDPattern.MatchString(id) {
-			return nil, errors.New("ATTENDANCE_LOCATION_KEY_VERSIONS contains an invalid entry")
-		}
-		match := pinnedAttendanceKey.FindStringSubmatch(resource)
-		if len(match) != 3 {
-			return nil, errors.New("Attendance location keys must use pinned versions")
-		}
-		if detectedProjectID == "" {
-			detectedProjectID = match[1]
-		} else if match[1] != detectedProjectID {
-			return nil, errors.New("Attendance location keys must belong to one project")
-		}
-		if _, duplicate := versions[id]; duplicate {
-			return nil, errors.New("ATTENDANCE_LOCATION_KEY_VERSIONS contains a duplicate key ID")
-		}
-		versions[id] = resource
-	}
-	if len(versions) == 0 {
-		return nil, errors.New("ATTENDANCE_LOCATION_KEY_VERSIONS is required")
-	}
-	return versions, nil
 }

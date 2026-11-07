@@ -81,7 +81,6 @@ resource "google_service_account_iam_member" "deployer_uses_runtime" {
 
 data "google_secret_manager_secret" "channel_secret" { secret_id = "line-bot-channel-secret" }
 data "google_secret_manager_secret" "access_token" { secret_id = "line-bot-channel-access-token" }
-data "google_secret_manager_secret" "attendance_location_key" { secret_id = "attendance-location-key" }
 
 resource "google_secret_manager_secret_iam_member" "public_channel_secret" {
   secret_id = data.google_secret_manager_secret.channel_secret.id
@@ -93,17 +92,6 @@ resource "google_secret_manager_secret_iam_member" "worker_access_token" {
   role      = "roles/secretmanager.secretAccessor"
   member    = "serviceAccount:${google_service_account.runtime["worker"].email}"
 }
-resource "google_secret_manager_secret_iam_member" "miniapp_attendance_location_key" {
-  secret_id = data.google_secret_manager_secret.attendance_location_key.id
-  role      = "roles/secretmanager.secretAccessor"
-  member    = "serviceAccount:${google_service_account.runtime["miniapp"].email}"
-}
-resource "google_secret_manager_secret_iam_member" "miniapp_attendance_location_key_metadata" {
-  secret_id = data.google_secret_manager_secret.attendance_location_key.id
-  role      = "roles/secretmanager.viewer"
-  member    = "serviceAccount:${google_service_account.runtime["miniapp"].email}"
-}
-
 # Cloud Run services are deployed from immutable images by Cloud Build. These
 # IAM resources attach only after those service names exist.
 resource "google_cloud_run_v2_service_iam_member" "task_invoker" {

@@ -1,8 +1,12 @@
 # ADR 0004: Attendance bounded context
 
-- Status: Accepted
+- Status: Superseded by ADR 0006
 - Date: 2026-11-05
 - Strategic state: Implemented
+
+This decision records the former shift/workplace/review design. ADR 0006 replaces
+that design with the delivered MVP workday model; this historical decision must
+not be used as the current runtime contract.
 
 ## Context
 

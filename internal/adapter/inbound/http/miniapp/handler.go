@@ -14,6 +14,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/963sup/linebot-platform/internal/application/usecases/attendance"
 )
@@ -66,8 +67,8 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		h.serveAsset(w, r, "assets/app.js", "text/javascript; charset=utf-8")
 	case "/miniapp/api/v1/attendance/enrollments":
 		h.enroll(w, r)
-	case "/miniapp/api/v1/attendance/options":
-		h.listOptions(w, r)
+	case "/miniapp/api/v1/attendance/today":
+		h.today(w, r)
 	case "/miniapp/api/v1/attendance/punches":
 		h.punch(w, r)
 	default:
@@ -146,7 +147,7 @@ func (h *Handler) enroll(w http.ResponseWriter, r *http.Request) {
 	}{string(result.Status)})
 }
 
-func (h *Handler) listOptions(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) today(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		writeError(w, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed")
 		return
@@ -155,44 +156,47 @@ func (h *Handler) listOptions(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	result, err := h.actions.ListOptions(r.Context(), attendance.OptionsCommand{IDToken: token})
+	result, err := h.actions.GetToday(r.Context(), attendance.TodayQuery{IDToken: token})
 	if err != nil {
 		if errors.Is(err, attendance.ErrNotEnrolled) {
-			writeJSON(w, http.StatusOK, optionsResponse{EnrollmentRequired: true, Options: []optionResponse{}})
+			writeJSON(w, http.StatusOK, todayResponse{EnrollmentRequired: true, AllowedKinds: []string{}})
 			return
 		}
 		writeApplicationError(w, err)
 		return
 	}
-	options := make([]optionResponse, 0, len(result.Options))
-	for _, option := range result.Options {
-		kinds := make([]string, len(option.AllowedKinds))
-		for i, kind := range option.AllowedKinds {
-			kinds[i] = string(kind)
-		}
-		options = append(options, optionResponse{ShiftInstanceID: option.ShiftInstanceID, Label: option.Label, WorkplaceLabel: option.WorkplaceLabel, AllowedKinds: kinds})
+	kinds := make([]string, len(result.AllowedKinds))
+	for i, kind := range result.AllowedKinds {
+		kinds[i] = string(kind)
 	}
-	writeJSON(w, http.StatusOK, optionsResponse{Options: options})
+	writeJSON(w, http.StatusOK, todayResponse{Workday: result.Workday, ClockIn: newPunchViewResponse(result.ClockIn), ClockOut: newPunchViewResponse(result.ClockOut), AllowedKinds: kinds})
 }
 
-type optionsResponse struct {
-	EnrollmentRequired bool             `json:"enrollmentRequired"`
-	Options            []optionResponse `json:"options"`
+type todayResponse struct {
+	EnrollmentRequired bool               `json:"enrollmentRequired"`
+	Workday            string             `json:"workday"`
+	ClockIn            *punchViewResponse `json:"clockIn"`
+	ClockOut           *punchViewResponse `json:"clockOut"`
+	AllowedKinds       []string           `json:"allowedKinds"`
 }
 
-type optionResponse struct {
-	ShiftInstanceID string   `json:"shiftInstanceId"`
-	Label           string   `json:"label"`
-	WorkplaceLabel  string   `json:"workplaceLabel"`
-	AllowedKinds    []string `json:"allowedKinds"`
+type punchViewResponse struct {
+	Kind       string `json:"kind"`
+	RecordedAt string `json:"recordedAt"`
+}
+
+func newPunchViewResponse(view *attendance.PunchView) *punchViewResponse {
+	if view == nil {
+		return nil
+	}
+	return &punchViewResponse{Kind: string(view.Kind), RecordedAt: view.RecordedAt.UTC().Format(time.RFC3339Nano)}
 }
 
 type punchRequest struct {
-	ShiftInstanceID string      `json:"shiftInstanceId"`
-	Kind            string      `json:"kind"`
-	Latitude        json.Number `json:"latitude"`
-	Longitude       json.Number `json:"longitude"`
-	AccuracyMeters  json.Number `json:"accuracyMeters"`
+	Kind           string      `json:"kind"`
+	Latitude       json.Number `json:"latitude"`
+	Longitude      json.Number `json:"longitude"`
+	AccuracyMeters json.Number `json:"accuracyMeters"`
 }
 
 func (h *Handler) punch(w http.ResponseWriter, r *http.Request) {
@@ -216,7 +220,7 @@ func (h *Handler) punch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	result, err := h.actions.Punch(r.Context(), attendance.PunchCommand{
-		IDToken: token, ShiftInstanceID: input.ShiftInstanceID, Kind: attendance.PunchKind(input.Kind),
+		IDToken: token, Kind: attendance.PunchKind(input.Kind),
 		Location: attendance.LocationFix{Latitude: latitude, Longitude: longitude, AccuracyMeters: accuracy},
 	})
 	if err != nil {
@@ -234,14 +238,11 @@ func (h *Handler) punch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, httpStatus, struct {
-		AttendanceID string   `json:"attendanceId"`
-		PunchID      string   `json:"punchId"`
-		Kind         string   `json:"kind"`
-		RecordedAt   string   `json:"recordedAt"`
-		Status       string   `json:"status"`
-		ReviewState  string   `json:"reviewState"`
-		Reasons      []string `json:"reasons"`
-	}{result.AttendanceID, result.PunchID, string(result.Kind), result.RecordedAt.UTC().Format("2006-01-02T15:04:05.999999999Z07:00"), string(result.Status), result.ReviewState, nonNilStrings(result.ReviewReasons)})
+		Workday    string `json:"workday"`
+		Kind       string `json:"kind"`
+		RecordedAt string `json:"recordedAt"`
+		Status     string `json:"status"`
+	}{result.Workday, string(result.Punch.Kind), result.Punch.RecordedAt.UTC().Format(time.RFC3339Nano), string(result.Status)})
 }
 
 func (h *Handler) authorize(w http.ResponseWriter, r *http.Request) (string, bool) {
@@ -341,10 +342,6 @@ func writeApplicationError(w http.ResponseWriter, err error) {
 		writeError(w, http.StatusNotFound, "enrollment_invalid", "enrollment code is invalid")
 	case errors.Is(err, attendance.ErrNotEnrolled):
 		writeError(w, http.StatusForbidden, "enrollment_required", "attendance enrollment is required")
-	case errors.Is(err, attendance.ErrNotAssigned):
-		writeError(w, http.StatusForbidden, "not_assigned", "shift is not assigned")
-	case errors.Is(err, attendance.ErrSubmissionClosed):
-		writeError(w, http.StatusConflict, "submission_closed", "attendance submission is closed")
 	case errors.Is(err, attendance.ErrConflict):
 		writeError(w, http.StatusConflict, "attendance_conflict", "attendance state has changed")
 	case errors.Is(err, attendance.ErrIdentityUnavailable), errors.Is(err, attendance.ErrRepositoryUnavailable):
@@ -356,13 +353,6 @@ func writeApplicationError(w http.ResponseWriter, err error) {
 	default:
 		writeError(w, http.StatusInternalServerError, "internal_error", "request could not be completed")
 	}
-}
-
-func nonNilStrings(values []string) []string {
-	if values == nil {
-		return []string{}
-	}
-	return values
 }
 
 type errorEnvelope struct {

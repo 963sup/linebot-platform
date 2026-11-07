@@ -22,16 +22,15 @@ grep -Fq 'evidence_miniapp_endpoint_url' "${script}"
 grep -Fq 'evidence_miniapp_liff_url' "${script}"
 grep -Fq 'evidence_miniapp_channel_id' "${script}"
 grep -Fq 'MINI App deployment configuration does not match approved staging evidence' "${script}"
-grep -Fq 'ATTENDANCE_LOCATION_KEY_VERSIONS must contain pinned attendance-location-key resources' "${script}"
-grep -Fq 'versions/([1-9][0-9]*)$' "${script}"
-grep -Fq 'Attendance encryption configuration does not match approved staging evidence' "${script}"
 grep -Fq 'require_project_role "${MINIAPP_SERVICE_ACCOUNT}" roles/datastore.user' "${script}"
-grep -Fq 'require_secret_role attendance-location-key "${MINIAPP_SERVICE_ACCOUNT}"' "${script}"
+if grep -Fq 'attendance-location-key' "${script}"; then
+  echo 'preflight must not depend on an Attendance encryption secret' >&2
+  exit 1
+fi
 grep -Fq 'miniapp_identity' "${script}"
 grep -Fq 'attendance_enrollment' "${script}"
 grep -Fq 'attendance_concurrency' "${script}"
-grep -Fq 'attendance_review' "${script}"
-grep -Fq 'attendance_retention' "${script}"
+grep -Fq 'attendance_workday' "${script}"
 grep -Fq 'reject_secret_role line-bot-channel-secret "${MINIAPP_SERVICE_ACCOUNT}"' "${script}"
 
 grep -Fq 'TARGET_PERCENT must be one of 10, 50, 100' "${promotion}"

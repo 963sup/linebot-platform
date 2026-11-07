@@ -19,7 +19,7 @@
 
 Cloud Build 預期使用 `line-bot-build@bubbly-area-513305-s0.iam.gserviceaccount.com`。部署前必須驗證它只具備限定於建置來源 bucket 的讀取權、`line-bot` Artifact Registry repository 的寫入權，以及 Cloud Build、Cloud Logging、Cloud Run 與 runtime service account 代管所需的最小權限。
 
-Cloud Run 預期分別使用 `line-bot-public@bubbly-area-513305-s0.iam.gserviceaccount.com`、`line-bot-worker@bubbly-area-513305-s0.iam.gserviceaccount.com` 與 `line-miniapp@bubbly-area-513305-s0.iam.gserviceaccount.com`；不得共用廣權限 runtime 身分。Public 只能讀取 Channel Secret、寫入必要 Firestore 文件並向指定 Queue enqueue；Worker 只能讀取 Channel Access Token、執行必要 Firestore 狀態轉移與 reconcile enqueue；MINI App 只取得 Attendance 所需 Firestore 權限及 `attendance-location-key` 的 secret-level access，不得讀取 Messaging Secret 或使用 Cloud Tasks。Cloud Tasks／Scheduler 使用 `line-bot-invoker@bubbly-area-513305-s0.iam.gserviceaccount.com` 呼叫 Worker。部署前還須驗證 Cloud Tasks service agent 能為 invoker 建立 OIDC token，且 private worker 只授予該 invoker `roles/run.invoker`。這些 IAM 敘述是目標狀態，不是目前環境已驗證的事實。
+Cloud Run 預期分別使用 `line-bot-public@bubbly-area-513305-s0.iam.gserviceaccount.com`、`line-bot-worker@bubbly-area-513305-s0.iam.gserviceaccount.com` 與 `line-miniapp@bubbly-area-513305-s0.iam.gserviceaccount.com`；不得共用廣權限 runtime 身分。Public 只能讀取 Channel Secret、寫入必要 Firestore 文件並向指定 Queue enqueue；Worker 只能讀取 Channel Access Token、執行必要 Firestore 狀態轉移與 reconcile enqueue；MINI App 只取得 Attendance 所需 Firestore 權限，不得讀取任何 Secret Manager secret 或使用 Cloud Tasks。Cloud Tasks／Scheduler 使用 `line-bot-invoker@bubbly-area-513305-s0.iam.gserviceaccount.com` 呼叫 Worker。部署前還須驗證 Cloud Tasks service agent 能為 invoker 建立 OIDC token，且 private worker 只授予該 invoker `roles/run.invoker`。這些 IAM 敘述是目標狀態，不是目前環境已驗證的事實。
 
 ## Runtime 設定與 Secret 分離
 
@@ -30,8 +30,7 @@ Cloud Run 預期分別使用 `line-bot-public@bubbly-area-513305-s0.iam.gservice
 | Codex Cloud secure environment | `GITHUB_MCP_TOKEN` | GitHub MCP（依使用者授權可讀寫），僅可送至 `api.githubcopilot.com`；不屬於 Cloud Run runtime。 |
 | Google Secret Manager | `LINE_CHANNEL_SECRET` | 僅注入 `line-bot-public`。 |
 | Google Secret Manager | `LINE_CHANNEL_ACCESS_TOKEN` | 僅注入 `line-bot-private`。 |
-| Google Secret Manager | `attendance-location-key` | `line-miniapp` 取得此單一 secret 的 secret-level accessor；程式設定只選擇明確 pin 的 numeric versions，但 IAM 技術上可讀該 secret 的其他版本。用於 AES-256-GCM 加密 90 天位置證據。 |
-| MINI App Cloud Run | `LINE_LIFF_ID`、`LINE_LOGIN_CHANNEL_ID`、`MINIAPP_PUBLIC_ORIGIN`、`FIRESTORE_DATABASE` | LIFF、同源與 Attendance Firestore 契約；Project ID 與 `attendance-location-key` enabled versions 由 ADC／Secret Manager 自動發現。 |
+| MINI App Cloud Run | `LINE_MINI_APP_CHANNEL_ID`、`LINE_MINI_APP_LIFF_URL`、`LINE_MINI_APP_ENDPOINT_URL`、`FIRESTORE_DATABASE` | LINE MINI App audience、LIFF、同源與 Attendance Firestore 契約；Project ID 由 ADC 自動發現。 |
 | Cloud Run deployment | `APP_ENV`、`LINE_EVENT_MODE`、`LINE_API_TIMEOUT`、`LOG_LEVEL`、`LOG_FORMAT`、`LINE_BOT_DESTINATION`、`GCP_PROJECT_ID`、`TASK_QUEUE_NAME`、`TASK_WORKER_URL`、`TASK_OIDC_AUDIENCE`、`TASK_INVOKER_EMAIL` | 非敏感 production 設定；由 `cloudbuild.deploy.yaml` 寫入。 |
 | Cloud Run platform | `PORT`、`K_SERVICE` | 由平台注入，不手動設定。 |
 | 操作人員 shell | `LINEBOT_STAGING_PROJECT` | 只有隔離 staging 的 `ops events` 使用；不注入任一服務。 |
@@ -39,7 +38,7 @@ Cloud Run 預期分別使用 `line-bot-public@bubbly-area-513305-s0.iam.gservice
 - 經授權部署的 `line-bot-public` 必須使用 `APP_ENV=production`、`LINE_EVENT_MODE=durable` 與 JSON logs；它只可取得 `LINE_CHANNEL_SECRET` 的 Secret Manager reference，不得取得 Access Token。
 - 經授權部署的 `line-bot-private` 必須使用相同 durable、Firestore、Cloud Tasks 與 OIDC 設定；它只可取得 `LINE_CHANNEL_ACCESS_TOKEN` 的 Secret Manager reference，不得取得 Channel Secret。
 - `line-bot-private` 的目標 Cloud Run concurrency 為 16，與應用程式的有界 request admission cap 一致。超過容量的 task 應收到 `503 Service Unavailable` 與 `Retry-After`，交由 Cloud Tasks 稍後重試，不在程序內建立無界 backlog；實際平台設定與行為仍須依 Staging capacity gate 驗證。
-- `line-miniapp` 公開提供 embedded assets，但 Attendance API 必須驗證 LINE ID token、員工註冊與 ShiftAssignment。它不得取得兩項 Messaging Secret或 Cloud Tasks IAM；精確位置只保存為 AES-GCM ciphertext，90 天 TTL 後清除，主出勤與審核軌跡保存五年。
+- `line-miniapp` 公開提供 embedded assets，但 Attendance API 必須驗證 LINE ID token 與員工註冊。它不得取得 Messaging Secret、Secret Manager 或 Cloud Tasks IAM；GPS fix 是私有 Attendance 資料，不得回傳、記錄到 logs 或作為本人實體在場證明。
 - `K_SERVICE` 由 Cloud Run 自動注入，程式以此拒絕套用 local profile。
 - Public/Worker 上錯置的 `FIRESTORE_DATABASE`，以及各服務不屬於其角色的 `GOOGLE_CLOUD_PROJECT`、`OPENAI_MODEL`、`AUTO_TASKS`、`AUTO_CALENDAR`、`CALENDAR_SERVICE_ACCOUNT`、`WORKER_MODE` 與 Secret，會在部署時移除；MINI App 保留自己的明確 Attendance database 設定。
 
@@ -74,7 +73,7 @@ gcloud builds submit . \
 
 ## 部署目標服務
 
-`cloudbuild.deploy.yaml` 可建立或更新三個 Cloud Run service，因此只能在明確授權的目標環境執行。它預設拒絕部署與流量 promotion。唯讀 preflight 會核對 project、Queue、Firestore database、五個分離身分、Secrets、三個不可變映像、MINI App HTTPS origin、LINE設定與 pin 的 Attendance key mapping，以及經 SHA-256 固定且明確核准 production promotion 的 Staging evidence；evidence 必須逐值綁定 MINI App origin、LIFF ID、Login Channel ID、database、active key ID 與 key mapping hash。這些檢查仍不取代 live IAM、LINE、Firestore TTL、Secret rotation、LIFF 或 Geolocation 驗收。MINI App origin 可為 Cloud Run URL 或已核准的 custom domain；實際 endpoint 綁定由 staging evidence 證明，preflight 不得因 service 尚未建立而阻塞首次 no-traffic candidate。
+`cloudbuild.deploy.yaml` 可建立或更新三個 Cloud Run service，因此只能在明確授權的目標環境執行。它預設拒絕部署與流量 promotion。唯讀 preflight 會核對 project、Queue、Firestore database、分離的服務身分、Messaging Secrets、三個不可變映像，以及經 SHA-256 固定且明確核准 production promotion 的 Staging evidence；evidence 必須逐值綁定 MINI App endpoint、LIFF URL、MINI App Channel ID 與 database。這些檢查仍不取代 live IAM、LINE、Firestore、LIFF 或 Geolocation 驗收。MINI App endpoint 可使用 Cloud Run URL 或已核准的 custom domain；實際綁定由 staging evidence 證明，preflight 不得因 service 尚未建立而阻塞首次 no-traffic candidate。
 
 部署 build 只建立帶 `candidate` tag 的 no-traffic revisions，並輸出本次 `latestCreatedRevisionName`；它不做 smoke test，也不切換流量。Private Worker 顯式使用 internal ingress、IAM authentication、16 concurrency 與獨立 Worker 身分。`TASK_WORKER_URL` 與 OIDC audience 來自必填 `_TASK_WORKER_ORIGIN`，preflight 必須確認它等於該 Worker service 的權威 Cloud Run URL。
 
@@ -84,7 +83,7 @@ gcloud builds submit . \
 gcloud builds submit . \
   --project=bubbly-area-513305-s0 \
   --config=cloudbuild.deploy.yaml \
-  --substitutions="_APPROVE_DEPLOYMENT=true,_STAGING_EVIDENCE_URI=gs://APPROVED_BUCKET/evidence.json,_STAGING_EVIDENCE_SHA256=EVIDENCE_SHA256,_TASK_WORKER_ORIGIN=https://AUTHORIZED_WORKER_ORIGIN,_LINE_BOT_DESTINATION=YOUR_LINE_BOT_DESTINATION,_PUBLIC_IMAGE_URI=asia-east1-docker.pkg.dev/bubbly-area-513305-s0/line-bot/line-bot-public@sha256:PUBLIC_DIGEST,_PRIVATE_IMAGE_URI=asia-east1-docker.pkg.dev/bubbly-area-513305-s0/line-bot/line-bot-private@sha256:PRIVATE_DIGEST,_MINIAPP_IMAGE_URI=asia-east1-docker.pkg.dev/bubbly-area-513305-s0/line-bot/line-miniapp@sha256:MINIAPP_DIGEST,_MINIAPP_PUBLIC_ORIGIN=https://AUTHORIZED_MINIAPP_ORIGIN,_LINE_LIFF_ID=YOUR_LIFF_ID,_LINE_LOGIN_CHANNEL_ID=YOUR_LOGIN_CHANNEL_ID,_ATTENDANCE_LOCATION_ACTIVE_KEY_ID=v1,_ATTENDANCE_LOCATION_KEY_VERSIONS=v1=projects/bubbly-area-513305-s0/secrets/attendance-location-key/versions/1"
+  --substitutions="_APPROVE_DEPLOYMENT=true,_STAGING_EVIDENCE_URI=gs://APPROVED_BUCKET/evidence.json,_STAGING_EVIDENCE_SHA256=EVIDENCE_SHA256,_TASK_WORKER_ORIGIN=https://AUTHORIZED_WORKER_ORIGIN,_LINE_BOT_DESTINATION=YOUR_LINE_BOT_DESTINATION,_PUBLIC_IMAGE_URI=asia-east1-docker.pkg.dev/bubbly-area-513305-s0/line-bot/line-bot-public@sha256:PUBLIC_DIGEST,_PRIVATE_IMAGE_URI=asia-east1-docker.pkg.dev/bubbly-area-513305-s0/line-bot/line-bot-private@sha256:PRIVATE_DIGEST,_MINIAPP_IMAGE_URI=asia-east1-docker.pkg.dev/bubbly-area-513305-s0/line-bot/line-miniapp@sha256:MINIAPP_DIGEST,_LINE_MINI_APP_CHANNEL_ID=YOUR_MINI_APP_CHANNEL_ID,_LINE_MINI_APP_LIFF_URL=https://miniapp.line.me/YOUR_LIFF_ID,_LINE_MINI_APP_ENDPOINT_URL=https://YOUR_MINIAPP_ORIGIN/miniapp/"
 ```
 
-完成後應檢查三個 revision 的 Ready condition、public webhook 的 LINE 簽章拒絕行為、private worker 對匿名請求與錯誤 OIDC audience 的拒絕行為，以及 MINI App 對無效 ID token、跨來源、註冊碼重放、未指派班次、並發 Punch、Geolocation拒絕／timeout、TTL及 key rotation 的處理。真實 LINE MINI App、裝置與 IAM／TTL 結果完成前維持 `Not Verified`。
+完成後應檢查三個 revision 的 Ready condition、public webhook 的 LINE 簽章拒絕行為、private worker 對匿名請求與錯誤 OIDC audience 的拒絕行為，以及 MINI App 對無效 ID token、跨來源、註冊碼重放、today 工作日邊界、並發／response-lost Punch、Geolocation 拒絕／timeout、座標不出現在 response／URL／log 的處理。真實 LINE MINI App、裝置、Firestore IAM 與 Attendance GPS retention policy 完成前維持 `Not Verified`。

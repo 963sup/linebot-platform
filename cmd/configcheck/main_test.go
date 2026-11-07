@@ -61,8 +61,6 @@ func TestValidateMiniApp(t *testing.T) {
 	values := map[string]string{
 		"LINE_MINI_APP_CHANNEL_ID": "2000000000", "LINE_MINI_APP_LIFF_URL": "https://miniapp.line.me/2000000000-example",
 		"LINE_MINI_APP_ENDPOINT_URL": "http://localhost:8080/miniapp/",
-		"GCP_PROJECT_ID":             "test-project", "ATTENDANCE_LOCATION_ACTIVE_KEY_ID": "v1",
-		"ATTENDANCE_LOCATION_KEY_VERSIONS": "v1=projects/test-project/secrets/attendance-location-key/versions/1",
 	}
 	var out bytes.Buffer
 	if err := run([]string{"--validate", "--role", "miniapp"}, func(key string) string { return values[key] }, &out); err != nil {

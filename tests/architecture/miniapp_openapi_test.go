@@ -21,14 +21,14 @@ func TestMiniAppOpenAPIContract(t *testing.T) {
 	for _, marker := range []string{
 		"  /miniapp:\n", "/miniapp/:", "/miniapp/assets/app.css:", "/miniapp/assets/app.js:",
 		"/miniapp/config.json:", "/miniapp/api/v1/attendance/enrollments:",
-		"/miniapp/api/v1/attendance/options:", "/miniapp/api/v1/attendance/punches:",
-		"liff.getIDToken()", "shiftInstanceId", "clock_in", "clock_out", "reviewState", "text/javascript:",
+		"/miniapp/api/v1/attendance/today:", "/miniapp/api/v1/attendance/punches:",
+		"liff.getIDToken()", "clock_in", "clock_out", "allowedKinds", "text/javascript:",
 	} {
 		if !strings.Contains(text, marker) {
 			t.Errorf("OpenAPI missing Attendance contract marker %q", marker)
 		}
 	}
-	for _, forbidden := range []string{"/location-validations", "Bearer <LIFF access token>", "subject:"} {
+	for _, forbidden := range []string{"/location-validations", "/attendance/options", "shiftInstanceId", "workplaceLabel", "reviewState", "attendanceId", "punchId", "Bearer <LIFF access token>", "subject:"} {
 		if strings.Contains(text, forbidden) {
 			t.Errorf("OpenAPI retains forbidden contract %q", forbidden)
 		}
@@ -36,14 +36,14 @@ func TestMiniAppOpenAPIContract(t *testing.T) {
 
 	paths := requireStringMap(t, document["paths"], "paths")
 	assertResponses(t, paths, "/miniapp/api/v1/attendance/enrollments", "post", "200", "201", "400", "401", "403", "404", "405", "409", "413", "415", "500", "503")
-	assertResponses(t, paths, "/miniapp/api/v1/attendance/options", "get", "200", "401", "403", "405", "409", "500", "503")
+	assertResponses(t, paths, "/miniapp/api/v1/attendance/today", "get", "200", "401", "403", "405", "409", "500", "503")
 	assertResponses(t, paths, "/miniapp/api/v1/attendance/punches", "post", "200", "201", "400", "401", "403", "404", "405", "409", "413", "415", "500", "503")
 
 	components := requireStringMap(t, document["components"], "components")
 	schemas := requireStringMap(t, components["schemas"], "schemas")
 	result := requireStringMap(t, schemas["PunchResult"], "PunchResult")
 	properties := requireStringMap(t, result["properties"], "PunchResult properties")
-	for _, forbidden := range []string{"latitude", "longitude", "accuracyMeters"} {
+	for _, forbidden := range []string{"latitude", "longitude", "accuracyMeters", "attendanceDayId", "punchId"} {
 		if _, ok := properties[forbidden]; ok {
 			t.Errorf("PunchResult discloses %s", forbidden)
 		}

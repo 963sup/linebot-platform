@@ -8,7 +8,10 @@ import (
 	valueobjects "github.com/963sup/linebot-platform/internal/domain/attendance/value-objects"
 )
 
-var ErrEnrollmentConflict = errors.New("attendance enrollment binding conflicts")
+var (
+	ErrInvalidEntity      = errors.New("invalid attendance entity")
+	ErrEnrollmentConflict = errors.New("attendance enrollment binding conflicts")
+)
 
 // Participant is the Attendance-owned employee projection. It may be unbound
 // until an invitation is atomically consumed by a verified participant.

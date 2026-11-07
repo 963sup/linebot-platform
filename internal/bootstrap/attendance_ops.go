@@ -11,9 +11,7 @@ import (
 	"github.com/963sup/linebot-platform/internal/adapter/inbound/cli"
 	firestoreout "github.com/963sup/linebot-platform/internal/adapter/outbound/google/cloud/firestore"
 	attendanceapp "github.com/963sup/linebot-platform/internal/application/usecases/attendance"
-	"github.com/963sup/linebot-platform/internal/infrastructure/attendancecrypto"
 	firestoreinfra "github.com/963sup/linebot-platform/internal/infrastructure/google/cloud/firestore"
-	secretmanagerinfra "github.com/963sup/linebot-platform/internal/infrastructure/google/cloud/secretmanager"
 )
 
 func newAttendanceOpsRuntime(ctx context.Context, config cli.AttendanceRuntimeConfig) (cli.AttendanceRuntime, error) {
@@ -26,17 +24,6 @@ func newAttendanceOpsRuntime(ctx context.Context, config cli.AttendanceRuntimeCo
 	if !projectIDPattern.MatchString(config.ProjectID) || config.ProjectID != strings.TrimSpace(config.ProjectID) {
 		return nil, errors.New("Attendance Ops project ID is invalid")
 	}
-	versions, err := parseAttendanceKeyVersions(config.KeyVersions, config.ProjectID)
-	if err != nil {
-		return nil, err
-	}
-	if _, ok := versions[config.ActiveKeyID]; !ok {
-		return nil, errors.New("Attendance Ops active key is missing")
-	}
-	keyring, err := loadAttendanceKeyring(ctx, config.ActiveKeyID, versions)
-	if err != nil {
-		return nil, err
-	}
 	database := config.FirestoreDatabase
 	if database == "" {
 		database = firestoreinfra.DefaultDatabase
@@ -45,13 +32,12 @@ func newAttendanceOpsRuntime(ctx context.Context, config cli.AttendanceRuntimeCo
 	if err != nil {
 		return nil, err
 	}
-	store, err := firestoreout.NewAttendanceStore(client, keyring)
+	store, err := firestoreout.NewAttendanceStore(client)
 	if err != nil {
 		return nil, errors.Join(err, client.Close())
 	}
 	service, err := attendanceapp.NewAdminService(attendanceapp.AdminDependencies{
-		Enrollment: store, Participants: store, Shifts: store,
-		Workplaces: store, Attendance: store, Clock: opsClock{}, Evidence: store,
+		Enrollment: store, Participants: store, Clock: opsClock{},
 	}, secureEnrollmentTokenGenerator{})
 	if err != nil {
 		return nil, errors.Join(err, client.Close())
@@ -61,18 +47,6 @@ func newAttendanceOpsRuntime(ctx context.Context, config cli.AttendanceRuntimeCo
 		return nil, errors.Join(err, client.Close())
 	}
 	return runtime, nil
-}
-
-func loadAttendanceKeyring(ctx context.Context, active string, versions map[string]string) (*attendancecrypto.Keyring, error) {
-	client, err := secretmanagerinfra.NewClient(ctx)
-	if err != nil {
-		return nil, err
-	}
-	keyring, loadErr := secretmanagerinfra.LoadAttendanceKeyring(ctx, client, active, versions)
-	if err := errors.Join(loadErr, client.Close()); err != nil {
-		return nil, err
-	}
-	return keyring, nil
 }
 
 type opsClock struct{}

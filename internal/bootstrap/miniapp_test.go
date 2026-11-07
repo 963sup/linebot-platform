@@ -17,8 +17,8 @@ type fakeMiniAppActions struct{}
 func (fakeMiniAppActions) Enroll(context.Context, attendanceapp.EnrollCommand) (attendanceapp.EnrollResult, error) {
 	return attendanceapp.EnrollResult{Status: attendanceapp.EnrollCreated}, nil
 }
-func (fakeMiniAppActions) ListOptions(context.Context, attendanceapp.OptionsCommand) (attendanceapp.OptionsResult, error) {
-	return attendanceapp.OptionsResult{}, nil
+func (fakeMiniAppActions) GetToday(context.Context, attendanceapp.TodayQuery) (attendanceapp.TodayResult, error) {
+	return attendanceapp.TodayResult{}, nil
 }
 func (fakeMiniAppActions) Punch(context.Context, attendanceapp.PunchCommand) (attendanceapp.PunchResult, error) {
 	return attendanceapp.PunchResult{}, nil
@@ -28,7 +28,6 @@ func validMiniAppSettings() map[string]string {
 	return map[string]string{
 		KeyMiniAppChannelID: "2000000000", KeyMiniAppLIFFURL: "https://miniapp.line.me/2000000000-example",
 		KeyMiniAppEndpointURL: "http://127.0.0.1:8080/miniapp/",
-		KeyAttendanceKeyID:    "v1", KeyAttendanceKeyMap: "v1=projects/test-project/secrets/attendance-location-key/versions/1",
 	}
 }
 
@@ -71,8 +70,6 @@ func TestMiniAppConfigRejectsOriginAndMessagingSecrets(t *testing.T) {
 func TestMiniAppConfigDoesNotRequireEncryptionDeploymentDetails(t *testing.T) {
 	values := validMiniAppSettings()
 	delete(values, KeyProjectID)
-	delete(values, KeyAttendanceKeyID)
-	delete(values, KeyAttendanceKeyMap)
 	if _, err := LoadMiniAppConfig(env(values)); err != nil {
 		t.Fatalf("automatic cloud configuration rejected: %v", err)
 	}

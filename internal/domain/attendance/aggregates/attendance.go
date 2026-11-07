@@ -10,107 +10,90 @@ import (
 )
 
 var (
-	ErrInvalidAttendance      = errors.New("invalid attendance aggregate")
-	ErrSubmissionWindowClosed = errors.New("attendance submission window is closed")
-	ErrClockInRequired        = errors.New("clock in is required before clock out")
-	ErrPunchOrdering          = errors.New("clock out must follow clock in")
-	ErrPunchNotFound          = errors.New("attendance punch not found")
+	ErrInvalidAttendanceDay = errors.New("invalid attendance day")
+	ErrClockInRequired      = errors.New("clock in is required before clock out")
+	ErrPunchOrdering        = errors.New("clock out must follow clock in")
 )
 
-// Attendance is the consistency boundary for one participant and one shift assignment.
-// It owns at most one effective clock-in and one effective clock-out.
-type Attendance struct {
-	participant entities.Participant
-	workplace   entities.Workplace
-	shift       entities.ShiftInstance
-	assignment  entities.ShiftAssignment
-	clockIn     *entities.Punch
-	clockOut    *entities.Punch
-	revision    uint64
+// AttendanceDay is the consistency boundary for one participant and one workday.
+type AttendanceDay struct {
+	id            valueobjects.AttendanceDayID
+	participantID valueobjects.ParticipantID
+	workday       valueobjects.Workday
+	clockIn       *entities.Punch
+	clockOut      *entities.Punch
+	revision      uint64
 }
 
-func NewAttendance(participant entities.Participant, workplace entities.Workplace, shift entities.ShiftInstance, assignment entities.ShiftAssignment) (Attendance, error) {
-	participantID, bound := participant.ParticipantID()
-	if !bound || !participantID.Valid() || !participant.Active() || !workplace.Active() || !shift.Active() || participant.EmployeeID() != assignment.EmployeeID() || workplace.ID() != shift.WorkplaceID() || shift.ID() != assignment.ShiftInstanceID() {
-		return Attendance{}, ErrInvalidAttendance
+func NewAttendanceDay(id valueobjects.AttendanceDayID, participantID valueobjects.ParticipantID, workday valueobjects.Workday) (AttendanceDay, error) {
+	if !id.Valid() || !participantID.Valid() || !workday.Valid() {
+		return AttendanceDay{}, ErrInvalidAttendanceDay
 	}
-	return Attendance{participant: participant, workplace: workplace, shift: shift, assignment: assignment}, nil
+	return AttendanceDay{id: id, participantID: participantID, workday: workday}, nil
 }
 
-func RestoreAttendance(participant entities.Participant, workplace entities.Workplace, shift entities.ShiftInstance, assignment entities.ShiftAssignment, clockIn, clockOut *entities.Punch, revision uint64) (Attendance, error) {
-	value, err := NewAttendance(participant, workplace, shift, assignment)
+func RestoreAttendanceDay(id valueobjects.AttendanceDayID, participantID valueobjects.ParticipantID, workday valueobjects.Workday, clockIn, clockOut *entities.Punch, revision uint64) (AttendanceDay, error) {
+	value, err := NewAttendanceDay(id, participantID, workday)
 	if err != nil {
-		return Attendance{}, err
+		return AttendanceDay{}, err
 	}
-	if clockIn != nil && clockIn.Kind() != valueobjects.ClockIn || clockOut != nil && clockOut.Kind() != valueobjects.ClockOut {
-		return Attendance{}, ErrInvalidAttendance
+	if revision == 0 || clockIn == nil || clockIn.Kind() != valueobjects.ClockIn ||
+		(clockOut != nil && (clockOut.Kind() != valueobjects.ClockOut || !clockOut.RecordedAt().After(clockIn.RecordedAt()))) ||
+		(clockOut == nil && revision != 1) || (clockOut != nil && revision != 2) {
+		return AttendanceDay{}, ErrInvalidAttendanceDay
 	}
-	if clockOut != nil && clockOut.ReviewState() != valueobjects.ReviewVoided && (clockIn == nil || clockIn.ReviewState() == valueobjects.ReviewVoided || !clockOut.EffectiveAt().After(clockIn.EffectiveAt())) {
-		return Attendance{}, ErrPunchOrdering
-	}
-	if clockIn != nil {
-		copy := *clockIn
-		value.clockIn = &copy
-	}
+	inCopy := *clockIn
+	value.clockIn = &inCopy
 	if clockOut != nil {
-		copy := *clockOut
-		value.clockOut = &copy
+		outCopy := *clockOut
+		value.clockOut = &outCopy
 	}
 	value.revision = revision
 	return value, nil
 }
 
-func (a Attendance) Participant() entities.Participant    { return a.participant }
-func (a Attendance) Workplace() entities.Workplace        { return a.workplace }
-func (a Attendance) Shift() entities.ShiftInstance        { return a.shift }
-func (a Attendance) Assignment() entities.ShiftAssignment { return a.assignment }
-func (a Attendance) Revision() uint64                     { return a.revision }
-func (a Attendance) ClockIn() (entities.Punch, bool) {
-	if a.clockIn == nil {
+func (a AttendanceDay) ID() valueobjects.AttendanceDayID          { return a.id }
+func (a AttendanceDay) ParticipantID() valueobjects.ParticipantID { return a.participantID }
+func (a AttendanceDay) Workday() valueobjects.Workday             { return a.workday }
+func (a AttendanceDay) Revision() uint64                          { return a.revision }
+func (a AttendanceDay) ClockIn() (entities.Punch, bool)           { return punchCopy(a.clockIn) }
+func (a AttendanceDay) ClockOut() (entities.Punch, bool)          { return punchCopy(a.clockOut) }
+
+func punchCopy(value *entities.Punch) (entities.Punch, bool) {
+	if value == nil {
 		return entities.Punch{}, false
 	}
-	return *a.clockIn, true
-}
-func (a Attendance) ClockOut() (entities.Punch, bool) {
-	if a.clockOut == nil {
-		return entities.Punch{}, false
-	}
-	return *a.clockOut, true
+	return *value, true
 }
 
-func (a *Attendance) RecordClockIn(id valueobjects.PunchID, submissionID valueobjects.SubmissionID, serverTime time.Time, location valueobjects.LocationAssessment) (valueobjects.SubmissionOutcome, error) {
-	return a.record(id, valueobjects.ClockIn, submissionID, serverTime, location)
+func (a *AttendanceDay) RecordClockIn(id valueobjects.PunchID, serverTime time.Time, location valueobjects.LocationFix) (valueobjects.SubmissionOutcome, entities.Punch, error) {
+	return a.record(id, valueobjects.ClockIn, serverTime, location)
 }
-
-func (a *Attendance) RecordClockOut(id valueobjects.PunchID, submissionID valueobjects.SubmissionID, serverTime time.Time, location valueobjects.LocationAssessment) (valueobjects.SubmissionOutcome, error) {
-	return a.record(id, valueobjects.ClockOut, submissionID, serverTime, location)
+func (a *AttendanceDay) RecordClockOut(id valueobjects.PunchID, serverTime time.Time, location valueobjects.LocationFix) (valueobjects.SubmissionOutcome, entities.Punch, error) {
+	return a.record(id, valueobjects.ClockOut, serverTime, location)
 }
-
-func (a *Attendance) record(id valueobjects.PunchID, kind valueobjects.PunchKind, submissionID valueobjects.SubmissionID, serverTime time.Time, location valueobjects.LocationAssessment) (valueobjects.SubmissionOutcome, error) {
-	if a == nil {
-		return "", ErrInvalidAttendance
+func (a *AttendanceDay) record(id valueobjects.PunchID, kind valueobjects.PunchKind, serverTime time.Time, location valueobjects.LocationFix) (valueobjects.SubmissionOutcome, entities.Punch, error) {
+	if a == nil || !a.id.Valid() || !kind.Valid() {
+		return "", entities.Punch{}, ErrInvalidAttendanceDay
 	}
 	existing := a.clockIn
 	if kind == valueobjects.ClockOut {
 		existing = a.clockOut
 	}
 	if existing != nil {
-		return valueobjects.SubmissionDuplicate, nil
-	}
-	if !a.shift.AcceptsSubmission(serverTime) {
-		return "", ErrSubmissionWindowClosed
+		return valueobjects.SubmissionDuplicate, *existing, nil
 	}
 	if kind == valueobjects.ClockOut {
-		if a.clockIn == nil || a.clockIn.ReviewState() == valueobjects.ReviewVoided {
-			return "", ErrClockInRequired
+		if a.clockIn == nil {
+			return "", entities.Punch{}, ErrClockInRequired
 		}
-		if !serverTime.After(a.clockIn.EffectiveAt()) {
-			return "", ErrPunchOrdering
+		if !serverTime.After(a.clockIn.RecordedAt()) {
+			return "", entities.Punch{}, ErrPunchOrdering
 		}
 	}
-	punch, err := entities.NewPunch(id, kind, submissionID, serverTime, location, a.shift.IsTimeAnomaly(kind, serverTime))
+	punch, err := entities.NewPunch(id, kind, serverTime, location)
 	if err != nil {
-		return "", err
+		return "", entities.Punch{}, err
 	}
 	if kind == valueobjects.ClockIn {
 		a.clockIn = &punch
@@ -118,65 +101,5 @@ func (a *Attendance) record(id valueobjects.PunchID, kind valueobjects.PunchKind
 		a.clockOut = &punch
 	}
 	a.revision++
-	return valueobjects.SubmissionRecorded, nil
-}
-
-func (a *Attendance) Confirm(kind valueobjects.PunchKind, reviewedAt time.Time, reviewer, reason string) error {
-	punch, err := a.punch(kind)
-	if err != nil {
-		return err
-	}
-	if err := punch.Confirm(reviewedAt, reviewer, reason); err != nil {
-		return err
-	}
-	a.revision++
-	return nil
-}
-
-func (a *Attendance) Correct(kind valueobjects.PunchKind, effectiveAt time.Time, location valueobjects.LocationAssessment, provenance valueobjects.ReviewProvenance, reviewedAt time.Time, reviewer, reason string) error {
-	punch, err := a.punch(kind)
-	if err != nil {
-		return err
-	}
-	candidate := *punch
-	if err := candidate.Correct(effectiveAt, location, a.shift.IsTimeAnomaly(kind, effectiveAt), provenance, reviewedAt, reviewer, reason); err != nil {
-		return err
-	}
-	if kind == valueobjects.ClockIn && a.clockOut != nil && a.clockOut.ReviewState() != valueobjects.ReviewVoided && !a.clockOut.EffectiveAt().After(candidate.EffectiveAt()) {
-		return ErrPunchOrdering
-	}
-	if kind == valueobjects.ClockOut && a.clockIn != nil && a.clockIn.ReviewState() != valueobjects.ReviewVoided && !candidate.EffectiveAt().After(a.clockIn.EffectiveAt()) {
-		return ErrPunchOrdering
-	}
-	*punch = candidate
-	a.revision++
-	return nil
-}
-
-func (a *Attendance) Void(kind valueobjects.PunchKind, reviewedAt time.Time, reviewer, reason string) error {
-	punch, err := a.punch(kind)
-	if err != nil {
-		return err
-	}
-	if kind == valueobjects.ClockIn && a.clockOut != nil && a.clockOut.ReviewState() != valueobjects.ReviewVoided {
-		return ErrPunchOrdering
-	}
-	if err := punch.Void(reviewedAt, reviewer, reason); err != nil {
-		return err
-	}
-	a.revision++
-	return nil
-}
-
-func (a *Attendance) punch(kind valueobjects.PunchKind) (*entities.Punch, error) {
-	if a == nil {
-		return nil, ErrPunchNotFound
-	}
-	if kind == valueobjects.ClockIn && a.clockIn != nil {
-		return a.clockIn, nil
-	}
-	if kind == valueobjects.ClockOut && a.clockOut != nil {
-		return a.clockOut, nil
-	}
-	return nil, ErrPunchNotFound
+	return valueobjects.SubmissionRecorded, punch, nil
 }

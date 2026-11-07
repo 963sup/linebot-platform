@@ -289,12 +289,6 @@ type AutomationRequestsRuntime interface {
 type AttendanceRuntime interface {
 	InviteEmployee(context.Context, attendance.InviteEmployeeCommand) (attendance.InviteEmployeeResult, error)
 	DeactivateEmployee(context.Context, attendance.DeactivateEmployeeCommand) error
-	UpsertWorkplace(context.Context, attendance.UpsertWorkplaceCommand) error
-	CreateShift(context.Context, attendance.CreateShiftCommand) error
-	AssignEmployee(context.Context, attendance.AssignEmployeeCommand) error
-	ListReviewRequired(context.Context, int) ([]attendance.ReviewItem, error)
-	ShowReview(context.Context, attendance.ShowReviewQuery) (attendance.ReviewDetail, error)
-	Review(context.Context, attendance.ReviewCommand) error
 	Close() error
 }
 
@@ -305,8 +299,6 @@ type AttendanceRuntimeConfig struct {
 	ProjectID         string
 	Environment       string
 	FirestoreDatabase string
-	ActiveKeyID       string
-	KeyVersions       string
 }
 
 // Dependencies is the immutable set of runtime factories supplied by the

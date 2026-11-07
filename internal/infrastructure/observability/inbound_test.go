@@ -19,7 +19,7 @@ func TestMiniAppDimensionsAreBounded(t *testing.T) {
 	}
 	for path, want := range map[string]string{
 		"/miniapp/api/v1/attendance/enrollments": "miniapp_attendance_enrollment",
-		"/miniapp/api/v1/attendance/options":     "miniapp_attendance_options",
+		"/miniapp/api/v1/attendance/today":       "miniapp_attendance_today",
 		"/miniapp/api/v1/attendance/punches":     "miniapp_attendance_punch",
 	} {
 		if got := boundedRoute(path); got != want {

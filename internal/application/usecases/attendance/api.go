@@ -13,8 +13,6 @@ var (
 	ErrEnrollmentInvalid     = errors.New("attendance enrollment code is invalid")
 	ErrEnrollmentUnavailable = errors.New("attendance enrollment is unavailable")
 	ErrNotEnrolled           = errors.New("attendance participant is not enrolled")
-	ErrNotAssigned           = errors.New("attendance shift is not assigned")
-	ErrSubmissionClosed      = errors.New("attendance submission window is closed")
 	ErrConflict              = errors.New("attendance operation conflicts with current state")
 	ErrRepositoryUnavailable = errors.New("attendance repository unavailable")
 )
@@ -26,11 +24,7 @@ const (
 	ClockOut = valueobjects.ClockOut
 )
 
-type EnrollCommand struct {
-	IDToken string
-	Code    string
-}
-
+type EnrollCommand struct{ IDToken, Code string }
 type EnrollStatus string
 
 const (
@@ -39,29 +33,26 @@ const (
 )
 
 type EnrollResult struct{ Status EnrollStatus }
+type TodayQuery struct{ IDToken string }
 
-type OptionsCommand struct{ IDToken string }
-
-type AttendanceOption struct {
-	ShiftInstanceID string
-	WorkplaceLabel  string
-	Label           string
-	AllowedKinds    []PunchKind
+type PunchView struct {
+	PunchID    string
+	Kind       PunchKind
+	RecordedAt time.Time
 }
 
-type OptionsResult struct{ Options []AttendanceOption }
-
-type LocationFix struct {
-	Latitude       float64
-	Longitude      float64
-	AccuracyMeters float64
+type TodayResult struct {
+	Workday      string
+	ClockIn      *PunchView
+	ClockOut     *PunchView
+	AllowedKinds []PunchKind
 }
 
+type LocationFix struct{ Latitude, Longitude, AccuracyMeters float64 }
 type PunchCommand struct {
-	IDToken         string
-	ShiftInstanceID string
-	Kind            PunchKind
-	Location        LocationFix
+	IDToken  string
+	Kind     PunchKind
+	Location LocationFix
 }
 
 type PunchStatus string
@@ -72,19 +63,14 @@ const (
 )
 
 type PunchResult struct {
-	AttendanceID  string
-	PunchID       string
-	Kind          PunchKind
-	RecordedAt    time.Time
-	Status        PunchStatus
-	ReviewState   string
-	ReviewReasons []string
+	AttendanceDayID string
+	Workday         string
+	Punch           PunchView
+	Status          PunchStatus
 }
 
-// Actions is the inbound Application contract for the Mini App. HTTP adapters
-// depend on this interface and never reconstruct attendance policy locally.
 type Actions interface {
 	Enroll(context.Context, EnrollCommand) (EnrollResult, error)
-	ListOptions(context.Context, OptionsCommand) (OptionsResult, error)
+	GetToday(context.Context, TodayQuery) (TodayResult, error)
 	Punch(context.Context, PunchCommand) (PunchResult, error)
 }
