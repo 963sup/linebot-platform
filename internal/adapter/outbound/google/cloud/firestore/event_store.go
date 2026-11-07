@@ -89,6 +89,9 @@ func (s *Store) Record(ctx context.Context, job messagingdelivery.DeliveryWorkIt
 			if err := doc.DataTo(&saved); err != nil {
 				return err
 			}
+			if err := validateRedeliveryContext(saved, job.Context); err != nil {
+				return err
+			}
 			delivery, restoreErr := restoreDelivery(job.Key, saved)
 			if restoreErr != nil {
 				return restoreErr
@@ -453,6 +456,14 @@ func (s *Store) reconcile(ctx context.Context, ref *sdk.DocumentRef, now time.Ti
 			{Path: "version", Value: version},
 		})
 	})
+}
+
+// Legacy jobs have no scope to compare. Never manufacture one from a retry.
+func validateRedeliveryContext(saved storedJob, incoming messagingdelivery.DeliveryContext) error {
+	if saved.SchemaVersion == 3 && saved.Context != incoming {
+		return errors.New("redelivery scope does not match stored event")
+	}
+	return nil
 }
 
 func restoreDelivery(key string, saved storedJob) (aggregates.Delivery, error) {

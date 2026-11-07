@@ -30,7 +30,7 @@ Cloud Run 預期分別使用 `line-bot-public@bubbly-area-513305-s0.iam.gservice
 | Codex Cloud secure environment | `GITHUB_MCP_TOKEN` | GitHub MCP（依使用者授權可讀寫），僅可送至 `api.githubcopilot.com`；不屬於 Cloud Run runtime。 |
 | Google Secret Manager | `LINE_MESSAGING_API_CHANNEL_SECRET` | 僅注入 `line-bot-public`。 |
 | Google Secret Manager | `LINE_MESSAGING_API_CHANNEL_ACCESS_TOKEN` | 僅注入 `line-bot-private`。 |
-| MINI App Cloud Run | `LINE_MINI_APP_CHANNEL_ID`、`LINE_MINI_APP_LIFF_URL`、`LINE_MINI_APP_ENDPOINT_URL`、`FIRESTORE_DATABASE` | LINE MINI App audience、LIFF、同源與 Firestore 基礎設施契約；Project ID 由 ADC 自動發現。 |
+| MINI App Cloud Run | `LINE_MINI_APP_CHANNEL_ID`、`LINE_MINI_APP_LIFF_URL`、`LINE_MINI_APP_ENDPOINT_URL` | LINE MINI App audience、LIFF 與同源驗證契約。 |
 | Cloud Run deployment | `APP_ENV`、`LINE_EVENT_MODE`（僅 Public Webhook）、`LINE_MESSAGING_API_BOT_USER_ID`（僅 Public Webhook）、`GCP_PROJECT_ID`、`TASK_QUEUE_NAME`、`TASK_WORKER_URL`、`TASK_OIDC_AUDIENCE`、`TASK_INVOKER_EMAIL` | 非敏感 production 設定；以每個服務的 exact allowlist 由 `cloudbuild.deploy.yaml` 寫入。Timeout、logging 與預設 Firestore database 使用程式的安全預設，不重複注入。 |
 | Cloud Run platform | `PORT`、`K_SERVICE` | 由平台注入，不手動設定。 |
 | 操作人員 shell | `LINEBOT_STAGING_PROJECT` | 只有隔離 staging 的 `ops events` 使用；不注入任一服務。 |
@@ -40,7 +40,7 @@ Cloud Run 預期分別使用 `line-bot-public@bubbly-area-513305-s0.iam.gservice
 - `line-bot-private` 的目標 Cloud Run concurrency 為 16，與應用程式的有界 request admission cap 一致。超過容量的 task 應收到 `503 Service Unavailable` 與 `Retry-After`，交由 Cloud Tasks 稍後重試，不在程序內建立無界 backlog；實際平台設定與行為仍須依 Staging capacity gate 驗證。
 - `line-miniapp` 公開提供 embedded assets；session API 必須驗證 LINE ID token。它不得取得 Messaging Secret、Secret Manager 或 Cloud Tasks IAM；瀏覽器取得的定位目前不提交到 server，也不得記錄到 logs。
 - `K_SERVICE` 由 Cloud Run 自動注入，程式以此拒絕套用 local profile。
-- Public/Worker 上錯置的 `FIRESTORE_DATABASE`，以及各服務不屬於其角色的 `GOOGLE_CLOUD_PROJECT`、`OPENAI_MODEL`、`AUTO_TASKS`、`AUTO_CALENDAR`、`CALENDAR_SERVICE_ACCOUNT`、`WORKER_MODE` 與 Secret，會在部署時移除；MINI App 保留自己的明確 Firestore database 設定。
+- Public/Worker 上錯置的 `FIRESTORE_DATABASE`，以及各服務不屬於其角色的 `GOOGLE_CLOUD_PROJECT`、`OPENAI_MODEL`、`AUTO_TASKS`、`AUTO_CALENDAR`、`CALENDAR_SERVICE_ACCOUNT`、`WORKER_MODE` 與 Secret，會在部署時移除。
 
 目標設定中，`line-bot-public` 以 Cloud Run 的 `--no-invoker-iam-check` 接受未驗證的 LINE webhook 請求；簽章由應用程式使用原始 request body 驗證。`line-bot-private` 必須維持 IAM 驗證，並驗證 Cloud Tasks OIDC audience 和 invoker service account。`line-miniapp` 必須允許使用者下載頁面，但 session API 另以 LINE ID token 與 Origin 驗證。三者的 live 行為均尚未由本儲存庫驗證。
 

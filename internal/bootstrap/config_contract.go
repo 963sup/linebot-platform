@@ -39,7 +39,6 @@ const (
 	KeyMiniAppChannelID               = "LINE_MINI_APP_CHANNEL_ID"
 	KeyMiniAppLIFFURL                 = "LINE_MINI_APP_LIFF_URL"
 	KeyMiniAppEndpointURL             = "LINE_MINI_APP_ENDPOINT_URL"
-	KeyFirestoreDatabase              = "FIRESTORE_DATABASE"
 )
 
 // settingContract owns the role, default and secret metadata for each key.
@@ -68,7 +67,6 @@ var settingContract = []SettingSpec{
 	{Key: KeyMiniAppChannelID, Roles: "miniapp", Secret: false, Default: "—", Required: "必需", Description: "LINE MINI App Channel ID；ID token audience"},
 	{Key: KeyMiniAppLIFFURL, Roles: "webhook,miniapp", Secret: false, Default: "—", Required: "正式 LINE MINI App 必需", Description: "Console Web app settings 提供的完整 LIFF URL；Bot 入口與前端 LIFF ID 的單一來源"},
 	{Key: KeyMiniAppEndpointURL, Roles: "miniapp", Secret: false, Default: "—", Required: "必需", Description: "Console Web app settings 的完整 Endpoint URL；同源驗證的單一來源"},
-	{Key: KeyFirestoreDatabase, Roles: "miniapp", Secret: false, Default: "(default)", Required: "選用", Description: "MINI App Firestore client 使用的明確 database ID；Project 由 ADC 偵測"},
 }
 
 // SettingsContract returns a copy so callers cannot mutate global metadata.

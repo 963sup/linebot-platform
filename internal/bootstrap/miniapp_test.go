@@ -23,7 +23,6 @@ func validMiniAppRuntimeConfig() MiniAppConfig {
 		LIFFID: "123456-example", ChannelID: "123456",
 		LIFFURL:     "https://miniapp.line.me/123456-example",
 		EndpointURL: "http://localhost/miniapp/", PublicOrigin: "http://localhost",
-		FirestoreDatabase: "(default)",
 	}
 }
 

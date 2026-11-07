@@ -13,7 +13,6 @@ import (
 	miniappin "github.com/963sup/linebot-platform/internal/adapter/inbound/http/miniapp"
 	lineout "github.com/963sup/linebot-platform/internal/adapter/outbound/line"
 	linesession "github.com/963sup/linebot-platform/internal/application/usecases/line-session"
-	storeinfra "github.com/963sup/linebot-platform/internal/infrastructure/google/cloud/firestore"
 	"github.com/963sup/linebot-platform/internal/infrastructure/httpclient"
 	"github.com/963sup/linebot-platform/internal/infrastructure/observability"
 )
@@ -40,7 +39,7 @@ func NewMiniAppRuntime(cfg MiniAppConfig, logger *slog.Logger) (*MiniAppRuntime,
 }
 
 func newMiniAppRuntime(cfg MiniAppConfig, logger *slog.Logger, compose miniAppComposer) (*MiniAppRuntime, error) {
-	if cfg.Role != RoleMiniApp || cfg.LIFFID == "" || cfg.ChannelID == "" || cfg.LIFFURL == "" || cfg.EndpointURL == "" || cfg.PublicOrigin == "" || cfg.FirestoreDatabase == "" {
+	if cfg.Role != RoleMiniApp || cfg.LIFFID == "" || cfg.ChannelID == "" || cfg.LIFFURL == "" || cfg.EndpointURL == "" || cfg.PublicOrigin == "" {
 		return nil, errors.New("validated miniapp configuration is required")
 	}
 	if compose == nil {
@@ -90,12 +89,6 @@ func composeMiniApp(ctx context.Context, cfg MiniAppConfig, logger *slog.Logger)
 	}
 	result.wrap = func(handler http.Handler) http.Handler { return telemetry.WrapInboundHTTP("miniapp", handler) }
 	result.closers = append(result.closers, runtimeCloser{name: "telemetry", close: telemetryCloser(telemetry)})
-
-	database, err := storeinfra.NewDetectedClientWithDatabase(ctx, cfg.FirestoreDatabase)
-	if err != nil {
-		return fail(err)
-	}
-	result.closers = append(result.closers, runtimeCloser{name: "firestore", close: database.Close})
 
 	timeout := cfg.LINEAPITimeout
 	if timeout == 0 {

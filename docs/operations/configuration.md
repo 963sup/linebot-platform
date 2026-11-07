@@ -26,7 +26,6 @@
 | `LINE_MINI_APP_CHANNEL_ID` | miniapp | 否 | — | 必需 | LINE MINI App Channel ID；ID token audience |
 | `LINE_MINI_APP_LIFF_URL` | webhook,miniapp | 否 | — | 正式 LINE MINI App 必需 | Console Web app settings 提供的完整 LIFF URL；Bot 入口與前端 LIFF ID 的單一來源 |
 | `LINE_MINI_APP_ENDPOINT_URL` | miniapp | 否 | — | 必需 | Console Web app settings 的完整 Endpoint URL；同源驗證的單一來源 |
-| `FIRESTORE_DATABASE` | miniapp | 否 | (default) | 選用 | MINI App Firestore client 使用的明確 database ID；Project 由 ADC 偵測 |
 
 ## 使用規則
 

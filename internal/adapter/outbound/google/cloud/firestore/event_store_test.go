@@ -20,6 +20,38 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+func TestRedeliveryCannotChangeConversationScope(t *testing.T) {
+	ctx := messagingdelivery.DeliveryContext{
+		TenantID: "legacy-tenant", ConnectionID: "shared-channel",
+		ConversationKind:            messagingdelivery.ConversationGroup,
+		ConversationReferenceSHA256: strings.Repeat("a", 64), ActorSHA256: strings.Repeat("b", 64),
+	}
+	saved := storedJob{SchemaVersion: 3, Context: ctx}
+	if err := validateRedeliveryContext(saved, ctx); err != nil {
+		t.Fatal(err)
+	}
+	for _, mutate := range []func(*messagingdelivery.DeliveryContext){
+		func(c *messagingdelivery.DeliveryContext) { c.ConversationReferenceSHA256 = strings.Repeat("c", 64) },
+		func(c *messagingdelivery.DeliveryContext) { c.ActorSHA256 = strings.Repeat("c", 64) },
+		func(c *messagingdelivery.DeliveryContext) { c.ConversationKind = messagingdelivery.ConversationRoom },
+		func(c *messagingdelivery.DeliveryContext) { c.TenantID = "other" },
+		func(c *messagingdelivery.DeliveryContext) { c.ConnectionID = "other" },
+	} {
+		other := ctx
+		mutate(&other)
+		if validateRedeliveryContext(saved, other) == nil {
+			t.Fatal("changed scope accepted")
+		}
+	}
+	legacy := storedJob{SchemaVersion: 2}
+	if err := validateRedeliveryContext(legacy, ctx); err != nil {
+		t.Fatal(err)
+	}
+	if legacy.Context != (messagingdelivery.DeliveryContext{}) {
+		t.Fatal("legacy context was invented")
+	}
+}
+
 func TestStoredJobUsesFirestoreCompatibleIntegerTypes(t *testing.T) {
 	t.Parallel()
 	typ := reflect.TypeOf(storedJob{})
