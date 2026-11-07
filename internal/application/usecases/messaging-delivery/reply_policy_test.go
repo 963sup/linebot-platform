@@ -5,26 +5,89 @@ import (
 	"testing"
 )
 
-func TestReplyPolicyAttendanceEntryAndCompatibility(t *testing.T) {
+func TestReplyPolicyIntentFamilies(t *testing.T) {
 	policy, err := NewReplyPolicy("https://liff.line.me/2000000000-attendance")
 	if err != nil {
 		t.Fatal(err)
 	}
-	attendance := policy.ResponseForText("  打卡  ")
-	if attendance.Kind != KindFlex || attendance.Flex.Action == nil || attendance.Flex.Action.Label != "開啟打卡" {
-		t.Fatalf("attendance reply = %#v", attendance)
+	tests := []struct {
+		name         string
+		input        string
+		wantKind     MessageKind
+		wantAction   bool
+		wantText     string
+		dontWantText string
+	}{
+		{name: "attendance trimmed", input: "  打卡  ", wantKind: KindFlex, wantAction: true, wantText: "上班或下班"},
+		{name: "attendance clock in", input: "上班", wantKind: KindFlex, wantAction: true, wantText: "上班或下班"},
+		{name: "attendance clock out", input: "下班", wantKind: KindFlex, wantAction: true, wantText: "上班或下班"},
+		{name: "attendance generic", input: "出勤", wantKind: KindFlex, wantAction: true, wantText: "上班或下班"},
+		{name: "attendance traditional sign in", input: "簽到", wantKind: KindFlex, wantAction: true, wantText: "上班或下班"},
+		{name: "attendance simplified sign in", input: "签到", wantKind: KindFlex, wantAction: true, wantText: "上班或下班"},
+		{name: "attendance traditional sign out", input: "簽退", wantKind: KindFlex, wantAction: true, wantText: "上班或下班"},
+		{name: "attendance simplified sign out", input: "签退", wantKind: KindFlex, wantAction: true, wantText: "上班或下班"},
+		{name: "help chinese", input: "功能", wantKind: KindFlex, wantAction: true, wantText: "今天班表"},
+		{name: "help menu", input: "選單", wantKind: KindFlex, wantAction: true, wantText: "今天班表"},
+		{name: "help english menu", input: "menu", wantKind: KindFlex, wantAction: true, wantText: "今天班表"},
+		{name: "help english", input: "help", wantKind: KindFlex, wantAction: true, wantText: "今天班表"},
+		{name: "help question", input: "？", wantKind: KindFlex, wantAction: true, wantText: "今天班表"},
+		{name: "schedule today", input: "今天班表", wantKind: KindFlex, wantAction: true, wantText: "尚未連接"},
+		{name: "schedule mine", input: "我的班表", wantKind: KindFlex, wantAction: true, wantText: "尚未連接"},
+		{name: "status attendance", input: "打卡狀態", wantKind: KindFlex, wantAction: true, wantText: "尚未連接"},
+		{name: "status mine", input: "我的狀態", wantKind: KindFlex, wantAction: true, wantText: "尚未連接"},
+		{name: "greeting", input: "hello", wantKind: KindText, wantText: "打卡"},
+		{name: "flex compatibility", input: "卡片", wantKind: KindFlex, wantText: "基礎架構"},
+		{name: "unknown", input: "隨便問", wantKind: KindText, wantText: "目前支援", dontWantText: "訊息已收到"},
+		{name: "empty", input: "", wantKind: KindText, wantText: "目前支援", dontWantText: "訊息已收到"},
 	}
-	if got := policy.ResponseForText("卡片"); got.Kind != KindFlex || got.Flex.Action != nil {
-		t.Fatalf("demo Flex reply changed: %#v", got)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := policy.ResponseForText(tt.input)
+			if err := got.Validate(); err != nil {
+				t.Fatalf("input=%q got=%#v want=valid message: %v", tt.input, got, err)
+			}
+			if got.Kind != tt.wantKind {
+				t.Fatalf("input=%q got.kind=%q got=%#v want.kind=%q", tt.input, got.Kind, got, tt.wantKind)
+			}
+			if (got.Flex.Action != nil) != tt.wantAction {
+				t.Fatalf("input=%q got.action=%#v got=%#v want.action=%t", tt.input, got.Flex.Action, got, tt.wantAction)
+			}
+			content := got.Text
+			if got.Kind == KindFlex {
+				content = got.Flex.Body
+			}
+			if !strings.Contains(content, tt.wantText) {
+				t.Fatalf("input=%q got.content=%q got=%#v want substring=%q", tt.input, content, got, tt.wantText)
+			}
+			if tt.dontWantText != "" && strings.Contains(content, tt.dontWantText) {
+				t.Fatalf("input=%q got.content=%q got=%#v want without=%q", tt.input, content, got, tt.dontWantText)
+			}
+		})
 	}
-	for _, input := range []string{"签到", "签退", "hello", ""} {
-		if got := policy.ResponseForText(input); got.Kind != KindText {
-			t.Fatalf("input %q returned %#v", input, got)
-		}
-	}
+}
+
+func TestReplyPolicyDisabledAttendanceEntry(t *testing.T) {
 	disabled, err := NewReplyPolicy("")
-	if err != nil || disabled.ResponseForText("打卡").Kind != KindText {
-		t.Fatalf("disabled policy = %#v, %v", disabled, err)
+	if err != nil {
+		t.Fatal(err)
+	}
+	tests := []struct {
+		name, input, wantText string
+	}{
+		{name: "attendance", input: "打卡", wantText: "尚未設定"},
+		{name: "help", input: "功能", wantText: "尚未設定"},
+		{name: "status", input: "今天班表", wantText: "聯絡管理員"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := disabled.ResponseForText(tt.input)
+			if err := got.Validate(); err != nil {
+				t.Fatalf("input=%q got=%#v want=valid message: %v", tt.input, got, err)
+			}
+			if got.Kind != KindText || !strings.Contains(got.Text, tt.wantText) {
+				t.Fatalf("input=%q got=%#v want.kind=%q want substring=%q", tt.input, got, KindText, tt.wantText)
+			}
+		})
 	}
 }
 

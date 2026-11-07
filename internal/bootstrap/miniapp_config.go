@@ -17,19 +17,16 @@ var (
 )
 
 type MiniAppConfig struct {
-	Environment         Environment
-	Role                RuntimeRole
-	Port                string
-	LINEAPITimeout      time.Duration
-	Log                 LogConfig
-	Telemetry           TelemetryConfig
-	LIFFID              string
-	LoginChannelID      string
-	PublicOrigin        string
-	ProjectID           string
-	FirestoreDatabase   string
-	LocationActiveKeyID string
-	LocationKeyVersions map[string]string
+	Environment       Environment
+	Role              RuntimeRole
+	Port              string
+	LINEAPITimeout    time.Duration
+	Log               LogConfig
+	Telemetry         TelemetryConfig
+	LIFFID            string
+	LoginChannelID    string
+	PublicOrigin      string
+	FirestoreDatabase string
 }
 
 func LoadMiniAppConfig(getenv func(string) string) (MiniAppConfig, error) {
@@ -72,27 +69,12 @@ func LoadMiniAppConfig(getenv func(string) string) (MiniAppConfig, error) {
 	liffID := readSetting(getenv, KeyLIFFID)
 	channelID := readSetting(getenv, KeyLoginChannelID)
 	origin := readSetting(getenv, KeyMiniAppPublicOrigin)
-	projectID := getenv(KeyProjectID)
-	if projectID == "" || projectID != strings.TrimSpace(projectID) || !projectIDPattern.MatchString(projectID) {
-		return MiniAppConfig{}, errors.New("GCP_PROJECT_ID must be an exact Google Cloud project ID")
-	}
 	database := readSetting(getenv, KeyFirestoreDatabase)
 	if database == "" {
 		database = "(default)"
 	}
 	if database != "(default)" && !keyIDPattern.MatchString(database) {
 		return MiniAppConfig{}, errors.New("FIRESTORE_DATABASE has an invalid database ID")
-	}
-	activeKeyID := getenv(KeyAttendanceKeyID)
-	if activeKeyID == "" || activeKeyID != strings.TrimSpace(activeKeyID) || !keyIDPattern.MatchString(activeKeyID) {
-		return MiniAppConfig{}, errors.New("ATTENDANCE_LOCATION_ACTIVE_KEY_ID has an invalid key ID")
-	}
-	keyVersions, err := parseAttendanceKeyVersions(getenv(KeyAttendanceKeyMap), projectID)
-	if err != nil {
-		return MiniAppConfig{}, err
-	}
-	if _, ok := keyVersions[activeKeyID]; !ok {
-		return MiniAppConfig{}, errors.New("active Attendance location key is missing from ATTENDANCE_LOCATION_KEY_VERSIONS")
 	}
 	if !liffIDPattern.MatchString(liffID) {
 		return MiniAppConfig{}, errors.New("LINE_LIFF_ID must contain a numeric app ID, hyphen and endpoint ID")
@@ -116,8 +98,7 @@ func LoadMiniAppConfig(getenv func(string) string) (MiniAppConfig, error) {
 		Environment: environment, Role: RoleMiniApp, Port: port,
 		LINEAPITimeout: timeout, Log: logging, Telemetry: telemetry,
 		LIFFID: liffID, LoginChannelID: channelID, PublicOrigin: origin,
-		ProjectID: projectID, FirestoreDatabase: database,
-		LocationActiveKeyID: activeKeyID, LocationKeyVersions: keyVersions,
+		FirestoreDatabase: database,
 	}, nil
 }
 
@@ -126,6 +107,7 @@ func parseAttendanceKeyVersions(raw, projectID string) (map[string]string, error
 		return nil, errors.New("ATTENDANCE_LOCATION_KEY_VERSIONS must be an exact pinned key mapping")
 	}
 	versions := make(map[string]string)
+	detectedProjectID := projectID
 	for _, entry := range strings.Split(raw, ",") {
 		if entry == "" || entry != strings.TrimSpace(entry) || strings.Count(entry, "=") != 1 {
 			return nil, errors.New("ATTENDANCE_LOCATION_KEY_VERSIONS contains an invalid entry")
@@ -136,8 +118,13 @@ func parseAttendanceKeyVersions(raw, projectID string) (map[string]string, error
 			return nil, errors.New("ATTENDANCE_LOCATION_KEY_VERSIONS contains an invalid entry")
 		}
 		match := pinnedAttendanceKey.FindStringSubmatch(resource)
-		if len(match) != 3 || match[1] != projectID {
-			return nil, errors.New("Attendance location keys must use pinned versions in GCP_PROJECT_ID")
+		if len(match) != 3 {
+			return nil, errors.New("Attendance location keys must use pinned versions")
+		}
+		if detectedProjectID == "" {
+			detectedProjectID = match[1]
+		} else if match[1] != detectedProjectID {
+			return nil, errors.New("Attendance location keys must belong to one project")
 		}
 		if _, duplicate := versions[id]; duplicate {
 			return nil, errors.New("ATTENDANCE_LOCATION_KEY_VERSIONS contains a duplicate key ID")

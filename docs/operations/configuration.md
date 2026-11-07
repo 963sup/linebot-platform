@@ -16,7 +16,7 @@
 | `LINE_CHANNEL_SECRET` | webhook | 是 | — | durable 必需；sync 與 Token 成對 | 僅驗證原始 Webhook 簽章，不應傳給 Worker |
 | `LINE_CHANNEL_ACCESS_TOKEN` | worker,local-sync,ops-push,ops-profile | 是 | — | worker 必需；本機 sync 成對 | durable 公開 Webhook 禁止持有 |
 | `LINE_BOT_DESTINATION` | webhook-durable,worker | 否 | — | durable 必需 | LINE Bot Info API 的 userId；不是 Console 的 Your user ID |
-| `GCP_PROJECT_ID` | webhook-durable,worker,miniapp | 否 | — | durable 與 miniapp 必需 | 最小 IAM 的指定 Google Cloud Project |
+| `GCP_PROJECT_ID` | webhook-durable,worker | 否 | — | durable 必需 | 最小 IAM 的指定 Google Cloud Project；Mini App 由固定版本的 Attendance key resource 推導 |
 | `TASK_QUEUE_NAME` | webhook-durable,worker | 否 | — | durable 必需 | 六段 Queue 資源名稱；Project 必須等於 GCP_PROJECT_ID；Queue ID 僅限 1–100 字元英數或連字號 |
 | `TASK_WORKER_URL` | webhook-durable,worker | 否 | — | durable 必需 | HTTPS Worker /tasks/v2/line-reply |
 | `TASK_OIDC_AUDIENCE` | webhook-durable,worker | 否 | — | durable 必需 | 必須符合 Worker HTTPS Origin |
@@ -28,8 +28,8 @@
 | `LINE_LOGIN_CHANNEL_ID` | miniapp | 否 | — | 必需 | LINE Login Channel ID |
 | `MINIAPP_PUBLIC_ORIGIN` | miniapp | 否 | — | 必需；production 必須 HTTPS | 無 path/query/fragment 的精確 public origin |
 | `FIRESTORE_DATABASE` | miniapp,ops-attendance | 否 | (default) | 選用 | Attendance 使用的明確 Firestore database ID |
-| `ATTENDANCE_LOCATION_ACTIVE_KEY_ID` | miniapp,ops-attendance | 否 | — | 必需 | Attendance 位置 AES-GCM active key ID |
-| `ATTENDANCE_LOCATION_KEY_VERSIONS` | miniapp,ops-attendance | 否 | — | 必需 | 逗號分隔 key ID 與 pinned attendance-location-key Secret version resource；不含 key bytes |
+| `ATTENDANCE_LOCATION_ACTIVE_KEY_ID` | ops-attendance | 否 | — | Ops CLI 必需 | Attendance Ops 的位置 AES-GCM active key ID；Mini App 自動發現 enabled versions |
+| `ATTENDANCE_LOCATION_KEY_VERSIONS` | ops-attendance | 否 | — | Ops CLI 必需 | Attendance Ops 的 pinned key mapping；Mini App 自動發現 enabled versions |
 
 ## 使用規則
 

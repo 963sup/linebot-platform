@@ -98,6 +98,11 @@ resource "google_secret_manager_secret_iam_member" "miniapp_attendance_location_
   role      = "roles/secretmanager.secretAccessor"
   member    = "serviceAccount:${google_service_account.runtime["miniapp"].email}"
 }
+resource "google_secret_manager_secret_iam_member" "miniapp_attendance_location_key_metadata" {
+  secret_id = data.google_secret_manager_secret.attendance_location_key.id
+  role      = "roles/secretmanager.viewer"
+  member    = "serviceAccount:${google_service_account.runtime["miniapp"].email}"
+}
 
 # Cloud Run services are deployed from immutable images by Cloud Build. These
 # IAM resources attach only after those service names exist.

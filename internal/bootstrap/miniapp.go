@@ -15,8 +15,10 @@ import (
 	lineout "github.com/963sup/linebot-platform/internal/adapter/outbound/line"
 	attendanceapp "github.com/963sup/linebot-platform/internal/application/usecases/attendance"
 	firestoreinfra "github.com/963sup/linebot-platform/internal/infrastructure/google/cloud/firestore"
+	secretmanagerinfra "github.com/963sup/linebot-platform/internal/infrastructure/google/cloud/secretmanager"
 	"github.com/963sup/linebot-platform/internal/infrastructure/httpclient"
 	"github.com/963sup/linebot-platform/internal/infrastructure/observability"
+	"golang.org/x/oauth2/google"
 )
 
 type MiniAppRuntime struct {
@@ -43,7 +45,7 @@ func NewMiniAppRuntime(cfg MiniAppConfig, logger *slog.Logger) (*MiniAppRuntime,
 
 func newMiniAppRuntime(cfg MiniAppConfig, logger *slog.Logger, compose miniAppComposer) (*MiniAppRuntime, error) {
 	if cfg.Role != RoleMiniApp || cfg.LIFFID == "" || cfg.LoginChannelID == "" || cfg.PublicOrigin == "" ||
-		cfg.ProjectID == "" || cfg.FirestoreDatabase == "" || cfg.LocationActiveKeyID == "" || len(cfg.LocationKeyVersions) == 0 {
+		cfg.FirestoreDatabase == "" {
 		return nil, errors.New("validated miniapp configuration is required")
 	}
 	if compose == nil {
@@ -107,11 +109,19 @@ func composeMiniApp(ctx context.Context, cfg MiniAppConfig, logger *slog.Logger)
 	if err != nil {
 		return fail(err)
 	}
-	keyring, err := loadAttendanceKeyring(ctx, cfg.LocationActiveKeyID, cfg.LocationKeyVersions)
+	credentials, err := google.FindDefaultCredentials(ctx, "https://www.googleapis.com/auth/cloud-platform")
+	if err != nil || !projectIDPattern.MatchString(credentials.ProjectID) {
+		return fail(errors.New("detect Google Cloud project from application default credentials"))
+	}
+	secretClient, err := secretmanagerinfra.NewClient(ctx)
 	if err != nil {
 		return fail(err)
 	}
-	firestoreClient, err := firestoreinfra.NewClientWithDatabase(ctx, cfg.ProjectID, cfg.FirestoreDatabase)
+	keyring, loadErr := secretmanagerinfra.LoadManagedAttendanceKeyring(ctx, secretClient, "projects/"+credentials.ProjectID+"/secrets/attendance-location-key")
+	if err := errors.Join(loadErr, secretClient.Close()); err != nil {
+		return fail(err)
+	}
+	firestoreClient, err := firestoreinfra.NewClientWithDatabase(ctx, credentials.ProjectID, cfg.FirestoreDatabase)
 	if err != nil {
 		return fail(err)
 	}

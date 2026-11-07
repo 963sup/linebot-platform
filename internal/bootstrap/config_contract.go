@@ -61,7 +61,7 @@ var settingContract = []SettingSpec{
 	{Key: KeyChannelSecret, Roles: "webhook", Secret: true, Default: "—", Required: "durable 必需；sync 與 Token 成對", Description: "僅驗證原始 Webhook 簽章，不應傳給 Worker"},
 	{Key: KeyChannelToken, Roles: "worker,local-sync,ops-push,ops-profile", Secret: true, Default: "—", Required: "worker 必需；本機 sync 成對", Description: "durable 公開 Webhook 禁止持有"},
 	{Key: KeyBotDestination, Roles: "webhook-durable,worker", Secret: false, Default: "—", Required: "durable 必需", Description: "LINE Bot Info API 的 userId；不是 Console 的 Your user ID"},
-	{Key: KeyProjectID, Roles: "webhook-durable,worker,miniapp", Secret: false, Default: "—", Required: "durable 與 miniapp 必需", Description: "最小 IAM 的指定 Google Cloud Project"},
+	{Key: KeyProjectID, Roles: "webhook-durable,worker", Secret: false, Default: "—", Required: "durable 必需", Description: "最小 IAM 的指定 Google Cloud Project；Mini App 由固定版本的 Attendance key resource 推導"},
 	{Key: KeyQueueName, Roles: "webhook-durable,worker", Secret: false, Default: "—", Required: "durable 必需", Description: "六段 Queue 資源名稱；Project 必須等於 GCP_PROJECT_ID；Queue ID 僅限 1–100 字元英數或連字號"},
 	{Key: KeyWorkerURL, Roles: "webhook-durable,worker", Secret: false, Default: "—", Required: "durable 必需", Description: "HTTPS Worker /tasks/v2/line-reply"},
 	{Key: KeyOIDCAudience, Roles: "webhook-durable,worker", Secret: false, Default: "—", Required: "durable 必需", Description: "必須符合 Worker HTTPS Origin"},
@@ -73,8 +73,8 @@ var settingContract = []SettingSpec{
 	{Key: KeyLoginChannelID, Roles: "miniapp", Secret: false, Default: "—", Required: "必需", Description: "LINE Login Channel ID"},
 	{Key: KeyMiniAppPublicOrigin, Roles: "miniapp", Secret: false, Default: "—", Required: "必需；production 必須 HTTPS", Description: "無 path/query/fragment 的精確 public origin"},
 	{Key: KeyFirestoreDatabase, Roles: "miniapp,ops-attendance", Secret: false, Default: "(default)", Required: "選用", Description: "Attendance 使用的明確 Firestore database ID"},
-	{Key: KeyAttendanceKeyID, Roles: "miniapp,ops-attendance", Secret: false, Default: "—", Required: "必需", Description: "Attendance 位置 AES-GCM active key ID"},
-	{Key: KeyAttendanceKeyMap, Roles: "miniapp,ops-attendance", Secret: false, Default: "—", Required: "必需", Description: "逗號分隔 key ID 與 pinned attendance-location-key Secret version resource；不含 key bytes"},
+	{Key: KeyAttendanceKeyID, Roles: "ops-attendance", Secret: false, Default: "—", Required: "Ops CLI 必需", Description: "Attendance Ops 的位置 AES-GCM active key ID；Mini App 自動發現 enabled versions"},
+	{Key: KeyAttendanceKeyMap, Roles: "ops-attendance", Secret: false, Default: "—", Required: "Ops CLI 必需", Description: "Attendance Ops 的 pinned key mapping；Mini App 自動發現 enabled versions"},
 }
 
 // SettingsContract returns a copy so callers cannot mutate global metadata.

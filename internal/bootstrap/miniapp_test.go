@@ -27,15 +27,15 @@ func (fakeMiniAppActions) Punch(context.Context, attendanceapp.PunchCommand) (at
 func validMiniAppSettings() map[string]string {
 	return map[string]string{
 		KeyLIFFID: "2000000000-example", KeyLoginChannelID: "2000000000",
-		KeyMiniAppPublicOrigin: "http://127.0.0.1:8080", KeyProjectID: "test-project",
-		KeyAttendanceKeyID: "v1", KeyAttendanceKeyMap: "v1=projects/test-project/secrets/attendance-location-key/versions/1",
+		KeyMiniAppPublicOrigin: "http://127.0.0.1:8080",
+		KeyAttendanceKeyID:     "v1", KeyAttendanceKeyMap: "v1=projects/test-project/secrets/attendance-location-key/versions/1",
 	}
 }
 
 func TestLoadMiniAppConfig(t *testing.T) {
 	values := validMiniAppSettings()
 	cfg, err := LoadMiniAppConfig(env(values))
-	if err != nil || cfg.Role != RoleMiniApp || cfg.Environment != EnvLocal || cfg.LINEAPITimeout == 0 || cfg.FirestoreDatabase != "(default)" || len(cfg.LocationKeyVersions) != 1 {
+	if err != nil || cfg.Role != RoleMiniApp || cfg.Environment != EnvLocal || cfg.LINEAPITimeout == 0 || cfg.FirestoreDatabase != "(default)" {
 		t.Fatalf("config=%#v err=%v", cfg, err)
 	}
 	values[KeyMiniAppPublicOrigin] = "http://localhost:8080"
@@ -68,24 +68,13 @@ func TestMiniAppConfigRejectsOriginAndMessagingSecrets(t *testing.T) {
 	}
 }
 
-func TestMiniAppConfigRejectsInvalidAttendanceKeyMappings(t *testing.T) {
-	for _, value := range []string{
-		"", " v1=projects/test-project/secrets/attendance-location-key/versions/1",
-		"v1=projects/test-project/secrets/attendance-location-key/versions/latest",
-		"v1=projects/other-project/secrets/attendance-location-key/versions/1",
-		"v1=projects/test-project/secrets/attendance-location-key/versions/1,v1=projects/test-project/secrets/attendance-location-key/versions/2",
-		"v1=projects/test-project/secrets/other/versions/1", "v1==bad",
-	} {
-		values := validMiniAppSettings()
-		values[KeyAttendanceKeyMap] = value
-		if _, err := LoadMiniAppConfig(env(values)); err == nil {
-			t.Fatalf("invalid key mapping accepted: %q", value)
-		}
-	}
+func TestMiniAppConfigDoesNotRequireEncryptionDeploymentDetails(t *testing.T) {
 	values := validMiniAppSettings()
-	values[KeyAttendanceKeyID] = "v2"
-	if _, err := LoadMiniAppConfig(env(values)); err == nil {
-		t.Fatal("missing active key accepted")
+	delete(values, KeyProjectID)
+	delete(values, KeyAttendanceKeyID)
+	delete(values, KeyAttendanceKeyMap)
+	if _, err := LoadMiniAppConfig(env(values)); err != nil {
+		t.Fatalf("automatic cloud configuration rejected: %v", err)
 	}
 }
 

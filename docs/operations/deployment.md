@@ -31,7 +31,7 @@ Cloud Run 預期分別使用 `line-bot-public@bubbly-area-513305-s0.iam.gservice
 | Google Secret Manager | `LINE_CHANNEL_SECRET` | 僅注入 `line-bot-public`。 |
 | Google Secret Manager | `LINE_CHANNEL_ACCESS_TOKEN` | 僅注入 `line-bot-private`。 |
 | Google Secret Manager | `attendance-location-key` | `line-miniapp` 取得此單一 secret 的 secret-level accessor；程式設定只選擇明確 pin 的 numeric versions，但 IAM 技術上可讀該 secret 的其他版本。用於 AES-256-GCM 加密 90 天位置證據。 |
-| MINI App Cloud Run | `LINE_LIFF_ID`、`LINE_LOGIN_CHANNEL_ID`、`MINIAPP_PUBLIC_ORIGIN`、`GCP_PROJECT_ID`、`FIRESTORE_DATABASE`、`ATTENDANCE_LOCATION_ACTIVE_KEY_ID`、`ATTENDANCE_LOCATION_KEY_VERSIONS` | LIFF、同源、Attendance Firestore 與版本化加密 keyring 契約；key mapping 只含 Secret resource name，不含 key bytes。 |
+| MINI App Cloud Run | `LINE_LIFF_ID`、`LINE_LOGIN_CHANNEL_ID`、`MINIAPP_PUBLIC_ORIGIN`、`FIRESTORE_DATABASE` | LIFF、同源與 Attendance Firestore 契約；Project ID 與 `attendance-location-key` enabled versions 由 ADC／Secret Manager 自動發現。 |
 | Cloud Run deployment | `APP_ENV`、`LINE_EVENT_MODE`、`LINE_API_TIMEOUT`、`LOG_LEVEL`、`LOG_FORMAT`、`LINE_BOT_DESTINATION`、`GCP_PROJECT_ID`、`TASK_QUEUE_NAME`、`TASK_WORKER_URL`、`TASK_OIDC_AUDIENCE`、`TASK_INVOKER_EMAIL` | 非敏感 production 設定；由 `cloudbuild.deploy.yaml` 寫入。 |
 | Cloud Run platform | `PORT`、`K_SERVICE` | 由平台注入，不手動設定。 |
 | 操作人員 shell | `LINEBOT_STAGING_PROJECT` | 只有隔離 staging 的 `ops events` 使用；不注入任一服務。 |

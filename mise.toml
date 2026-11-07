@@ -88,11 +88,11 @@ description = "Explicitly install pinned Skills and register the pinned Google m
 run = "go run ./cmd/codexplugins --install --register-google-marketplace"
 
 [tasks.plugins-install-standard]
-description = "Install the standard Codex skill plugins and register the Google plugin marketplace"
+description = "Install standard Codex skill plugins from pinned marketplace revisions"
 run = [
-  "codex plugin marketplace add mattpocock/skills",
-  "codex plugin add mattpocock-skills@mattpocock",
-  "codex plugin marketplace add addyosmani/agent-skills",
-  "codex plugin add agent-skills@agent-skills",
-  "codex plugin marketplace add google/skills",
+  "codex plugin marketplace add https://github.com/mattpocock/skills.git --ref 4ae2317ddb22b046e26455e4f9c9b3aaaf62212d",
+  "codex plugin add mattpocock-skills --marketplace mattpocock",
+  "codex plugin marketplace add https://github.com/addyosmani/agent-skills.git --ref 301b02b12bff98e4688e6984af6556802322bbde",
+  "codex plugin add agent-skills --marketplace agent-skills",
+  "codex plugin marketplace add https://github.com/google/skills.git --ref 993b979cf055de97dd15d4d5751d2672de561679",
 ]
