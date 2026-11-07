@@ -125,7 +125,7 @@ func TestRestoreDeliveryNormalizesLegacyTerminalLease(t *testing.T) {
 func TestRestoreDeliveryRejectsUnknownSchema(t *testing.T) {
 	t.Parallel()
 	key := "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-	_, err := restoreDelivery(key, storedJob{SchemaVersion: 3, State: string(valueobjects.StatusPending), ReplyUntil: time.Now().Add(time.Minute), Version: 1})
+	_, err := restoreDelivery(key, storedJob{SchemaVersion: 4, State: string(valueobjects.StatusPending), ReplyUntil: time.Now().Add(time.Minute), Version: 1})
 	if err == nil {
 		t.Fatal("restoreDelivery(unknown schema) error = nil")
 	}
@@ -146,5 +146,13 @@ func TestRestoreDeliveryRejectsMissingVersionInCurrentSchema(t *testing.T) {
 	_, err := restoreDelivery(key, storedJob{SchemaVersion: 2, State: string(valueobjects.StatusPending), ReplyUntil: time.Now().Add(time.Minute)})
 	if err == nil {
 		t.Fatal("restoreDelivery accepted a schema v2 document without a version")
+	}
+}
+
+func TestPersistedSchemaVersionDoesNotPromoteLegacyDocument(t *testing.T) {
+	for input, want := range map[int]int{0: 2, 2: 2, 3: 3} {
+		if got := persistedSchemaVersion(input); got != want {
+			t.Fatalf("persistedSchemaVersion(%d)=%d want %d", input, got, want)
+		}
 	}
 }

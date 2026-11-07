@@ -1,11 +1,13 @@
 package line
 
 import (
+	"context"
 	"errors"
 	"log/slog"
 	"net/http"
 	"time"
 
+	channelconnection "github.com/963sup/linebot-platform/internal/application/usecases/channel-connection"
 	messagingdelivery "github.com/963sup/linebot-platform/internal/application/usecases/messaging-delivery"
 	"github.com/line/line-bot-sdk-go/v8/linebot/webhook"
 )
@@ -18,11 +20,16 @@ type DurableHandler struct {
 	destination string
 	ingestor    *messagingdelivery.Ingestor
 	policy      messagingdelivery.ReplyPolicy
-	logger      *slog.Logger
+	scopes      interface {
+		ResolveMessagingDestination(context.Context, string) (channelconnection.ResolvedScope, error)
+	}
+	logger *slog.Logger
 }
 
-func NewDurableHandler(secret, destination string, ingestor *messagingdelivery.Ingestor, policy messagingdelivery.ReplyPolicy, logger *slog.Logger) http.Handler {
-	return &DurableHandler{secret: secret, destination: destination, ingestor: ingestor, policy: policy, logger: logger}
+func NewDurableHandler(secret, destination string, ingestor *messagingdelivery.Ingestor, policy messagingdelivery.ReplyPolicy, scopes interface {
+	ResolveMessagingDestination(context.Context, string) (channelconnection.ResolvedScope, error)
+}, logger *slog.Logger) http.Handler {
+	return &DurableHandler{secret: secret, destination: destination, ingestor: ingestor, policy: policy, scopes: scopes, logger: logger}
 }
 
 func (h *DurableHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -31,7 +38,7 @@ func (h *DurableHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
-	if h.secret == "" || h.destination == "" || h.ingestor == nil {
+	if h.secret == "" || h.destination == "" || h.ingestor == nil || h.scopes == nil {
 		http.Error(w, "durable LINE integration is not configured", http.StatusServiceUnavailable)
 		return
 	}
@@ -59,6 +66,14 @@ func (h *DurableHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "destination mismatch", http.StatusUnauthorized)
 		return
 	}
+	scope, err := h.scopes.ResolveMessagingDestination(r.Context(), parsed.Destination)
+	if err != nil || scope.MessagingDestination != parsed.Destination {
+		if h.logger != nil {
+			h.logger.Error("LINE channel scope resolution failed", "operation", "resolve_channel_scope")
+		}
+		http.Error(w, "channel scope unavailable", http.StatusServiceUnavailable)
+		return
+	}
 	accepted, ignoredStandby, ignoredUnsupported, stale := 0, 0, 0, 0
 	for _, event := range parsed.Events {
 		e, ok := event.(webhook.MessageEvent)
@@ -83,8 +98,13 @@ func (h *DurableHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "missing webhook event ID", http.StatusBadRequest)
 			return
 		}
-		reply := h.policy.ResponseForText(m.Text)
-		if err := h.ingestor.Ingest(r.Context(), h.destination, e.WebhookEventId, e.ReplyToken, time.UnixMilli(e.Timestamp), reply); err != nil {
+		inbound, err := inboundTextEvent(scope, e, m)
+		if err != nil {
+			http.Error(w, "invalid conversation event", http.StatusBadRequest)
+			return
+		}
+		reply := h.policy.ResponseForText(inbound.Text)
+		if err := h.ingestor.Ingest(r.Context(), deliveryContext(inbound), e.WebhookEventId, e.ReplyToken, time.UnixMilli(e.Timestamp), reply); err != nil {
 			if errors.Is(err, messagingdelivery.ErrEventTooOld) {
 				// ACK stale redelivery instead of inviting endless retries.
 				stale++

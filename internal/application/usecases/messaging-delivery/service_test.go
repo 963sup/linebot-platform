@@ -10,6 +10,13 @@ import (
 	valueobjects "github.com/963sup/linebot-platform/internal/domain/messaging-delivery/value-objects"
 )
 
+func testDeliveryContext() DeliveryContext {
+	return DeliveryContext{
+		TenantID: "tenant-a", ConnectionID: "line-main", ConversationKind: ConversationDirect,
+		ConversationReferenceSHA256: strings.Repeat("a", 64), ActorSHA256: strings.Repeat("a", 64),
+	}
+}
+
 type fakeStore struct {
 	recorded   map[string]DeliveryWorkItem
 	state      map[string]DeliveryState
@@ -126,6 +133,23 @@ func TestEventKeyIsStableAndPrivate(t *testing.T) {
 	}
 }
 
+func TestDeliveryContextRejectsMissingOrInvalidScope(t *testing.T) {
+	valid := testDeliveryContext()
+	if err := valid.Validate(); err != nil {
+		t.Fatal(err)
+	}
+	invalid := valid
+	invalid.ActorSHA256 = strings.Repeat("b", 64)
+	if err := invalid.Validate(); err == nil {
+		t.Fatal("direct conversation accepted a different actor")
+	}
+	invalid = valid
+	invalid.ConversationReferenceSHA256 = "provider-user-id"
+	if err := invalid.Validate(); err == nil {
+		t.Fatal("raw provider reference accepted")
+	}
+}
+
 func TestProcessorRejectsZeroEventKeyBeforeStoreAccess(t *testing.T) {
 	store := newFakeStore()
 	processor, err := NewProcessor(store, &fakeSender{})
@@ -159,10 +183,10 @@ func TestDuplicateReceiptDoesNotOverwriteAndRequeues(t *testing.T) {
 	}
 	i.now = func() time.Time { return time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC) }
 	msg := Message{Kind: KindText, Text: "fixed response"}
-	if err := i.Ingest(context.Background(), "channel", "event", "reply-one", i.now(), msg); err != nil {
+	if err := i.Ingest(context.Background(), testDeliveryContext(), "event", "reply-one", i.now(), msg); err != nil {
 		t.Fatal(err)
 	}
-	if err := i.Ingest(context.Background(), "channel", "event", "reply-two", i.now(), msg); err != nil {
+	if err := i.Ingest(context.Background(), testDeliveryContext(), "event", "reply-two", i.now(), msg); err != nil {
 		t.Fatal(err)
 	}
 	if len(store.recorded) != 1 || len(queue.keys) != 2 {
@@ -180,7 +204,7 @@ func TestProcessorSendsAtMostOnce(t *testing.T) {
 	now := time.Now().UTC()
 	i.now = func() time.Time { return now }
 	msg := Message{Kind: KindText, Text: "fixed response"}
-	if err := i.Ingest(context.Background(), "channel", "event", "reply", now, msg); err != nil {
+	if err := i.Ingest(context.Background(), testDeliveryContext(), "event", "reply", now, msg); err != nil {
 		t.Fatal(err)
 	}
 	p, _ := NewProcessor(store, sender)
@@ -205,7 +229,7 @@ func TestProcessorRecordsCompletionAfterReplyReturns(t *testing.T) {
 	base := time.Date(2026, 11, 5, 9, 0, 0, 0, time.UTC)
 	ingestor, _ := NewIngestor(store, queue)
 	ingestor.now = func() time.Time { return base }
-	if err := ingestor.Ingest(context.Background(), "channel", "timed-event", "reply", base, Message{Kind: KindText, Text: "fixed"}); err != nil {
+	if err := ingestor.Ingest(context.Background(), testDeliveryContext(), "timed-event", "reply", base, Message{Kind: KindText, Text: "fixed"}); err != nil {
 		t.Fatal(err)
 	}
 
@@ -242,7 +266,7 @@ func TestUnknownOutcomeDoesNotResend(t *testing.T) {
 	i, _ := NewIngestor(store, queue)
 	now := time.Now()
 	i.now = func() time.Time { return now }
-	if err := i.Ingest(context.Background(), "channel", "event", "reply", now, Message{Kind: KindText, Text: "fixed"}); err != nil {
+	if err := i.Ingest(context.Background(), testDeliveryContext(), "event", "reply", now, Message{Kind: KindText, Text: "fixed"}); err != nil {
 		t.Fatal(err)
 	}
 	p, _ := NewProcessor(store, sender)
@@ -301,7 +325,7 @@ func TestRedeliveryRefreshesOnlyNeverSentWork(t *testing.T) {
 	ingestor.now = func() time.Time { return current }
 	processor.now = func() time.Time { return current }
 	message := Message{Kind: KindText, Text: "fixed"}
-	if err := ingestor.Ingest(context.Background(), "channel", "redelivery", "token", first, message); err != nil {
+	if err := ingestor.Ingest(context.Background(), testDeliveryContext(), "redelivery", "token", first, message); err != nil {
 		t.Fatal(err)
 	}
 	key := queue.keys[0]
@@ -312,7 +336,7 @@ func TestRedeliveryRefreshesOnlyNeverSentWork(t *testing.T) {
 	if sender.calls != 0 || store.state[key.String()] != "expired" {
 		t.Fatal("expired reply was sent")
 	}
-	if err := ingestor.Ingest(context.Background(), "channel", "redelivery", "token", first, message); err != nil {
+	if err := ingestor.Ingest(context.Background(), testDeliveryContext(), "redelivery", "token", first, message); err != nil {
 		t.Fatal(err)
 	}
 	if store.state[key.String()] != "pending" {
@@ -321,7 +345,7 @@ func TestRedeliveryRefreshesOnlyNeverSentWork(t *testing.T) {
 	if err := processor.Process(context.Background(), key); err != nil {
 		t.Fatal(err)
 	}
-	if err := ingestor.Ingest(context.Background(), "channel", "redelivery", "token", first, message); err != nil {
+	if err := ingestor.Ingest(context.Background(), testDeliveryContext(), "redelivery", "token", first, message); err != nil {
 		t.Fatal(err)
 	}
 	if err := processor.Process(context.Background(), key); err != nil {
@@ -339,13 +363,13 @@ func TestRedeliveryWindowUsesOriginalTimestamp(t *testing.T) {
 	ingestor.now = func() time.Time { return now }
 	message := Message{Kind: KindText, Text: "fixed"}
 	old := now.Add(-20*time.Minute - time.Second)
-	if err := ingestor.Ingest(context.Background(), "channel", "too-old", "token", old, message); !errors.Is(err, ErrEventTooOld) {
+	if err := ingestor.Ingest(context.Background(), testDeliveryContext(), "too-old", "token", old, message); !errors.Is(err, ErrEventTooOld) {
 		t.Fatalf("expected ErrEventTooOld, got %v", err)
 	}
 	if len(store.recorded) != 0 || len(queue.keys) != 0 {
 		t.Fatal("late redelivery was accepted for send")
 	}
-	if err := ingestor.Ingest(context.Background(), "channel", "near-limit", "token", now.Add(-19*time.Minute-50*time.Second), message); err != nil {
+	if err := ingestor.Ingest(context.Background(), testDeliveryContext(), "near-limit", "token", now.Add(-19*time.Minute-50*time.Second), message); err != nil {
 		t.Fatal(err)
 	}
 	for _, job := range store.recorded {

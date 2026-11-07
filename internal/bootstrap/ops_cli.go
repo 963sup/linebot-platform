@@ -66,6 +66,9 @@ func buildOpsCLI(lineRuntimes lineRuntimeFactories) cli.Dependencies {
 		AutomationRequests: func(ctx context.Context, project string) (cli.AutomationRequestsRuntime, error) {
 			return newOperatorDomainRuntime(ctx, project)
 		},
+		ChannelConnections: func(ctx context.Context, project string) (cli.ChannelConnectionsRuntime, error) {
+			return newChannelConnectionsRuntime(ctx, project)
+		},
 		PushRuntime: func(token string) (cli.PushRuntime, error) {
 			runtime, err := lineRuntimes.messaging(token)
 			if err != nil {

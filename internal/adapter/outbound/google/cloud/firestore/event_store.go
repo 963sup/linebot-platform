@@ -26,19 +26,20 @@ const (
 )
 
 type storedJob struct {
-	SchemaVersion  int                       `firestore:"schema_version"`
-	ReplyToken     string                    `firestore:"reply_token"`
-	Message        messagingdelivery.Message `firestore:"message"`
-	ReplyUntil     time.Time                 `firestore:"reply_until"`
-	NextDispatchAt time.Time                 `firestore:"next_dispatch_at"`
-	OccurredAt     time.Time                 `firestore:"occurred_at"`
-	CreatedAt      time.Time                 `firestore:"created_at"`
-	UpdatedAt      time.Time                 `firestore:"updated_at"`
-	ExpiresAt      time.Time                 `firestore:"expires_at"`
-	State          string                    `firestore:"state"`
-	LeaseID        string                    `firestore:"lease_id"`
-	LeaseUntil     time.Time                 `firestore:"lease_until"`
-	Version        int64                     `firestore:"version"`
+	SchemaVersion  int                               `firestore:"schema_version"`
+	Context        messagingdelivery.DeliveryContext `firestore:"delivery_context,omitempty"`
+	ReplyToken     string                            `firestore:"reply_token"`
+	Message        messagingdelivery.Message         `firestore:"message"`
+	ReplyUntil     time.Time                         `firestore:"reply_until"`
+	NextDispatchAt time.Time                         `firestore:"next_dispatch_at"`
+	OccurredAt     time.Time                         `firestore:"occurred_at"`
+	CreatedAt      time.Time                         `firestore:"created_at"`
+	UpdatedAt      time.Time                         `firestore:"updated_at"`
+	ExpiresAt      time.Time                         `firestore:"expires_at"`
+	State          string                            `firestore:"state"`
+	LeaseID        string                            `firestore:"lease_id"`
+	LeaseUntil     time.Time                         `firestore:"lease_until"`
+	Version        int64                             `firestore:"version"`
 }
 
 type Store struct{ client *sdk.Client }
@@ -65,7 +66,7 @@ func (s *Store) Record(ctx context.Context, job messagingdelivery.DeliveryWorkIt
 	if err := ctx.Err(); err != nil {
 		return false, err
 	}
-	if !validKey(job.Key) || job.ReplyToken == "" || job.ReplyUntil.IsZero() {
+	if !validKey(job.Key) || job.Context.Validate() != nil || job.ReplyToken == "" || job.ReplyUntil.IsZero() {
 		return false, errors.New("invalid event job")
 	}
 	inbox := s.client.Collection(inboxCollection).Doc(job.Key)
@@ -105,7 +106,7 @@ func (s *Store) Record(ctx context.Context, job messagingdelivery.DeliveryWorkIt
 					{Path: "lease_id", Value: ""},
 					{Path: "lease_until", Value: time.Time{}},
 					{Path: "updated_at", Value: job.CreatedAt},
-					{Path: "schema_version", Value: 2},
+					{Path: "schema_version", Value: persistedSchemaVersion(saved.SchemaVersion)},
 					{Path: "version", Value: version},
 				})
 			}
@@ -121,7 +122,8 @@ func (s *Store) Record(ctx context.Context, job messagingdelivery.DeliveryWorkIt
 			return err
 		}
 		if err := tx.Create(outbox, storedJob{
-			SchemaVersion:  2,
+			SchemaVersion:  3,
+			Context:        job.Context,
 			ReplyToken:     job.ReplyToken,
 			Message:        job.Message,
 			ReplyUntil:     job.ReplyUntil,
@@ -182,7 +184,7 @@ func (s *Store) Claim(ctx context.Context, key, leaseID string, now time.Time) (
 					if versionErr != nil {
 						return versionErr
 					}
-					return tx.Update(ref, []sdk.Update{{Path: "state", Value: string(delivery.Status())}, {Path: "reply_token", Value: ""}, {Path: "updated_at", Value: now}, {Path: "schema_version", Value: 2}, {Path: "version", Value: version}})
+					return tx.Update(ref, []sdk.Update{{Path: "state", Value: string(delivery.Status())}, {Path: "reply_token", Value: ""}, {Path: "updated_at", Value: now}, {Path: "schema_version", Value: persistedSchemaVersion(saved.SchemaVersion)}, {Path: "version", Value: version}})
 				}
 				return nil
 			}
@@ -195,13 +197,13 @@ func (s *Store) Claim(ctx context.Context, key, leaseID string, now time.Time) (
 				{Path: "lease_id", Value: delivery.ClaimID()},
 				{Path: "lease_until", Value: delivery.ClaimUntil()},
 				{Path: "updated_at", Value: now},
-				{Path: "schema_version", Value: 2},
+				{Path: "schema_version", Value: persistedSchemaVersion(saved.SchemaVersion)},
 				{Path: "version", Value: version},
 			}); err != nil {
 				return err
 			}
 			job = messagingdelivery.DeliveryWorkItem{
-				Key: key, ReplyToken: saved.ReplyToken, Message: saved.Message,
+				Key: key, Context: saved.Context, ReplyToken: saved.ReplyToken, Message: saved.Message,
 				ReplyUntil: saved.ReplyUntil, CreatedAt: saved.CreatedAt,
 			}
 			claimed = true
@@ -215,7 +217,7 @@ func (s *Store) Claim(ctx context.Context, key, leaseID string, now time.Time) (
 				if versionErr != nil {
 					return versionErr
 				}
-				return tx.Update(ref, []sdk.Update{{Path: "state", Value: string(delivery.Status())}, {Path: "reply_token", Value: ""}, {Path: "lease_id", Value: ""}, {Path: "lease_until", Value: time.Time{}}, {Path: "updated_at", Value: now}, {Path: "schema_version", Value: 2}, {Path: "version", Value: version}})
+				return tx.Update(ref, []sdk.Update{{Path: "state", Value: string(delivery.Status())}, {Path: "reply_token", Value: ""}, {Path: "lease_id", Value: ""}, {Path: "lease_until", Value: time.Time{}}, {Path: "updated_at", Value: now}, {Path: "schema_version", Value: persistedSchemaVersion(saved.SchemaVersion)}, {Path: "version", Value: version}})
 			}
 			return messagingdelivery.ErrDeliveryInFlight
 		}
@@ -265,7 +267,7 @@ func (s *Store) Complete(ctx context.Context, key, leaseID string, outcome messa
 			{Path: "lease_id", Value: ""},
 			{Path: "lease_until", Value: time.Time{}},
 			{Path: "updated_at", Value: completedAt},
-			{Path: "schema_version", Value: 2},
+			{Path: "schema_version", Value: persistedSchemaVersion(saved.SchemaVersion)},
 			{Path: "version", Value: version},
 		})
 	})
@@ -393,7 +395,7 @@ func (s *Store) reserveDispatch(ctx context.Context, ref *sdk.DocumentRef, now t
 				{Path: "state", Value: string(delivery.Status())},
 				{Path: "reply_token", Value: ""},
 				{Path: "updated_at", Value: now},
-				{Path: "schema_version", Value: 2},
+				{Path: "schema_version", Value: persistedSchemaVersion(saved.SchemaVersion)},
 				{Path: "version", Value: version},
 			})
 		}
@@ -447,14 +449,14 @@ func (s *Store) reconcile(ctx context.Context, ref *sdk.DocumentRef, now time.Ti
 			{Path: "lease_id", Value: ""},
 			{Path: "lease_until", Value: time.Time{}},
 			{Path: "updated_at", Value: now},
-			{Path: "schema_version", Value: 2},
+			{Path: "schema_version", Value: persistedSchemaVersion(saved.SchemaVersion)},
 			{Path: "version", Value: version},
 		})
 	})
 }
 
 func restoreDelivery(key string, saved storedJob) (aggregates.Delivery, error) {
-	if saved.SchemaVersion != 0 && saved.SchemaVersion != 2 {
+	if saved.SchemaVersion != 0 && saved.SchemaVersion != 2 && saved.SchemaVersion != 3 {
 		return aggregates.Delivery{}, errors.New("unsupported delivery schema version")
 	}
 	id, err := valueobjects.ParseDeliveryID(key)
@@ -478,6 +480,13 @@ func restoreDelivery(key string, saved storedJob) (aggregates.Delivery, error) {
 		claimID, claimUntil = "", time.Time{}
 	}
 	return aggregates.Restore(id, valueobjects.Status(saved.State), saved.ReplyUntil, claimID, claimUntil, version)
+}
+
+func persistedSchemaVersion(saved int) int {
+	if saved == 3 {
+		return 3
+	}
+	return 2
 }
 
 func storedVersion(version uint64) (int64, error) {

@@ -71,7 +71,7 @@ func NewIngestor(store EventRecorder, queue EventQueue) (*Ingestor, error) {
 // Queue is called even for duplicates: this repairs a crash after the Firestore
 // commit but before CreateTask. A separate dispatcher repairs missed enqueueing
 // when no LINE redelivery arrives.
-func (s *Ingestor) Ingest(ctx context.Context, channel, eventID, replyToken string, occurredAt time.Time, message Message) error {
+func (s *Ingestor) Ingest(ctx context.Context, deliveryContext DeliveryContext, eventID, replyToken string, occurredAt time.Time, message Message) error {
 	if ctx == nil {
 		return errors.New("context is required")
 	}
@@ -81,10 +81,13 @@ func (s *Ingestor) Ingest(ctx context.Context, channel, eventID, replyToken stri
 	if strings.TrimSpace(replyToken) == "" {
 		return errors.New("reply token is required")
 	}
+	if err := deliveryContext.Validate(); err != nil {
+		return err
+	}
 	if err := message.Validate(); err != nil {
 		return err
 	}
-	key, err := NewEventKey(channel, eventID)
+	key, err := NewEventKey(deliveryContext.TenantID+"\x00"+deliveryContext.ConnectionID, eventID)
 	if err != nil {
 		return err
 	}
@@ -104,7 +107,7 @@ func (s *Ingestor) Ingest(ctx context.Context, channel, eventID, replyToken stri
 		replyUntil = eventLimit
 	}
 	if _, err := s.store.Record(ctx, DeliveryWorkItem{
-		Key: key.String(), ReplyToken: replyToken, Message: message,
+		Key: key.String(), Context: deliveryContext, ReplyToken: replyToken, Message: message,
 		CreatedAt: now, OccurredAt: occurredAt, ReplyUntil: replyUntil,
 	}); err != nil {
 		return err

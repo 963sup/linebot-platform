@@ -10,8 +10,15 @@ import (
 	"testing"
 	"time"
 
+	channelconnection "github.com/963sup/linebot-platform/internal/application/usecases/channel-connection"
 	messagingdelivery "github.com/963sup/linebot-platform/internal/application/usecases/messaging-delivery"
 )
+
+type fixedScopeResolver struct{ destination string }
+
+func (r fixedScopeResolver) ResolveMessagingDestination(context.Context, string) (channelconnection.ResolvedScope, error) {
+	return channelconnection.ResolvedScope{TenantID: "tenant-a", ConnectionID: "line-main", MessagingDestination: r.destination}, nil
+}
 
 type persisted struct {
 	seen map[string]messagingdelivery.DeliveryWorkItem
@@ -52,7 +59,7 @@ func TestDurableWebhookSignatureDestinationDedupAndEnqueueFailure(t *testing.T) 
 	queue := &workQueue{}
 	ingestor, _ := messagingdelivery.NewIngestor(store, queue)
 	policy, _ := messagingdelivery.NewReplyPolicy("https://miniapp.line.me/2000000000-example")
-	h := NewDurableHandler(secret, destination, ingestor, policy, nil)
+	h := NewDurableHandler(secret, destination, ingestor, policy, fixedScopeResolver{destination}, nil)
 	body := fmt.Sprintf(`{"destination":"Uxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx","events":[{"type":"message","mode":"active","timestamp":%d,"webhookEventId":"01H00ABCDEF0123456789ABCDE","deliveryContext":{"isRedelivery":false},"source":{"type":"group","groupId":"Cxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx","userId":"Uxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"},"replyToken":"reply-token","message":{"id":"1234567890123","type":"text","text":"MINI App"}}]}`, time.Now().UnixMilli())
 	for n := 0; n < 2; n++ {
 		w := httptest.NewRecorder()
@@ -67,6 +74,12 @@ func TestDurableWebhookSignatureDestinationDedupAndEnqueueFailure(t *testing.T) 
 	for _, record := range store.seen {
 		if record.Message.Kind != messagingdelivery.KindFlex || record.Message.Flex.Action == nil || record.Message.Flex.Action.URI != "https://miniapp.line.me/2000000000-example" {
 			t.Fatalf("unexpected persisted reply: %#v", record.Message)
+		}
+		if record.Context.TenantID != "tenant-a" || record.Context.ConnectionID != "line-main" ||
+			record.Context.ConversationKind != messagingdelivery.ConversationGroup ||
+			record.Context.ConversationReferenceSHA256 == "Cxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" ||
+			record.Context.ActorSHA256 == "Uxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" {
+			t.Fatalf("unsafe or missing tenant conversation scope: %#v", record.Context)
 		}
 	}
 	queue.fail = true
@@ -89,7 +102,7 @@ func TestDurableWebhookIgnoresStandbyAndRejectsMissingDeliveryContext(t *testing
 	queue := &workQueue{}
 	ingestor, _ := messagingdelivery.NewIngestor(store, queue)
 	policy, _ := messagingdelivery.NewReplyPolicy("")
-	handler := NewDurableHandler(secret, destination, ingestor, policy, nil)
+	handler := NewDurableHandler(secret, destination, ingestor, policy, fixedScopeResolver{destination}, nil)
 	base := fmt.Sprintf(`{"destination":"%s","events":[{"type":"message","mode":"%%s","timestamp":%d,"webhookEventId":"01H00ABCDEF0123456789ABCDE",%%s"source":{"type":"user","userId":"%s"},"replyToken":"reply-token","message":{"id":"1234567890123","type":"text","text":"hello"}}]}`, destination, time.Now().UnixMilli(), destination)
 
 	standby := fmt.Sprintf(base, "standby", `"deliveryContext":{"isRedelivery":false},`)

@@ -14,6 +14,7 @@
 | customer-segmentation | supporting | Define recipients independently from provider audience resources. |
 | platform-commodities | generic | Supply replaceable persistence scheduling secrets storage transport identifiers and governance tooling without creating business Contexts. |
 | reliable-customer-communication | core | Make customer communication reliable despite duplicate input and uncertain provider outcomes. |
+| tenant-channel-administration | supporting | Keep each LINE channel connection inside one tenant data and authorization boundary. |
 
 ## Contexts
 
@@ -28,6 +29,7 @@
 | membership | customer-experience | candidate | hypothesis | low | read-model | supporting | unassigned | Not Verified |
 | messaging-delivery | reliable-customer-communication | candidate | hypothesis | medium | domain-model | core | linebot-platform | internal/domain/messaging-delivery |
 | promotion | customer-experience | candidate | hypothesis | low | domain-model | supporting | unassigned | internal/domain/promotion |
+| tenant-administration | tenant-channel-administration | candidate | hypothesis | medium | domain-model | supporting | linebot-platform | internal/domain/tenant-administration |
 | workspace-automation | business-automation | candidate | hypothesis | medium | domain-model | supporting | linebot-platform | internal/domain/workspace-automation |
 
 ## Aggregates and Data Ownership
@@ -57,6 +59,9 @@
 | promotion | Promotion | aggregate | Offer rules and lifecycle transition atomically. | unassigned |
 | promotion | promotion-definition | data | local-authoritative | promotion |
 | promotion | provider-coupon-state | data | provider-authoritative | line-provider |
+| tenant-administration | ChannelConnection | aggregate | A messaging destination belongs to one tenant channel connection. | linebot-platform |
+| tenant-administration | channel-connection-state | data | local-authoritative | tenant-administration |
+| tenant-administration | provider-channel-secret | data | provider-authoritative | line-provider |
 | workspace-automation | AutomationRequest | aggregate | Intent approval and admission state change atomically. | linebot-platform |
 | workspace-automation | automation-audit | data | local-authoritative | workspace-automation |
 | workspace-automation | workspace-resource | data | provider-authoritative | google-workspace |
@@ -77,6 +82,7 @@
 | messaging-delivery | MSG-001 | A delivery can be claimed for network send only once within its active lease. |
 | messaging-delivery | MSG-002 | Transport ambiguity becomes unknown-outcome rather than known failure. |
 | promotion | PRO-001 | A closed promotion cannot issue a new delivery intent. |
+| tenant-administration | TEN-001 | One valid LINE messaging destination resolves to one tenant channel connection. |
 | workspace-automation | WSA-001 | No action executes without an eligible account and required scope. |
 
 ## Relationships
@@ -105,6 +111,7 @@ flowchart LR
     ctx_membership["membership\ncandidate"]
     ctx_messaging_delivery["messaging-delivery\ncandidate"]
     ctx_promotion["promotion\ncandidate"]
+    ctx_tenant_administration["tenant-administration\ncandidate"]
     ctx_workspace_automation["workspace-automation\ncandidate"]
     ctx_audience -->|RecipientSelection / synchronous / published-language / hypothesis / medium| ctx_messaging_delivery
     ctx_contact_directory -->|RecipientReference / synchronous / published-language / hypothesis / medium| ctx_messaging_delivery
@@ -148,6 +155,8 @@ flowchart LR
 | promotion | eligibility-decision | Decision whether a subject may receive an offer. |
 | promotion | promotion | Time-bounded offer with an explicit lifecycle. |
 | promotion | promotion-delivery-intent | Approved promotion content prepared for delivery. |
+| tenant-administration | channel-connection | Tenant-owned association to one external provider channel identity. |
+| tenant-administration | tenant | Isolation boundary for customer data channel connections and authorization. |
 | workspace-automation | automation-request | User-authorized intent to produce a business outcome. |
 | workspace-automation | execution-outcome | Recorded result including unknown remote outcome. |
 | workspace-automation | workspace-action | Provider-independent action within an approved request. |

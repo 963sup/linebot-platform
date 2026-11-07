@@ -9,6 +9,7 @@ import (
 	linein "github.com/963sup/linebot-platform/internal/adapter/inbound/http/line"
 	queueout "github.com/963sup/linebot-platform/internal/adapter/outbound/google/cloud/cloudtasks"
 	storeout "github.com/963sup/linebot-platform/internal/adapter/outbound/google/cloud/firestore"
+	channelconnection "github.com/963sup/linebot-platform/internal/application/usecases/channel-connection"
 	ingestion "github.com/963sup/linebot-platform/internal/application/usecases/messaging-delivery"
 	queueinfra "github.com/963sup/linebot-platform/internal/infrastructure/google/cloud/cloudtasks"
 	storeinfra "github.com/963sup/linebot-platform/internal/infrastructure/google/cloud/firestore"
@@ -33,6 +34,14 @@ func configureDurableWebhook(cfg Config, logger *slog.Logger, mux *http.ServeMux
 	if err != nil {
 		return err
 	}
+	connections, err := storeout.NewChannelConnectionRepository(db)
+	if err != nil {
+		return err
+	}
+	scopes, err := channelconnection.NewResolver(connections)
+	if err != nil {
+		return err
+	}
 	queue, err := queueout.NewQueue(queueClient, cfg.Durable.QueueName, cfg.Durable.WorkerURL,
 		cfg.Durable.OIDCAudience, cfg.Durable.InvokerEmail)
 	if err != nil {
@@ -46,6 +55,6 @@ func configureDurableWebhook(cfg Config, logger *slog.Logger, mux *http.ServeMux
 	if err != nil {
 		return err
 	}
-	mux.Handle("/webhook/line", linein.NewDurableHandler(cfg.Secrets.ChannelSecret, cfg.Durable.BotDestination, ingestor, policy, logger))
+	mux.Handle("/webhook/line", linein.NewDurableHandler(cfg.Secrets.ChannelSecret, cfg.Durable.BotDestination, ingestor, policy, scopes, logger))
 	return nil
 }

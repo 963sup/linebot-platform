@@ -3,6 +3,7 @@ schema_version: 2
 subdomains:
   - {id: reliable-customer-communication, classification: core, decision_status: hypothesis, confidence: medium, purpose: "Make customer communication reliable despite duplicate input and uncertain provider outcomes.", evidence: [internal/application/usecases/messaging-delivery/service.go]}
   - {id: account-identity-and-authorization, classification: supporting, decision_status: implemented, confidence: high, purpose: "Maintain verified account-link identity and authorization eligibility without owning credentials.", evidence: [internal/domain/identity/aggregates/account_link.go]}
+  - {id: tenant-channel-administration, classification: supporting, decision_status: hypothesis, confidence: medium, purpose: "Keep each LINE channel connection inside one tenant data and authorization boundary.", evidence: [internal/domain/tenant-administration/aggregates/channel_connection.go]}
   - {id: customer-segmentation, classification: supporting, decision_status: hypothesis, confidence: medium, purpose: "Define recipients independently from provider audience resources.", evidence: [internal/domain/audience/aggregates/audience_definition.go, internal/application/usecases/audience/service.go]}
   - {id: customer-experience, classification: supporting, decision_status: hypothesis, confidence: low, purpose: "Coordinate presentation promotion and membership without merging their lifecycles.", evidence: [internal/application/usecases/experience-presentation, internal/application/usecases/promotion, internal/application/usecases/membership]}
   - {id: business-automation, classification: supporting, decision_status: hypothesis, confidence: medium, purpose: "Execute user-authorized business outcomes against replaceable workspace providers.", evidence: [internal/application/usecases/workspace-automation]}
@@ -41,6 +42,33 @@ contexts:
     capabilities: [authorize-workspace-account, disconnect-account-link, evaluate-google-api-eligibility]
     adrs: [docs/architecture/decisions/0001-strategic-domain-model-authority.md]
     evidence: [internal/domain/identity/aggregates/account_link_test.go, internal/domain/identity/entities/google_connection_test.go]
+
+  - id: tenant-administration
+    subdomain: tenant-channel-administration
+    status: candidate
+    decision_status: hypothesis
+    confidence: medium
+    model_kind: domain-model
+    classification: supporting
+    owner: linebot-platform
+    purpose: Own the tenant boundary and the provider channel connections authorized to operate inside it.
+    non_responsibilities: [Authenticate people., Verify LINE webhook signatures., Store provider credentials., Own conversations or message delivery.]
+    package: internal/domain/tenant-administration
+    language:
+      - {term: tenant, definition: "Isolation boundary for customer data channel connections and authorization.", forbidden_aliases: [line-channel], code_symbols: [internal/domain/tenant-administration/value-objects.TenantID]}
+      - {term: channel-connection, definition: "Tenant-owned association to one external provider channel identity.", forbidden_aliases: [bot-config], code_symbols: [internal/domain/tenant-administration/aggregates.ChannelConnection]}
+    owns: [tenant-id, channel-connection, messaging-destination-binding]
+    aggregates:
+      - {name: ChannelConnection, root: channel-connection, consistency_boundary: "A messaging destination belongs to one tenant channel connection.", owns: [messaging-destination-binding], repository: internal/domain/tenant-administration/repositories.ChannelConnectionRepository, confidence: medium, evidence: [internal/domain/tenant-administration/aggregates/channel_connection.go, internal/domain/tenant-administration/aggregates/channel_connection_test.go]}
+    data_ownership:
+      - {resource: channel-connection-state, authority: local-authoritative, owner: tenant-administration, write_policy: "Only Tenant Administration may register a destination binding.", evidence: [internal/adapter/outbound/google/cloud/firestore/channel_connection_repository.go]}
+      - {resource: provider-channel-secret, authority: provider-authoritative, owner: line-provider, write_policy: "Credentials stay outside the Domain and are resolved at the adapter boundary.", evidence: [internal/bootstrap/durable.go]}
+    invariants:
+      - {id: TEN-001, statement: "One valid LINE messaging destination resolves to one tenant channel connection.", evidence: [internal/domain/tenant-administration/aggregates/channel_connection_test.go]}
+    capabilities: [resolve-channel-scope]
+    open_questions: [Define tenant membership and the controlled channel-connection registration workflow.]
+    adrs: [docs/architecture/decisions/0006-tenant-channel-conversation-skeleton.md]
+    evidence: [internal/application/usecases/channel-connection/resolver.go, internal/adapter/inbound/http/line/event_acl.go]
 
   - id: messaging-delivery
     subdomain: reliable-customer-communication

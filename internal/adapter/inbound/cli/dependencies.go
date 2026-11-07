@@ -282,6 +282,17 @@ type AutomationRequestsRuntime interface {
 	Close() error
 }
 
+type ChannelConnectionSummary struct {
+	TenantID             string `json:"tenant_id"`
+	ConnectionID         string `json:"connection_id"`
+	MessagingDestination string `json:"messaging_destination"`
+}
+
+type ChannelConnectionsRuntime interface {
+	Register(context.Context, string, string, string) (ChannelConnectionSummary, error)
+	Close() error
+}
+
 // Dependencies is the immutable set of runtime factories supplied by the
 // composition root for one CLI invocation.
 type Dependencies struct {
@@ -312,6 +323,7 @@ type Dependencies struct {
 	InteractionSurfaces       func(context.Context, string) (InteractionSurfacesRuntime, error)
 	Promotions                func(context.Context, string) (PromotionsRuntime, error)
 	AutomationRequests        func(context.Context, string) (AutomationRequestsRuntime, error)
+	ChannelConnections        func(context.Context, string) (ChannelConnectionsRuntime, error)
 }
 
 func dependency(values []Dependencies) Dependencies {
