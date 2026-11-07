@@ -25,6 +25,7 @@ paths:
     get:
       tags: [Mini App]
       security: [{lineIDToken: []}]
+      description: Verifies the LIFF ID token on the server. The token and LINE subject are never returned.
       responses:
         '200':
           description: Server-verified LINE session
@@ -39,7 +40,9 @@ paths:
         '401': {description: Invalid or missing LINE ID token}
         '403': {description: Disallowed browser origin}
         '405': {description: Method not allowed}
+        '408': {description: Request cancelled while verifying identity}
         '503': {description: LINE identity verification unavailable}
+        '504': {description: LINE identity verification deadline exceeded}
 components:
   securitySchemes:
     lineIDToken:

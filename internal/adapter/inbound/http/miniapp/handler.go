@@ -2,7 +2,6 @@
 package miniapp
 
 import (
-	"context"
 	"embed"
 	"encoding/json"
 	"errors"
@@ -10,20 +9,15 @@ import (
 	"net/url"
 	"strings"
 	"time"
-
-	linesession "github.com/963sup/linebot-platform/internal/application/usecases/line-session"
 )
 
 //go:embed assets/*
 var assets embed.FS
 
 type Config struct{ LIFFID, AllowedOrigin string }
-type SessionVerifier interface {
-	Verify(context.Context, string) (linesession.Identity, error)
-}
 type Handler struct {
-	verifier              SessionVerifier
-	liffID, allowedOrigin string
+	liffID         string
+	sessionHandler http.Handler
 }
 
 func New(config Config, verifier SessionVerifier) (*Handler, error) {
@@ -35,7 +29,9 @@ func New(config Config, verifier SessionVerifier) (*Handler, error) {
 	if err != nil || origin == nil || (origin.Scheme != "https" && !localHTTP) || origin.Host == "" || origin.User != nil || config.AllowedOrigin != origin.Scheme+"://"+origin.Host {
 		return nil, errors.New("miniapp allowed origin must be exact HTTPS or loopback HTTP")
 	}
-	return &Handler{verifier: verifier, liffID: config.LIFFID, allowedOrigin: origin.String()}, nil
+	handler := &Handler{liffID: config.LIFFID}
+	handler.sessionHandler = authenticator{verifier: verifier, allowedOrigin: origin.String()}.wrap(http.HandlerFunc(handler.session))
+	return handler, nil
 }
 
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -62,7 +58,11 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case "/miniapp/assets/app.js":
 		h.asset(w, r, "assets/app.js", "text/javascript; charset=utf-8")
 	case "/miniapp/api/v1/session":
-		h.session(w, r)
+		if r.Method != http.MethodGet {
+			writeError(w, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed")
+			return
+		}
+		h.sessionHandler.ServeHTTP(w, r)
 	default:
 		writeError(w, 404, "not_found", "resource not found")
 	}
@@ -90,52 +90,15 @@ func (h *Handler) asset(w http.ResponseWriter, r *http.Request, name, contentTyp
 	_, _ = w.Write(data)
 }
 func (h *Handler) session(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		writeError(w, 405, "method_not_allowed", "method not allowed")
-		return
-	}
-	if !h.originAllowed(r) {
-		writeError(w, 403, "forbidden", "request origin is not allowed")
-		return
-	}
-	token, ok := bearerToken(r.Header.Values("Authorization"))
+	identity, ok := IdentityFromContext(r.Context())
 	if !ok {
-		writeError(w, 401, "unauthorized", "authentication is required")
-		return
-	}
-	identity, err := h.verifier.Verify(r.Context(), token)
-	if err != nil {
-		switch {
-		case errors.Is(err, linesession.ErrUnauthenticated):
-			writeError(w, 401, "unauthorized", "authentication is required")
-		case errors.Is(err, context.Canceled):
-			writeError(w, 408, "request_cancelled", "request was cancelled")
-		case errors.Is(err, context.DeadlineExceeded):
-			writeError(w, 504, "deadline_exceeded", "request deadline exceeded")
-		default:
-			writeError(w, 503, "identity_unavailable", "identity verification is unavailable")
-		}
+		writeError(w, http.StatusInternalServerError, "internal_error", "request could not be completed")
 		return
 	}
 	writeJSON(w, 200, struct {
 		Authenticated bool   `json:"authenticated"`
 		ValidatedAt   string `json:"validatedAt"`
 	}{true, identity.ValidatedAt.UTC().Format(time.RFC3339Nano)})
-}
-func (h *Handler) originAllowed(r *http.Request) bool {
-	origins := r.Header.Values("Origin")
-	allowed := len(origins) == 1 && origins[0] == h.allowedOrigin
-	if len(origins) == 0 {
-		allowed = len(r.Header.Values("Sec-Fetch-Site")) == 1 && r.Header.Get("Sec-Fetch-Site") == "same-origin"
-	}
-	return allowed && (len(r.Header.Values("Sec-Fetch-Site")) == 0 || r.Header.Get("Sec-Fetch-Site") == "same-origin")
-}
-func bearerToken(values []string) (string, bool) {
-	if len(values) != 1 || !strings.HasPrefix(values[0], "Bearer ") {
-		return "", false
-	}
-	token := strings.TrimPrefix(values[0], "Bearer ")
-	return token, token != "" && token == strings.TrimSpace(token) && !strings.ContainsAny(token, "\t ,") && len(token) <= 4096
 }
 
 type errorEnvelope struct {
