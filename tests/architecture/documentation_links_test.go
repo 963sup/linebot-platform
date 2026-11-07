@@ -65,6 +65,13 @@ func TestArchitectureAuthorityAndRelativeLinks(t *testing.T) {
 			if target == "" {
 				continue
 			}
+			// Skills are host-provided development guidance, not source required
+			// by the production build. Their files are intentionally excluded from
+			// Cloud Build uploads, so do not make this runtime-source test depend
+			// on a local agent installation.
+			if strings.HasPrefix(target, ".agents/") {
+				continue
+			}
 			resolved := filepath.Clean(filepath.Join(filepath.Dir(path), filepath.FromSlash(target)))
 			if _, err := os.Stat(resolved); err != nil {
 				t.Errorf("%s has broken relative link %q: %v", path, target, err)

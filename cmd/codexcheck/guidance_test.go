@@ -49,17 +49,6 @@ func TestGuidanceTracksRegisteredCapabilities(t *testing.T) {
 			t.Errorf("full-read audit missing %q", marker)
 		}
 	}
-	method := read(".agents/skills/repository-engineering-method/SKILL.md")
-	for _, marker := range []string{
-		"Classify scope first", "Localized", "Cross-package / external contract", "Repository-wide architecture",
-		"samber/cc-skills-golang", "samber/cc-skills", "Context7", "provider MCP", "Agents/subagents",
-		"DDD", "Hexagonal Architecture", "Go Idioms", "KISS", "YAGNI", "DRY",
-		"pinned Mise", "unavailable", "Not Applicable",
-	} {
-		if !strings.Contains(method, marker) {
-			t.Errorf("repository engineering method missing %q", marker)
-		}
-	}
 	rootGuidance := read("AGENTS.md")
 	for _, marker := range []string{
 		"repository-engineering-method/SKILL.md", "Repomix inventories", "Graphify explores",
@@ -133,7 +122,7 @@ func TestGuidanceTracksRegisteredCapabilities(t *testing.T) {
 			t.Errorf("acceptance guidance missing current baseline %q", want)
 		}
 	}
-	for _, path := range []string{"AGENTS.md", "docs/ai/agents.md", ".agents/skills/agent-tool-preflight/SKILL.md"} {
+	for _, path := range []string{"AGENTS.md", "docs/ai/agents.md"} {
 		guidance := read(path)
 		for _, want := range []string{"includePatterns", "**/*.md", "**/*.{go,mod,sum}", "Not Verified"} {
 			if !strings.Contains(guidance, want) {
