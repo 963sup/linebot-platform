@@ -17,7 +17,7 @@
 | `LINE_EVENT_MODE` | `durable` | optional `durable` only | Worker always runs in durable mode; explicit `sync` or unknown values fail startup |
 | `LINE_MESSAGING_API_CHANNEL_SECRET` | required | n/a | Verify LINE raw-body signature |
 | `LINE_MESSAGING_API_CHANNEL_ACCESS_TOKEN` | **forbidden** | required | Only the private worker is permitted to send LINE messages |
-| `LINE_MESSAGING_API_BOT_USER_ID` | required | required | Bot destination ID for event isolation and event-key derivation |
+| `LINE_MESSAGING_API_BOT_USER_ID` | required | n/a | Webhook destination isolation and event-key derivation; Worker receives resolved delivery context |
 | `GCP_PROJECT_ID` | required | required | Dedicated staging project |
 | `TASK_QUEUE_NAME` | required | required | Exactly projects/PROJECT/locations/REGION/queues/NAME; PROJECT must equal GCP_PROJECT_ID, QUEUE ID must be 1–100 ASCII letters/digits/hyphens |
 | `TASK_WORKER_URL` | required | required | HTTPS worker URL ending in /tasks/v2/line-reply |

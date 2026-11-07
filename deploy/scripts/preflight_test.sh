@@ -25,6 +25,8 @@ grep -Fq 'MINI App deployment configuration does not match approved staging evid
 grep -Fq 'require_project_role "${MINIAPP_SERVICE_ACCOUNT}" roles/datastore.user' "${script}"
 grep -Fq 'miniapp_identity' "${script}"
 grep -Fq 'reject_secret_role line-messaging-api-channel-secret "${MINIAPP_SERVICE_ACCOUNT}"' "${script}"
+grep -Fq 'gcloud secrets versions list "${secret}"' "${script}"
+grep -Fq -- "--filter='state=ENABLED' --limit=1" "${script}"
 
 grep -Fq 'TARGET_PERCENT must be one of 10, 50, 100' "${promotion}"
 grep -Fq '.smoke_passed == true' "${promotion}"

@@ -139,7 +139,7 @@ func loadRuntimeConfig(role RuntimeRole, getenv func(string) string) (Config, er
 		if cfg.Secrets.MessagingAPIChannelAccessToken == "" {
 			return Config{}, errors.New("worker requires LINE_MESSAGING_API_CHANNEL_ACCESS_TOKEN")
 		}
-		cfg.Durable, err = loadDurable(getenv)
+		cfg.Durable, err = loadDurable(getenv, role)
 		if err != nil {
 			return Config{}, err
 		}
@@ -159,7 +159,7 @@ func loadRuntimeConfig(role RuntimeRole, getenv func(string) string) (Config, er
 		if cfg.Secrets.MessagingAPIChannelAccessToken != "" {
 			return Config{}, errors.New("public durable webhook must not hold LINE_MESSAGING_API_CHANNEL_ACCESS_TOKEN")
 		}
-		cfg.Durable, err = loadDurable(getenv)
+		cfg.Durable, err = loadDurable(getenv, role)
 		if err != nil {
 			return Config{}, err
 		}

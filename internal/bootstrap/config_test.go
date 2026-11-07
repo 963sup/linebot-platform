@@ -120,12 +120,12 @@ func TestDurableConfigRequiresAllCredentialsAndEndpoints(t *testing.T) {
 	}
 	workerEnv := make(map[string]string, len(withToken))
 	for key, value := range withToken {
-		if key != KeyMessagingAPIChannelSecret {
+		if key != KeyMessagingAPIChannelSecret && key != KeyMessagingAPIBotUserID && key != KeyEventMode {
 			workerEnv[key] = value
 		}
 	}
 	worker, err := LoadWorkerConfig(env(workerEnv))
-	if err != nil || worker.Secrets.MessagingAPIChannelAccessToken != "token" || worker.Durable.ProjectID != "test-project" {
+	if err != nil || worker.Secrets.MessagingAPIChannelAccessToken != "token" || worker.Durable.ProjectID != "test-project" || worker.Durable.BotUserID != "" || worker.EventMode != "durable" {
 		t.Fatalf("worker config rejected: %#v %v", worker, err)
 	}
 	if _, err := LoadWorkerConfig(env(map[string]string{})); err == nil {

@@ -48,7 +48,7 @@ func loadLINETimeout(getenv func(string) string) (time.Duration, error) {
 	return timeout, nil
 }
 
-func loadDurable(getenv func(string) string) (DurableConfig, error) {
+func loadDurable(getenv func(string) string, role RuntimeRole) (DurableConfig, error) {
 	d := DurableConfig{
 		ProjectID:    readSetting(getenv, KeyProjectID),
 		BotUserID:    readSetting(getenv, KeyMessagingAPIBotUserID),
@@ -57,11 +57,11 @@ func loadDurable(getenv func(string) string) (DurableConfig, error) {
 		OIDCAudience: readSetting(getenv, KeyOIDCAudience),
 		InvokerEmail: readSetting(getenv, KeyInvokerEmail),
 	}
-	if d.ProjectID == "" || d.BotUserID == "" || d.QueueName == "" || d.WorkerURL == "" ||
+	if d.ProjectID == "" || d.QueueName == "" || d.WorkerURL == "" ||
 		d.OIDCAudience == "" || d.InvokerEmail == "" {
-		return DurableConfig{}, errors.New("durable event mode requires GCP project, LINE bot destination, queue, worker URL and OIDC identity")
+		return DurableConfig{}, errors.New("durable event mode requires GCP project, queue, worker URL and OIDC identity")
 	}
-	if !messagingAPIBotUserIDPattern.MatchString(d.BotUserID) {
+	if role == RoleWebhook && !messagingAPIBotUserIDPattern.MatchString(d.BotUserID) {
 		return DurableConfig{}, errors.New("LINE_MESSAGING_API_BOT_USER_ID must be U followed by 32 lowercase hexadecimal characters")
 	}
 	// The preflight must reject the same malformed names as the Cloud Tasks

@@ -57,7 +57,7 @@ var settingContract = []SettingSpec{
 	{Key: KeyMetricInterval, Roles: "webhook,worker,miniapp", Secret: false, Default: "60s", Required: "TELEMETRY_MODE=gcp-otlp 時套用", Description: "metrics 匯出週期，10s–5m"},
 	{Key: KeyMessagingAPIChannelSecret, Roles: "webhook", Secret: true, Default: "—", Required: "durable 必需；sync 與 Token 成對", Description: "僅驗證原始 Webhook 簽章，不應傳給 Worker"},
 	{Key: KeyMessagingAPIChannelAccessToken, Roles: "worker,local-sync,ops-push,ops-profile", Secret: true, Default: "—", Required: "worker 必需；本機 sync 成對", Description: "durable 公開 Webhook 禁止持有"},
-	{Key: KeyMessagingAPIBotUserID, Roles: "webhook-durable,worker", Secret: false, Default: "—", Required: "durable 必需", Description: "LINE Bot Info API 的 userId；不是 Console 的 Your user ID"},
+	{Key: KeyMessagingAPIBotUserID, Roles: "webhook-durable", Secret: false, Default: "—", Required: "durable Webhook 必需", Description: "LINE Bot Info API 的 userId；不是 Console 的 Your user ID"},
 	{Key: KeyProjectID, Roles: "webhook-durable,worker", Secret: false, Default: "—", Required: "durable 必需", Description: "最小 IAM 的指定 Google Cloud Project；Mini App 由 ADC 自動偵測"},
 	{Key: KeyQueueName, Roles: "webhook-durable,worker", Secret: false, Default: "—", Required: "durable 必需", Description: "六段 Queue 資源名稱；Project 必須等於 GCP_PROJECT_ID；Queue ID 僅限 1–100 字元英數或連字號"},
 	{Key: KeyWorkerURL, Roles: "webhook-durable,worker", Secret: false, Default: "—", Required: "durable 必需", Description: "HTTPS Worker /tasks/v2/line-reply"},

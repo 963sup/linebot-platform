@@ -31,7 +31,7 @@ Cloud Run 預期分別使用 `line-bot-public@bubbly-area-513305-s0.iam.gservice
 | Google Secret Manager | `LINE_MESSAGING_API_CHANNEL_SECRET` | 僅注入 `line-bot-public`。 |
 | Google Secret Manager | `LINE_MESSAGING_API_CHANNEL_ACCESS_TOKEN` | 僅注入 `line-bot-private`。 |
 | MINI App Cloud Run | `LINE_MINI_APP_CHANNEL_ID`、`LINE_MINI_APP_LIFF_URL`、`LINE_MINI_APP_ENDPOINT_URL`、`FIRESTORE_DATABASE` | LINE MINI App audience、LIFF、同源與 Firestore 基礎設施契約；Project ID 由 ADC 自動發現。 |
-| Cloud Run deployment | `APP_ENV`、`LINE_EVENT_MODE`、`LINE_API_TIMEOUT`、`LOG_LEVEL`、`LOG_FORMAT`、`LINE_MESSAGING_API_BOT_USER_ID`、`GCP_PROJECT_ID`、`TASK_QUEUE_NAME`、`TASK_WORKER_URL`、`TASK_OIDC_AUDIENCE`、`TASK_INVOKER_EMAIL` | 非敏感 production 設定；由 `cloudbuild.deploy.yaml` 寫入。 |
+| Cloud Run deployment | `APP_ENV`、`LINE_EVENT_MODE`（僅 Public Webhook）、`LINE_MESSAGING_API_BOT_USER_ID`（僅 Public Webhook）、`GCP_PROJECT_ID`、`TASK_QUEUE_NAME`、`TASK_WORKER_URL`、`TASK_OIDC_AUDIENCE`、`TASK_INVOKER_EMAIL` | 非敏感 production 設定；以每個服務的 exact allowlist 由 `cloudbuild.deploy.yaml` 寫入。Timeout、logging 與預設 Firestore database 使用程式的安全預設，不重複注入。 |
 | Cloud Run platform | `PORT`、`K_SERVICE` | 由平台注入，不手動設定。 |
 | 操作人員 shell | `LINEBOT_STAGING_PROJECT` | 只有隔離 staging 的 `ops events` 使用；不注入任一服務。 |
 

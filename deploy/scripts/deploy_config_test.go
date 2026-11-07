@@ -37,8 +37,13 @@ func TestCloudBuildDeploymentSafetyContract(t *testing.T) {
 		"LINE_MINI_APP_LIFF_URL=${_LINE_MINI_APP_LIFF_URL}",
 		"_LINE_MINI_APP_ENDPOINT_URL: ''",
 		"--ingress=internal",
+		"--ingress=all",
 		"--concurrency=16",
 		"--no-traffic",
+		"--deploy-health-check",
+		"--set-env-vars",
+		"--set-secrets",
+		"--clear-secrets",
 		"--format=value(status.latestCreatedRevisionName)",
 	} {
 		if !strings.Contains(text, required) {
@@ -50,6 +55,20 @@ func TestCloudBuildDeploymentSafetyContract(t *testing.T) {
 	}
 	if strings.Count(text, "LINE_MINI_APP_LIFF_URL=${_LINE_MINI_APP_LIFF_URL}") != 2 {
 		t.Error("MINI App entry must be derived once for the public webhook only")
+	}
+	if strings.Count(text, "--deploy-health-check") != 3 {
+		t.Error("all candidate revisions must pass startup health checks")
+	}
+	if strings.Count(text, "--ingress=all") != 2 || strings.Count(text, "--ingress=internal") != 1 {
+		t.Error("deployment ingress must be explicit for all three services")
+	}
+	if strings.Contains(text, "_AR_REPOSITORY") {
+		t.Error("deployment contains an unused Artifact Registry substitution")
+	}
+	for _, forbidden := range []string{"--update-env-vars", "--remove-env-vars", "--update-secrets", "--remove-secrets"} {
+		if strings.Contains(text, forbidden) {
+			t.Errorf("deployment contains non-authoritative mutation flag %q", forbidden)
+		}
 	}
 	if strings.Contains(text, "update-traffic") || strings.Contains(text, "latestReadyRevisionName") {
 		t.Error("candidate deployment must not promote or infer a revision")

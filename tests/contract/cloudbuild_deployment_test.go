@@ -44,10 +44,10 @@ func TestCloudBuildConfigurationTargetsLineBotProduction(t *testing.T) {
 		"line-miniapp",
 		"line-bot-events",
 		"_LINE_MESSAGING_API_BOT_USER_ID",
-		"LINE_MESSAGING_API_CHANNEL_SECRET=line-messaging-api-channel-secret:latest",
-		"LINE_MESSAGING_API_CHANNEL_ACCESS_TOKEN=line-messaging-api-channel-access-token:latest",
-		"--remove-env-vars",
-		"--remove-secrets",
+		"--set-secrets=LINE_MESSAGING_API_CHANNEL_SECRET=line-messaging-api-channel-secret:latest",
+		"--set-secrets=LINE_MESSAGING_API_CHANNEL_ACCESS_TOKEN=line-messaging-api-channel-access-token:latest",
+		"--set-env-vars",
+		"--clear-secrets",
 		"--concurrency=16",
 	} {
 		if !strings.Contains(text, want) {
@@ -56,6 +56,20 @@ func TestCloudBuildConfigurationTargetsLineBotProduction(t *testing.T) {
 	}
 	if strings.Count(text, "--concurrency=16") != 1 {
 		t.Fatal("only the private worker deployment may set --concurrency=16")
+	}
+	if strings.Count(text, "--deploy-health-check") != 3 {
+		t.Fatal("every Cloud Run candidate must pass its startup health check")
+	}
+	if strings.Count(text, "--ingress=all") != 2 || strings.Count(text, "--ingress=internal") != 1 {
+		t.Fatal("public services must accept external ingress and only the worker may use internal ingress")
+	}
+	if strings.Contains(text, "_AR_REPOSITORY") {
+		t.Fatal("deployment contains an unused Artifact Registry substitution")
+	}
+	for _, forbidden := range []string{"--update-env-vars", "--remove-env-vars", "--update-secrets", "--remove-secrets"} {
+		if strings.Contains(text, forbidden) {
+			t.Fatalf("deployment must use an exact allowlist instead of %q", forbidden)
+		}
 	}
 	private := strings.Index(text, "id: 'deploy-private-worker'")
 	if private < 0 {
@@ -68,6 +82,11 @@ func TestCloudBuildConfigurationTargetsLineBotProduction(t *testing.T) {
 	if !strings.Contains(privateStep, "--concurrency=16") {
 		t.Fatal("private worker deployment must own the concurrency limit")
 	}
+	for _, forbidden := range []string{"LINE_EVENT_MODE", "LINE_API_TIMEOUT", "LOG_LEVEL", "LOG_FORMAT", "LINE_MESSAGING_API_BOT_USER_ID", "LINE_MINI_APP_LIFF_URL", "FIRESTORE_DATABASE"} {
+		if strings.Contains(privateStep, forbidden) {
+			t.Errorf("private worker deployment contains unused setting %q", forbidden)
+		}
+	}
 	miniapp := strings.Index(text, "id: 'deploy-miniapp'")
 	if miniapp < 0 {
 		t.Fatal("MINI App deployment step is missing")
@@ -76,12 +95,12 @@ func TestCloudBuildConfigurationTargetsLineBotProduction(t *testing.T) {
 	if next := strings.Index(miniappStep[1:], "\n  - id:"); next >= 0 {
 		miniappStep = miniappStep[:next+1]
 	}
-	for _, want := range []string{"--service-account=${_MINIAPP_SERVICE_ACCOUNT}", "--allow-unauthenticated", "LINE_MINI_APP_CHANNEL_ID=${_LINE_MINI_APP_CHANNEL_ID}", "LINE_MINI_APP_LIFF_URL=${_LINE_MINI_APP_LIFF_URL}", "LINE_MINI_APP_ENDPOINT_URL=${_LINE_MINI_APP_ENDPOINT_URL}", "--remove-env-vars=LINE_LIFF_ID,MINIAPP_PUBLIC_ORIGIN"} {
+	for _, want := range []string{"--service-account=${_MINIAPP_SERVICE_ACCOUNT}", "--allow-unauthenticated", "LINE_MINI_APP_CHANNEL_ID=${_LINE_MINI_APP_CHANNEL_ID}", "LINE_MINI_APP_LIFF_URL=${_LINE_MINI_APP_LIFF_URL}", "LINE_MINI_APP_ENDPOINT_URL=${_LINE_MINI_APP_ENDPOINT_URL}", "--clear-secrets"} {
 		if !strings.Contains(miniappStep, want) {
 			t.Errorf("MINI App deployment missing %q", want)
 		}
 	}
-	for _, forbidden := range []string{"LINE_MESSAGING_API_CHANNEL_SECRET=line-messaging-api-channel-secret", "LINE_MESSAGING_API_CHANNEL_ACCESS_TOKEN=line-messaging-api-channel-access-token", "--concurrency=16"} {
+	for _, forbidden := range []string{"LINE_MESSAGING_API_CHANNEL_SECRET=line-messaging-api-channel-secret", "LINE_MESSAGING_API_CHANNEL_ACCESS_TOKEN=line-messaging-api-channel-access-token", "LINE_API_TIMEOUT", "LOG_LEVEL", "LOG_FORMAT", "FIRESTORE_DATABASE", "--concurrency=16"} {
 		if strings.Contains(miniappStep, forbidden) {
 			t.Errorf("MINI App deployment contains forbidden setting %q", forbidden)
 		}

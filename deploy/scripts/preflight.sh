@@ -112,6 +112,8 @@ for account in "${PUBLIC_SERVICE_ACCOUNT}" "${WORKER_SERVICE_ACCOUNT}" "${MINIAP
 done
 for secret in line-messaging-api-channel-secret line-messaging-api-channel-access-token; do
   gcloud secrets describe "${secret}" --project="${PROJECT_ID}" --quiet >/dev/null
+  gcloud secrets versions list "${secret}" --project="${PROJECT_ID}" \
+    --filter='state=ENABLED' --limit=1 --format='value(name)' | grep -Eq '(^|/versions/)[0-9]+$'
 done
 
 require_project_role() {
