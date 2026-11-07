@@ -40,16 +40,6 @@ func validateMessages(messages []Message) error {
 	return nil
 }
 
-func (s *DeliveryService) Reply(ctx context.Context, replyToken string, messages []Message) error {
-	if strings.TrimSpace(replyToken) == "" {
-		return errors.New("reply token is required")
-	}
-	if err := validateMessages(messages); err != nil {
-		return err
-	}
-	return s.gateway.Reply(ctx, replyToken, messages)
-}
-
 func (s *DeliveryService) Push(ctx context.Context, recipient string, messages []Message, retryKey string) error {
 	if strings.TrimSpace(recipient) == "" || strings.TrimSpace(retryKey) == "" {
 		return errors.New("recipient and stable retry key are required")
