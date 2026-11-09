@@ -21,7 +21,7 @@ require (
 	go.yaml.in/yaml/v3 v3.0.5
 	google.golang.org/api v0.310.0
 	google.golang.org/genai v1.77.0
-	google.golang.org/grpc v1.84.0
+	google.golang.org/grpc v1.85.0
 )
 
 require (
